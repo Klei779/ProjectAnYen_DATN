@@ -1,7 +1,11 @@
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-</script>
-
 <template>
-  <HelloWorld />
+
+  <AppHeader />
+
+  <RouterView />
+
 </template>
+
+<script setup>
+import AppHeader from "./components/AppHeader.vue";
+</script>

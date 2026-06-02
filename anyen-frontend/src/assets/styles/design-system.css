@@ -1,0 +1,86 @@
+:root{
+    --color-primary:#84071c;
+    --color-slate:#243141;
+    --color-navy:#142d4d;
+    --color-cream:#fcf5f0;
+    --color-soft:#fdf8f4;
+    --color-black:#1f1f1f;
+}
+
+.display-title{
+    font-family:'Faustina',serif;
+    font-size:41px;
+    font-weight:600;
+    line-height:1.2;
+    color:var(--color-primary);
+}
+
+.page-title{
+    font-family:'Faustina',serif;
+    font-size:27px;
+    font-weight:600;
+    line-height:1.3;
+    color:var(--color-primary);
+}
+
+.section-title{
+    font-family:'Faustina',serif;
+    font-size:18px;
+    font-weight:600;
+    line-height:1.4;
+    color:var(--color-primary);
+}
+
+.body-text{
+    font-family:'Noto Sans',sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    color:var(--color-black);
+}
+
+.caption{
+    font-family:'Noto Sans',sans-serif;
+    font-size:13px;
+    line-height:1.5;
+    color:var(--color-black);
+}
+
+.text-primary{
+    color:var(--color-primary);
+}
+
+.text-slate{
+    color:var(--color-slate);
+}
+
+.text-navy{
+    color:var(--color-navy);
+}
+
+.text-black{
+    color:var(--color-black);
+}
+
+.bg-primary{
+    background:var(--color-primary);
+}
+
+.bg-slate{
+    background:var(--color-slate);
+}
+
+.bg-navy{
+    background:var(--color-navy);
+}
+
+.bg-cream{
+    background:var(--color-cream);
+}
+
+.bg-soft{
+    background:var(--color-soft);
+}
+
+.bg-black{
+    background:var(--color-black);
+}

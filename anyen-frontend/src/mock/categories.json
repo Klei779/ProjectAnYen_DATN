@@ -1,0 +1,10 @@
+[
+  { "id": 1, "name": "Bàn thờ & Phụ kiện", "total": 32, "icon": "fa-solid fa-house-chimney" },
+  { "id": 2, "name": "Hương & Nhang",       "total": 18, "icon": "fa-solid fa-wind" },
+  { "id": 3, "name": "Đồ thờ cúng",         "total": 26, "icon": "fa-solid fa-star-and-crescent" },
+  { "id": 4, "name": "Vật phẩm tâm linh",   "total": 20, "icon": "fa-solid fa-hands-praying" },
+  { "id": 5, "name": "Trang phục tang lễ",  "total": 12, "icon": "fa-solid fa-shirt" },
+  { "id": 6, "name": "Hoa tang lễ",         "total": 10, "icon": "fa-solid fa-leaf" },
+  { "id": 7, "name": "Thiệp & Phụ kiện",    "total": 8,  "icon": "fa-solid fa-envelope-open-text" },
+  { "id": 8, "name": "Khác",                "total": 2,  "icon": "fa-solid fa-ellipsis" }
+]

@@ -1,0 +1,8 @@
+[
+  { "id": 1, "name": "Nâu gỗ",  "hex": "#8B5A2B" },
+  { "id": 2, "name": "Đồng",    "hex": "#B87333" },
+  { "id": 3, "name": "Kem",     "hex": "#E8D5A2" },
+  { "id": 4, "name": "Trắng",   "hex": "#F3F3F3" },
+  { "id": 5, "name": "Đen",     "hex": "#1A1A1A" },
+  { "id": 6, "name": "Xanh lá", "hex": "#556B2F" }
+]

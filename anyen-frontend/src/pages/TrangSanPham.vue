@@ -8,12 +8,17 @@
       </div>
       <p class="hero-subtitle">Tịnh tuyển từng sản phẩm – Giữ trọn lòng thành kính</p>
       <div class="search-wrapper">
-        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <i
+            class="fa-solid fa-magnifying-glass search-icon"
+            @click="searchProducts"
+        ></i>
+
         <input
             v-model="keyword"
             class="search-box"
             placeholder="Tìm kiếm sản phẩm..."
             type="text"
+            @keyup.enter="searchProducts"
         />
       </div>
     </div>
@@ -59,7 +64,7 @@
                 <i class="fa-solid" :class="isPriceOpen ? 'fa-chevron-up' : 'fa-chevron-down'" />
               </div>
               <div v-show="isPriceOpen" class="filter-content">
-                <el-slider v-model="priceRange" range :max="10000000" :step="100000" />
+                <el-slider v-model="priceRange" range :max="50000000" :step="100000" />
                 <div class="price-boxes">
                   <div class="price-box">
                     <small>Từ</small>
@@ -100,8 +105,8 @@
                 <div class="color-list">
                   <div v-for="color in colors" :key="color.hex" class="color-item"
                        :style="{ background: color.hex }"
-                       :class="{ 'color-selected': selectedColor === color.hex }"
-                       @click="selectedColor = color.hex" :title="color.name" />
+                       :class="{ 'color-selected': selectedColor === color.name }"
+                       @click="selectedColor = selectedColor === color.name ? null : color.name" />
                 </div>
                 <button class="view-more-btn mt-2">Xem thêm <i class="fa-solid fa-chevron-down"></i></button>
               </div>
@@ -251,7 +256,7 @@ const keyword           = ref('')
 const sortBy            = ref('newest')
 const currentPage       = ref(1)
 const pageSize          = ref(16)
-const priceRange        = ref([0, 10_000_000])
+const priceRange        = ref([0, 999_999_999])
 const selectedCategoryId = ref(null)   // null = tất cả
 const selectedColor     = ref(null)    // null = tất cả
 
@@ -311,19 +316,33 @@ async function loadFilterOptions() {
 // ─── Load products ────────────────────────────────────────────
 async function loadProducts() {
   loading.value = true
+
   try {
+    const selectedCategory = categories.value.find(
+        (c) => c.id === selectedCategoryId.value
+    )
+
+    const selectedMaterials = materials.value
+        .filter((m) => m.checked)
+        .map((m) => m.name)
+
+    const selectedReligions = religions.value
+        .filter((r) => r.checked)
+        .map((r) => r.name)
+
     const { items, total } = await getProducts({
-      categoryId:  selectedCategoryId.value,
-      materialIds: selectedMaterialIds.value,
-      religionIds: selectedReligionIds.value,
-      colorHex:    selectedColor.value,
-      priceRange:  priceRange.value,
-      keyword:     keyword.value,
-      sortBy:      sortBy.value,
-      page:        currentPage.value,
-      pageSize:    pageSize.value
+      keyword: keyword.value,
+      loai: selectedCategory ? selectedCategory.name : '',
+      vatLieu: selectedMaterials,
+      tonGiao: selectedReligions,
+      mauSac: selectedColor.value || '',
+      priceRange: priceRange.value,
+      sortBy: sortBy.value,
+      page: currentPage.value,
+      pageSize: pageSize.value
     })
-    products.value      = items
+
+    products.value = items
     totalProducts.value = total
   } finally {
     loading.value = false
@@ -359,13 +378,13 @@ function applyFilter() {
 
 function resetFilter() {
   selectedCategoryId.value = null
-  selectedColor.value      = null
-  priceRange.value         = [0, 10_000_000]
+  selectedColor.value = null
+  priceRange.value = [0, 999_999_99]
   materials.value.forEach((m) => (m.checked = false))
   religions.value.forEach((r) => (r.checked = false))
-  keyword.value            = ''
-  sortBy.value             = 'newest'
-  currentPage.value        = 1
+  keyword.value = ''
+  sortBy.value = 'newest'
+  currentPage.value = 1
   loadProducts()
 }
 
@@ -377,6 +396,11 @@ onMounted(async () => {
   await loadFilterOptions()
   await loadProducts()
 })
+
+function searchProducts() {
+  currentPage.value = 1
+  loadProducts()
+}
 </script>
 
 <style scoped src="../assets/styles/TrangSanPham.css"></style>

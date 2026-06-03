@@ -22,6 +22,14 @@
         Liên hệ
       </RouterLink>
     </nav>
+    <el-button class="login-btn":icon="User" @click="showLogin = true">
+      ĐĂNG NHẬP
+    </el-button>
+
+    <LoginModal
+        :show="showLogin"
+        @close="showLogin = false"
+    />
 
   </header>
 </template>
@@ -40,3 +48,12 @@ nav{
   gap:20px;
 }
 </style>
+
+<script setup>
+import { User } from "@element-plus/icons-vue";
+import { ref } from "vue";
+import LoginModal from "../components/PopDangNhap.vue";
+import {Lock} from "@element-plus/icons-vue";
+
+const showLogin = ref(false);
+</script>

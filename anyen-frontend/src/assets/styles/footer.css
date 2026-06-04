@@ -1,0 +1,154 @@
+.footer{
+    background:#142d4d;
+    color:#fcf5f0;
+    font-family:'Noto Sans', sans-serif;
+    padding-top:12px;
+}
+
+.footer-container{
+    padding-left:70px !important;
+    padding-right:70px !important;
+}
+
+.footer-row{
+    padding-top:5px !important;
+    padding-bottom:0 !important;
+}
+
+/* =========================
+   LOGO
+========================= */
+
+.logo{
+    width:95px;
+    margin-bottom:6px;
+}
+
+.footer-desc{
+    font-size:13px;
+    line-height:1.4;
+    color:rgba(253,248,244,.85);
+    margin-bottom:6px;
+}
+
+/* =========================
+   TITLE
+========================= */
+
+.footer h2{
+    font-family:'Faustina', serif;
+    font-size:18px !important;
+    font-weight:600;
+    line-height:1.3;
+    margin-bottom:6px;
+    color:#fdf8f4;
+    letter-spacing:.3px;
+}
+
+/* =========================
+   TEXT
+========================= */
+
+.footer p{
+    font-size:13px;
+    line-height:1.35;
+    color:rgba(253,248,244,.82);
+    margin-bottom:4px;
+}
+
+/* =========================
+   SOCIAL
+========================= */
+
+.social{
+    display:flex;
+    gap:8px;
+    margin-top:8px;
+}
+
+.social i{
+    width:24px;
+    height:24px;
+    border:1px solid rgba(253,248,244,.45);
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    cursor:pointer;
+    color:#fdf8f4;
+    font-size:11px;
+    transition:.3s;
+}
+
+.social i:hover{
+    background:#84071c;
+    border-color:#84071c;
+}
+
+/* =========================
+   FOOTER BOTTOM
+========================= */
+
+.footer-bottom{
+    border-top:1px solid rgba(253,248,244,.12);
+    padding:4px 0;
+    color:rgba(253,248,244,.75);
+}
+
+.footer-bottom span{
+    font-size:13px;
+}
+
+.footer-links{
+    display:flex;
+    gap:20px;
+}
+
+.footer-links p{
+    margin:0;
+    font-size:13px;
+    color:rgba(253,248,244,.75);
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media(max-width:992px){
+
+    .footer{
+        text-align:center;
+    }
+
+    .footer-container{
+        padding-left:24px !important;
+        padding-right:24px !important;
+    }
+
+    .social{
+        justify-content:center;
+    }
+
+    .footer-bottom .d-flex{
+        flex-direction:column;
+        gap:8px;
+    }
+
+    .footer-links{
+        justify-content:center;
+        flex-wrap:wrap;
+    }
+
+    .footer-news{
+        padding-right:30px;
+    }
+
+    .footer-contact{
+        padding-left:30px;
+    }
+
+    .footer-contact p{
+        white-space: nowrap;
+    }
+
+}

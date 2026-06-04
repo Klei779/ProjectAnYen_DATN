@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
 public class SecurityConfig {
@@ -17,8 +18,25 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(request -> {
+
+                    CorsConfiguration config =
+                            new CorsConfiguration();
+
+                    config.addAllowedOrigin("http://localhost:5173");
+
+                    config.addAllowedMethod("*");
+
+                    config.addAllowedHeader("*");
+
+                    return config;
+
+                }))
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .requestMatchers("/api/auth/**")
+                        .permitAll()
+                        .anyRequest()
+                        .permitAll()
                 )
                 .httpBasic(Customizer.withDefaults());
 

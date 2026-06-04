@@ -110,6 +110,8 @@
 <script setup>
 import { reactive, ref } from "vue";
 import { User, Lock } from "@element-plus/icons-vue";
+import { ElMessage } from "element-plus";
+import axios from "axios";
 
 defineProps({
   show: {
@@ -118,6 +120,11 @@ defineProps({
   }
 });
 
+const emit = defineEmits([
+  "close",
+  "login-success"
+]);
+
 const activeTab = ref("staff");
 
 const form = reactive({
@@ -125,11 +132,55 @@ const form = reactive({
   password: ""
 });
 
-const handleLogin = () => {
-  console.log({
-    type: activeTab.value,
-    ...form
-  });
+const handleLogin = async () => {
+
+  try {
+
+    const response = await axios.post(
+        "http://localhost:9999/api/auth/login",
+        {
+          tenDangNhap: form.username,
+          matKhau: form.password,
+          loaiTaiKhoan:
+              activeTab.value === "staff"
+                  ? "NHAN_VIEN"
+                  : "DOI_TAC"
+        }
+    );
+
+    if (response.data.success) {
+
+      localStorage.setItem(
+          "user",
+          JSON.stringify(response.data)
+      );
+
+      emit("login-success", response.data);
+
+      emit("close");
+
+      ElMessage.success(
+          `Xin chào ${response.data.hoTen}`
+      );
+
+    } else {
+
+      ElMessage.error(
+          "Sai tài khoản hoặc mật khẩu"
+      );
+
+    }
+
+  } catch (error) {
+
+    console.error(error);
+
+    ElMessage.error(
+        "Không thể kết nối máy chủ"
+    );
+
+  }
+
 };
 </script>
 

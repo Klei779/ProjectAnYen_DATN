@@ -67,7 +67,9 @@
             Từ <strong>{{ item.price }}</strong>
           </div>
 
-          <button>XEM CHI TIẾT</button>
+          <button @click="goToDetail(item.id)">
+            XEM CHI TIẾT
+          </button>
         </div>
       </div>
 
@@ -187,8 +189,17 @@ import package3 from "../assets/images/TrangDichVu/goi3.png";
 import package4 from "../assets/images/TrangDichVu/goi4.png";
 import lotusImg from "../assets/images/TrangDichVu/lotus.png";
 
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const goToDetail = (id) => {
+  router.push(`/dich-vu/${id}`)
+}
+
 const packages = [
   {
+    id: 1,
     name: "GÓI TIẾT KIỆM",
     subtitle: "Trang nghiêm - Chuẩn mực",
     image: package1,
@@ -202,6 +213,7 @@ const packages = [
     ],
   },
   {
+    id: 2,
     name: "GÓI TIÊU CHUẨN",
     subtitle: "Trang trọng - Chu đáo",
     image: package2,
@@ -217,6 +229,7 @@ const packages = [
     ],
   },
   {
+    id: 3,
     name: "GÓI CAO CẤP",
     subtitle: "Tận tâm - Chu toàn",
     image: package3,
@@ -232,6 +245,7 @@ const packages = [
     ],
   },
   {
+    id: 4,
     name: "GÓI VIP",
     subtitle: "Vĩnh biệt - Vẹn tròn",
     image: package4,
@@ -319,6 +333,7 @@ const processSteps = [
     desc: "Hỗ trợ hậu sự và chăm sóc sau tang lễ",
   },
 ];
+
 </script>
 
-<style src="../assets/styles/TrangDichVu.css"></style>
+<style scoped src="../assets/styles/TrangDichVu.css"></style>

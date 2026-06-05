@@ -15,22 +15,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http) throws Exception {
-
-        http
-                .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(request -> {
+        http.csrf(csrf -> csrf.disable()).cors(cors -> cors.configurationSource(request -> {
 
                     CorsConfiguration config =
                             new CorsConfiguration();
-
                     config.addAllowedOrigin("http://localhost:5173");
-
                     config.addAllowedMethod("*");
-
                     config.addAllowedHeader("*");
-
                     return config;
-
                 }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**")
@@ -39,7 +31,6 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .httpBasic(Customizer.withDefaults());
-
         return http.build();
     }
 

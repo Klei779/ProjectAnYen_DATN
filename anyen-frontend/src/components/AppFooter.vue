@@ -7,7 +7,7 @@
 
         <!-- Logo -->
         <div class="col-lg-3 col-md-6 mb-4">
-          <img :src="logoAnYen" alt="An Yên" class="logo">
+          <img :src="logofooter" alt="An Yên" class="logo">
 
           <p class="footer-desc">
             An Yên - Luôn đồng hành cùng gia đình trong
@@ -90,7 +90,7 @@
 </template>
 
 <script setup>
-import logoAnYen from "../assets/images/icon/logoAnYen.png";
+import logofooter from "../assets/images/icon/logofooter.png";
 </script>
 
 <style src="../assets/styles/footer.css"></style>

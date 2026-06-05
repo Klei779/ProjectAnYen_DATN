@@ -8,13 +8,23 @@
     position: relative;
 
 }
+.hero-congSu{
+    width: 28%;
+}
 .hero-section-2 {
     width: 100%;
     background-size: cover;
     background-position: center top;
     background-repeat: no-repeat;
     position: relative;
-
+}
+.hero-section-2 {
+    width: 100%;
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    position: relative;
+    background-color: #e0d2c6;
 }
 .hero-AnYen{
     margin-left: 27.5%;
@@ -51,6 +61,13 @@
     letter-spacing: 0.5px;
     margin-left:18%;
 }
+.hero-subtitle-3 {
+    font-size: clamp(2.5px, 2.1vw, 39px);
+    color: #860b20;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
 .divider-icon {
     height: auto;
     width: 16%;
@@ -79,7 +96,7 @@
     opacity: 0.75;
 }
 .LienHe-btn {
-    background: #ffffff;
+    background: #FFFFFF88;
     border: 2px solid #860b20;
     color: #860b20;
     font-size: clamp(2px, 1.6vw, 36px);
@@ -95,7 +112,7 @@
     opacity: 0.75;
 }
 .TimHieu-btn {
-    background: #ffffff;
+    background: #FFFFFF88;
     border: 2px solid #860b20;
     color: #860b20;
     font-size: clamp(2px, 1.6vw, 36px);
@@ -116,15 +133,86 @@
     display: flex;
     margin-left: 20%;
 }
-.card {
+.card-list {
+    padding-top:4%;
+    padding-left:4%;
+    padding-right:4%;
     display: flex;
-    gap: 20px;
+    gap: 5%;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+}
+.card-list-1 {
+    padding-left:4%;
+    padding-right:4%;
+    display: flex;
+    gap: 5%;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
+}
+.card-list-2 {
+    padding:4%;
+    display: flex;
+    gap: 5%;
+    justify-content: center;
+    align-items: stretch;
+    width: 100%;
 }
 
 .card-container {
+
     flex: 1;
-    padding: 20px;
+    max-width: 30%;
+    padding: 2%;
     border: 1px solid #ddd;
     border-radius: 8px;
     text-align: center;
+    background: #FFFFFF71;
+    margin-bottom: 5%;
+}
+.card-container-1 {
+
+    flex: 1;
+    max-width: 30%;
+    padding: 2%;
+    border-radius: 8px;
+    text-align: center;
+    margin-bottom: 5%;
+}
+.card-container-H3 {
+    color:#860b20;
+}
+@media (max-width: 768px) {
+    .card-list {
+        flex-direction: column;
+    }
+
+    .card-container {
+        max-width: 100%;
+    }
+}
+
+.tangLe-img {
+    width: 40%;
+    object-fit: contain;
+}
+.title{
+    color: #0e3050;
+   /* font-family: "Be Vietnam Pro";*/
+}
+.nhanVien-img {
+    width: 35%;
+    object-fit: contain;
+}
+.vision-list {
+    text-align: left;
+    padding-left: 20px;
+    line-height: 1.8;
+    font-size: clamp(2px, 1.4vw, 36px);
+}
+
+.vision-list li {
+    margin-bottom: 8px;
 }

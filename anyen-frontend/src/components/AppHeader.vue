@@ -22,17 +22,74 @@
         Liên hệ
       </RouterLink>
     </nav>
-    <el-button class="login-btn":icon="User" @click="showLogin = true">
+
+    <!-- Chưa đăng nhập -->
+    <el-button
+        v-if="!user"
+        class="login-btn"
+        :icon="User"
+        @click="showLogin = true"
+    >
       ĐĂNG NHẬP
     </el-button>
+
+    <!-- Đã đăng nhập -->
+    <el-dropdown v-else>
+
+      <span class="user-info">
+        Xin chào {{ user.hoTen }}
+      </span>
+
+      <template #dropdown>
+        <el-dropdown-menu>
+
+          <el-dropdown-item disabled>
+            {{ user.loaiTaiKhoan }}
+          </el-dropdown-item>
+
+          <el-dropdown-item divided @click="logout">
+            Đăng xuất
+          </el-dropdown-item>
+
+        </el-dropdown-menu>
+      </template>
+
+    </el-dropdown>
 
     <LoginModal
         :show="showLogin"
         @close="showLogin = false"
+        @login-success="handleLoginSuccess"
     />
 
   </header>
 </template>
+
+<script setup>
+import { ref } from "vue";
+import { User } from "@element-plus/icons-vue";
+import LoginModal from "../components/PopDangNhap.vue";
+
+const showLogin = ref(false);
+
+const user = ref(
+    JSON.parse(localStorage.getItem("user"))
+);
+
+const handleLoginSuccess = (userData) => {
+
+  user.value = userData;
+
+};
+
+const logout = () => {
+
+  localStorage.removeItem("user");
+
+  user.value = null;
+
+};
+</script>
 
 <style scoped>
 .header{
@@ -47,13 +104,9 @@ nav{
   display:flex;
   gap:20px;
 }
+
+.user-info{
+  cursor:pointer;
+  font-weight:600;
+}
 </style>
-
-<script setup>
-import { User } from "@element-plus/icons-vue";
-import { ref } from "vue";
-import LoginModal from "../components/PopDangNhap.vue";
-import {Lock} from "@element-plus/icons-vue";
-
-const showLogin = ref(false);
-</script>

@@ -8,7 +8,7 @@ import vn.anyen.dto.response.LoginResponse;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.NhanVien;
 import vn.anyen.repository.DoiTacRepository;
-import vn.anyen.repository.NhanVienRepository;
+import vnst.anyen.repository.NhanVienRepository;
 
 import java.util.Optional;
 
@@ -24,28 +24,50 @@ public class AuthService {
 
         LoginResponse response = new LoginResponse();
 
-        if("NHAN_VIEN".equals(request.getLoaiTaiKhoan())) {
+        // Đăng nhập nhân viên
+        if ("NHAN_VIEN".equals(request.getLoaiTaiKhoan())) {
 
-            if ("NHAN_VIEN".equals(request.getLoaiTaiKhoan())) {
+            Optional<NhanVien> optionalNv =
+                    nhanVienRepository.findByTenDangNhap(
+                            request.getTenDangNhap());
 
-                Optional<NhanVien> optionalNv =
-                        nhanVienRepository.findByTenDangNhap(
-                                request.getTenDangNhap());
+            if (optionalNv.isPresent()) {
 
-                if (optionalNv.isPresent()) {
+                NhanVien nv = optionalNv.get();
 
-                    NhanVien nv = optionalNv.get();
+                if (passwordEncoder.matches(
+                        request.getMatKhau(),
+                        nv.getMatKhau())) {
 
-                    if (passwordEncoder.matches(
-                            request.getMatKhau(),
-                            nv.getMatKhau())) {
+                    response.setSuccess(true);
+                    response.setId(nv.getMaNhanVien());
+                    response.setHoTen(nv.getHoTen());
+                    response.setTenDangNhap(nv.getTenDangNhap());
+                    response.setLoaiTaiKhoan("NHAN_VIEN");
+                }
+            }
+        }
 
-                        response.setSuccess(true);
-                        response.setId(nv.getMaNhanVien());
-                        response.setHoTen(nv.getHoTen());
-                        response.setTenDangNhap(nv.getTenDangNhap());
-                        response.setLoaiTaiKhoan("NHAN_VIEN");
-                    }
+        // Đăng nhập đối tác
+        else if ("DOI_TAC".equals(request.getLoaiTaiKhoan())) {
+
+            Optional<DoiTac> optionalDt =
+                    doiTacRepository.findByTenDangNhap(
+                            request.getTenDangNhap());
+
+            if (optionalDt.isPresent()) {
+
+                DoiTac dt = optionalDt.get();
+
+                if (passwordEncoder.matches(
+                        request.getMatKhau(),
+                        dt.getMatKhau())) {
+
+                    response.setSuccess(true);
+                    response.setId(dt.getMaDoiTac());
+                    response.setHoTen(dt.getTenDoiTac()); // dùng tên đối tác
+                    response.setTenDangNhap(dt.getTenDangNhap());
+                    response.setLoaiTaiKhoan("DOI_TAC");
                 }
             }
         }

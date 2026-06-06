@@ -11,12 +11,12 @@
     <div class="partner-card">
 
       <div class="avatar">
-        <i class="bi bi-flower1"></i>
+        <i class="bi bi-person"></i>
       </div>
 
       <div>
-        <h6 class="mb-1">Đối tác An Yên</h6>
-        <small>Đối tác bạc</small>
+        <h6 class="mb-1">Nhân viên An Yên</h6>
+        <small>Quản trị hệ thống</small>
       </div>
 
     </div>
@@ -24,45 +24,38 @@
     <nav class="menu">
 
       <RouterLink
-          to="/doi-tac/tong-quan"
+          to="/nhan-vien/tong-quan"
           class="menu-item"
       >
         Tổng quan
       </RouterLink>
 
       <RouterLink
-          to="/doi-tac/quan-ly-san-pham"
+          to="/nhan-vien/quan-ly-doi-tac"
           class="menu-item"
       >
-        Quản lý sản phẩm
+        Quản lý đối tác
       </RouterLink>
 
       <RouterLink
-          to="/doi-tac/quan-ly-don-hang"
+          to="/nhan-vien/quan-ly-don-hang"
           class="menu-item"
       >
         Quản lý đơn hàng
       </RouterLink>
 
       <RouterLink
-          to="/doi-tac/thong-bao"
+          to="/nhan-vien/thong-bao"
           class="menu-item"
       >
         Thông báo
       </RouterLink>
 
       <RouterLink
-          to="/doi-tac/thong-tin-tai-khoan"
+          to="/nhan-vien/thong-tin-tai-khoan"
           class="menu-item"
       >
         Thông tin tài khoản
-      </RouterLink>
-
-      <RouterLink
-          to="/doi-tac/doi-mat-khau"
-          class="menu-item"
-      >
-        Đổi mật khẩu
       </RouterLink>
 
       <button

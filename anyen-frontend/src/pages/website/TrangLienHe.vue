@@ -170,8 +170,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import dividerIcon from "../assets/images/icon/flower_icon.png";
-import heroBanner from "../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
+import dividerIcon from "../../assets/images/icon/flower_icon.png";
+import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
 const text = ref('')
 </script>
-<style scoped src="../assets/styles/TrangLienHe.css"></style>
+<style scoped src="../../assets/styles/TrangLienHe.css"></style>

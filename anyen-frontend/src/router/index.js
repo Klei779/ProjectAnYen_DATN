@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from "vue-router";
 // Layout
 import WebsiteLayout from "../layouts/WebsiteLayout.vue";
 import DoiTacLayout from "../layouts/DoiTacLayout.vue";
+import NhanVienLayout from "../layouts/NhanVienLayout.vue";
 
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
@@ -19,6 +20,13 @@ import TrangQLDonHang from "../pages/doitac/TrangQLDonHang.vue";
 import TrangThongBao from "../pages/doitac/TrangThongBao.vue";
 import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
 import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
+
+// Nhân viên
+import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
+import TrangQLDoiTac from "../pages/nhanvien/TrangQLDoiTac.vue";
+import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
+import TrangThongBaoNV from "../pages/nhanvien/TrangThongBao.vue";
+import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 
 const routes = [
     // WEBSITE
@@ -86,6 +94,38 @@ const routes = [
             {
                 path: "doi-mat-khau",
                 component: TrangDoiMatKhau,
+            },
+        ],
+    },
+
+    // NHÂN VIÊN
+    {
+        path: "/nhan-vien",
+        component: NhanVienLayout,
+        children: [
+            {
+                path: "",
+                redirect: "/nhan-vien/tong-quan",
+            },
+            {
+                path: "tong-quan",
+                component: TrangTongQuanNV,
+            },
+            {
+                path: "quan-ly-doi-tac",
+                component: TrangQLDoiTac,
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangNV,
+            },
+            {
+                path: "thong-bao",
+                component: TrangThongBaoNV,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinNV,
             },
         ],
     },

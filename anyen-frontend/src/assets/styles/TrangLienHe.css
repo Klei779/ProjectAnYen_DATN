@@ -1,0 +1,131 @@
+
+.service-hero{
+    height:350px;
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+}
+
+.hero-overlay{
+    text-align:center;
+    padding:0 20px;
+}
+
+.hero-title{
+    font-family:'Faustina', serif;
+    font-size:41px;
+    font-weight:600;
+    line-height:1.2;
+    letter-spacing:2px;
+    color:#142d4d;
+    margin-bottom:8px;
+}
+
+.hero-divider{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    margin-bottom:10px;
+}
+.divider-img{
+    width:150px;
+    height:auto;
+}
+.hero-desc{
+    font-size:16px;
+    line-height:1.6;
+    color:#1f1f1f;
+    margin:0;
+}
+.breadcrumb-custom{
+    font-size:14px;
+}
+
+.breadcrumb-custom a{
+    text-decoration:none;
+    color:#333;
+}
+
+.section-title{
+    text-align:center;
+    color:#8b0016;
+    font-weight:700;
+    margin-bottom:20px;
+    font-family: Georgia, serif;
+}
+
+.contact-info,
+.contact-form{
+    background:#fff;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:25px;
+    height:100%;
+}
+
+.info-card{
+    display:flex;
+    gap:15px;
+    align-items:center;
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:15px;
+    margin-bottom:12px;
+    background:#fff;
+}
+
+.icon{
+    width:46px;
+    height:46px;
+    border-radius:50%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:#fff;
+    font-size:22px;
+}
+
+.red{
+    background:#99001b;
+}
+
+.blue{
+    background:#203864;
+}
+
+.info-card h5{
+    margin:0;
+    font-size:16px;
+    font-weight:700;
+}
+
+.info-card h6{
+    margin:0;
+    color:#555;
+    font-size:13px;
+}
+
+.form-control{
+    height:42px;
+}
+
+textarea.form-control{
+    height:auto;
+}
+
+.btn-send{
+    width:100%;
+    background:#99001b;
+    color:white;
+    border:none;
+    padding:12px;
+    font-weight:bold;
+}
+
+.btn-send:hover{
+    background:#7c0015;
+}

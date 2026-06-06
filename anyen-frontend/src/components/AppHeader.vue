@@ -61,7 +61,17 @@
         @close="showLogin = false"
         @login-success="handleLoginSuccess"
     />
-
+      <el-button
+          class="hotline-btn"
+          type="danger"
+          @click="showHotline = true"
+      >
+        ☎ HOTLINE
+      </el-button>
+    <HotlineModal
+        :show="showHotline"
+        @close="showHotline = false"
+    />
   </header>
 </template>
 
@@ -69,8 +79,10 @@
 import { ref } from "vue";
 import { User } from "@element-plus/icons-vue";
 import LoginModal from "../components/PopDangNhap.vue";
+import HotlineModal from "../components/PopLienHeHotline.vue";
 
 const showLogin = ref(false);
+const showHotline = ref(false);
 
 const user = ref(
     JSON.parse(localStorage.getItem("user"))

@@ -28,7 +28,7 @@
   <div class="breadcrumb-bar">
     <div class="sp-container">
       <nav class="breadcrumb-nav">
-        <a href="/">Trang chủ</a>
+        <a href="/anyen-frontend/public">Trang chủ</a>
         <span class="bc-sep"><i class="fa-solid fa-chevron-right"></i></span>
         <span class="bc-active">Sản phẩm</span>
       </nav>
@@ -234,15 +234,15 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
-import heroSectionTrangSanPham from '../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
-import flowerIcon from '../assets/images/icon/flower_icon.png'
+import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
+import flowerIcon from '../../assets/images/icon/flower_icon.png'
 import {
   getProducts,
   getCategories,
   getMaterials,
   getReligions,
   getColors
-} from '../services/productService.js'
+} from '../../services/productService.js'
 
 // ─── UI state ────────────────────────────────────────────────
 const isPriceOpen    = ref(true)
@@ -403,4 +403,4 @@ function searchProducts() {
 }
 </script>
 
-<style scoped src="../assets/styles/TrangSanPham.css"></style>
+<style scoped src="../../assets/styles/TrangSanPham.css"></style>

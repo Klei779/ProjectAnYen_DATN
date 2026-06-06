@@ -112,6 +112,7 @@ import { reactive, ref } from "vue";
 import { User, Lock } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import axios from "axios";
+import { useRouter } from "vue-router";
 
 defineProps({
   show: {
@@ -119,6 +120,8 @@ defineProps({
     default: false
   }
 });
+
+const router = useRouter();
 
 const emit = defineEmits([
   "close",
@@ -162,6 +165,19 @@ const handleLogin = async () => {
       ElMessage.success(
           `Xin chào ${response.data.hoTen}`
       );
+
+      // Chuyển trang
+      if (response.data.loaiTaiKhoan === "DOI_TAC") {
+
+        router.push("/doi-tac/tong-quan");
+
+      }
+
+      if (response.data.loaiTaiKhoan === "NHAN_VIEN") {
+
+        router.push("/nhan-vien/tong-quan");
+
+      }
 
     } else {
 

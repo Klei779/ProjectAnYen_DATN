@@ -180,14 +180,14 @@
 </template>
 
 <script setup>
-import heroBanner from "../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
-import dividerIcon from "../assets/images/icon/flower_icon.png";
+import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
+import dividerIcon from "../../assets/images/icon/flower_icon.png";
 
-import package1 from "../assets/images/TrangDichVu/goi1.png";
-import package2 from "../assets/images/TrangDichVu/goi2.png";
-import package3 from "../assets/images/TrangDichVu/goi3.png";
-import package4 from "../assets/images/TrangDichVu/goi4.png";
-import lotusImg from "../assets/images/TrangDichVu/lotus.png";
+import package1 from "../../assets/images/TrangDichVu/goi1.png";
+import package2 from "../../assets/images/TrangDichVu/goi2.png";
+import package3 from "../../assets/images/TrangDichVu/goi3.png";
+import package4 from "../../assets/images/TrangDichVu/goi4.png";
+import lotusImg from "../../assets/images/TrangDichVu/lotus.png";
 
 import { useRouter } from 'vue-router'
 
@@ -336,4 +336,4 @@ const processSteps = [
 
 </script>
 
-<style scoped src="../assets/styles/TrangDichVu.css"></style>
+<style scoped src="../../assets/styles/TrangDichVu.css"></style>

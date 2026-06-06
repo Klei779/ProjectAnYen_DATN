@@ -94,11 +94,17 @@ const handleLoginSuccess = (userData) => {
 
 };
 
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
 const logout = () => {
 
   localStorage.removeItem("user");
 
   user.value = null;
+
+  router.push("/");
 
 };
 </script>

@@ -1,18 +1,18 @@
 <script setup>
-import heroSectionTrangSanPham from '../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
-import logoAnYen from "../assets/images/icon/logoAnYen.png";
-import flowerIcon from "../assets/images/icon/flower_icon.png";
-import dividerIcon from "../assets/images/icon/divider_icon.png";
-import chungNhanImg from "../assets/images/TrangGioiThieu/chungNhanUyTin_TrangGioiThieu.png";
-import anhNen1Img from "../assets/images/TrangGioiThieu/anhNen1.png";
-import tangLeImg from "../assets/images/TrangGioiThieu/hinh-anh-tang-le-1.png";
-import nhanVienImg from "../assets/images/TrangGioiThieu/nhanVienTangLe.png";
-import LeeMeiYu from "../assets/images/TrangGioiThieu/LeeMeiYu-img.png";
-import Cocolonet from "../assets/images/TrangGioiThieu/cocolonet.png";
-import YapKimSiong from "../assets/images/TrangGioiThieu/YapKimSiong.png";
-import BanKinhSu from "../assets/images/TrangGioiThieu/BanKinhSu.png";
-import HoaThuong from "../assets/images/TrangGioiThieu/hoaThuong.png";
-import DucCha from "../assets/images/TrangGioiThieu/ducCha.png";
+import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
+import logoAnYen from "../../assets/images/icon/logoAnYen.png";
+import flowerIcon from "../../assets/images/icon/flower_icon.png";
+import dividerIcon from "../../assets/images/icon/divider_icon.png";
+import chungNhanImg from "../../assets/images/TrangGioiThieu/chungNhanUyTin_TrangGioiThieu.png";
+import anhNen1Img from "../../assets/images/TrangGioiThieu/anhNen1.png";
+import tangLeImg from "../../assets/images/TrangGioiThieu/hinh-anh-tang-le-1.png";
+import nhanVienImg from "../../assets/images/TrangGioiThieu/nhanVienTangLe.png";
+import LeeMeiYu from "../../assets/images/TrangGioiThieu/LeeMeiYu-img.png";
+import Cocolonet from "../../assets/images/TrangGioiThieu/cocolonet.png";
+import YapKimSiong from "../../assets/images/TrangGioiThieu/YapKimSiong.png";
+import BanKinhSu from "../../assets/images/TrangGioiThieu/BanKinhSu.png";
+import HoaThuong from "../../assets/images/TrangGioiThieu/hoaThuong.png";
+import DucCha from "../../assets/images/TrangGioiThieu/ducCha.png";
 </script>
 <template>
   <section class="hero-section" :style="{ backgroundImage: `url(${heroSectionTrangSanPham})` }">
@@ -139,4 +139,4 @@ import DucCha from "../assets/images/TrangGioiThieu/ducCha.png";
 
 
 </template>
-<style scoped src="../assets/styles/TrangGioiThieu.css"></style>
+<style scoped src="../../assets/styles/TrangGioiThieu.css"></style>

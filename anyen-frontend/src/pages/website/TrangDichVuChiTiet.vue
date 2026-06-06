@@ -199,17 +199,17 @@
 <script setup>
 import { ref } from 'vue'
 
-import service1 from '../assets/images/TrangDichvu/goi1.png'
-import service2 from '../assets/images/TrangDichvu/goi1.png'
-import service3 from '../assets/images/TrangDichvu/goi1.png'
-import service4 from '../assets/images/TrangDichvu/goi1.png'
+import service1 from '../../assets/images/TrangDichVu/goi1.png'
+import service2 from '../../assets/images/TrangDichVu/goi1.png'
+import service3 from '../../assets/images/TrangDichVu/goi1.png'
+import service4 from '../../assets/images/TrangDichVu/goi1.png'
 
 const images = [service1, service2, service3, service4]
 const mainImage = ref(service1)
 
 import { useRoute } from 'vue-router'
-import heroBanner from "../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
-import dividerIcon from "../assets/images/icon/flower_icon.png";
+import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
+import dividerIcon from "../../assets/images/icon/flower_icon.png";
 
 const route = useRoute()
 
@@ -218,4 +218,4 @@ const id = route.params.id
 console.log(id)
 </script>
 
-<style scoped src="../assets/styles/TrangDichVuChiTiet.css"></style>
+<style scoped src="../../assets/styles/TrangDichVuChiTiet.css"></style>

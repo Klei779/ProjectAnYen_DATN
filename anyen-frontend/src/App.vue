@@ -1,11 +1,5 @@
 <template>
-
-    <AppHeader />
-
-    <RouterView />
-
-    <AppFooter />
-
+  <router-view />
 </template>
 
 <script setup>

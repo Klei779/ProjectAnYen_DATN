@@ -187,7 +187,7 @@ import package1 from "../../assets/images/TrangDichVu/goi1.png";
 import package2 from "../../assets/images/TrangDichVu/goi2.png";
 import package3 from "../../assets/images/TrangDichVu/goi3.png";
 import package4 from "../../assets/images/TrangDichVu/goi4.png";
-import lotusImg from "../../assets/images/TrangDichVu/lotus.png";
+const lotusImg = "https://res.cloudinary.com/dnj7xhvs1/image/upload/v1780764451/lotus_qbceib.png";
 
 import { useRouter } from 'vue-router'
 

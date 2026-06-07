@@ -14,7 +14,6 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
     show-sql: true
-
     properties:
       hibernate:
         format_sql: true
@@ -22,3 +21,8 @@ spring:
   sql:
     init:
       mode: never
+
+cloudinary:
+  cloud-name: dnj7xhvs1
+  api-key: 388776263683842
+  api-secret: juvH1fN2TZwjFMTXdxewks7MVmE

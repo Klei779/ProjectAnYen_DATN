@@ -99,13 +99,12 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 const logout = () => {
-
   localStorage.removeItem("user");
+  localStorage.removeItem("token");
 
   user.value = null;
 
   router.push("/");
-
 };
 </script>
 

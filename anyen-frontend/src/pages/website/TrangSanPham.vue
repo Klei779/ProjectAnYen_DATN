@@ -170,7 +170,7 @@
 
               <div v-for="item in products" :key="item.id" class="product-card">
                 <div class="product-image">
-                  <img :src="item.image" :alt="item.name" />
+                  <img :src="item.image ? `/images/${item.image}` : '/no-image.png'" :alt="item.name" />
 
                   <!-- BADGE -->
                   <span v-if="item.badge" class="product-badge" :class="item.badge.type">

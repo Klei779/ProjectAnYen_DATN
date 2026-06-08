@@ -45,7 +45,7 @@
       <div class="package-grid">
         <div
             v-for="item in packages"
-            :key="item.name"
+            :key="item.id"
             class="package-card"
             :class="{ popular: item.popular }"
         >
@@ -190,6 +190,10 @@ import package4 from "../../assets/images/TrangDichVu/goi4.png";
 const lotusImg = "https://res.cloudinary.com/dnj7xhvs1/image/upload/v1780764451/lotus_qbceib.png";
 
 import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import axios from 'axios'
+
+const packages = ref([])
 
 const router = useRouter()
 
@@ -197,13 +201,8 @@ const goToDetail = (id) => {
   router.push(`/dich-vu/${id}`)
 }
 
-const packages = [
-  {
-    id: 1,
-    name: "GÓI TIẾT KIỆM",
-    subtitle: "Trang nghiêm - Chuẩn mực",
-    image: package1,
-    price: "15.000.000 đ",
+const packageExtras = {
+  1: {
     benefits: [
       "Tư vấn và hỗ trợ 24/7",
       "Xe đưa đón theo chương trình",
@@ -212,12 +211,8 @@ const packages = [
       "Nhân sự phục vụ tang lễ",
     ],
   },
-  {
-    id: 2,
-    name: "GÓI TIÊU CHUẨN",
-    subtitle: "Trang trọng - Chu đáo",
-    image: package2,
-    price: "25.000.000 đ",
+
+  2: {
     popular: true,
     benefits: [
       "Tư vấn và hỗ trợ 24/7",
@@ -228,12 +223,8 @@ const packages = [
       "Nghi thức theo tôn giáo nếu có",
     ],
   },
-  {
-    id: 3,
-    name: "GÓI CAO CẤP",
-    subtitle: "Tận tâm - Chu toàn",
-    image: package3,
-    price: "40.000.000 đ",
+
+  3: {
     benefits: [
       "Tư vấn và hỗ trợ 24/7",
       "Xe đưa đón cao cấp",
@@ -244,12 +235,8 @@ const packages = [
       "Quay phim, chụp ảnh tang lễ",
     ],
   },
-  {
-    id: 4,
-    name: "GÓI VIP",
-    subtitle: "Vĩnh biệt - Vẹn tròn",
-    image: package4,
-    price: "80.000.000 đ",
+
+  4: {
     benefits: [
       "Tư vấn và hỗ trợ 24/7",
       "Xe đưa đón hạng sang",
@@ -261,7 +248,41 @@ const packages = [
       "Hậu sự, cải táng, lưu tro cốt",
     ],
   },
-];
+};
+
+const imageMap = {
+  "goi1.png": package1,
+  "goi2.png": package2,
+  "goi3.png": package3,
+  "goi4.png": package4,
+};
+
+const loadCombos = async () => {
+  try {
+
+    const res = await axios.get(
+        'http://localhost:8080/api/combo'
+    )
+
+    packages.value = res.data.map(item => ({
+      id: item.comboId,
+      name: item.tenCombo,
+      subtitle: item.moTa,
+      image: imageMap[item.hinhAnh] || package1,
+      price: Number(item.gia).toLocaleString('vi-VN') + ' đ',
+
+      ...packageExtras[item.comboId]
+    }))
+
+  } catch (error) {
+
+    console.error(
+        'Lỗi load combo',
+        error
+    )
+
+  }
+}
 
 const singleServices = [
   {
@@ -333,6 +354,10 @@ const processSteps = [
     desc: "Hỗ trợ hậu sự và chăm sóc sau tang lễ",
   },
 ];
+
+onMounted(() => {
+  loadCombos()
+})
 
 </script>
 

@@ -31,29 +31,52 @@
     <section class="service-main">
       <div class="container detail-layout">
         <div class="service-images">
-          <img :src="mainImage" class="main-image" alt="Gói tiêu chuẩn" />
+
+          <div class="image-wrapper">
+            <button
+                class="image-nav prev"
+                @click="prevImage"
+            >
+              ‹
+            </button>
+
+            <img
+                :src="mainImage"
+                class="main-image"
+                alt="Ảnh dịch vụ"
+            />
+
+            <button
+                class="image-nav next"
+                @click="nextImage"
+            >
+              ›
+            </button>
+          </div>
 
           <div class="thumb-list">
             <img
                 v-for="(img, index) in images"
                 :key="index"
                 :src="img"
-                :class="{ active: img === mainImage }"
-                @click="mainImage = img"
+                :class="{ active: currentIndex === index }"
+                @click="changeImage(index)"
                 alt="Ảnh dịch vụ"
             />
           </div>
+
         </div>
 
         <div class="service-info">
-          <span class="badge">GÓI TIÊU CHUẨN</span>
+          <span class="badge">
+  {{ service.tenCombo }}
+</span>
 
-          <h1>Gói Tiêu Chuẩn</h1>
+          <h1>{{ service.tenCombo }}</h1>
           <h3>Trang trọng – Chu đáo – Tiết kiệm</h3>
 
           <p>
-            Gói Tiêu Chuẩn được thiết kế phù hợp với các gia đình mong muốn
-            một lễ tang trang trọng, đầy đủ nghi thức với chi phí hợp lý.
+            {{ service.moTa }}
           </p>
 
           <div class="divider">
@@ -63,7 +86,9 @@
           </div>
 
           <div class="price">
-            Từ <strong>25.000.000 đ</strong>
+            Từ <strong>
+            {{ Number(service.gia).toLocaleString('vi-VN') }} đ
+          </strong>
             <small>(Đã bao gồm VAT)</small>
           </div>
 
@@ -98,52 +123,18 @@
           <div class="detail-grid">
             <div class="detail-item">
               <i class="fa-solid fa-cake-candles"></i>
-              <h4>1. Tang lễ & nghi thức</h4>
-              <ul>
-                <li>Nhân viên phục vụ chuyên nghiệp</li>
-                <li>Tư vấn và hỗ trợ 24/7</li>
-                <li>Nhạc tang lễ cơ bản</li>
-                <li>Dẫn chương trình lễ tang</li>
-                <li>Thực hiện nghi thức theo tôn giáo</li>
-              </ul>
-            </div>
 
-            <div class="detail-item">
-              <i class="fa-solid fa-fan"></i>
-              <h4>2. Trang trí tang lễ</h4>
-              <ul>
-                <li>Phông rạp, bàn thờ, bàn ghi sổ</li>
-                <li>Vòng hoa viếng</li>
-                <li>Hoa trang trí bàn thờ</li>
-                <li>Đèn, nến, hương, lư đồng</li>
-                <li>Bảng rôn, câu đối</li>
-              </ul>
-            </div>
+              <h4>Chi tiết gói dịch vụ</h4>
 
-            <div class="detail-item">
-              <i class="fa-solid fa-cross"></i>
-              <h4>3. Hậu sự</h4>
               <ul>
-                <li>Vệ sinh, khâm liệm</li>
-                <li>Áo quan tiêu chuẩn</li>
-                <li>Xe đưa đón linh cữu</li>
-                <li>Xe đưa tang</li>
-                <li>Đài kèn tây cơ bản</li>
+                <li
+                    v-for="item in comboChiTiet"
+                    :key="item.comboChiTietId"
+                >
+                  {{ item.noiDung }}
+                </li>
               </ul>
             </div>
-
-            <div class="detail-item">
-              <i class="fa-solid fa-gift"></i>
-              <h4>4. Tiện ích khác</h4>
-              <ul>
-                <li>Nước uống, khăn lạnh</li>
-                <li>Sổ tang, bút</li>
-                <li>Hỗ trợ thủ tục giấy tờ</li>
-                <li>Tư vấn phong tục địa phương</li>
-              </ul>
-            </div>
-          </div>
-        </div>
 
         <div class="process-card">
           <h2>QUY TRÌNH THỰC HIỆN</h2>
@@ -192,20 +183,55 @@
           </ul>
         </div>
       </div>
+      </div>
+      </div>
     </section>
   </main>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import axios from 'axios'
+import { onMounted } from 'vue'
 
 import service1 from '../../assets/images/TrangDichVu/goi1.png'
 import service2 from '../../assets/images/TrangDichVu/goi1.png'
 import service3 from '../../assets/images/TrangDichVu/goi1.png'
 import service4 from '../../assets/images/TrangDichVu/goi1.png'
 
-const images = [service1, service2, service3, service4]
-const mainImage = ref(service1)
+const service = ref({
+  tenCombo: '',
+  gia: 0,
+  moTa: ''
+})
+
+const images = [
+  service1,
+  service2,
+  service3,
+  service4
+]
+
+const currentIndex = ref(0)
+
+const mainImage = computed(() => {
+  return images[currentIndex.value]
+})
+
+const changeImage = (index) => {
+  currentIndex.value = index
+}
+
+const nextImage = () => {
+  currentIndex.value =
+      (currentIndex.value + 1) % images.length
+}
+
+const prevImage = () => {
+  currentIndex.value =
+      (currentIndex.value - 1 + images.length)
+      % images.length
+}
 
 import { useRoute } from 'vue-router'
 import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
@@ -216,6 +242,54 @@ const route = useRoute()
 const id = route.params.id
 
 console.log(id)
+
+const loadCombo = async () => {
+  try {
+
+    const res = await axios.get(
+        `http://localhost:8080/api/combo/${id}`
+    )
+
+    service.value = res.data
+
+  } catch (e) {
+
+    console.log(
+        'Không lấy được dữ liệu, dùng dữ liệu mặc định'
+    )
+
+  }
+}
+
+const comboChiTiet = ref([])
+
+const loadComboChiTiet = async () => {
+
+  try {
+
+    const res = await axios.get(
+        `http://localhost:8080/api/combo/${id}/chitiet`
+    )
+
+    comboChiTiet.value = res.data
+
+  } catch (e) {
+
+    console.log(
+        'Không lấy được chi tiết'
+    )
+
+  }
+
+}
+
+onMounted(() => {
+
+  loadCombo()
+
+  loadComboChiTiet()
+
+})
 </script>
 
 <style scoped src="../../assets/styles/TrangDichVuChiTiet.css"></style>

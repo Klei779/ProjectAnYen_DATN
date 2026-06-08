@@ -32,13 +32,12 @@ public class AuthService {
                             request.getTenDangNhap());
 
             if (optionalNv.isPresent()) {
-
                 NhanVien nv = optionalNv.get();
 
-                if (passwordEncoder.matches(
-                        request.getMatKhau(),
-                        nv.getMatKhau())) {
+                // CHÈN CHÍNH XÁC DÒNG NÀY VÀO ĐÂY ĐỂ LẤY MÃ CHÍNH CHỦ:
+                System.out.println("🔥 MÃ BCYPT CHÍNH CHỦ CỦA MÁY BẠN: " + passwordEncoder.encode("123456"));
 
+                if (passwordEncoder.matches(request.getMatKhau(), nv.getMatKhau())) {
                     response.setSuccess(true);
                     response.setId(nv.getMaNhanVien());
                     response.setHoTen(nv.getHoTen());
@@ -62,7 +61,7 @@ public class AuthService {
                 if (passwordEncoder.matches(
                         request.getMatKhau(),
                         dt.getMatKhau())) {
-
+                    System.out.println("🔥 MÃ BCYPT CHÍNH CHỦ CỦA MÁY BẠN: " + passwordEncoder.encode("123456"));
                     response.setSuccess(true);
                     response.setId(dt.getMaDoiTac());
                     response.setHoTen(dt.getTenDoiTac()); // dùng tên đối tác

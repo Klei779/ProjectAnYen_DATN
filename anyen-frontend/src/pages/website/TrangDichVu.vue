@@ -261,7 +261,7 @@ const loadCombos = async () => {
   try {
 
     const res = await axios.get(
-        'http://localhost:8080/api/combo'
+        'http://localhost:8080/api/dich-vu'
     )
 
     packages.value = res.data.map(item => ({

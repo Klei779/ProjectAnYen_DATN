@@ -1,62 +1,67 @@
-.service-page{
-    background:#fcf5f0;
-    color:#142d4d;
-    font-family:'Noto Sans', sans-serif;
-    overflow-x:hidden;
+.service-page {
+    background: #fcf5f0;
+    color: #142d4d;
+    font-family: 'Noto Sans', sans-serif;
+    overflow-x: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+img {
+    max-width: 100%;
 }
 
 /* =========================
    HERO BANNER
 ========================= */
 
-.service-hero{
-    width:100%;
-    height:350px;
-    background-size:cover;
-    background-position:center;
-    background-repeat:no-repeat;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    position:relative;
-    overflow:hidden;
+.service-hero {
+    width: 100%;
+    height: 350px;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
 }
 
-.hero-overlay{
-    text-align:center;
-    padding:0 20px;
-    max-width:100%;
-    box-sizing:border-box;
+.hero-overlay {
+    text-align: center;
+    padding: 0 20px;
 }
 
-.hero-title{
-    font-family:'Faustina', serif;
-    font-size:41px;
-    font-weight:600;
-    line-height:1.2;
-    letter-spacing:2px;
-    color:#142d4d;
-    margin-bottom:8px;
+.hero-title {
+    font-family: 'Faustina', serif;
+    font-size: 41px;
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: 2px;
+    color: #142d4d;
+    margin-bottom: 8px;
 }
 
-.hero-divider{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    margin-bottom:10px;
+.hero-divider {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
 }
 
-.divider-img{
-    width:150px;
-    max-width:100%;
-    height:auto;
+.divider-img {
+    width: 150px;
+    height: auto;
 }
 
-.hero-desc{
-    font-size:16px;
-    line-height:1.6;
-    color:#1f1f1f;
-    margin:0;
+.hero-desc {
+    font-size: 16px;
+    line-height: 1.6;
+    color: #1f1f1f;
+    margin: 0;
 }
 
 .container {
@@ -64,31 +69,44 @@
     margin: 0 auto;
 }
 
-.breadcrumb-section {
-    padding: 24px 0 10px;
-    font-size: 14px;
-    color: #555;
-}
-
-.breadcrumb-section .container {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-}
-
-.breadcrumb-section strong {
-    color: #8b1024;
-}
+/* =========================
+   MAIN LAYOUT
+========================= */
 
 .service-main {
-    padding: 20px 0 35px;
+    padding: 35px 0;
+}
+
+.page-layout {
+    display: block;
+    grid-template-columns:minmax(0, 1fr) 320px;
+    gap: 32px;
+    align-items: start;
+}
+
+.left-content {
+    min-width: 0;
+}
+
+.right-sidebar {
+    position: sticky;
+    top: 20px;
 }
 
 .detail-layout {
     display: grid;
-    grid-template-columns: 42% 58%;
+    grid-template-columns:42% 58%;
     gap: 32px;
     align-items: start;
+    margin-bottom: 28px;
+}
+
+/* =========================
+   IMAGE
+========================= */
+
+.image-wrapper {
+    position: relative;
 }
 
 .main-image {
@@ -97,6 +115,27 @@
     object-fit: cover;
     border-radius: 8px;
     display: block;
+}
+
+.image-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 42px;
+    border: none;
+    background: rgba(255, 255, 255, .85);
+    font-size: 26px;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.image-nav.prev {
+    left: 0;
+}
+
+.image-nav.next {
+    right: 0;
 }
 
 .thumb-list {
@@ -117,6 +156,10 @@
 .thumb-list img.active {
     border-color: #8b1024;
 }
+
+/* =========================
+   SERVICE INFO
+========================= */
 
 .service-info {
     padding-top: 8px;
@@ -186,7 +229,7 @@
 
 .features {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns:repeat(3, 1fr);
     border-top: 1px solid #e4ddd6;
     padding-top: 18px;
     gap: 16px;
@@ -209,6 +252,10 @@
     margin: 0;
 }
 
+/* =========================
+   CARDS LEFT
+========================= */
+
 .content-card,
 .process-card,
 .note-card {
@@ -216,7 +263,7 @@
     border: 1px solid #eadfd7;
     border-radius: 8px;
     padding: 28px;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
 }
 
 .content-card h2,
@@ -235,13 +282,14 @@
 
 .detail-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns:repeat(4, 1fr);
     gap: 22px;
 }
 
 .detail-item {
     border-right: 1px solid #eee0d8;
     padding-right: 18px;
+    text-align:center;
 }
 
 .detail-item:last-child {
@@ -251,6 +299,8 @@
 .detail-item i {
     font-size: 34px;
     color: #8b1024;
+    display:block;
+    margin:0 auto 14px;
     margin-bottom: 14px;
 }
 
@@ -264,6 +314,9 @@
 .note-card ul {
     padding-left: 18px;
     margin: 0;
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
 .detail-item li,
@@ -276,7 +329,7 @@
 
 .process-list {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns:repeat(5, 1fr);
     gap: 18px;
     text-align: center;
 }
@@ -312,21 +365,172 @@
     margin-bottom: 12px;
 }
 
+/* =========================
+   SIDEBAR
+========================= */
+
+.summary-card,
+.help-card {
+    background: #fffdfb;
+    border: 1px solid #eadfd7;
+    border-radius: 8px;
+    padding: 26px;
+    margin-bottom: 24px;
+}
+
+.summary-card {
+    text-align: center;
+}
+
+.summary-card h3,
+.help-card h3 {
+    color: #142d4d;
+    font-family: 'Faustina', serif;
+    font-size: 19px;
+    margin: 0 0 22px;
+}
+
+.summary-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 18px;
+    border-radius: 50%;
+    background: #142d4d;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+}
+
+.summary-card h4 {
+    margin: 0 0 6px;
+    font-size: 18px;
+    color: #142d4d;
+    text-transform: uppercase;
+}
+
+.summary-card > p {
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 22px;
+}
+
+.summary-price {
+    margin-bottom: 22px;
+    font-size: 17px;
+}
+
+.summary-price strong {
+    color: #8b1024;
+    font-size: 28px;
+}
+
+.summary-price small {
+    display: block;
+    font-size: 13px;
+    color: #555;
+    margin-top: 4px;
+}
+
+.btn-primary,
+.btn-outline {
+    width: 100%;
+    height: 50px;
+    border-radius: 5px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
+
+.btn-primary {
+    background: #8b1024;
+    color: #fff;
+    border: 1px solid #8b1024;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #8b1024;
+    border: 1px solid #8b1024;
+}
+
+.summary-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 22px 0 0;
+    text-align: left;
+}
+
+.summary-card li {
+    font-size: 14px;
+    color: #444;
+    margin-bottom: 14px;
+    line-height: 1.5;
+}
+
+.summary-card li i {
+    width: 22px;
+    color: #142d4d;
+}
+
+.help-card p {
+    color: #444;
+    line-height: 1.7;
+    margin-bottom: 22px;
+}
+
+.help-card div {
+    display: grid;
+    grid-template-columns:36px 1fr;
+    column-gap: 12px;
+    align-items: center;
+}
+
+.help-card i {
+    grid-row: span 2;
+    color: #8b1024;
+    font-size: 28px;
+}
+
+.help-card strong {
+    color: #8b1024;
+    font-size: 26px;
+}
+
+.help-card span {
+    font-size: 13px;
+    color: #333;
+}
+
+/* =========================
+   RESPONSIVE
+========================= */
+
 @media (max-width: 992px) {
+    .page-layout {
+        grid-template-columns:1fr;
+    }
+
+    .right-sidebar {
+        position: static;
+    }
+
     .detail-layout {
-        grid-template-columns: 1fr;
+        grid-template-columns:1fr;
     }
 
     .detail-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns:repeat(2, 1fr);
     }
 
     .process-list {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns:repeat(2, 1fr);
     }
 
     .features {
-        grid-template-columns: 1fr;
+        grid-template-columns:1fr;
     }
 }
 
@@ -341,30 +545,12 @@
 
     .detail-grid,
     .process-list {
-        grid-template-columns: 1fr;
+        grid-template-columns:1fr;
     }
 
     .detail-item {
         border-right: none;
         border-bottom: 1px solid #eee0d8;
         padding-bottom: 18px;
-    }
-
-    *{
-        box-sizing:border-box;
-    }
-
-    img{
-        max-width:100%;
-    }
-
-    .service-page{
-        overflow-x:hidden;
-    }
-
-    .container{
-        max-width:1180px;
-        width:92%;
-        margin:0 auto;
     }
 }

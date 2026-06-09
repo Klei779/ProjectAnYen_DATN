@@ -57,7 +57,12 @@
       >
         Thông tin tài khoản
       </RouterLink>
-
+      <RouterLink
+          to="/nhan-vien/quan-ly-khach-hang"
+          class="menu-item"
+      >
+        Quản lý khách hàng
+      </RouterLink>
       <button
           class="logout-btn"
           @click="logout"

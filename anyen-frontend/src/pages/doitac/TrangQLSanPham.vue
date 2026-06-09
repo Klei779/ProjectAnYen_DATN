@@ -334,7 +334,31 @@ const addProduct = () => {
   currentPage.value = totalPages.value;
   alert("Đã tạo sản phẩm mới!");
 };
+const increaseStock = (product) => {
+  product.stock++;
 
+  if (product.stock > 0) {
+    product.status = "Còn hàng";
+  }
+
+  alert("Thêm tồn kho thành công!");
+};
+
+const decreaseStock = (product) => {
+  if (product.stock > 0) {
+    product.stock--;
+
+    if (product.stock === 0) {
+      product.status = "Hết hàng";
+    }
+
+    alert("Trừ tồn kho thành công!");
+  }
+};
+
+const saveStock = () => {
+  alert("Lưu tồn kho thành công!");
+};
 const deleteProduct = (id) => {
   if (confirm("Bạn có chắc muốn xóa sản phẩm này?")) {
     products.value = products.value.filter((p) => p.id !== id);
@@ -365,7 +389,7 @@ const deleteProduct = (id) => {
                 ? "Danh sách sản phẩm"
                 : activeTab === "category"
                     ? "Danh mục sản phẩm"
-                    : "Tạo sản phẩm mới"
+                    : "Thêm sản phẩm mới"
           }}
         </h2>
         <p>Quản lý sản phẩm trên website đối tác.</p>
@@ -466,43 +490,60 @@ const deleteProduct = (id) => {
             <div class="product-info">
               <h3>{{ product.name }}</h3>
 
-              <div class="info-row">
-                <div>
-                  <p>SKU</p>
-                  <span>{{ product.sku }}</span>
-                </div>
-                <div>
-                  <p>Giá</p>
-                  <span>{{ formatPrice(product.price) }}</span>
-                </div>
+              <p class="product-sku">SKU: {{ product.sku }}</p>
+
+              <p class="product-price">
+                {{ formatPrice(product.price) }}
+              </p>
+
+              <div class="stock-row">
                 <div>
                   <p>Tồn kho</p>
+
+                  <span
+                      class="status"
+                      :class="product.status === 'Còn hàng' ? 'available' : 'empty'"
+                  >
+      {{ product.status }}
+    </span>
+                </div>
+
+                <div class="stock-control">
+                  <button @click="decreaseStock(product)">−</button>
+
                   <span>{{ product.stock }}</span>
+
+                  <button @click="increaseStock(product)">+</button>
                 </div>
               </div>
-
-              <span
-                  class="status"
-                  :class="product.status === 'Còn hàng' ? 'available' : 'empty'"
-              >
-                {{ product.status }}
-              </span>
             </div>
+
 
             <div class="card-actions">
-              <button title="Sửa">
-                <i class="fa-solid fa-pen"></i>
-              </button>
-              <button title="Xóa" @click="deleteProduct(product.id)">
-                <i class="fa-regular fa-trash-can"></i>
-              </button>
-              <button title="Ẩn sản phẩm">
-                <i class="fa-regular fa-eye-slash"></i>
-              </button>
-              <button title="Xem chi tiết">
+              <button class="detail-btn">
                 <i class="fa-regular fa-eye"></i>
+                chi tiết
+              </button>
+
+              <button class="edit-btn">
+                <i class="fa-solid fa-pen"></i>
+                Sửa
+              </button>
+
+              <button class="hide-btn">
+                <i class="fa-regular fa-eye-slash"></i>
+                Ẩn
+              </button>
+
+              <button
+                  class="save-btn"
+                  @click="saveStock(product)"
+              >
+                <i class="fa-regular fa-floppy-disk"></i>
+                Lưu
               </button>
             </div>
+
           </div>
         </div>
 

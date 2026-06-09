@@ -407,3 +407,94 @@
         align-items: flex-start;
     }
 }
+
+.product-sku {
+    margin: 0 0 8px;
+    font-size: 12px;
+    color: #555;
+}
+
+.product-price {
+    margin: 0 0 12px;
+    color: #a70016;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.stock-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+}
+
+.stock-row p {
+    margin: 0 0 6px;
+    font-size: 12px;
+    color: #555;
+}
+
+.stock-control {
+    display: grid;
+    grid-template-columns: 30px 38px 30px;
+    height: 30px;
+    border: 1px solid #eadede;
+    border-radius: 5px;
+    overflow: hidden;
+    background: white;
+}
+
+.stock-control button {
+    border: none;
+    background: white;
+    color: #9d0015;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.stock-control span {
+    display: grid;
+    place-items: center;
+    border-left: 1px solid #eadede;
+    border-right: 1px solid #eadede;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.card-actions {
+    border-top: 1px solid #eee;
+    display: grid;
+    grid-template-columns: 1.35fr 0.8fr 0.8fr 0.8fr;
+    gap: 8px;
+    padding: 12px;
+}
+
+.card-actions button {
+    height: 34px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.card-actions button i {
+    margin-right: 4px;
+}
+
+.detail-btn,
+.edit-btn,
+.hide-btn {
+    border: 1px solid #f1cfcf;
+    background: #fff7f7;
+    color: #8b0012;
+}
+
+.save-btn {
+    border: 1px solid #a70016;
+    background: #a70016;
+    color: #8b0012;
+}
+
+.card-actions button:hover {
+    opacity: 0.85;
+}

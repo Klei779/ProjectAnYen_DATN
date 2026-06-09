@@ -1,38 +1,39 @@
 package vn.anyen.controller;
 
+import vn.anyen.dto.GoiDichVuResponse;
+import vn.anyen.entity.ComBoChiTiet;
+import vn.anyen.service.ComBoService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.anyen.entity.GoiDichVu;
-import vn.anyen.repository.GoiDichVuRepository;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/dich-vu")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class DichVuController {
 
-    private final GoiDichVuRepository goiDichVuRepository;
+    private final ComBoService comboService;
 
     @GetMapping
-    public ResponseEntity<List<GoiDichVu>> layTatCa() {
+    public List<GoiDichVuResponse> getAll() {
 
-        return ResponseEntity.ok(
-                goiDichVuRepository.findAll()
-        );
+        return comboService.getAllCombos();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<GoiDichVu> layChiTiet(
+    public GoiDichVuResponse getById(
             @PathVariable Integer id
     ) {
 
-        GoiDichVu goi = goiDichVuRepository.findById(id)
-                .orElseThrow(() ->
-                        new RuntimeException("Không tìm thấy gói dịch vụ"));
+        return comboService.getComboById(id);
+    }
 
-        return ResponseEntity.ok(goi);
+    @GetMapping("/{id}/chitiet")
+    public List<ComBoChiTiet> getChiTiet(
+            @PathVariable Integer id
+    ) {
+
+        return comboService.getComboChiTiet(id);
     }
 }

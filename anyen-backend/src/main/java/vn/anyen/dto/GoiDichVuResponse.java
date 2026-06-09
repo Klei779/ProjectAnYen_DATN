@@ -1,9 +1,12 @@
-package vn.anyen.dto.response;
+package vn.anyen.dto;
 
+import vn.anyen.entity.ComBo;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
 
 @Getter
 @Setter
@@ -13,11 +16,11 @@ public class GoiDichVuResponse {
 
     private Integer comboId;
     private String tenCombo;
-    private Long gia;
+    private BigDecimal gia;
     private String moTa;
     private String hinhAnh;
 
-    public static GoiDichVuResponse fromEntity(Combo combo) {
+    public static GoiDichVuResponse fromEntity(ComBo combo) {
         return new GoiDichVuResponse(
                 combo.getComboId(),
                 combo.getTenCombo(),

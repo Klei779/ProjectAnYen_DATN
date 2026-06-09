@@ -27,6 +27,7 @@ import TrangQLDoiTac from "../pages/nhanvien/TrangQLDoiTac.vue";
 import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
 import TrangThongBaoNV from "../pages/nhanvien/TrangThongBao.vue";
 import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
+import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 
 const routes = [
     // WEBSITE
@@ -126,6 +127,10 @@ const routes = [
             {
                 path: "thong-tin-tai-khoan",
                 component: TrangThongTinNV,
+            },
+            {
+                path: "quan-ly-khach-hang",
+                component: TrangQLKhachHang,
             },
         ],
     },

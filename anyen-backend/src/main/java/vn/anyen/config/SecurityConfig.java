@@ -47,9 +47,13 @@ public class SecurityConfig {
                         // API public cho khách hàng xem
                         .requestMatchers(
                                 "/api/gioi-thieu/**",
-                                "/api/san-pham/khach-hang/**",
-                                "/api/combo/**",
-                                "/api/lien-he/**"
+                                "/api/gioi-thieu",
+                                "/api/san-pham",
+                                "/api/san-pham/**",
+                                "/api/dich-vu/**",
+                                "/api/lien-he/**",
+                                "/api/dich-vu",
+                                "/api/lien-he"
                         )
                         .permitAll()
 

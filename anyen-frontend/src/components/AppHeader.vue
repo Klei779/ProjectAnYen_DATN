@@ -76,10 +76,14 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
 import { User } from "@element-plus/icons-vue";
+
 import LoginModal from "../components/PopDangNhap.vue";
 import HotlineModal from "../components/PopLienHeHotline.vue";
+
+const router = useRouter();
 
 const showLogin = ref(false);
 const showHotline = ref(false);
@@ -88,13 +92,6 @@ const user = ref(
     JSON.parse(localStorage.getItem("user"))
 );
 
-const handleLoginSuccess = (userData) => {
-
-  user.value = userData;
-
-};
-import { computed } from "vue";
-
 const isNhanVien = computed(() =>
     user.value?.loaiTaiKhoan === "NHAN_VIEN"
 );
@@ -102,13 +99,33 @@ const isNhanVien = computed(() =>
 const isDoiTac = computed(() =>
     user.value?.loaiTaiKhoan === "DOI_TAC"
 );
-import { useRouter } from "vue-router";
 
-const router = useRouter();
+const handleLoginSuccess = (userData) => {
+  user.value = userData;
+
+  // Lưu đủ dữ liệu để router guard kiểm tra
+  localStorage.setItem("user", JSON.stringify(userData));
+  localStorage.setItem("token", userData.token);
+  localStorage.setItem("loaiTaiKhoan", userData.loaiTaiKhoan);
+  localStorage.setItem("tenDangNhap", userData.tenDangNhap);
+  localStorage.setItem("id", userData.id);
+
+  showLogin.value = false;
+
+  // Điều hướng theo loại tài khoản
+  if (userData.loaiTaiKhoan === "NHAN_VIEN") {
+    router.push("/nhan-vien/tong-quan");
+  } else if (userData.loaiTaiKhoan === "DOI_TAC") {
+    router.push("/doi-tac/tong-quan");
+  }
+};
 
 const logout = () => {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
+  localStorage.removeItem("loaiTaiKhoan");
+  localStorage.removeItem("tenDangNhap");
+  localStorage.removeItem("id");
 
   user.value = null;
 

@@ -83,11 +83,14 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 const logout = () => {
-
   localStorage.removeItem("user");
   localStorage.removeItem("token");
+  localStorage.removeItem("loaiTaiKhoan");
+  localStorage.removeItem("tenDangNhap");
+  localStorage.removeItem("id");
+
+  user.value = null;
 
   router.push("/");
-
 };
 </script>

@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-
+import { jwtDecode } from "jwt-decode";
 // Layout
 import WebsiteLayout from "../layouts/WebsiteLayout.vue";
 import DoiTacLayout from "../layouts/DoiTacLayout.vue";
@@ -67,6 +67,10 @@ const routes = [
     {
         path: "/doi-tac",
         component: DoiTacLayout,
+        meta: {
+            requiresAuth: true,
+            role: "DOI_TAC",
+        },
         children: [
             {
                 path: "",
@@ -103,6 +107,10 @@ const routes = [
     {
         path: "/nhan-vien",
         component: NhanVienLayout,
+        meta: {
+            requiresAuth: true,
+            role: "NHAN_VIEN",
+        },
         children: [
             {
                 path: "",
@@ -141,4 +149,73 @@ const router = createRouter({
     routes,
 });
 
+router.beforeEach((to, from, next) => {
+    const token = localStorage.getItem("token");
+
+    const requiresAuth = to.matched.some(
+        (record) => record.meta.requiresAuth
+    );
+
+    const requiredRole = to.matched.find(
+        (record) => record.meta.role
+    )?.meta.role;
+
+    // Route không cần đăng nhập thì cho qua
+    if (!requiresAuth) {
+        next();
+        return;
+    }
+
+    // Route cần đăng nhập nhưng không có token
+    if (!token) {
+        next("/");
+        return;
+    }
+
+    let roleFromToken = null;
+
+    try {
+        const decoded = jwtDecode(token);
+
+        roleFromToken = decoded.role;
+
+        // Kiểm tra token hết hạn
+        const now = Date.now() / 1000;
+
+        if (decoded.exp && decoded.exp < now) {
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            localStorage.removeItem("loaiTaiKhoan");
+            localStorage.removeItem("tenDangNhap");
+            localStorage.removeItem("id");
+
+            next("/");
+            return;
+        }
+
+    } catch (error) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        localStorage.removeItem("loaiTaiKhoan");
+        localStorage.removeItem("tenDangNhap");
+        localStorage.removeItem("id");
+
+        next("/");
+        return;
+    }
+
+    // Có token nhưng sai quyền
+    if (requiredRole && roleFromToken !== requiredRole) {
+        if (roleFromToken === "NHAN_VIEN") {
+            next("/nhan-vien/tong-quan");
+        } else if (roleFromToken === "DOI_TAC") {
+            next("/doi-tac/tong-quan");
+        } else {
+            next("/");
+        }
+        return;
+    }
+
+    next();
+});
 export default router;

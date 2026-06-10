@@ -47,8 +47,10 @@
             {{ user.loaiTaiKhoan }}
           </el-dropdown-item>
 
-          <el-dropdown-item divided @click="logout">
-            Đăng xuất
+          <el-dropdown-item divided class="logout-dropdown-item">
+            <button class="logout-btn" @click.stop="logout">
+              Đăng xuất
+            </button>
           </el-dropdown-item>
 
         </el-dropdown-menu>
@@ -61,13 +63,13 @@
         @close="showLogin = false"
         @login-success="handleLoginSuccess"
     />
-      <el-button
-          class="hotline-btn"
-          type="danger"
-          @click="showHotline = true"
-      >
-        ☎ HOTLINE
-      </el-button>
+    <el-button
+        class="hotline-btn"
+        type="danger"
+        @click="showHotline = true"
+    >
+      ☎ HOTLINE
+    </el-button>
     <HotlineModal
         :show="showHotline"
         @close="showHotline = false"
@@ -76,9 +78,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import { User } from "@element-plus/icons-vue";
+import {ref, computed} from "vue";
+import {useRouter} from "vue-router";
+import {User} from "@element-plus/icons-vue";
 
 import LoginModal from "../components/PopDangNhap.vue";
 import HotlineModal from "../components/PopLienHeHotline.vue";
@@ -134,21 +136,57 @@ const logout = () => {
 </script>
 
 <style scoped>
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:20px 40px;
-  border-bottom:1px solid #eee;
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  border-bottom: 1px solid #eee;
 }
 
-nav{
-  display:flex;
-  gap:20px;
+nav {
+  display: flex;
+  gap: 20px;
 }
 
-.user-info{
-  cursor:pointer;
-  font-weight:600;
+.user-info {
+  cursor: pointer;
+  font-weight: 600;
 }
+
+:deep(.logout-dropdown-item) {
+  padding: 8px 12px !important;
+  background: transparent !important;
+}
+
+:deep(.logout-dropdown-item:hover) {
+  background: transparent !important;
+}
+
+.logout-btn {
+  width: 120px;
+  height: 36px;
+  border: 1px solid #8b1024;
+  border-radius: 999px;
+  background-color: #fff;
+  color: #8b1024;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  box-shadow: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logout-btn:hover {
+  background-color: #8b1024;
+  color: #fff;
+}
+
 </style>

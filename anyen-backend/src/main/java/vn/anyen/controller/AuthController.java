@@ -1,11 +1,14 @@
 package vn.anyen.controller;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.LoginRequest;
 import vn.anyen.dto.response.LoginResponse;
 import vn.anyen.service.AuthService;
+import vn.anyen.service.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -13,12 +16,14 @@ import vn.anyen.service.AuthService;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody LoginRequest request) {
 
-        LoginResponse response = authService.login(request);
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                authService.login(request)
+        );
     }
 }

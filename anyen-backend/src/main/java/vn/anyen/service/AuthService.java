@@ -19,6 +19,7 @@ public class AuthService {
     private final NhanVienRepository nhanVienRepository;
     private final DoiTacRepository doiTacRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
 
     public LoginResponse login(LoginRequest request) {
 
@@ -32,17 +33,26 @@ public class AuthService {
                             request.getTenDangNhap());
 
             if (optionalNv.isPresent()) {
+
                 NhanVien nv = optionalNv.get();
 
-                // CHÈN CHÍNH XÁC DÒNG NÀY VÀO ĐÂY ĐỂ LẤY MÃ CHÍNH CHỦ:
-                System.out.println("🔥 MÃ BCYPT CHÍNH CHỦ CỦA MÁY BẠN: " + passwordEncoder.encode("123456"));
+                if (passwordEncoder.matches(
+                        request.getMatKhau(),
+                        nv.getMatKhau())) {
 
-                if (passwordEncoder.matches(request.getMatKhau(), nv.getMatKhau())) {
+                    String token =
+                            jwtService.generateToken(
+                                    nv.getMaNhanVien(),
+                                    nv.getTenDangNhap(),
+                                    "NHAN_VIEN"
+                            );
+
                     response.setSuccess(true);
                     response.setId(nv.getMaNhanVien());
                     response.setHoTen(nv.getHoTen());
                     response.setTenDangNhap(nv.getTenDangNhap());
                     response.setLoaiTaiKhoan("NHAN_VIEN");
+                    response.setToken(token);
                 }
             }
         }
@@ -61,12 +71,20 @@ public class AuthService {
                 if (passwordEncoder.matches(
                         request.getMatKhau(),
                         dt.getMatKhau())) {
-                    System.out.println("🔥 MÃ BCYPT CHÍNH CHỦ CỦA MÁY BẠN: " + passwordEncoder.encode("123456"));
+
+                    String token =
+                            jwtService.generateToken(
+                                    dt.getMaDoiTac(),
+                                    dt.getTenDangNhap(),
+                                    "DOI_TAC"
+                            );
+
                     response.setSuccess(true);
                     response.setId(dt.getMaDoiTac());
-                    response.setHoTen(dt.getTenDoiTac()); // dùng tên đối tác
+                    response.setHoTen(dt.getTenDoiTac());
                     response.setTenDangNhap(dt.getTenDangNhap());
                     response.setLoaiTaiKhoan("DOI_TAC");
+                    response.setToken(token);
                 }
             }
         }

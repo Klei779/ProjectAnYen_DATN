@@ -93,7 +93,15 @@ const handleLoginSuccess = (userData) => {
   user.value = userData;
 
 };
+import { computed } from "vue";
 
+const isNhanVien = computed(() =>
+    user.value?.loaiTaiKhoan === "NHAN_VIEN"
+);
+
+const isDoiTac = computed(() =>
+    user.value?.loaiTaiKhoan === "DOI_TAC"
+);
 import { useRouter } from "vue-router";
 
 const router = useRouter();

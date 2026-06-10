@@ -1,14 +1,19 @@
-import axios from 'axios'
+import api from "../api/api.js";
 
-const API_URL = 'http://localhost:8080/api/san-pham'
+const API_URL = "/api/san-pham";
 
 export async function getProducts(params = {}) {
-  const response = await axios.get(API_URL, {
+
+  const response = await api.get(API_URL, {
     params: {
       keyword: params.keyword || '',
       loai: params.loai || '',
-      vatLieu: Array.isArray(params.vatLieu) ? params.vatLieu.join(',') : '',
-      tonGiao: Array.isArray(params.tonGiao) ? params.tonGiao.join(',') : '',
+      vatLieu: Array.isArray(params.vatLieu)
+          ? params.vatLieu.join(',')
+          : '',
+      tonGiao: Array.isArray(params.tonGiao)
+          ? params.tonGiao.join(',')
+          : '',
       mauSac: params.mauSac || '',
       minPrice: params.priceRange?.[0] ?? 0,
       maxPrice: params.priceRange?.[1] ?? 999999999,
@@ -16,12 +21,12 @@ export async function getProducts(params = {}) {
       page: params.page || 1,
       pageSize: params.pageSize || 16
     }
-  })
+  });
 
   return {
     items: response.data.items || [],
     total: response.data.total || 0
-  }
+  };
 }
 
 export async function getCategories() {
@@ -31,7 +36,7 @@ export async function getCategories() {
     { id: 3, name: 'Dich vu', total: 0, icon: 'fa-solid fa-briefcase' },
     { id: 4, name: 'Dịch vụ vận chuyển', total: 0, icon: 'fa-solid fa-car' },
     { id: 5, name: 'Vật phẩm tang lễ', total: 0, icon: 'fa-solid fa-hands-praying' }
-  ]
+  ];
 }
 
 export async function getMaterials() {
@@ -41,7 +46,7 @@ export async function getMaterials() {
     { id: 3, name: 'Tong hop', total: 0 },
     { id: 4, name: 'Xe chuyên dụng', total: 0 },
     { id: 5, name: 'Gỗ MDF', total: 0 }
-  ]
+  ];
 }
 
 export async function getReligions() {
@@ -51,7 +56,7 @@ export async function getReligions() {
     { id: 3, name: 'Cong giao', total: 0 },
     { id: 4, name: 'Không phân biệt', total: 0 },
     { id: 5, name: 'Phật giáo', total: 0 }
-  ]
+  ];
 }
 
 export async function getColors() {
@@ -61,5 +66,5 @@ export async function getColors() {
     { name: 'Trang den', hex: '#222222' },
     { name: 'Đen', hex: '#000000' },
     { name: 'Nâu vàng', hex: '#b8860b' }
-  ]
+  ];
 }

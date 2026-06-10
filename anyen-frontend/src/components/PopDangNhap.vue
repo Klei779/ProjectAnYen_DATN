@@ -153,12 +153,22 @@ const handleLogin = async () => {
 
     if (response.data.success) {
 
+      // Lưu thông tin user
       localStorage.setItem(
           "user",
           JSON.stringify(response.data)
       );
 
-      emit("login-success", response.data);
+      // Lưu JWT
+      localStorage.setItem(
+          "token",
+          response.data.token
+      );
+
+      emit(
+          "login-success",
+          response.data
+      );
 
       emit("close");
 
@@ -166,16 +176,24 @@ const handleLogin = async () => {
           `Xin chào ${response.data.hoTen}`
       );
 
-      // Chuyển trang
-      if (response.data.loaiTaiKhoan === "DOI_TAC") {
+      // Điều hướng theo role
+      if (
+          response.data.loaiTaiKhoan ===
+          "DOI_TAC"
+      ) {
 
-        router.push("/doi-tac/tong-quan");
+        router.push(
+            "/doi-tac/tong-quan"
+        );
 
-      }
+      } else if (
+          response.data.loaiTaiKhoan ===
+          "NHAN_VIEN"
+      ) {
 
-      if (response.data.loaiTaiKhoan === "NHAN_VIEN") {
-
-        router.push("/nhan-vien/tong-quan");
+        router.push(
+            "/nhan-vien/tong-quan"
+        );
 
       }
 

@@ -66,7 +66,7 @@
       </RouterLink>
 
       <button
-          class="logout-btn"
+          class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold logout-btn"
           @click="logout"
       >
         Đăng xuất

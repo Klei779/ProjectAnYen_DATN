@@ -48,7 +48,10 @@
           </el-dropdown-item>
 
           <el-dropdown-item divided class="logout-dropdown-item">
-            <button class="logout-btn" @click.stop="logout">
+            <button
+                class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold"
+                @click.stop="logout"
+            >
               Đăng xuất
             </button>
           </el-dropdown-item>

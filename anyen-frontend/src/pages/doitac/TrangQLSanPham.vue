@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch } from "vue";
+import axios from "axios";
 
 const activeTab = ref("list");
 const keyword = ref("");
@@ -377,6 +378,18 @@ const deleteProduct = (id) => {
     imagePreview.value = URL.createObjectURL(file);
   };
 };
+
+const hideProduct = async (product) => {
+  if (!confirm("Bạn có chắc muốn ẩn sản phẩm này?")) return;
+
+  await axios.patch(`http://localhost:8080/api/san-pham/${product.id}/an`);
+
+  product.status = "Ẩn";
+  product.trangThai = "Ẩn";
+
+  alert("Ẩn sản phẩm thành công!");
+};
+
 </script>
 
 <template>
@@ -530,7 +543,7 @@ const deleteProduct = (id) => {
                 Sửa
               </button>
 
-              <button class="hide-btn">
+              <button class="hide-btn" @click="hideProduct(product)">
                 <i class="fa-regular fa-eye-slash"></i>
                 Ẩn
               </button>

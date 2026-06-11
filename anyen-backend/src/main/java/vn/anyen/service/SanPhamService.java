@@ -9,6 +9,7 @@ import vn.anyen.dto.SanPhamPageResponse;
 import vn.anyen.dto.SanPhamResponse;
 import vn.anyen.entity.SanPham;
 import vn.anyen.repository.SanPhamRepository;
+import vn.anyen.dto.request.SanPhamRequest;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -97,6 +98,45 @@ public class SanPhamService {
                 .items(items)
                 .total(result.getTotalElements())
                 .build();
+    }
+
+    public SanPhamResponse updateSanPham(Integer id, SanPhamRequest request) {
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        sp.setTenSanPham(request.getTenSanPham());
+        sp.setLoai(request.getLoai());
+        sp.setNoiThat(request.getNoiThat());
+        sp.setQuyCach(request.getQuyCach());
+        sp.setTonGiao(request.getTonGiao());
+        sp.setGiaTien(request.getGiaTien());
+        sp.setSoLuong(request.getSoLuong());
+        sp.setThietKe(request.getThietKe());
+        sp.setXuatXu(request.getXuatXu());
+        sp.setGhiChu(request.getGhiChu());
+        sp.setKhuyenMai(request.getKhuyenMai());
+        sp.setMauSac(request.getMauSac());
+        sp.setHinhAnh(request.getHinhAnh());
+        sp.setVatLieu(request.getVatLieu());
+        sp.setTrangThai(request.getTrangThai());
+        sp.setKichThuoc(request.getKichThuoc());
+        sp.setTrongLuong(request.getTrongLuong());
+        sp.setCNSX(request.getCNXS());
+
+        SanPham saved = sanPhamRepository.save(sp);
+
+        return mapToResponse(saved);
+    }
+
+    public SanPhamResponse anSanPham(Integer id) {
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        sp.setTrangThai("Ẩn");
+
+        SanPham saved = sanPhamRepository.save(sp);
+
+        return mapToResponse(saved);
     }
 
     private List<String> splitParam(String value) {

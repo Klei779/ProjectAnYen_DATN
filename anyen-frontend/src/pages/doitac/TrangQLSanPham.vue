@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import axios from "axios";
+const editingProduct = ref(null);
 
 const activeTab = ref("list");
 const keyword = ref("");
@@ -390,6 +391,50 @@ const hideProduct = async (product) => {
   alert("Ẩn sản phẩm thành công!");
 };
 
+const editProduct = (product) => {
+  editingProduct.value = product;
+
+  newProduct.value = {
+    tenSanPham: product.name,
+    loai: product.loai,
+    noiThat: product.noiThat || "",
+    quyCach: product.quyCach || "",
+    tonGiao: product.tonGiao || "",
+    giaTien: product.price,
+    maDoiTac: product.maDoiTac || "",
+    soLuong: product.soLuong || product.stock || 0,
+    thietKe: product.thietKe || "",
+    xuatXu: product.xuatXu || "",
+    ghiChu: product.ghiChu || "",
+    khuyenMai: product.oldPrice || "",
+    mauSac: product.mauSac || "",
+    hinhAnh: product.image || "",
+    vatLieu: product.vatLieu || "",
+    trangThai: product.trangThai || "Đang bán",
+    kichThuoc: product.kichThuoc || "",
+    trongLuong: product.trongLuong || "",
+    CNSX: product.CNSX || "",
+  };
+
+  activeTab.value = "create";
+};
+
+const updateProduct = async () => {
+  if (!editingProduct.value) return;
+
+  await axios.put(
+      `http://localhost:8080/api/san-pham/${editingProduct.value.id}`,
+      newProduct.value
+  );
+
+  alert("Cập nhật sản phẩm thành công!");
+
+  editingProduct.value = null;
+  activeTab.value = "list";
+
+  await loadProducts();
+};
+
 </script>
 
 <template>
@@ -538,7 +583,7 @@ const hideProduct = async (product) => {
                 chi tiết
               </button>
 
-              <button class="edit-btn">
+              <button class="edit-btn" @click="editProduct(product)">
                 <i class="fa-solid fa-pen"></i>
                 Sửa
               </button>
@@ -627,7 +672,9 @@ const hideProduct = async (product) => {
 
       <template v-if="activeTab === 'create'">
         <div class="create-form">
-          <h4>Thông tin sản phẩm mới</h4>
+          <h4>
+            {{ editingProduct ? "Cập nhật thông tin sản phẩm" : "Thông tin sản phẩm mới" }}
+          </h4>
 
           <div class="form-grid">
             <div class="form-group">
@@ -763,7 +810,12 @@ const hideProduct = async (product) => {
 
           <div class="form-actions">
             <button class="cancel-btn" @click="activeTab = 'list'">Hủy</button>
-            <button class="submit-btn" @click="addProduct">Tạo sản phẩm</button>
+            <button
+                class="submit-btn"
+                @click="editingProduct ? updateProduct() : addProduct()"
+            >
+              {{ editingProduct ? "Cập nhật sản phẩm" : "Tạo sản phẩm" }}
+            </button>
           </div>
         </div>
       </template>

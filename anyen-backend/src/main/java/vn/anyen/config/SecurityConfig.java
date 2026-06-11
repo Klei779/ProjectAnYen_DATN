@@ -63,6 +63,7 @@ public class SecurityConfig {
 
                         // API nhân viên bắt buộc role NHAN_VIEN
                         .requestMatchers("/api/nhan-vien/**")
+
                         .hasRole("NHAN_VIEN")
 
                         // Còn lại phải đăng nhập

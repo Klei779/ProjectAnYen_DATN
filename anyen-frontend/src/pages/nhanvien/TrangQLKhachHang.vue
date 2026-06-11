@@ -1,154 +1,16 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import api from "../../api/api.js";
 
 const activeTab = ref("list");
 const keyword = ref("");
 const statusFilter = ref("Tất cả");
+
+const customers = ref([]);
 const selectedCustomer = ref(null);
+const customerHistory = ref([]);
 
-const customers = ref([
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    type: "Cá nhân",
-    phone: "0987 654 321",
-    email: "nguyenvana@gmail.com",
-    address: "123 Nguyễn Trãi, Q.1, TP.HCM",
-    status: "Đang làm việc",
-    stage: "Quản lý dịch vụ",
-    startDate: "15/05/2024",
-    updatedAt: "20/05/2024 10:30",
-    source: "Giới thiệu",
-    staff: "NV Hotline 03",
-    avatar: "NA",
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    type: "Cá nhân",
-    phone: "0932 111 222",
-    email: "tranthib@gmail.com",
-    address: "45 Lê Lợi, Q.3, TP.HCM",
-    status: "Hoàn thành",
-    stage: "Hoàn thành",
-    startDate: "01/05/2024",
-    updatedAt: "18/05/2024 16:45",
-    source: "Website",
-    staff: "NV Hotline 03",
-    avatar: "TB",
-  },
-  {
-    id: 3,
-    name: "Lê Văn C",
-    type: "Cá nhân",
-    phone: "0912 345 678",
-    email: "levanc@gmail.com",
-    address: "88 Nguyễn Văn Cừ, Q.5, TP.HCM",
-    status: "Đang làm việc",
-    stage: "Chốt hợp đồng",
-    startDate: "18/05/2024",
-    updatedAt: "20/05/2024 09:15",
-    source: "Facebook",
-    staff: "NV Hotline 03",
-    avatar: "LVC",
-  },
-  {
-    id: 4,
-    name: "Hoàng Minh Tú",
-    type: "Doanh nghiệp",
-    phone: "0909 876 543",
-    email: "tukc@minhtugroup.vn",
-    address: "25 Hai Bà Trưng, Q.1, TP.HCM",
-    status: "Đang làm việc",
-    stage: "Chốt sản phẩm",
-    startDate: "16/05/2024",
-    updatedAt: "20/05/2024 08:20",
-    source: "Hotline",
-    staff: "NV Hotline 03",
-    avatar: "HMT",
-  },
-  {
-    id: 5,
-    name: "Phạm Thị Dung",
-    type: "Cá nhân",
-    phone: "0977 333 444",
-    email: "dungpham@gmail.com",
-    address: "12 Võ Văn Tần, Q.3, TP.HCM",
-    status: "Tư vấn mới",
-    stage: "Hỗ trợ khách hàng",
-    startDate: "20/05/2024",
-    updatedAt: "20/05/2024 07:50",
-    source: "Zalo",
-    staff: "NV Hotline 03",
-    avatar: "PTD",
-  },
-  {
-    id: 6,
-    name: "Nguyễn Thành Khoa",
-    type: "Doanh nghiệp",
-    phone: "0939 222 333",
-    email: "khoa.nguyen@ntk.vn",
-    address: "30 Pasteur, Q.1, TP.HCM",
-    status: "Đang làm việc",
-    stage: "Quản lý dịch vụ",
-    startDate: "10/05/2024",
-    updatedAt: "19/05/2024 17:10",
-    source: "Giới thiệu",
-    staff: "NV Hotline 03",
-    avatar: "NTK",
-  },
-  {
-    id: 7,
-    name: "Võ Hoài Linh",
-    type: "Cá nhân",
-    phone: "0918 555 666",
-    email: "linhvh@gmail.com",
-    address: "77 Cách Mạng Tháng 8, Q.10, TP.HCM",
-    status: "Tạm dừng",
-    stage: "Chốt hợp đồng",
-    startDate: "05/05/2024",
-    updatedAt: "17/05/2024 15:00",
-    source: "Website",
-    staff: "NV Hotline 03",
-    avatar: "VHL",
-  },
-  {
-    id: 8,
-    name: "Dương Quốc Huy",
-    type: "Cá nhân",
-    phone: "0908 123 456",
-    email: "huydq@gmail.com",
-    address: "56 Trường Chinh, Tân Bình",
-    status: "Hoàn thành",
-    stage: "Hoàn thành",
-    startDate: "12/04/2024",
-    updatedAt: "15/05/2024 11:30",
-    source: "Hotline",
-    staff: "NV Hotline 03",
-    avatar: "DQR",
-  },
-]);
-
-const currentCustomer = computed(() => selectedCustomer.value || customers.value[0]);
-
-const filteredCustomers = computed(() => {
-  return customers.value.filter((item) => {
-    const matchKeyword =
-        item.name.toLowerCase().includes(keyword.value.toLowerCase()) ||
-        item.phone.includes(keyword.value) ||
-        item.email.toLowerCase().includes(keyword.value.toLowerCase());
-
-    const matchStatus =
-        statusFilter.value === "Tất cả" || item.status === statusFilter.value;
-
-    return matchKeyword && matchStatus;
-  });
-});
-
-const openHistory = (customer) => {
-  selectedCustomer.value = customer;
-  activeTab.value = "history";
-};
+const API_URL = "/api/nhan-vien/khach-hang";
 
 const workSteps = [
   {
@@ -177,20 +39,86 @@ const workSteps = [
   },
 ];
 
-const notes = [
-  {
-    text: "Khách quan tâm gói Hỏa táng Cao cấp, yêu cầu trang trí hoa sen.",
-    time: "15/05/2024 09:20",
-  },
-  {
-    text: "Đã gửi báo giá và tư vấn chi tiết qua Zalo.",
-    time: "16/05/2024 10:10",
-  },
-];
+const loadCustomers = async () => {
+  try {
+    const res = await api.get(API_URL);
+    customers.value = res.data;
+  } catch (error) {
+    console.error("Lỗi load khách hàng:", error);
+  }
+};
+
+onMounted(loadCustomers);
+
+const getAvatar = (name) => {
+  if (!name) return "KH";
+
+  const arr = name.trim().split(/\s+/);
+
+  if (arr.length === 1) {
+    return arr[0].substring(0, 2).toUpperCase();
+  }
+
+  return (arr[0][0] + arr[arr.length - 1][0]).toUpperCase();
+};
+
+const filteredCustomers = computed(() => {
+  return customers.value.filter((item) => {
+    const name = item.tenKhachHang || "";
+    const phone = item.soDienThoai || "";
+    const email = item.email || "";
+
+    const matchKeyword =
+        name.toLowerCase().includes(keyword.value.toLowerCase()) ||
+        phone.includes(keyword.value) ||
+        email.toLowerCase().includes(keyword.value.toLowerCase());
+
+    if (statusFilter.value === "Tất cả") return matchKeyword;
+
+    return matchKeyword && getCustomerStatus(item) === statusFilter.value;
+  });
+});
+
+const currentCustomer = computed(() => {
+  return selectedCustomer.value || customers.value[0] || {};
+});
+
+const latestHistory = computed(() => {
+  if (!customerHistory.value.length) return null;
+  return customerHistory.value[customerHistory.value.length - 1];
+});
+
+const currentStatus = computed(() => {
+  return latestHistory.value?.trangThai || "Tư vấn mới";
+});
+
+const currentStage = computed(() => {
+  return latestHistory.value?.giaiDoan || "Hỗ trợ khách hàng";
+});
+
+const getCustomerStatus = () => {
+  return "Tư vấn mới";
+};
+
+const getCustomerStage = () => {
+  return "Hỗ trợ khách hàng";
+};
+
+const openHistory = async (customer) => {
+  selectedCustomer.value = customer;
+  activeTab.value = "history";
+
+  try {
+    const res = await api.get(`${API_URL}/${customer.maKhachHang}/lich-su`);
+    customerHistory.value = res.data;
+  } catch (error) {
+    console.error("Lỗi load lịch sử khách hàng:", error);
+    customerHistory.value = [];
+  }
+};
 
 const statusClass = (status) => {
-  if (status === "Đang làm việc") return "green";
-  if (status === "Hoàn thành") return "green";
+  if (status === "Đang làm việc" || status === "Hoàn thành") return "green";
   if (status === "Tạm dừng") return "orange";
   return "blue";
 };
@@ -200,314 +128,377 @@ const stageClass = (stage) => {
   if (stage === "Chốt sản phẩm") return "green";
   if (stage === "Chốt hợp đồng") return "orange";
   if (stage === "Quản lý dịch vụ") return "purple";
-  return "green";
+  return "blue";
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "---";
+  return value.replace("T", " ").slice(0, 16);
 };
 </script>
 
 <template>
   <div class="customer-management">
+    <section class="page-content">
+      <div class="tabs">
+        <button
+            :class="{ active: activeTab === 'list' }"
+            @click="activeTab = 'list'"
+        >
+          Danh sách khách hàng
+        </button>
 
-      <section class="page-content">
-        <div class="tabs">
-          <button :class="{ active: activeTab === 'list' }" @click="activeTab = 'list'">
-            Danh sách khách hàng
-          </button>
-          <button :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
-            Lịch sử làm việc
-          </button>
+        <button
+            :class="{ active: activeTab === 'history' }"
+            @click="activeTab = 'history'"
+        >
+          Lịch sử làm việc
+        </button>
+      </div>
+
+      <template v-if="activeTab === 'list'">
+        <div class="card">
+          <div class="filter-row">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input
+                  v-model="keyword"
+                  placeholder="Tìm kiếm khách hàng, số điện thoại, email..."
+              />
+            </div>
+
+            <select v-model="statusFilter">
+              <option>Tất cả</option>
+              <option>Tư vấn mới</option>
+              <option>Đang làm việc</option>
+              <option>Tạm dừng</option>
+              <option>Hoàn thành</option>
+            </select>
+
+            <button class="filter-btn">
+              <i class="fa-solid fa-filter"></i>
+              Bộ lọc
+            </button>
+
+            <button class="add-btn">
+              <i class="fa-solid fa-plus"></i>
+              Thêm khách hàng
+            </button>
+          </div>
+
+          <table class="customer-table">
+            <thead>
+            <tr>
+              <th>Khách hàng</th>
+              <th>Số điện thoại</th>
+              <th>Email</th>
+              <th>Trạng thái hiện tại</th>
+              <th>Giai đoạn hiện tại</th>
+              <th>Địa chỉ</th>
+              <th>CCCD</th>
+              <th>Thao tác</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr
+                v-for="customer in filteredCustomers"
+                :key="customer.maKhachHang"
+            >
+              <td>
+                <div class="customer-cell">
+                  <div class="avatar">
+                    {{ getAvatar(customer.tenKhachHang) }}
+                  </div>
+
+                  <div>
+                    <strong>{{ customer.tenKhachHang }}</strong>
+                    <p>Khách hàng</p>
+                  </div>
+                </div>
+              </td>
+
+              <td>{{ customer.soDienThoai }}</td>
+              <td>{{ customer.email }}</td>
+
+              <td>
+                  <span
+                      class="badge"
+                      :class="statusClass(getCustomerStatus(customer))"
+                  >
+                    {{ getCustomerStatus(customer) }}
+                  </span>
+              </td>
+
+              <td>
+                  <span
+                      class="badge"
+                      :class="stageClass(getCustomerStage(customer))"
+                  >
+                    {{ getCustomerStage(customer) }}
+                  </span>
+              </td>
+
+              <td>{{ customer.diaChi }}</td>
+              <td>{{ customer.cccd }}</td>
+
+              <td>
+                <button class="history-btn" @click="openHistory(customer)">
+                  Xem lịch sử
+                </button>
+
+                <button class="more-btn">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+
+          <div class="pagination-row">
+            <p>
+              Hiển thị 1 - {{ filteredCustomers.length }} của
+              {{ filteredCustomers.length }} khách hàng
+            </p>
+
+            <div class="pagination">
+              <button>
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button class="active">1</button>
+              <button>
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <template v-if="activeTab === 'list'">
-          <div class="card">
-            <div class="filter-row">
-              <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input
-                    v-model="keyword"
-                    placeholder="Tìm kiếm khách hàng, số điện thoại, email..."
-                />
+        <div class="legend">
+          <div>
+            <h5>Chú thích trạng thái & giai đoạn</h5>
+
+            <div class="status-list">
+              <span><span class="dot blue"></span> Tư vấn mới</span>
+              <span><span class="dot green"></span> Đang làm việc</span>
+              <span><span class="dot orange"></span> Tạm dừng</span>
+              <span><span class="dot green"></span> Hoàn thành</span>
+            </div>
+          </div>
+
+          <div>
+            <h5>Giai đoạn làm việc</h5>
+            <p>
+              1. Hỗ trợ khách hàng &nbsp;&nbsp;
+              2. Chốt sản phẩm &nbsp;&nbsp;
+              3. Chốt hợp đồng &nbsp;&nbsp;
+              4. Quản lý dịch vụ &nbsp;&nbsp;
+              ✓ Hoàn thành
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template v-if="activeTab === 'history'">
+        <div class="history-layout">
+          <section class="history-main">
+            <div class="customer-summary">
+              <div class="big-avatar">
+                {{ getAvatar(currentCustomer.tenKhachHang) }}
               </div>
 
-              <select v-model="statusFilter">
-                <option>Tất cả</option>
-                <option>Tư vấn mới</option>
-                <option>Đang làm việc</option>
-                <option>Tạm dừng</option>
-                <option>Hoàn thành</option>
-              </select>
+              <div>
+                <h3 class="customer-name">
+                  {{ currentCustomer.tenKhachHang || "Chưa chọn khách hàng" }}
+                </h3>
 
-              <button class="filter-btn">
-                <i class="fa-solid fa-filter"></i>
-                Bộ lọc
-              </button>
+                <span class="badge" :class="statusClass(currentStatus)">
+                  {{ currentStatus }}
+                </span>
 
-              <button class="add-btn">
-                <i class="fa-solid fa-plus"></i>
-                Thêm khách hàng
-              </button>
+                <div class="quick-icons">
+                  <i class="fa-solid fa-phone"></i>
+                  <i class="fa-regular fa-envelope"></i>
+                  <i class="fa-regular fa-comment"></i>
+                </div>
+              </div>
+
+              <div class="summary-info">
+                <p>
+                  Số điện thoại
+                  <b>{{ currentCustomer.soDienThoai || "---" }}</b>
+                </p>
+                <p>
+                  Địa chỉ
+                  <b>{{ currentCustomer.diaChi || "---" }}</b>
+                </p>
+              </div>
+
+              <div class="summary-info">
+                <p>
+                  Email
+                  <b>{{ currentCustomer.email || "---" }}</b>
+                </p>
+                <p>
+                  CCCD
+                  <b>{{ currentCustomer.cccd || "---" }}</b>
+                </p>
+              </div>
             </div>
 
-            <table class="customer-table">
-              <thead>
-              <tr>
-                <th>Khách hàng</th>
-                <th>Số điện thoại</th>
-                <th>Email</th>
-                <th>Trạng thái hiện tại</th>
-                <th>Giai đoạn hiện tại</th>
-                <th>Ngày bắt đầu</th>
-                <th>Ngày cập nhật cuối</th>
-                <th>Thao tác</th>
-              </tr>
-              </thead>
+            <div class="timeline-box">
+              <h5>Lịch sử làm việc với khách hàng</h5>
 
-              <tbody>
-              <tr v-for="customer in filteredCustomers" :key="customer.id">
-                <td>
-                  <div class="customer-cell">
-                    <div class="avatar">{{ customer.avatar }}</div>
-                    <div>
-                      <strong>{{ customer.name }}</strong>
-                      <p>{{ customer.type }}</p>
-                    </div>
+              <div class="work-step-row">
+                <div
+                    class="work-step"
+                    v-for="(step, index) in workSteps"
+                    :key="step.title"
+                >
+                  <div class="step-icon" :class="step.color">
+                    <i :class="step.icon"></i>
                   </div>
-                </td>
-                <td>{{ customer.phone }}</td>
-                <td>{{ customer.email }}</td>
-                <td>
-                    <span class="badge" :class="statusClass(customer.status)">
-                      {{ customer.status }}
-                    </span>
-                </td>
-                <td>
-                    <span class="badge" :class="stageClass(customer.stage)">
-                      {{ customer.stage }}
-                    </span>
-                </td>
-                <td>{{ customer.startDate }}</td>
-                <td>{{ customer.updatedAt }}</td>
-                <td>
-                  <button class="history-btn" @click="openHistory(customer)">
-                    Xem lịch sử
-                  </button>
-                  <button class="more-btn">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                  </button>
-                </td>
-              </tr>
-              </tbody>
-            </table>
 
-            <div class="pagination-row">
-              <p>Hiển thị 1 - {{ filteredCustomers.length }} của 21 khách hàng</p>
-
-              <div class="pagination">
-                <button><i class="fa-solid fa-chevron-left"></i></button>
-                <button class="active">1</button>
-                <button>2</button>
-                <button>3</button>
-                <button><i class="fa-solid fa-chevron-right"></i></button>
-                <select>
-                  <option>10 / trang</option>
-                  <option>20 / trang</option>
-                </select>
+                  <h4>{{ index + 1 }}. {{ step.title }}</h4>
+                  <p>{{ step.desc }}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="legend">
-            <div>
-              <h5>Chú thích trạng thái & giai đoạn</h5>
-              <p>
-                <span class="dot blue"></span> Tư vấn mới
-                <span class="dot green"></span> Đang làm việc
-                <span class="dot orange"></span> Tạm dừng
-                <span class="dot green"></span> Hoàn thành
-              </p>
+            <div class="progress-box">
+              <h5>Tổng quan tiến trình</h5>
+
+              <div class="progress-grid">
+                <div class="progress-card" :class="stageClass(currentStage)">
+                  <h4>{{ currentStage }}</h4>
+                  <p>
+                    {{
+                      latestHistory
+                          ? formatDateTime(latestHistory.thoiGian)
+                          : "Chưa có lịch sử"
+                    }}
+                  </p>
+                  <b>{{ currentStatus }}</b>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <h5>Giai đoạn làm việc</h5>
-              <p>
-                1. Hỗ trợ khách hàng &nbsp;&nbsp;
-                2. Chốt sản phẩm &nbsp;&nbsp;
-                3. Chốt hợp đồng &nbsp;&nbsp;
-                4. Quản lý dịch vụ &nbsp;&nbsp;
-                ✓ Hoàn thành
-              </p>
-            </div>
-          </div>
-        </template>
+            <div class="detail-history">
+              <h5>Chi tiết lịch sử làm việc</h5>
 
-        <template v-if="activeTab === 'history'">
-          <div class="history-layout">
-            <section class="history-main">
-              <div class="customer-summary">
-                <div class="big-avatar">{{ currentCustomer.avatar }}</div>
+              <div v-if="customerHistory.length === 0" class="empty-history">
+                Chưa có lịch sử làm việc cho khách hàng này.
+              </div>
+
+              <div
+                  v-for="item in customerHistory"
+                  :key="item.maLichSu"
+                  class="history-item"
+                  :class="stageClass(item.giaiDoan)"
+              >
+                <div class="circle"></div>
 
                 <div>
-                  <h3 class="customer-name">{{ currentCustomer.name }}</h3>
-                  <span class="badge green">{{ currentCustomer.status }}</span>
-
-                  <div class="quick-icons">
-                    <i class="fa-solid fa-phone"></i>
-                    <i class="fa-regular fa-envelope"></i>
-                    <i class="fa-regular fa-comment"></i>
-                  </div>
+                  <h4>{{ item.giaiDoan }}</h4>
+                  <p>{{ item.noiDung }}</p>
+                  <p>{{ item.ghiChu }}</p>
+                  <b>{{ item.trangThai }}</b>
                 </div>
 
-                <div class="summary-info">
-                  <p>Số điện thoại <b>{{ currentCustomer.phone }}</b></p>
-                  <p>Địa chỉ <b>{{ currentCustomer.address }}</b></p>
-                </div>
+                <span>{{ formatDateTime(item.thoiGian) }}</span>
+              </div>
+            </div>
+          </section>
 
-                <div class="summary-info">
-                  <p>Nguồn khách hàng <b>{{ currentCustomer.source }}</b></p>
-                  <p>Ngày tạo hồ sơ <b>{{ currentCustomer.startDate }}</b></p>
-                </div>
+          <aside class="right-panel">
+            <div class="info-card">
+              <div class="panel-title">
+                <h5>Thông tin khách hàng</h5>
+                <button>
+                  <i class="fa-solid fa-pen"></i>
+                  Sửa
+                </button>
               </div>
 
-              <div class="timeline-box">
-                <h5>Lịch sử làm việc với khách hàng</h5>
+              <p>
+                Họ và tên
+                <b>{{ currentCustomer.tenKhachHang || "---" }}</b>
+              </p>
+              <p>
+                Số điện thoại
+                <b>{{ currentCustomer.soDienThoai || "---" }}</b>
+              </p>
+              <p>
+                Email
+                <b>{{ currentCustomer.email || "---" }}</b>
+              </p>
+              <p>
+                Địa chỉ
+                <b>{{ currentCustomer.diaChi || "---" }}</b>
+              </p>
+              <p>
+                CCCD
+                <b>{{ currentCustomer.cccd || "---" }}</b>
+              </p>
+              <p>
+                Giai đoạn
+                <b>{{ currentStage }}</b>
+              </p>
+              <p>
+                Trạng thái
+                <b>{{ currentStatus }}</b>
+              </p>
+            </div>
 
-                <div class="work-step-row">
-                  <div
-                      class="work-step"
-                      v-for="(step, index) in workSteps"
-                      :key="step.title"
-                  >
-                    <div class="step-icon" :class="step.color">
-                      <i :class="step.icon"></i>
-                    </div>
-                    <h4>{{ index + 1 }}. {{ step.title }}</h4>
-                    <p>{{ step.desc }}</p>
-                  </div>
-                </div>
+            <div class="info-card">
+              <div class="panel-title">
+                <h5>Ghi chú</h5>
+                <button>
+                  <i class="fa-solid fa-plus"></i>
+                  Thêm ghi chú
+                </button>
               </div>
 
-              <div class="progress-box">
-                <h5>Tổng quan tiến trình</h5>
-
-                <div class="progress-grid">
-                  <div class="progress-card blue">
-                    <h4>Hỗ trợ khách hàng</h4>
-                    <p>15/05/2024 09:15</p>
-                    <b>Đã hoàn thành</b>
-                  </div>
-                  <div class="progress-card green">
-                    <h4>Chốt sản phẩm</h4>
-                    <p>16/05/2024 14:30</p>
-                    <b>Đã hoàn thành</b>
-                  </div>
-                  <div class="progress-card orange">
-                    <h4>Chốt hợp đồng</h4>
-                    <p>18/05/2024 10:45</p>
-                    <b>Đã hoàn thành</b>
-                  </div>
-                  <div class="progress-card purple">
-                    <h4>Quản lý dịch vụ</h4>
-                    <p>Đang thực hiện</p>
-                    <b>2 ghi chú</b>
-                  </div>
-                </div>
+              <div
+                  class="note-item"
+                  v-for="item in customerHistory"
+                  :key="'note-' + item.maLichSu"
+              >
+                <p>{{ item.ghiChu || item.noiDung }}</p>
+                <small>{{ formatDateTime(item.thoiGian) }}</small>
+                <i class="fa-solid fa-ellipsis-vertical"></i>
               </div>
 
-              <div class="detail-history">
-                <h5>Chi tiết lịch sử làm việc</h5>
+              <p v-if="customerHistory.length === 0" class="empty-note">
+                Chưa có ghi chú.
+              </p>
+            </div>
 
-                <div class="history-item blue">
-                  <div class="circle"></div>
-                  <div>
-                    <h4>Hỗ trợ khách hàng</h4>
-                    <p>Nhận đơn và bắt đầu tư vấn, hỗ trợ khách hàng</p>
-                  </div>
-                  <span>15/05/2024 09:15</span>
-                </div>
-
-                <div class="history-item green">
-                  <div class="circle"></div>
-                  <div>
-                    <h4>Chốt sản phẩm</h4>
-                    <p>Tạo đơn sản phẩm: DSP-2024-0516-0021</p>
-                    <p>Sản phẩm: Gói Hỏa táng Cao cấp - Gói Hoa sen</p>
-                  </div>
-                  <span>16/05/2024 14:30</span>
-                </div>
-
-                <div class="history-item orange">
-                  <div class="circle"></div>
-                  <div>
-                    <h4>Chốt hợp đồng</h4>
-                    <p>Tạo hợp đồng: HD-2024-0518-0007</p>
-                    <p>Hợp đồng xác nhận thành công</p>
-                  </div>
-                  <span>18/05/2024 10:45</span>
-                </div>
-
-                <div class="history-item purple">
-                  <div class="circle"></div>
-                  <div>
-                    <h4>Quản lý dịch vụ</h4>
-                    <p>Đang quản lý dịch vụ cho gia đình khách hàng</p>
-                  </div>
-                  <span>19/05/2024 - Hiện tại</span>
-                </div>
-              </div>
-            </section>
-
-            <aside class="right-panel">
-              <div class="info-card">
-                <div class="panel-title">
-                  <h5>Thông tin khách hàng</h5>
-                  <button><i class="fa-solid fa-pen"></i> Sửa</button>
-                </div>
-
-                <p>Họ và tên <b>{{ currentCustomer.name }}</b></p>
-                <p>Số điện thoại <b>{{ currentCustomer.phone }}</b></p>
-                <p>Email <b>{{ currentCustomer.email }}</b></p>
-                <p>Địa chỉ <b>{{ currentCustomer.address }}</b></p>
-                <p>Nguồn khách hàng <b>{{ currentCustomer.source }}</b></p>
-                <p>Ngày tạo <b>{{ currentCustomer.startDate }}</b></p>
-                <p>Nhân viên phụ trách <b>{{ currentCustomer.staff }}</b></p>
+            <div class="info-card">
+              <div class="panel-title">
+                <h5>Ghi chú quản lý dịch vụ</h5>
+                <button>
+                  <i class="fa-solid fa-plus"></i>
+                  Thêm
+                </button>
               </div>
 
-              <div class="info-card">
-                <div class="panel-title">
-                  <h5>Ghi chú</h5>
-                  <button><i class="fa-solid fa-plus"></i> Thêm ghi chú</button>
-                </div>
-
-                <div class="note-item" v-for="note in notes" :key="note.time">
-                  <p>{{ note.text }}</p>
-                  <small>NV Hotline 03 - {{ note.time }}</small>
-                  <i class="fa-solid fa-ellipsis-vertical"></i>
-                </div>
+              <div
+                  class="service-note"
+                  v-for="item in customerHistory"
+                  :key="'service-' + item.maLichSu"
+                  :class="stageClass(item.giaiDoan) + '-line'"
+              >
+                <b>{{ formatDateTime(item.thoiGian) }}</b>
+                <p>{{ item.noiDung }}</p>
+                <small>{{ item.trangThai }}</small>
               </div>
 
-              <div class="info-card">
-                <div class="panel-title">
-                  <h5>Ghi chú quản lý dịch vụ</h5>
-                  <button><i class="fa-solid fa-plus"></i> Thêm</button>
-                </div>
-
-                <div class="service-note blue-line">
-                  <b>20/05/2024 09:00</b>
-                  <p>Gia đình thống nhất thời gian tổ chức lễ. Đã lên hệ nhà tang lễ.</p>
-                  <small>NV Hotline 03</small>
-                </div>
-
-                <div class="service-note purple-line">
-                  <b>21/05/2024 14:30</b>
-                  <p>Hoàn tất lễ hỏa táng. Gia đình hài lòng về dịch vụ.</p>
-                  <small>NV Hotline 03</small>
-                </div>
-
-                <button class="view-all">Xem tất cả ghi chú</button>
-              </div>
-            </aside>
-          </div>
-        </template>
-      </section>
+              <button class="view-all">Xem tất cả ghi chú</button>
+            </div>
+          </aside>
+        </div>
+      </template>
+    </section>
   </div>
 </template>
 
@@ -554,6 +545,10 @@ const stageClass = (stage) => {
   background: white;
   border: 1px solid #eee;
   border-radius: 12px;
+}
+
+.card {
+  padding: 18px;
 }
 
 .filter-row {
@@ -712,8 +707,7 @@ const stageClass = (stage) => {
   gap: 8px;
 }
 
-.pagination button,
-.pagination select {
+.pagination button {
   height: 32px;
   border: 1px solid #ddd;
   background: white;
@@ -735,11 +729,24 @@ const stageClass = (stage) => {
   font-size: 13px;
   grid-template-columns: 1.3fr 2fr;
   gap: 20px;
-
 }
 
 .legend h5 {
   margin: 0 0 12px;
+}
+
+.status-list {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.status-list span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
 }
 
 .dot {
@@ -747,7 +754,6 @@ const stageClass = (stage) => {
   height: 8px;
   display: inline-block;
   border-radius: 50%;
-  margin-left: 14px;
 }
 
 .dot.blue {
@@ -947,6 +953,13 @@ const stageClass = (stage) => {
   font-size: 13px;
 }
 
+.empty-history,
+.empty-note {
+  margin-top: 14px;
+  color: #64748b;
+  font-size: 13px;
+}
+
 .right-panel {
   display: flex;
   flex-direction: column;
@@ -999,14 +1012,6 @@ const stageClass = (stage) => {
   margin-top: 16px;
 }
 
-.blue-line {
-  border-color: #1d70d6;
-}
-
-.purple-line {
-  border-color: #8b3fd1;
-}
-
 .service-note p {
   display: block;
   color: #334155;
@@ -1050,14 +1055,9 @@ const stageClass = (stage) => {
     display: block;
     overflow-x: auto;
   }
-  .card{
-    padding: 18px;
-  }
-  .legend p {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: nowrap;
+
+  .status-list {
+    flex-wrap: wrap;
   }
 }
 </style>

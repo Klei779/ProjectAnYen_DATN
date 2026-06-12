@@ -90,6 +90,6 @@ const logout = () => {
   localStorage.removeItem("loaiTaiKhoan");
   localStorage.removeItem("tenDangNhap");
   localStorage.removeItem("id");
-  router.push("/");
+
 };
 </script>

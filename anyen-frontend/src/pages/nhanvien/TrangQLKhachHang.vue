@@ -2,42 +2,12 @@
 import { ref, computed, onMounted } from "vue";
 import api from "../../api/api.js";
 
-const activeTab = ref("list");
 const keyword = ref("");
 const statusFilter = ref("Tất cả");
 
 const customers = ref([]);
-const selectedCustomer = ref(null);
-const customerHistory = ref([]);
 
 const API_URL = "/api/nhan-vien/khach-hang";
-
-const workSteps = [
-  {
-    title: "Hỗ trợ khách hàng",
-    desc: "Bắt đầu tư vấn",
-    color: "blue",
-    icon: "fa-solid fa-user-headset",
-  },
-  {
-    title: "Chốt sản phẩm",
-    desc: "Tạo đơn sản phẩm",
-    color: "green",
-    icon: "fa-solid fa-box-open",
-  },
-  {
-    title: "Chốt hợp đồng",
-    desc: "Hợp đồng xác nhận",
-    color: "orange",
-    icon: "fa-regular fa-calendar-days",
-  },
-  {
-    title: "Quản lý dịch vụ",
-    desc: "Quản lý đến khi hoàn tất",
-    color: "purple",
-    icon: "fa-regular fa-heart",
-  },
-];
 
 const loadCustomers = async () => {
   try {
@@ -79,42 +49,12 @@ const filteredCustomers = computed(() => {
   });
 });
 
-const currentCustomer = computed(() => {
-  return selectedCustomer.value || customers.value[0] || {};
-});
-
-const latestHistory = computed(() => {
-  if (!customerHistory.value.length) return null;
-  return customerHistory.value[customerHistory.value.length - 1];
-});
-
-const currentStatus = computed(() => {
-  return latestHistory.value?.trangThai || "Tư vấn mới";
-});
-
-const currentStage = computed(() => {
-  return latestHistory.value?.giaiDoan || "Hỗ trợ khách hàng";
-});
-
 const getCustomerStatus = () => {
   return "Tư vấn mới";
 };
 
 const getCustomerStage = () => {
   return "Hỗ trợ khách hàng";
-};
-
-const openHistory = async (customer) => {
-  selectedCustomer.value = customer;
-  activeTab.value = "history";
-
-  try {
-    const res = await api.get(`${API_URL}/${customer.maKhachHang}/lich-su`);
-    customerHistory.value = res.data;
-  } catch (error) {
-    console.error("Lỗi load lịch sử khách hàng:", error);
-    customerHistory.value = [];
-  }
 };
 
 const statusClass = (status) => {
@@ -130,33 +70,11 @@ const stageClass = (stage) => {
   if (stage === "Quản lý dịch vụ") return "purple";
   return "blue";
 };
-
-const formatDateTime = (value) => {
-  if (!value) return "---";
-  return value.replace("T", " ").slice(0, 16);
-};
 </script>
-
 <template>
   <div class="customer-management">
     <section class="page-content">
-      <div class="tabs">
-        <button
-            :class="{ active: activeTab === 'list' }"
-            @click="activeTab = 'list'"
-        >
-          Danh sách khách hàng
-        </button>
 
-        <button
-            :class="{ active: activeTab === 'history' }"
-            @click="activeTab = 'history'"
-        >
-          Lịch sử làm việc
-        </button>
-      </div>
-
-      <template v-if="activeTab === 'list'">
         <div class="card">
           <div class="filter-row">
             <div class="search-box">
@@ -296,208 +214,8 @@ const formatDateTime = (value) => {
             </p>
           </div>
         </div>
-      </template>
 
-      <template v-if="activeTab === 'history'">
-        <div class="history-layout">
-          <section class="history-main">
-            <div class="customer-summary">
-              <div class="big-avatar">
-                {{ getAvatar(currentCustomer.tenKhachHang) }}
-              </div>
 
-              <div>
-                <h3 class="customer-name">
-                  {{ currentCustomer.tenKhachHang || "Chưa chọn khách hàng" }}
-                </h3>
-
-                <span class="badge" :class="statusClass(currentStatus)">
-                  {{ currentStatus }}
-                </span>
-
-                <div class="quick-icons">
-                  <i class="fa-solid fa-phone"></i>
-                  <i class="fa-regular fa-envelope"></i>
-                  <i class="fa-regular fa-comment"></i>
-                </div>
-              </div>
-
-              <div class="summary-info">
-                <p>
-                  Số điện thoại
-                  <b>{{ currentCustomer.soDienThoai || "---" }}</b>
-                </p>
-                <p>
-                  Địa chỉ
-                  <b>{{ currentCustomer.diaChi || "---" }}</b>
-                </p>
-              </div>
-
-              <div class="summary-info">
-                <p>
-                  Email
-                  <b>{{ currentCustomer.email || "---" }}</b>
-                </p>
-                <p>
-                  CCCD
-                  <b>{{ currentCustomer.cccd || "---" }}</b>
-                </p>
-              </div>
-            </div>
-
-            <div class="timeline-box">
-              <h5>Lịch sử làm việc với khách hàng</h5>
-
-              <div class="work-step-row">
-                <div
-                    class="work-step"
-                    v-for="(step, index) in workSteps"
-                    :key="step.title"
-                >
-                  <div class="step-icon" :class="step.color">
-                    <i :class="step.icon"></i>
-                  </div>
-
-                  <h4>{{ index + 1 }}. {{ step.title }}</h4>
-                  <p>{{ step.desc }}</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="progress-box">
-              <h5>Tổng quan tiến trình</h5>
-
-              <div class="progress-grid">
-                <div class="progress-card" :class="stageClass(currentStage)">
-                  <h4>{{ currentStage }}</h4>
-                  <p>
-                    {{
-                      latestHistory
-                          ? formatDateTime(latestHistory.thoiGian)
-                          : "Chưa có lịch sử"
-                    }}
-                  </p>
-                  <b>{{ currentStatus }}</b>
-                </div>
-              </div>
-            </div>
-
-            <div class="detail-history">
-              <h5>Chi tiết lịch sử làm việc</h5>
-
-              <div v-if="customerHistory.length === 0" class="empty-history">
-                Chưa có lịch sử làm việc cho khách hàng này.
-              </div>
-
-              <div
-                  v-for="item in customerHistory"
-                  :key="item.maLichSu"
-                  class="history-item"
-                  :class="stageClass(item.giaiDoan)"
-              >
-                <div class="circle"></div>
-
-                <div>
-                  <h4>{{ item.giaiDoan }}</h4>
-                  <p>{{ item.noiDung }}</p>
-                  <p>{{ item.ghiChu }}</p>
-                  <b>{{ item.trangThai }}</b>
-                </div>
-
-                <span>{{ formatDateTime(item.thoiGian) }}</span>
-              </div>
-            </div>
-          </section>
-
-          <aside class="right-panel">
-            <div class="info-card">
-              <div class="panel-title">
-                <h5>Thông tin khách hàng</h5>
-                <button>
-                  <i class="fa-solid fa-pen"></i>
-                  Sửa
-                </button>
-              </div>
-
-              <p>
-                Họ và tên
-                <b>{{ currentCustomer.tenKhachHang || "---" }}</b>
-              </p>
-              <p>
-                Số điện thoại
-                <b>{{ currentCustomer.soDienThoai || "---" }}</b>
-              </p>
-              <p>
-                Email
-                <b>{{ currentCustomer.email || "---" }}</b>
-              </p>
-              <p>
-                Địa chỉ
-                <b>{{ currentCustomer.diaChi || "---" }}</b>
-              </p>
-              <p>
-                CCCD
-                <b>{{ currentCustomer.cccd || "---" }}</b>
-              </p>
-              <p>
-                Giai đoạn
-                <b>{{ currentStage }}</b>
-              </p>
-              <p>
-                Trạng thái
-                <b>{{ currentStatus }}</b>
-              </p>
-            </div>
-
-            <div class="info-card">
-              <div class="panel-title">
-                <h5>Ghi chú</h5>
-                <button>
-                  <i class="fa-solid fa-plus"></i>
-                  Thêm ghi chú
-                </button>
-              </div>
-
-              <div
-                  class="note-item"
-                  v-for="item in customerHistory"
-                  :key="'note-' + item.maLichSu"
-              >
-                <p>{{ item.ghiChu || item.noiDung }}</p>
-                <small>{{ formatDateTime(item.thoiGian) }}</small>
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </div>
-
-              <p v-if="customerHistory.length === 0" class="empty-note">
-                Chưa có ghi chú.
-              </p>
-            </div>
-
-            <div class="info-card">
-              <div class="panel-title">
-                <h5>Ghi chú quản lý dịch vụ</h5>
-                <button>
-                  <i class="fa-solid fa-plus"></i>
-                  Thêm
-                </button>
-              </div>
-
-              <div
-                  class="service-note"
-                  v-for="item in customerHistory"
-                  :key="'service-' + item.maLichSu"
-                  :class="stageClass(item.giaiDoan) + '-line'"
-              >
-                <b>{{ formatDateTime(item.thoiGian) }}</b>
-                <p>{{ item.noiDung }}</p>
-                <small>{{ item.trangThai }}</small>
-              </div>
-
-              <button class="view-all">Xem tất cả ghi chú</button>
-            </div>
-          </aside>
-        </div>
-      </template>
     </section>
   </div>
 </template>
@@ -512,13 +230,6 @@ const formatDateTime = (value) => {
 
 .page-content {
   padding: 26px 32px;
-}
-
-.tabs {
-  display: flex;
-  gap: 36px;
-  border-bottom: 1px solid #eee;
-  margin-bottom: 24px;
 }
 
 .tabs button {
@@ -537,16 +248,6 @@ const formatDateTime = (value) => {
 
 .card,
 .legend,
-.customer-summary,
-.timeline-box,
-.progress-box,
-.detail-history,
-.info-card {
-  background: white;
-  border: 1px solid #eee;
-  border-radius: 12px;
-}
-
 .card {
   padding: 18px;
 }
@@ -620,24 +321,11 @@ const formatDateTime = (value) => {
 }
 
 .avatar,
-.big-avatar {
-  border-radius: 50%;
-  background: #fff1f2;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-}
 
 .avatar {
   width: 38px;
   height: 38px;
   font-size: 13px;
-}
-
-.big-avatar {
-  width: 62px;
-  height: 62px;
-  font-size: 22px;
 }
 
 .customer-cell p {
@@ -668,20 +356,6 @@ const formatDateTime = (value) => {
   color: #d49000;
 }
 
-.badge.purple {
-  background: #f5eaff;
-  color: #8b3fd1;
-}
-
-.history-btn {
-  height: 28px;
-  padding: 0 9px;
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  font-size: 12px;
-  cursor: pointer;
-}
 
 .more-btn {
   border: none;
@@ -768,17 +442,6 @@ const formatDateTime = (value) => {
   background: #d49000;
 }
 
-.history-layout {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 24px;
-}
-
-.history-main {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
 
 .customer-summary {
   padding: 22px;
@@ -892,126 +555,6 @@ const formatDateTime = (value) => {
   font-size: 13px;
 }
 
-.progress-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 18px;
-  margin-top: 16px;
-}
-
-.progress-card {
-  padding: 16px;
-  border-radius: 8px;
-  border: 1px solid #eee;
-}
-
-.progress-card h4,
-.progress-card p {
-  margin: 0 0 10px;
-  font-size: 13px;
-}
-
-.history-item {
-  display: grid;
-  grid-template-columns: 20px 1fr auto;
-  gap: 14px;
-  padding: 16px 0;
-  border-bottom: 1px solid #f1f1f1;
-}
-
-.history-item .circle {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  margin-top: 4px;
-}
-
-.history-item.blue .circle {
-  background: #1d70d6;
-}
-
-.history-item.green .circle {
-  background: #17934a;
-}
-
-.history-item.orange .circle {
-  background: #d49000;
-}
-
-.history-item.purple .circle {
-  background: #8b3fd1;
-}
-
-.history-item h4 {
-  margin: 0 0 6px;
-  font-size: 14px;
-}
-
-.history-item p {
-  margin: 4px 0;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.empty-history,
-.empty-note {
-  margin-top: 14px;
-  color: #64748b;
-  font-size: 13px;
-}
-
-.right-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.panel-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.panel-title button {
-  border: 1px solid #f0b6bd;
-  background: white;
-  color: #d00018;
-  border-radius: 6px;
-  padding: 7px 9px;
-  font-size: 12px;
-}
-
-.note-item {
-  border-bottom: 1px solid #eee;
-  padding: 14px 20px 14px 0;
-  position: relative;
-}
-
-.note-item p {
-  margin: 0 0 8px;
-  color: #334155;
-  display: block;
-  font-size: 13px;
-}
-
-.note-item small,
-.service-note small {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.note-item i {
-  position: absolute;
-  right: 0;
-  top: 16px;
-}
-
-.service-note {
-  border-left: 2px solid #ddd;
-  padding: 0 0 18px 18px;
-  margin-top: 16px;
-}
-
 .service-note p {
   display: block;
   color: #334155;
@@ -1019,15 +562,6 @@ const formatDateTime = (value) => {
   font-size: 13px;
 }
 
-.view-all {
-  width: 100%;
-  height: 38px;
-  border: 1px solid #ddd;
-  border-radius: 7px;
-  background: white;
-  margin-top: 14px;
-  font-size: 13px;
-}
 
 @media (max-width: 1200px) {
   .history-layout {

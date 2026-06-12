@@ -132,6 +132,7 @@ const logout = () => {
   localStorage.removeItem("tenDangNhap");
   localStorage.removeItem("id");
 
+  user.value = null;
 
   router.push("/");
 };

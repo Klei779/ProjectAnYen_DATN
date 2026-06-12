@@ -104,14 +104,14 @@
             Chúng tôi sẽ phản hồi bạn sớm nhất có thể
           </p>
 
-          <form>
-
+          <form @submit.prevent="submitForm">
             <div class="row">
               <div class="col-md-6 mb-3">
                 <input
                     type="text"
                     class="form-control"
                     placeholder="Họ và tên"
+                    v-model="form.username"
                 />
               </div>
 
@@ -120,6 +120,7 @@
                     type="email"
                     class="form-control"
                     placeholder="Email"
+                    v-model="form.email"
                 />
               </div>
             </div>
@@ -129,6 +130,7 @@
                   type="text"
                   class="form-control"
                   placeholder="Số điện thoại"
+                  v-model="form.sdt"
               />
             </div>
 
@@ -137,6 +139,7 @@
                   type="text"
                   class="form-control"
                   placeholder="Tiêu đề"
+                  v-model="form.tieude"
               />
             </div>
 
@@ -145,14 +148,20 @@
                   rows="6"
                   class="form-control"
                   placeholder="Nội dung liên hệ"
+                  v-model="form.noidung"
               ></textarea>
             </div>
 
             <button
                 type="submit"
                 class="btn-send"
+                :disabled="loading"
             >
-              GỬI NỘI DUNG
+  <span
+      v-if="loading"
+      class="spinner-border spinner-border-sm me-2"
+  ></span>
+              {{ loading ? 'ĐANG GỬI...' : 'GỬI NỘI DUNG' }}
             </button>
 
             <p class="secure-text">
@@ -170,8 +179,53 @@
 
 <script setup>
 import { ref } from 'vue'
-import dividerIcon from "../../assets/images/icon/flower_icon.png";
-import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
-const text = ref('')
+import dividerIcon from "../../assets/images/icon/flower_icon.png"
+import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png"
+
+const form = ref({
+  username: '',
+  email: '',
+  sdt: '',
+  tieude: '',
+  noidung: ''
+})
+
+const loading = ref(false)
+
+const submitForm = async () => {
+  if (loading.value) return
+
+  loading.value = true
+
+  try {
+    const response = await fetch("http://localhost:8080/api/lien-he/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(form.value)
+    })
+
+    if (!response.ok) {
+      throw new Error("Gửi liên hệ thất bại")
+    }
+
+    alert("Gửi thành công!")
+
+    form.value = {
+      username: '',
+      email: '',
+      sdt: '',
+      tieude: '',
+      noidung: ''
+    }
+
+  } catch (error) {
+    console.error(error)
+    alert("Gửi thất bại! Vui lòng kiểm tra lại backend hoặc CORS.")
+  } finally {
+    loading.value = false
+  }
+}
 </script>
 <style scoped src="../../assets/styles/TrangLienHe.css"></style>

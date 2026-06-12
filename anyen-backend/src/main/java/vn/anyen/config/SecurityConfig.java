@@ -28,7 +28,7 @@ public class SecurityConfig {
                     CorsConfiguration config =
                             new CorsConfiguration();
 
-                    config.addAllowedOrigin("http://localhost:5174");
+                    config.addAllowedOrigin("http://localhost:5173");
                     config.addAllowedMethod("*");
                     config.addAllowedHeader("*");
                     config.setAllowCredentials(true);
@@ -53,7 +53,10 @@ public class SecurityConfig {
                                 "/api/dich-vu/**",
                                 "/api/lien-he/**",
                                 "/api/dich-vu",
+                                "/api/khach-hang",
+                                "/api/khach-hang/**",
                                 "/api/lien-he"
+
                         )
                         .permitAll()
 

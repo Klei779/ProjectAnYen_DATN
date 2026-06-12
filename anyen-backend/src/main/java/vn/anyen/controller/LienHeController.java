@@ -11,14 +11,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/khach-hang")
+@RequestMapping("/api/lien-he")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "http://localhost:5173")
-public class KhachHangController {
+public class LienHeController {
 
     private final LienHeService lienHeService;
 
-    @PostMapping("/lien-he")
+    @PostMapping("/")
     public ResponseEntity<?> guiLienHe(@Valid @RequestBody LienHeRequest request) {
 
         lienHeService.guiLienHe(request);

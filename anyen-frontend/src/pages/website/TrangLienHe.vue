@@ -198,7 +198,7 @@ const submitForm = async () => {
   loading.value = true
 
   try {
-    const response = await fetch("http://localhost:8080/api/khach-hang/lien-he", {
+    const response = await fetch("http://localhost:8080/api/lien-he/", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.SanPhamPageResponse;
 import vn.anyen.service.SanPhamService;
+import vn.anyen.dto.request.SanPhamRequest;
+import vn.anyen.dto.SanPhamResponse;
 
 import java.math.BigDecimal;
 
@@ -40,5 +42,18 @@ public class SanPhamController {
                 page,
                 pageSize
         );
+    }
+
+    @PutMapping("/{id}")
+    public SanPhamResponse updateSanPham(
+            @PathVariable Integer id,
+            @RequestBody SanPhamRequest request
+    ) {
+        return sanPhamService.updateSanPham(id, request);
+    }
+
+    @PatchMapping("/{id}/an")
+    public SanPhamResponse anSanPham(@PathVariable Integer id) {
+        return sanPhamService.anSanPham(id);
     }
 }

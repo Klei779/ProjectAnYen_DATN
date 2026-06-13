@@ -1,4 +1,4 @@
-package vn.anyen.dto.request;
+package vn.anyen.dto;
 
 import lombok.*;
 
@@ -9,17 +9,17 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SanPhamRequest {
+public class SanPhamDoiTacResponse {
 
+    // Field theo database
+    private Integer maSanPham;
     private String tenSanPham;
     private String loai;
     private String noiThat;
     private String quyCach;
     private String tonGiao;
     private BigDecimal giaTien;
-
     private Integer maDoiTac;
-
     private Integer soLuong;
     private String thietKe;
     private String xuatXu;
@@ -32,4 +32,14 @@ public class SanPhamRequest {
     private String kichThuoc;
     private String trongLuong;
     private String cnsx;
+
+    // Field phụ cho frontend TrangQLSanPham.vue
+    private Integer id;
+    private String name;
+    private String sku;
+    private String category;
+    private BigDecimal price;
+    private Integer stock;
+    private String status;
+    private String image;
 }

@@ -28,38 +28,42 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String authHeader =
-                request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null ||
-                !authHeader.startsWith("Bearer ")) {
-
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        String token =
-                authHeader.substring(7);
+        String token = authHeader.substring(7);
 
         try {
             if (jwtService.isTokenValid(token)) {
 
-                String tenDangNhap =
-                        jwtService.getUsernameFromToken(token);
+                String tenDangNhap = jwtService.getUsernameFromToken(token);
+                String loaiTaiKhoan = jwtService.getRoleFromToken(token);
 
-                String loaiTaiKhoan =
-                        jwtService.getRoleFromToken(token);
+                if (tenDangNhap == null || loaiTaiKhoan == null) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
 
+                loaiTaiKhoan = loaiTaiKhoan.trim();
+
+                String authority = loaiTaiKhoan.startsWith("ROLE_")
+                        ? loaiTaiKhoan
+                        : "ROLE_" + loaiTaiKhoan;
+
+                System.out.println("URI = " + request.getRequestURI());
+                System.out.println("USERNAME = " + tenDangNhap);
+                System.out.println("ROLE FROM TOKEN = " + loaiTaiKhoan);
+                System.out.println("AUTHORITY = " + authority);
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
                                 tenDangNhap,
                                 null,
-                                List.of(
-                                        new SimpleGrantedAuthority(
-                                                "ROLE_" + loaiTaiKhoan
-                                        )
-                                )
+                                List.of(new SimpleGrantedAuthority(authority))
                         );
 
                 SecurityContextHolder
@@ -68,6 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
         } catch (Exception e) {
+            System.out.println("JWT ERROR = " + e.getMessage());
             SecurityContextHolder.clearContext();
         }
 

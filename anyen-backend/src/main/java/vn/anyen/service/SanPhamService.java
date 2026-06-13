@@ -121,7 +121,7 @@ public class SanPhamService {
         sp.setTrangThai(request.getTrangThai());
         sp.setKichThuoc(request.getKichThuoc());
         sp.setTrongLuong(request.getTrongLuong());
-        sp.setCNSX(request.getCNXS());
+        sp.setCnsx(request.getCnsx());
 
         SanPham saved = sanPhamRepository.save(sp);
 

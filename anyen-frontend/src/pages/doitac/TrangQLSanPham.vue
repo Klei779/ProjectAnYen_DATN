@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, watch } from "vue";
-import axios from "axios";
+import { ref, computed, watch, onMounted } from "vue";
+import api from "../../api/api.js";
+
 const editingProduct = ref(null);
 
 const activeTab = ref("list");
@@ -42,212 +43,87 @@ const categories = ref([
   { id: 8, name: "Dịch vụ tang lễ", total: 9, status: "Đang hiển thị" },
 ]);
 
-const products = ref([
-  {
-    id: 1,
-    name: "Quan tài gỗ Hương cao cấp",
-    sku: "QT-001",
-    category: "Quan tài",
-    price: 25000000,
-    stock: 8,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Quan+Tai+Go+Huong",
-  },
-  {
-    id: 2,
-    name: "Quan tài gỗ Căm Xe",
-    sku: "QT-002",
-    category: "Quan tài",
-    price: 18000000,
-    stock: 15,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Quan+Tai+Cam+Xe",
-  },
-  {
-    id: 3,
-    name: "Bình tro cốt gốm sứ Bát Tràng",
-    sku: "BTC-001",
-    category: "Bình tro cốt",
-    price: 3500000,
-    stock: 50,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Binh+Tro+Cot",
-  },
-  {
-    id: 4,
-    name: "Bình tro cốt men rạn",
-    sku: "BTC-002",
-    category: "Bình tro cốt",
-    price: 4200000,
-    stock: 25,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Binh+Tro+Cot+Men+Ran",
-  },
-  {
-    id: 5,
-    name: "Bàn thờ tang lễ tiêu chuẩn",
-    sku: "BT-001",
-    category: "Bàn thờ tang lễ",
-    price: 6500000,
-    stock: 10,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Ban+Tho",
-  },
-  {
-    id: 6,
-    name: "Bàn thờ tang lễ cao cấp",
-    sku: "BT-002",
-    category: "Bàn thờ tang lễ",
-    price: 12000000,
-    stock: 6,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Ban+Tho+Cao+Cap",
-  },
-  {
-    id: 7,
-    name: "Xe tang lễ Mercedes",
-    sku: "XT-001",
-    category: "Xe tang lễ",
-    price: 5500000,
-    stock: 4,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Xe+Tang+Le",
-  },
-  {
-    id: 8,
-    name: "Xe tang lễ Limousine",
-    sku: "XT-002",
-    category: "Xe tang lễ",
-    price: 7500000,
-    stock: 2,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Xe+Tang+Le+VIP",
-  },
-  {
-    id: 9,
-    name: "Vòng hoa tang lễ loại A",
-    sku: "VH-001",
-    category: "Hoa tang lễ",
-    price: 850000,
-    stock: 40,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Vong+Hoa",
-  },
-  {
-    id: 10,
-    name: "Vòng hoa tang lễ cao cấp",
-    sku: "VH-002",
-    category: "Hoa tang lễ",
-    price: 1500000,
-    stock: 22,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Vong+Hoa+Cao+Cap",
-  },
-  {
-    id: 11,
-    name: "Bộ áo tang truyền thống",
-    sku: "AT-001",
-    category: "Trang phục tang lễ",
-    price: 450000,
-    stock: 120,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Ao+Tang",
-  },
-  {
-    id: 12,
-    name: "Khăn tang trắng",
-    sku: "AT-002",
-    category: "Trang phục tang lễ",
-    price: 50000,
-    stock: 300,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Khan+Tang",
-  },
-  {
-    id: 13,
-    name: "Lư hương đồng",
-    sku: "LT-001",
-    category: "Đồ thờ cúng",
-    price: 2200000,
-    stock: 18,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Lu+Huong",
-  },
-  {
-    id: 14,
-    name: "Đèn thờ đồng",
-    sku: "LT-002",
-    category: "Đồ thờ cúng",
-    price: 1800000,
-    stock: 12,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Den+Tho",
-  },
-  {
-    id: 15,
-    name: "Bộ chén cúng sứ",
-    sku: "LT-003",
-    category: "Đồ thờ cúng",
-    price: 550000,
-    stock: 80,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Chen+Cung",
-  },
-  {
-    id: 16,
-    name: "Quan tài gỗ Lim",
-    sku: "QT-003",
-    category: "Quan tài",
-    price: 32000000,
-    stock: 3,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Quan+Tai+Go+Lim",
-  },
-  {
-    id: 17,
-    name: "Bình tro cốt đá cẩm thạch",
-    sku: "BTC-003",
-    category: "Bình tro cốt",
-    price: 6500000,
-    stock: 10,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Binh+Da+Cam+Thach",
-  },
-  {
-    id: 18,
-    name: "Nhà quàn di động",
-    sku: "DV-001",
-    category: "Dịch vụ tang lễ",
-    price: 12000000,
-    stock: 5,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Nha+Quan",
-  },
-  {
-    id: 19,
-    name: "Dịch vụ mai táng trọn gói",
-    sku: "DV-002",
-    category: "Dịch vụ tang lễ",
-    price: 55000000,
-    stock: 999,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Mai+Tang+Tron+Goi",
-  },
-  {
-    id: 20,
-    name: "Dịch vụ hỏa táng",
-    sku: "DV-003",
-    category: "Dịch vụ tang lễ",
-    price: 18000000,
-    stock: 999,
-    status: "Còn hàng",
-    image: "https://via.placeholder.com/350x180?text=Hoa+Tang",
-  },
-]);
+const products = ref([]);
+const total = ref(0);
+const loading = ref(false);
+const imagePreview = ref("");
+
+const loadProducts = async () => {
+  try {
+    loading.value = true;
+
+    const response = await api.get("/api/doi-tac/san-pham", {
+      params: {
+        page: 1,
+        pageSize: 9999,
+        sortBy: "newest"
+      }
+    });
+
+    const items = response.data.items || [];
+
+    products.value = items.map((sp) => ({
+      id: sp.id || sp.maSanPham || sp.maSP,
+      name: sp.name || sp.tenSanPham,
+      sku: sp.sku || `SP-${sp.maSanPham || sp.id}`,
+      category: sp.category || sp.loai,
+      price: sp.price || sp.giaTien || 0,
+      stock: sp.stock ?? sp.soLuong ?? 0,
+      status:
+          sp.status ||
+          sp.trangThai ||
+          ((sp.soLuong || 0) > 0 ? "Còn hàng" : "Hết hàng"),
+      image:
+          sp.image ||
+          sp.hinhAnh ||
+          "https://via.placeholder.com/350x180?text=San+Pham",
+      loai: sp.loai,
+      noiThat: sp.noiThat,
+      quyCach: sp.quyCach,
+      tonGiao: sp.tonGiao,
+      giaTien: sp.giaTien,
+      maDoiTac: sp.maDoiTac,
+      soLuong: sp.soLuong,
+      thietKe: sp.thietKe,
+      xuatXu: sp.xuatXu,
+      ghiChu: sp.ghiChu,
+      khuyenMai: sp.khuyenMai,
+      mauSac: sp.mauSac,
+      hinhAnh: sp.hinhAnh,
+      vatLieu: sp.vatLieu,
+      trangThai: sp.trangThai,
+      kichThuoc: sp.kichThuoc,
+      trongLuong: sp.trongLuong,
+      cnsx: sp.cnsx
+    }));
+
+    total.value = response.data.total || products.value.length;
+
+  } catch (error) {
+    console.error("Lỗi load sản phẩm đối tác:", error);
+
+    if (error.response?.status === 403) {
+      alert("Bạn không có quyền xem sản phẩm đối tác. Hãy đăng nhập bằng tài khoản đối tác.");
+    } else if (error.response?.status === 401) {
+      alert("Bạn chưa đăng nhập hoặc token hết hạn.");
+    } else {
+      alert("Không thể tải danh sách sản phẩm.");
+    }
+
+  } finally {
+    loading.value = false;
+  }
+};
+
+onMounted(() => {
+  loadProducts();
+});
 
 const filteredProducts = computed(() =>
     products.value.filter((p) =>
-        p.name.toLowerCase().includes(keyword.value.toLowerCase())
+        (p.name || p.tenSanPham || "")
+            .toLowerCase()
+            .includes(keyword.value.toLowerCase())
     )
 );
 
@@ -364,31 +240,20 @@ const saveStock = () => {
 const deleteProduct = (id) => {
   if (confirm("Bạn có chắc muốn xóa sản phẩm này?")) {
     products.value = products.value.filter((p) => p.id !== id);
+
     if (currentPage.value > totalPages.value) {
       currentPage.value = totalPages.value || 1;
     }
   }
-  const imagePreview = ref("");
-
-  const handleImageUpload = (event) => {
-    const file = event.target.files[0];
-
-    if (!file) return;
-
-    newProduct.value.hinhAnh = file;
-    imagePreview.value = URL.createObjectURL(file);
-  };
 };
 
-const hideProduct = async (product) => {
-  if (!confirm("Bạn có chắc muốn ẩn sản phẩm này?")) return;
+const handleImageUpload = (event) => {
+  const file = event.target.files[0];
 
-  await axios.patch(`http://localhost:8080/api/san-pham/${product.id}/an`);
+  if (!file) return;
 
-  product.status = "Ẩn";
-  product.trangThai = "Ẩn";
-
-  alert("Ẩn sản phẩm thành công!");
+  newProduct.value.hinhAnh = file;
+  imagePreview.value = URL.createObjectURL(file);
 };
 
 const editProduct = (product) => {
@@ -422,8 +287,8 @@ const editProduct = (product) => {
 const updateProduct = async () => {
   if (!editingProduct.value) return;
 
-  await axios.put(
-      `http://localhost:8080/api/san-pham/${editingProduct.value.id}`,
+  await api.put(
+      `/api/san-pham/${editingProduct.value.id}`,
       newProduct.value
   );
 

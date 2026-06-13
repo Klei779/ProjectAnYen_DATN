@@ -37,9 +37,8 @@ public class SanPham {
     @Column(name = "giaTien")
     private BigDecimal giaTien;
 
-    @ManyToOne
-    @JoinColumn(name = "MaDoiTac")
-    private DoiTac doiTac;
+    @Column(name = "MaDoiTac")
+    private Integer maDoiTac;
 
     @Column(name = "SoLuong")
     private Integer soLuong;
@@ -75,5 +74,5 @@ public class SanPham {
     private String trongLuong;
 
     @Column(name = "CNSX")
-    private String CNSX;
+    private String cnsx;
 }

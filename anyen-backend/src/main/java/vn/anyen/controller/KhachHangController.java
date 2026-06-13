@@ -3,7 +3,6 @@ package vn.anyen.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.entity.KhachHang;
-import vn.anyen.entity.LichSuKhachHang;
 import vn.anyen.service.KhachHangService;
 
 import java.util.List;
@@ -26,8 +25,4 @@ public class KhachHangController {
         return khachHangService.getById(maKhachHang);
     }
 
-    @GetMapping("/{maKhachHang}/lich-su")
-    public List<LichSuKhachHang> getLichSu(@PathVariable Integer maKhachHang) {
-        return khachHangService.getLichSu(maKhachHang);
-    }
 }

@@ -63,6 +63,12 @@
       >
         Quản lý khách hàng
       </RouterLink>
+      <RouterLink
+          to="/nhan-vien/quan-ly-hop-dong"
+          class="menu-item"
+      >
+        Quản lý hợp đồng
+      </RouterLink>
       <button
           class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold logout-btn"
           @click="logout"

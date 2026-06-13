@@ -28,7 +28,7 @@ import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
 import TrangThongBaoNV from "../pages/nhanvien/TrangThongBao.vue";
 import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
-
+import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
 const routes = [
     // WEBSITE
     {
@@ -140,6 +140,10 @@ const routes = [
                 path: "quan-ly-khach-hang",
                 component: TrangQLKhachHang,
             },
+            {
+                path: "quan-ly-hop-dong",
+                component:TrangQLHopDong,
+            }
         ],
     },
 ];

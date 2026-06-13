@@ -17,6 +17,13 @@ public class KhachHangService {
         return khachHangRepository.findAll();
     }
 
+    /**
+     * Lấy danh sách khách hàng theo nhân viên phụ trách
+     */
+    public List<KhachHang> getByNhanVien(Integer maNhanVien) {
+        return khachHangRepository.findByMaNhanVienPhuTrach(maNhanVien);
+    }
+
     public KhachHang getById(Integer maKhachHang) {
         return khachHangRepository.findById(maKhachHang)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy khách hàng"));

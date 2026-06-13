@@ -31,4 +31,8 @@ public class KhachHang {
 
     @Column(name = "soDienThoai")
     private String soDienThoai;
+
+    /** Nhân viên phụ trách khách hàng này (gán khi chấp nhận thông báo) */
+    @Column(name = "MaNhanVienPhuTrach")
+    private Integer maNhanVienPhuTrach;
 }

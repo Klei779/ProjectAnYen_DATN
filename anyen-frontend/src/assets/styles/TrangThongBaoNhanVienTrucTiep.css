@@ -410,3 +410,365 @@
         max-width: 100%;
     }
 }
+
+/* =================== NOTIFICATION READ STATE =================== */
+
+.notification-card.is-read {
+    opacity: 0.75;
+}
+
+.notification-card.is-read:hover {
+    opacity: 1;
+}
+
+/* =================== NOTIFICATION TYPE ICON: TU_CHOI =================== */
+
+.noti-icon.reject {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+/* =================== BADGES =================== */
+
+.badge-new {
+    background: #ffe2e6;
+    color: #c6001e;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.badge-accepted {
+    background: #d1fae5;
+    color: #059669;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.badge-rejected {
+    background: #fee2e2;
+    color: #dc2626;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* =================== STATUS EM BADGES =================== */
+
+.status-accepted {
+    background: #d1fae5 !important;
+    color: #059669 !important;
+}
+
+.status-rejected {
+    background: #fee2e2 !important;
+    color: #dc2626 !important;
+}
+
+/* =================== REJECT REASON =================== */
+
+.reject-reason {
+    background: #fef2f2;
+    border-left: 3px solid #dc2626;
+    padding: 12px 16px;
+    border-radius: 0 6px 6px 0;
+    color: #991b1b !important;
+    font-weight: 400;
+}
+
+/* =================== PROCESSED INFO =================== */
+
+.processed-info {
+    margin-top: 20px;
+}
+
+.processed-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 20px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.processed-badge.accepted {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.processed-badge.rejected {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.processed-badge i {
+    font-size: 22px;
+}
+
+/* =================== REJECT POPUP =================== */
+
+.reject-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.reject-popup {
+    background: #fff;
+    border-radius: 16px;
+    width: 460px;
+    max-width: 92vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    animation: scaleIn 0.25s ease;
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.reject-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 24px 0;
+}
+
+.reject-popup-header h3 {
+    margin: 0;
+    font-size: 20px;
+    color: #111827;
+}
+
+.reject-popup-header button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    color: #6b7280;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: 0.2s;
+}
+
+.reject-popup-header button:hover {
+    background: #f3f4f6;
+}
+
+.reject-popup-body {
+    padding: 20px 24px;
+}
+
+.reject-popup-desc {
+    margin: 0 0 16px;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.reject-popup-body label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #374151;
+    font-size: 14px;
+}
+
+.reject-popup-body label .required {
+    color: #dc2626;
+}
+
+.reject-popup-body textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.reject-popup-body textarea:focus {
+    outline: none;
+    border-color: #c6001e;
+    box-shadow: 0 0 0 3px rgba(198, 0, 30, 0.1);
+}
+
+.reject-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin: 10px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.reject-popup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 0 24px 22px;
+}
+
+.cancel-btn {
+    background: #fff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #f9fafb;
+}
+
+.confirm-reject-btn {
+    background: #dc2626;
+    color: #fff;
+    border: 1px solid #dc2626;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.confirm-reject-btn:hover {
+    background: #b91c1c;
+}
+
+.confirm-reject-btn:disabled,
+.cancel-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* =================== TOAST =================== */
+
+.toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 99999;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.toast.success {
+    background: #ecfdf5;
+    color: #059669;
+    border: 1px solid #a7f3d0;
+}
+
+.toast.error {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+}
+
+.toast i {
+    font-size: 18px;
+}
+
+.toast-enter-active {
+    animation: toastIn 0.35s ease;
+}
+
+.toast-leave-active {
+    animation: toastOut 0.35s ease;
+}
+
+@keyframes toastIn {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes toastOut {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+}
+
+/* =================== LOADING & EMPTY STATE =================== */
+
+.loading-state,
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: #9ca3af;
+    gap: 14px;
+}
+
+.loading-state i,
+.empty-state i {
+    font-size: 36px;
+}
+
+.loading-state p,
+.empty-state p {
+    font-size: 15px;
+    margin: 0;
+}

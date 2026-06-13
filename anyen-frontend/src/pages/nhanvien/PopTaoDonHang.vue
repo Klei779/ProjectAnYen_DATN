@@ -15,7 +15,9 @@
       <div class="top-form-grid">
         <!-- THÔNG TIN KHÁCH HÀNG -->
         <div class="card-box">
-          <div class="card-title">Thông tin khách hàng</div>
+          <div class="card-title" style="color: #142d4d;">
+            Thông tin khách hàng
+          </div>
 
           <div class="form-group autocomplete-wrap">
             <label>Tên / SĐT khách hàng <span>*</span></label>
@@ -46,36 +48,38 @@
           <div class="form-row-2">
             <div class="form-group">
               <label>Tên khách hàng <span>*</span></label>
-              <input v-model="form.tenKhachHang" type="text" />
+              <input v-model="form.tenKhachHang" type="text"/>
             </div>
 
             <div class="form-group">
               <label>Số điện thoại <span>*</span></label>
-              <input v-model="form.soDienThoai" type="text" />
+              <input v-model="form.soDienThoai" type="text"/>
             </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label>CCCD</label>
-              <input v-model="form.cccd" type="text" />
+              <input v-model="form.cccd" type="text"/>
             </div>
 
             <div class="form-group">
               <label>Email</label>
-              <input v-model="form.email" type="text" />
+              <input v-model="form.email" type="text"/>
             </div>
           </div>
 
           <div class="form-group">
             <label>Địa chỉ</label>
-            <input v-model="form.diaChi" type="text" />
+            <input v-model="form.diaChi" type="text"/>
           </div>
         </div>
 
         <!-- THÔNG TIN ĐƠN HÀNG -->
         <div class="card-box">
-          <div class="card-title">Thông tin đơn hàng</div>
+          <div class="card-title" style="color: #142d4d;">
+            Thông tin đơn hàng
+          </div>
 
           <div class="form-group">
             <label>Đối tác nhận đơn <span>*</span></label>
@@ -94,21 +98,13 @@
           <div class="form-row-2">
             <div class="form-group">
               <label>Nhân viên phụ trách</label>
-              <input v-model="form.nhanVienPhuTrach" type="text" readonly />
+              <input v-model="form.nhanVienPhuTrach" type="text" readonly/>
             </div>
 
             <div class="form-group">
               <label>Ngày tạo đơn</label>
-              <input v-model="form.ngayTaoDon" type="date" />
+              <input v-model="form.ngayTaoDon" type="date"/>
             </div>
-          </div>
-
-          <div class="form-group">
-            <label>Nguồn tạo đơn</label>
-            <select v-model="form.nguonTaoDon">
-              <option>Khách đã trao đổi trước</option>
-              <option>Khách mới tư vấn trực tiếp</option>
-            </select>
           </div>
 
           <div class="form-group">
@@ -139,7 +135,9 @@
 
       <!-- SẢN PHẨM TRONG ĐƠN -->
       <div class="card-box product-order-box">
-        <div class="card-title">Sản phẩm trong đơn</div>
+        <div class="card-title" style="color: #142d4d;">
+          Sản phẩm trong đơn
+        </div>
 
         <div v-if="form.items.length === 0" class="empty-box">
           Chưa có sản phẩm nào trong đơn. Hãy bấm
@@ -162,7 +160,7 @@
           >
             <div class="product-cell">
               <div class="thumb">
-                <img :src="item.hinhAnh" alt="" />
+                <img :src="item.hinhAnh" alt=""/>
               </div>
               <div class="product-info">
                 <div class="product-name">{{ item.tenSanPham }}</div>
@@ -215,7 +213,6 @@
         <button class="btn-cancel" @click="$emit('close')">Hủy</button>
 
         <div class="footer-right">
-          <button class="btn-secondary" @click="saveDraft">Tạm lưu</button>
           <button class="btn-primary" @click="submitOrder">
             Lưu và gửi đối tác
           </button>
@@ -263,7 +260,7 @@
               >
                 <div class="product-card-left">
                   <div class="product-image">
-                    <img :src="sp.hinhAnh" alt="" />
+                    <img :src="sp.hinhAnh" alt=""/>
                   </div>
 
                   <div class="product-card-info">
@@ -353,16 +350,16 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import {computed, ref} from "vue";
 
 const showCustomerSuggestions = ref(false);
 
 const emit = defineEmits(["close", "submit", "save-draft"]);
 
 const partners = ref([
-  { maDoiTac: 1, tenDoiTac: "Công ty Thiên Phúc" },
-  { maDoiTac: 2, tenDoiTac: "Cơ sở An Lạc" },
-  { maDoiTac: 3, tenDoiTac: "Hoa viên Vĩnh Hằng" },
+  {maDoiTac: 1, tenDoiTac: "Công ty Thiên Phúc"},
+  {maDoiTac: 2, tenDoiTac: "Cơ sở An Lạc"},
+  {maDoiTac: 3, tenDoiTac: "Hoa viên Vĩnh Hằng"},
 ]);
 
 const allCustomers = ref([
@@ -653,7 +650,7 @@ function removeItem(maSanPham) {
 }
 
 function saveDraft() {
-  emit("save-draft", { ...form.value });
+  emit("save-draft", {...form.value});
   alert("Đã tạm lưu");
 }
 

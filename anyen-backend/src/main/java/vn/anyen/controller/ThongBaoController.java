@@ -104,4 +104,19 @@ public class ThongBaoController {
         response.put("success", true);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * Đánh dấu tất cả đã đọc
+     */
+    @PutMapping("/da-doc-tat-ca")
+    public ResponseEntity<?> danhDauTatCaDaDoc(
+            @RequestHeader("Authorization") String authHeader) {
+        
+        Integer userId = getUserIdFromHeader(authHeader);
+        thongBaoService.danhDauTatCaDaDoc(userId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
 }

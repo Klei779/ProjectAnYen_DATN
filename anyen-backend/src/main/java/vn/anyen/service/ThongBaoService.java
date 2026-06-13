@@ -149,6 +149,14 @@ public class ThongBaoService {
     }
 
     /**
+     * Đánh dấu tất cả đã đọc
+     */
+    @Transactional
+    public void danhDauTatCaDaDoc(Integer nguoiNhanId) {
+        thongBaoRepository.markAllAsRead(nguoiNhanId);
+    }
+
+    /**
      * Map Entity → DTO
      */
     private ThongBaoResponse toResponse(ThongBao tb) {
@@ -188,7 +196,14 @@ public class ThongBaoService {
                         .soDienThoai(kh.getSoDienThoai())
                         .email(kh.getEmail())
                         .diaChi(kh.getDiaChi())
-                        .cccd(kh.getCccd());
+                        .cccd(kh.getCccd())
+                        .nguonDangKy(kh.getNguonDangKy())
+                        .nhuCauHoTro(kh.getNhuCauHoTro())
+                        .ghiChu(kh.getGhiChu());
+                        
+                if (kh.getNgayDangKy() != null) {
+                    builder.ngayDangKy(kh.getNgayDangKy().format(FORMATTER));
+                }
             }
         }
 

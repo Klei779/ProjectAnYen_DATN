@@ -1,437 +1,477 @@
 <template>
   <div class="notification-page">
-    <section class="notification-left">
-      <div class="page-title">
-        <h2>Thông báo</h2>
-        <p>Cập nhật các thông báo mới nhất từ hệ thống</p>
+    
+    <!-- Top Bar Mockup (To match design) -->
+    <header class="page-topbar">
+      <div class="topbar-left">
+        <i class="fa-solid fa-bars"></i>
+        <h2>Thông báo công việc</h2>
       </div>
+      <div class="topbar-right">
+        <div class="bell-wrapper" @click.stop="toggleMiniNoti">
+          <i class="fa-regular fa-bell"></i>
+          <span class="bell-badge" v-if="unreadCount > 0">{{ unreadCount }}</span>
 
-      <div class="tabs">
-        <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            :class="{ active: activeTab === tab.key }"
-            @click="activeTab = tab.key"
-        >
-          {{ tab.label }} ({{ getCount(tab.key) }})
-        </button>
-      </div>
-
-      <!-- Loading state -->
-      <div v-if="loading" class="loading-state">
-        <i class="fa-solid fa-spinner fa-spin"></i>
-        <p>Đang tải thông báo...</p>
-      </div>
-
-      <!-- Empty state -->
-      <div v-else-if="filteredNotifications.length === 0" class="empty-state">
-        <i class="fa-regular fa-bell-slash"></i>
-        <p>Không có thông báo nào</p>
-      </div>
-
-      <!-- Notification list -->
-      <div v-else class="notification-list">
-        <div
-            v-for="item in filteredNotifications"
-            :key="item.maThongBao"
-            class="notification-card"
-            :class="{
-              active: selectedNotification?.maThongBao === item.maThongBao,
-              'is-read': item.trangThai !== 'CHUA_DOC'
-            }"
-            @click="selectNotification(item)"
-        >
-          <div class="noti-icon" :class="getIconClass(item.loaiThongBao)">
-            <i :class="getIconName(item.loaiThongBao)"></i>
-          </div>
-
-          <div class="noti-content">
-            <div class="noti-head">
-              <h4>{{ item.tieuDe }}</h4>
-              <span v-if="item.trangThai === 'CHUA_DOC'" class="badge-new">Mới</span>
-              <span v-if="item.trangThai === 'DA_CHAP_NHAN'" class="badge-accepted">
-                <i class="fa-solid fa-check"></i> Đã chấp nhận
-              </span>
-              <span v-if="item.trangThai === 'DA_TU_CHOI'" class="badge-rejected">
-                <i class="fa-solid fa-xmark"></i> Đã từ chối
-              </span>
+          <!-- Mini Notification Dropdown -->
+          <div class="mini-noti-dropdown" v-if="showMiniNoti" @click.stop>
+            <div class="mini-header">
+              <div class="header-title">
+                 <h4>Thông báo <span class="badge">{{ unreadCount }}</span></h4>
+                 <button class="mark-read-btn" @click.stop="markAllAsRead">Đánh dấu tất cả đã đọc</button>
+              </div>
+              <button class="close-mini-btn" @click.stop="showMiniNoti = false">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
             </div>
 
-            <p>{{ item.noiDung }}</p>
-            <small>{{ item.ngayTao }}</small>
-          </div>
+            <div class="mini-list">
+              <div v-for="item in miniNotifications" :key="item.maThongBao" class="mini-item" :class="{'unread': item.trangThai === 'CHUA_DOC'}">
+                <div class="mini-icon" :class="getMiniIconClass(item)">
+                  <i :class="getMiniIconName(item)"></i>
+                </div>
+                <div class="mini-info">
+                  <h5>{{ item.tieuDe }}</h5>
+                  <p>{{ item.noiDung }}</p>
+                  <small>{{ item.ngayTao }}</small>
+                </div>
+                <button class="mini-view-btn" @click="selectNotification(item); showMiniNoti = false;">Xem</button>
+              </div>
+              <div v-if="miniNotifications.length === 0" class="empty-mini">Không có thông báo mới</div>
+            </div>
 
-          <div class="noti-action">
-            <p v-if="item.loaiThongBao === 'CONG_VIEC'">Công việc mới</p>
-            <p v-else-if="item.loaiThongBao === 'HE_THONG'">Thông báo hệ thống</p>
-            <p v-else-if="item.loaiThongBao === 'TU_CHOI'">Phản hồi từ chối</p>
-            <i
-                v-if="item.loaiThongBao === 'CONG_VIEC' && item.trangThai === 'CHUA_DOC'"
-                class="fa-solid fa-chevron-right"
-            ></i>
+            <div class="mini-footer">
+              <button @click="showMiniNoti = false">Xem tất cả thông báo</button>
+            </div>
           </div>
         </div>
+
       </div>
+    </header>
 
-      <div class="pagination-row">
-        <p>
-          Hiển thị 1 - {{ filteredNotifications.length }}
-          trong {{ filteredNotifications.length }} thông báo
-        </p>
-
-        <div class="pagination">
-          <button><i class="fa-solid fa-chevron-left"></i></button>
-          <button class="active">1</button>
-          <button><i class="fa-solid fa-chevron-right"></i></button>
+    <div class="content-wrapper">
+      <!-- Main Content (Left) -->
+      <section class="main-column">
+        <div class="page-header-content">
+          <h3>Thông báo công việc</h3>
+          <p>Danh sách công việc mới được giao cho bạn</p>
         </div>
-      </div>
-    </section>
 
-    <!-- POPUP CHI TIẾT KHÁCH HÀNG (chỉ cho CONG_VIEC) -->
-    <div
-        v-if="selectedNotification && selectedNotification.loaiThongBao === 'CONG_VIEC'"
-        class="detail-popup-overlay"
-        @click.self="selectedNotification = null"
-    >
-      <aside class="order-detail">
-        <div class="detail-header">
-          <h3>Chi tiết khách hàng</h3>
-
-          <button @click="selectedNotification = null">
-            <i class="fa-solid fa-xmark"></i>
+        <div class="custom-tabs">
+          <button
+              v-for="tab in tabs"
+              :key="tab.key"
+              :class="{ active: activeTab === tab.key }"
+              @click="activeTab = tab.key"
+          >
+            {{ tab.label }}
+            <span class="tab-badge" v-if="getCount(tab.key) > 0">{{ getCount(tab.key) }}</span>
           </button>
         </div>
 
-        <div class="detail-section">
-          <h5>Thông tin khách hàng</h5>
-
-          <div class="info-row">
-            <span>Họ và tên</span>
-            <b>{{ selectedNotification.tenKhachHang || '—' }}</b>
-          </div>
-
-          <div class="info-row">
-            <span>Số điện thoại</span>
-            <b>{{ selectedNotification.soDienThoai || '—' }}</b>
-          </div>
-
-          <div class="info-row">
-            <span>Email</span>
-            <b>{{ selectedNotification.email || '—' }}</b>
-          </div>
-
-          <div class="info-row">
-            <span>Địa chỉ</span>
-            <b>{{ selectedNotification.diaChi || '—' }}</b>
-          </div>
-
-          <div class="info-row">
-            <span>CCCD</span>
-            <b>{{ selectedNotification.cccd || '—' }}</b>
-          </div>
-
-          <div class="info-row">
-            <span>Trạng thái</span>
-            <em :class="getStatusBadgeClass(selectedNotification.trangThai)">
-              {{ getStatusLabel(selectedNotification.trangThai) }}
-            </em>
-          </div>
+        <!-- Loading & Empty States -->
+        <div v-if="loading && filteredNotifications.length === 0" class="loading-state">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+          <p>Đang tải dữ liệu...</p>
         </div>
 
-        <div class="detail-section" v-if="selectedNotification.tenNguoiGui">
-          <h6>Người gửi thông báo</h6>
-          <p class="note">{{ selectedNotification.tenNguoiGui }}</p>
+        <div v-else-if="filteredNotifications.length === 0" class="empty-state">
+          <img src="../../assets/images/icon/logoAnYen.png.png" alt="Empty" style="width: 100px; opacity: 0.5; margin-bottom: 20px;">
+          <p>Không có công việc nào trong mục này</p>
         </div>
 
-        <div class="detail-section">
-          <h6>Nội dung thông báo</h6>
-          <p class="note">{{ selectedNotification.noiDung }}</p>
+        <!-- Cards -->
+        <div class="cards-container">
+          <div
+              v-for="item in filteredNotifications"
+              :key="item.maThongBao"
+              class="task-card"
+          >
+            <!-- Content Left -->
+            <div class="card-main-content">
+              <div class="card-icon">
+                <i class="fa-solid fa-file-lines"></i>
+              </div>
+              <div class="card-details">
+                <div class="card-title-row">
+                  <h4>{{ item.tieuDe || 'Tư vấn trực tiếp khách hàng' }}</h4>
+                  <!-- Thẻ Xem chi tiết nhỏ -->
+                  <button class="view-detail-link" @click="selectNotification(item)">Xem chi tiết</button>
+                </div>
+                
+                <p class="customer-info" v-if="item.loaiThongBao === 'CONG_VIEC' && item.tenKhachHang">
+                  {{ item.tenKhachHang }} • {{ item.soDienThoai }}
+                </p>
+                <p class="customer-info text-muted" v-else>
+                  {{ item.noiDung }}
+                </p>
+                <p class="address-info" v-if="item.diaChi">
+                  <i class="fa-solid fa-location-dot"></i> {{ item.diaChi }}
+                </p>
+                <p class="time-info">
+                  <i class="fa-regular fa-clock"></i> {{ item.ngayTao }}
+                </p>
+              </div>
+            </div>
+
+            <!-- Action Buttons Right (Inline) -->
+            <div class="card-actions-wrapper">
+              <span class="time-ago" v-if="item.trangThai === 'CHUA_DOC'">Vừa xong</span>
+              
+              <div class="card-buttons" v-if="item.loaiThongBao === 'CONG_VIEC' && (item.trangThai === 'CHUA_DOC' || item.trangThai === 'DA_DOC')">
+                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">Từ chối</button>
+                <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading">
+                   <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i> Nhận công việc
+                </button>
+              </div>
+              <div class="card-buttons processed" v-else-if="item.loaiThongBao === 'CONG_VIEC'">
+                <span class="text-success fw-bold" v-if="item.trangThai === 'DA_CHAP_NHAN'"><i class="fa-solid fa-check"></i> Đã nhận</span>
+                <span class="text-danger fw-bold" v-if="item.trangThai === 'DA_TU_CHOI'"><i class="fa-solid fa-xmark"></i> Đã từ chối</span>
+              </div>
+            </div>
+          </div>
         </div>
+      </section>
 
-        <!-- Lý do từ chối (nếu đã từ chối) -->
-        <div class="detail-section" v-if="selectedNotification.lyDoTuChoi">
-          <h6>Lý do từ chối</h6>
-          <p class="note reject-reason">{{ selectedNotification.lyDoTuChoi }}</p>
+    </div>
+
+    <!-- SIDEBAR: Chi tiết công việc -->
+    <div
+        v-if="selectedNotification"
+        class="custom-modal-overlay"
+        @click.self="selectedNotification = null"
+    >
+      <div class="detail-sidebar" :class="{'slide-in': selectedNotification}">
+        <div class="sidebar-header">
+          <h3>{{ selectedNotification.loaiThongBao === 'HE_THONG' ? 'Thông báo hệ thống' : 'Chi tiết khách hàng' }}</h3>
+          <button class="close-btn" @click="selectedNotification = null">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
-
-        <!-- Nút action chỉ hiện khi chưa xử lý -->
-        <template v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'">
-          <div class="detail-actions">
-            <button class="reject-btn" @click="openRejectPopup" :disabled="actionLoading">
-              Từ chối
-            </button>
-
-            <button class="accept-btn" @click="acceptCustomer" :disabled="actionLoading">
-              <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
-              Tiếp nhận
-            </button>
+        
+        <!-- SIDEBAR BODY CHO CÔNG VIỆC -->
+        <div class="sidebar-body" v-if="selectedNotification.loaiThongBao === 'CONG_VIEC'">
+          <h4 class="mb-4 fw-bold">Thông tin khách hàng</h4>
+            
+          <div class="info-table-clean">
+            <div class="info-row">
+              <span class="label">Mã khách hàng</span>
+              <span class="value fw-bold">#KH{{ selectedNotification.maKhachHang || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Họ và tên</span>
+              <span class="value fw-bold">{{ selectedNotification.tenKhachHang || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Số điện thoại</span>
+              <span class="value fw-bold">{{ selectedNotification.soDienThoai || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Email</span>
+              <span class="value fw-bold">{{ selectedNotification.email || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Địa chỉ</span>
+              <span class="value fw-bold">{{ selectedNotification.diaChi || '—' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Ngày đăng ký</span>
+              <span class="value fw-bold">{{ selectedNotification.ngayDangKy || selectedNotification.ngayTao }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Trạng thái</span>
+              <span class="value">
+                <span v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'" class="status-pill warning">Chờ tiếp nhận</span>
+                <span v-else-if="selectedNotification.trangThai === 'DA_CHAP_NHAN'" class="status-pill success">Đã tiếp nhận</span>
+                <span v-else-if="selectedNotification.trangThai === 'DA_TU_CHOI'" class="status-pill error">Đã từ chối</span>
+              </span>
+            </div>
+            <div class="info-row">
+              <span class="label">Nguồn đăng ký</span>
+              <span class="value fw-bold">{{ selectedNotification.nguonDangKy || 'Website An Yên' }}</span>
+            </div>
           </div>
 
-          <p class="hint">
-            <i class="fa-solid fa-lock"></i>
-            Nếu bạn tiếp nhận khách hàng, hệ thống sẽ chuyển khách hàng sang danh sách quản lý khách hàng.
+          <div class="text-block">
+            <h5>Nhu cầu hỗ trợ</h5>
+            <p>{{ selectedNotification.nhuCauHoTro || selectedNotification.noiDung || '—' }}</p>
+          </div>
+
+          <div class="text-block">
+            <h5>Ghi chú</h5>
+            <p>{{ selectedNotification.ghiChu || 'Khách hàng mới đăng ký thông tin, cần nhân viên liên hệ lại' }}</p>
+          </div>
+          
+          <div v-if="selectedNotification.lyDoTuChoi" class="text-block">
+            <h5 class="text-danger">Lý do từ chối</h5>
+            <p class="text-danger">{{ selectedNotification.lyDoTuChoi }}</p>
+          </div>
+
+          <!-- Buttons -->
+          <div class="sidebar-actions" v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'">
+            <button class="btn-outline-modal" @click="openRejectPopup(selectedNotification)">Từ chối</button>
+            <button class="btn-primary-modal" @click="acceptCustomer(selectedNotification)">Tiếp nhận</button>
+          </div>
+          
+          <p class="sidebar-note" v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'">
+            <i class="fa-solid fa-lock"></i> Nếu bạn tiếp nhận khách hàng, hệ thống sẽ chuyển khách hàng sang danh sách quản lý khách hàng
           </p>
-        </template>
+        </div>
 
-        <!-- Đã xử lý -->
-        <div v-else class="processed-info">
-          <div v-if="selectedNotification.trangThai === 'DA_CHAP_NHAN'" class="processed-badge accepted">
-            <i class="fa-solid fa-circle-check"></i>
-            Đã tiếp nhận khách hàng
-          </div>
-          <div v-if="selectedNotification.trangThai === 'DA_TU_CHOI'" class="processed-badge rejected">
-            <i class="fa-solid fa-circle-xmark"></i>
-            Đã từ chối khách hàng
+        <!-- SIDEBAR BODY CHO HỆ THỐNG -->
+        <div class="sidebar-body" v-else>
+          <div class="system-noti-wrapper">
+             <div class="system-icon-large">
+               <i class="fa-solid fa-bullhorn text-primary"></i>
+             </div>
+             <h4 class="text-center mt-3">{{ selectedNotification.tieuDe }}</h4>
+             <p class="text-center text-muted"><i class="fa-regular fa-clock"></i> Thời gian: {{ selectedNotification.ngayTao }}</p>
+             
+             <div class="system-content-box mt-4">
+               <p>{{ selectedNotification.noiDung }}</p>
+             </div>
           </div>
         </div>
-      </aside>
+      </div>
     </div>
 
-    <!-- POPUP DETAIL CHO THÔNG BÁO TỪ CHỐI (TU_CHOI) -->
-    <div
-        v-if="selectedNotification && selectedNotification.loaiThongBao === 'TU_CHOI'"
-        class="detail-popup-overlay"
-        @click.self="selectedNotification = null"
-    >
-      <aside class="order-detail">
-        <div class="detail-header">
-          <h3>Chi tiết phản hồi từ chối</h3>
-          <button @click="selectedNotification = null">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <div class="detail-section">
-          <h5>Thông tin</h5>
-
-          <div class="info-row" v-if="selectedNotification.tenNguoiGui">
-            <span>Người từ chối</span>
-            <b>{{ selectedNotification.tenNguoiGui }}</b>
-          </div>
-
-          <div class="info-row" v-if="selectedNotification.tenKhachHang">
-            <span>Khách hàng</span>
-            <b>{{ selectedNotification.tenKhachHang }}</b>
-          </div>
-        </div>
-
-        <div class="detail-section">
-          <h6>Lý do từ chối</h6>
-          <p class="note reject-reason">{{ selectedNotification.lyDoTuChoi || selectedNotification.noiDung }}</p>
-        </div>
-      </aside>
-    </div>
-
-    <!-- POPUP NHẬP LÝ DO TỪ CHỐI -->
+    <!-- POPUP TỪ CHỐI -->
     <div
         v-if="showRejectPopup"
-        class="reject-popup-overlay"
+        class="custom-modal-overlay"
         @click.self="closeRejectPopup"
     >
-      <div class="reject-popup">
-        <div class="reject-popup-header">
-          <h3>Từ chối tiếp nhận</h3>
-          <button @click="closeRejectPopup">
+      <div class="custom-modal modal-small">
+        <div class="modal-header">
+          <h3>Từ chối nhận việc</h3>
+          <button class="close-btn" @click="closeRejectPopup">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
-        <div class="reject-popup-body">
-          <p class="reject-popup-desc">
-            Vui lòng nhập lý do từ chối để gửi phản hồi về nhân viên hotline.
-          </p>
-
-          <label for="reject-reason">Lý do từ chối <span class="required">*</span></label>
-          <textarea
-              id="reject-reason"
-              v-model="rejectReason"
-              placeholder="Nhập lý do từ chối..."
-              rows="4"
-          ></textarea>
-
-          <p v-if="rejectError" class="reject-error">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            {{ rejectError }}
-          </p>
+        <div class="modal-body">
+          <p class="mb-3 text-muted">Vui lòng nhập lý do từ chối để chuyển lại cho bộ phận Hotline xử lý.</p>
+          <div class="form-group">
+            <label>Lý do từ chối <span class="text-danger">*</span></label>
+            <textarea
+                v-model="rejectReason"
+                placeholder="Nhập lý do chi tiết..."
+                rows="4"
+                class="form-control"
+            ></textarea>
+            <small v-if="rejectError" class="text-danger mt-1 d-block"><i class="fa-solid fa-circle-exclamation"></i> {{ rejectError }}</small>
+          </div>
         </div>
 
-        <div class="reject-popup-actions">
-          <button class="cancel-btn" @click="closeRejectPopup" :disabled="actionLoading">
-            Hủy
-          </button>
-          <button class="confirm-reject-btn" @click="confirmReject" :disabled="actionLoading">
-            <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
-            Xác nhận từ chối
+        <div class="modal-footer right-align">
+          <button class="btn-outline-modal" @click="closeRejectPopup" :disabled="actionLoading">Hủy</button>
+          <button class="btn-danger-modal" @click="confirmReject" :disabled="actionLoading">
+            <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i> Xác nhận
           </button>
         </div>
       </div>
     </div>
 
-    <!-- TOAST THÔNG BÁO -->
+    <!-- TOAST -->
     <Transition name="toast">
-      <div v-if="toast.show" class="toast" :class="toast.type">
+      <div v-if="toast.show" class="toast-notification" :class="toast.type">
         <i :class="toast.type === 'success' ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
         <span>{{ toast.message }}</span>
       </div>
     </Transition>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import api from "../../api/api.js";
 
+// Layout & State
 const activeTab = ref("all");
 const selectedNotification = ref(null);
 const loading = ref(false);
 const actionLoading = ref(false);
+const itemToReject = ref(null);
 
-// Popup từ chối
+// Bell & Mini Noti Dropdown
+const showMiniNoti = ref(false);
+const toggleMiniNoti = () => {
+  showMiniNoti.value = !showMiniNoti.value;
+  console.log("Bell clicked! showMiniNoti =", showMiniNoti.value);
+};
+
+// Đóng dropdown khi click ra ngoài
+onMounted(() => {
+  document.addEventListener('click', () => {
+    if (showMiniNoti.value) showMiniNoti.value = false;
+  });
+});
+
+// Popup Từ Chối
 const showRejectPopup = ref(false);
 const rejectReason = ref("");
 const rejectError = ref("");
 
-// Toast notification
+// Toast
 const toast = ref({ show: false, message: "", type: "success" });
 
+// User Info
+const userHoTen = ref("Nhân viên");
+
+// Tabs matching the design
 const tabs = [
   { key: "all", label: "Tất cả" },
-  { key: "CONG_VIEC", label: "Công việc" },
-  { key: "HE_THONG", label: "Hệ thống" },
-  { key: "TU_CHOI", label: "Phản hồi" },
+  { key: "CHUA_DOC", label: "Chờ nhận" },
+  { key: "DA_TU_CHOI", label: "Đã từ chối" },
+  { key: "DA_CHAP_NHAN", label: "Đã nhận" }
 ];
 
 const notifications = ref([]);
-
 const API_URL = "/api/nhan-vien/thong-bao";
 
-// =================== LOAD DATA ===================
+let pollingInterval = null;
 
-const loadNotifications = async () => {
-  loading.value = true;
+// =================== POLLING & LOAD DATA ===================
+
+const loadNotifications = async (isBackground = false) => {
+  if (!isBackground) loading.value = true;
   try {
     const res = await api.get(API_URL);
+    
+    // Check if there are new unread notifications compared to old state
+    const currentUnread = notifications.value.filter(n => n.trangThai === 'CHUA_DOC').length;
+    const newUnread = res.data.filter(n => n.trangThai === 'CHUA_DOC').length;
+    
+    if (isBackground && newUnread > currentUnread) {
+        showToast("Bạn có thông báo công việc mới!", "success");
+    }
+
     notifications.value = res.data;
   } catch (error) {
     console.error("Lỗi load thông báo:", error);
-    showToast("Không thể tải thông báo", "error");
   } finally {
-    loading.value = false;
+    if (!isBackground) loading.value = false;
   }
 };
 
-onMounted(loadNotifications);
+const startPolling = () => {
+  // Poll every 5 seconds for real-time feel
+  pollingInterval = setInterval(() => {
+    loadNotifications(true);
+  }, 5000);
+};
+
+const stopPolling = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
+};
+
+onMounted(() => {
+  // Get user name from localStorage
+  try {
+    const userData = JSON.parse(localStorage.getItem('user'));
+    if (userData && userData.hoTen) {
+      userHoTen.value = userData.hoTen;
+    }
+  } catch (e) {}
+
+  loadNotifications();
+  startPolling();
+});
+
+onUnmounted(() => {
+  stopPolling();
+});
 
 // =================== COMPUTED ===================
 
 const filteredNotifications = computed(() => {
+  let list = notifications.value;
+  
   if (activeTab.value === "all") {
-    return notifications.value;
+    return list;
   }
 
-  return notifications.value.filter(
-      item => item.loaiThongBao === activeTab.value
-  );
+  return list.filter(item => item.trangThai === activeTab.value);
+});
+
+// Mini list in right panel/dropdown shows ALL types, sorted by date (handled by backend)
+const miniNotifications = computed(() => {
+  return notifications.value.slice(0, 10); // Show max 10
+});
+
+const unreadCount = computed(() => {
+  return notifications.value.filter(item => item.trangThai === 'CHUA_DOC').length;
 });
 
 const getCount = (key) => {
-  if (key === "all") {
-    return notifications.value.length;
-  }
-
-  return notifications.value.filter(item => item.loaiThongBao === key).length;
+  let list = notifications.value;
+  if (key === "all") return list.length;
+  return list.filter(item => item.trangThai === key).length;
 };
 
-// =================== ICON & STATUS HELPERS ===================
+// =================== ICONS ===================
 
-const getIconClass = (loaiThongBao) => {
-  if (loaiThongBao === "CONG_VIEC") return "customer";
-  if (loaiThongBao === "HE_THONG") return "system";
-  if (loaiThongBao === "TU_CHOI") return "reject";
-  return "system";
+const getMiniIconClass = (item) => {
+  if (item.loaiThongBao === "CONG_VIEC") return "bg-red";
+  if (item.loaiThongBao === "HE_THONG") return "bg-blue";
+  if (item.loaiThongBao === "TU_CHOI") return "bg-yellow";
+  if (item.trangThai === "DA_CHAP_NHAN") return "bg-green";
+  return "bg-purple";
 };
 
-const getIconName = (loaiThongBao) => {
-  if (loaiThongBao === "CONG_VIEC") return "fa-regular fa-user";
-  if (loaiThongBao === "HE_THONG") return "fa-regular fa-bell";
-  if (loaiThongBao === "TU_CHOI") return "fa-solid fa-reply";
-  return "fa-regular fa-bell";
+const getMiniIconName = (item) => {
+  if (item.loaiThongBao === "CONG_VIEC") return "fa-solid fa-briefcase";
+  if (item.loaiThongBao === "HE_THONG") return "fa-solid fa-gear";
+  if (item.loaiThongBao === "TU_CHOI") return "fa-solid fa-xmark";
+  if (item.trangThai === "DA_CHAP_NHAN") return "fa-solid fa-check";
+  return "fa-solid fa-bell";
 };
 
-const getStatusLabel = (trangThai) => {
-  const map = {
-    CHUA_DOC: "Chờ xử lý",
-    DA_DOC: "Đã xem",
-    DA_CHAP_NHAN: "Đã chấp nhận",
-    DA_TU_CHOI: "Đã từ chối",
-  };
-  return map[trangThai] || trangThai;
-};
-
-const getStatusBadgeClass = (trangThai) => {
-  if (trangThai === "DA_CHAP_NHAN") return "status-accepted";
-  if (trangThai === "DA_TU_CHOI") return "status-rejected";
-  return "";
-};
-
-// =================== SELECT NOTIFICATION ===================
+// =================== ACTIONS ===================
 
 const selectNotification = async (item) => {
-  // Thông báo hệ thống không mở popup
-  if (item.loaiThongBao === "HE_THONG") {
-    // Đánh dấu đã đọc
-    if (item.trangThai === "CHUA_DOC") {
-      try {
-        await api.put(`${API_URL}/${item.maThongBao}/da-doc`);
-        item.trangThai = "DA_DOC";
-      } catch (e) {
-        console.error("Lỗi đánh dấu đã đọc:", e);
-      }
-    }
-    selectedNotification.value = null;
-    return;
-  }
-
-  // Đánh dấu đã đọc
+  selectedNotification.value = item;
+  
   if (item.trangThai === "CHUA_DOC") {
     try {
       await api.put(`${API_URL}/${item.maThongBao}/da-doc`);
       item.trangThai = "DA_DOC";
     } catch (e) {
-      console.error("Lỗi đánh dấu đã đọc:", e);
+      console.error(e);
     }
   }
-
-  selectedNotification.value = item;
 };
 
-// =================== ACCEPT ===================
+const markAllAsRead = async () => {
+  try {
+    await api.put(`${API_URL}/da-doc-tat-ca`);
+    notifications.value.forEach(n => {
+      if(n.trangThai === 'CHUA_DOC') n.trangThai = 'DA_DOC';
+    });
+    showToast("Đã đánh dấu tất cả là đã đọc");
+  } catch (error) {
+    console.error(error);
+  }
+};
 
-const acceptCustomer = async () => {
-  if (!selectedNotification.value) return;
-
+const acceptCustomer = async (item) => {
   actionLoading.value = true;
   try {
-    await api.put(`${API_URL}/${selectedNotification.value.maThongBao}/chap-nhan`);
-
-    selectedNotification.value.trangThai = "DA_CHAP_NHAN";
-    showToast("Đã tiếp nhận khách hàng thành công!", "success");
-
-    selectedNotification.value = null;
-    await loadNotifications();
-
+    await api.put(`${API_URL}/${item.maThongBao}/chap-nhan`);
+    item.trangThai = "DA_CHAP_NHAN";
+    showToast("Nhận công việc thành công!", "success");
+    selectedNotification.value = null; // Close modal if open
   } catch (error) {
-    console.error("Lỗi chấp nhận:", error);
-    const msg = error.response?.data?.message || "Có lỗi xảy ra khi tiếp nhận";
-    showToast(msg, "error");
+    showToast(error.response?.data?.message || "Lỗi khi nhận việc", "error");
   } finally {
     actionLoading.value = false;
   }
 };
 
-// =================== REJECT ===================
-
-const openRejectPopup = () => {
+const openRejectPopup = (item) => {
+  itemToReject.value = item;
   rejectReason.value = "";
   rejectError.value = "";
   showRejectPopup.value = true;
@@ -439,8 +479,7 @@ const openRejectPopup = () => {
 
 const closeRejectPopup = () => {
   showRejectPopup.value = false;
-  rejectReason.value = "";
-  rejectError.value = "";
+  itemToReject.value = null;
 };
 
 const confirmReject = async () => {
@@ -449,41 +488,33 @@ const confirmReject = async () => {
     return;
   }
 
-  if (!selectedNotification.value) return;
-
   actionLoading.value = true;
   try {
     await api.put(
-        `${API_URL}/${selectedNotification.value.maThongBao}/tu-choi`,
+        `${API_URL}/${itemToReject.value.maThongBao}/tu-choi`,
         { lyDoTuChoi: rejectReason.value.trim() }
     );
-
-    selectedNotification.value.trangThai = "DA_TU_CHOI";
-    selectedNotification.value.lyDoTuChoi = rejectReason.value.trim();
-
-    showToast("Đã từ chối và gửi phản hồi về hotline!", "success");
-
+    itemToReject.value.trangThai = "DA_TU_CHOI";
+    itemToReject.value.lyDoTuChoi = rejectReason.value.trim();
+    showToast("Đã từ chối công việc!", "success");
     closeRejectPopup();
-    selectedNotification.value = null;
-    await loadNotifications();
-
+    selectedNotification.value = null; // Close modal if open
   } catch (error) {
-    console.error("Lỗi từ chối:", error);
-    const msg = error.response?.data?.message || "Có lỗi xảy ra khi từ chối";
-    showToast(msg, "error");
+    showToast(error.response?.data?.message || "Lỗi khi từ chối", "error");
   } finally {
     actionLoading.value = false;
   }
 };
 
-// =================== TOAST ===================
-
 const showToast = (message, type = "success") => {
   toast.value = { show: true, message, type };
-  setTimeout(() => {
-    toast.value.show = false;
-  }, 3500);
+  setTimeout(() => { toast.value.show = false; }, 3000);
 };
+
+// Global click to close mini dropdown
+window.addEventListener('click', () => {
+  if (showMiniNoti.value) showMiniNoti.value = false;
+});
 </script>
 
 <style scoped src="../../assets/styles/TrangThongBaoNhanVienTrucTiep.css"></style>

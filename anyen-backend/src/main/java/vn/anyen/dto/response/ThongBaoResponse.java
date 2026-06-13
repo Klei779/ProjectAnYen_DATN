@@ -26,4 +26,8 @@ public class ThongBaoResponse {
     private String email;
     private String diaChi;
     private String cccd;
+    private String ngayDangKy;
+    private String nguonDangKy;
+    private String nhuCauHoTro;
+    private String ghiChu;
 }

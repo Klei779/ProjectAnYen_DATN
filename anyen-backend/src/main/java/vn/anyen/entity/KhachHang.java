@@ -35,4 +35,16 @@ public class KhachHang {
     /** Nhân viên phụ trách khách hàng này (gán khi chấp nhận thông báo) */
     @Column(name = "MaNhanVienPhuTrach")
     private Integer maNhanVienPhuTrach;
+
+    @Column(name = "NgayDangKy")
+    private java.time.LocalDateTime ngayDangKy;
+
+    @Column(name = "NguonDangKy")
+    private String nguonDangKy;
+
+    @Column(name = "NhuCauHoTro", columnDefinition = "TEXT")
+    private String nhuCauHoTro;
+
+    @Column(name = "GhiChu", columnDefinition = "TEXT")
+    private String ghiChu;
 }

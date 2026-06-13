@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import PopTaoHopDong from "./PopTaoHopDong.vue";
+import PopTaoDonHang from "./PopTaoDonHang.vue";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
 import { getDonHangs, formatCurrency, formatDate } from "../../services/donHangService.js";
 import {
@@ -12,7 +12,7 @@ import {
 } from "@element-plus/icons-vue";
 
 // ── Trạng thái ──────────────────────────────────────────
-const showCreateContract  = ref(false);
+const showCreateOrder = ref(false);
 const showChiTiet         = ref(false);
 const selectedDonHang     = ref(null);
 
@@ -79,6 +79,32 @@ const trangThaiClass = (tt) => {
   if (tt === "Hoàn thành")    return "badge green";
   return "badge gray";
 };
+
+const handleSaveDraft = (payload) => {
+  console.log("Tạm lưu đơn hàng:", payload);
+  alert("Đã tạm lưu đơn hàng");
+};
+
+const handleCreateOrder = async (payload) => {
+  try {
+    console.log("Dữ liệu tạo đơn:", payload);
+
+    // Sau này nối API thật:
+    // await createDonHang(payload);
+
+    alert("Tạo đơn hàng thành công");
+
+    showCreateOrder.value = false;
+
+    // Load lại danh sách đơn hàng
+    const data = await getDonHangs();
+    donHangs.value = data.items || data || [];
+  } catch (error) {
+    console.error("Lỗi khi tạo đơn hàng:", error);
+    alert("Tạo đơn hàng thất bại");
+  }
+};
+
 </script>
 
 <template>
@@ -90,7 +116,7 @@ const trangThaiClass = (tt) => {
         <h2 class="page-title">Quản lý đơn hàng</h2>
         <span class="total-count">{{ filteredList.length }} đơn</span>
       </div>
-      <el-button type="primary" class="btn-tao" @click="showCreateContract = true">
+      <el-button type="primary" class="btn-tao" @click="showCreateOrder = true">
         <el-icon><Plus /></el-icon>
         Tạo đơn hàng
       </el-button>
@@ -192,8 +218,13 @@ const trangThaiClass = (tt) => {
       </div>
     </div>
 
-    <!-- ── Popup tạo hợp đồng ── -->
-    <PopTaoHopDong v-model="showCreateContract" />
+    <!-- ── Popup tạo đơn hàng ── -->
+    <PopTaoDonHang
+        v-if="showCreateOrder"
+        @close="showCreateOrder = false"
+        @submit="handleCreateOrder"
+        @save-draft="handleSaveDraft"
+    />
 
     <!-- ── Popup chi tiết đơn hàng ── -->
     <PopChiTietDonHang

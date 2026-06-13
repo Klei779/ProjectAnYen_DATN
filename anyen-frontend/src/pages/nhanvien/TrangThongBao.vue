@@ -79,7 +79,7 @@
         </div>
 
         <div class="detail-section">
-          <h4>Thông tin khách hàng</h4>
+          <h5>Thông tin khách hàng</h5>
 
           <div class="info-row">
             <span>Mã khách hàng</span>

@@ -47,17 +47,24 @@
       </div>
 
       <div class="pagination-row">
-        <p>Hiển thị 1 - 5 trong 32 thông báo</p>
+        <p>
+          Hiển thị 1 - {{ filteredNotifications.length }}
+          trong {{ notifications.length }} thông báo
+        </p>
 
         <div class="pagination">
-          <button><i class="fa-solid fa-chevron-left"></i></button>
+          <button>
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
           <button class="active">1</button>
           <button>2</button>
           <button>3</button>
           <button>4</button>
           <span>...</span>
           <button>7</button>
-          <button><i class="fa-solid fa-chevron-right"></i></button>
+          <button>
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
         </div>
       </div>
     </section>
@@ -66,12 +73,16 @@
     <div
         v-if="selectedNotification"
         class="detail-popup-overlay"
-        @click.self="selectedNotification = null"
+        @click.self="closePopup"
     >
-      <aside class="order-detail">
+      <!-- FORM ĐƠN HÀNG -->
+      <aside
+          v-if="selectedNotification.category === 'order'"
+          class="order-detail"
+      >
         <div class="detail-header">
           <h3>Chi tiết đơn hàng</h3>
-          <button @click="selectedNotification = null">
+          <button @click="closePopup">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -140,6 +151,7 @@
 
             <div>
               <h5>{{ selectedNotification.product.name }}</h5>
+              <p>{{ selectedNotification.product.desc }}</p>
             </div>
 
             <div class="product-price">
@@ -179,6 +191,77 @@
           Nếu bạn chấp nhận đơn hàng, hệ thống sẽ chuyển đơn sang Quản lý đơn hàng.
         </p>
       </aside>
+
+      <!-- FORM HỆ THỐNG -->
+      <aside
+          v-else-if="selectedNotification.category === 'system'"
+          class="order-detail"
+      >
+        <div class="detail-header">
+          <h3>Thông báo hệ thống</h3>
+          <button @click="closePopup">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="alert-box">
+          <i class="fa-regular fa-bell"></i>
+          <div>
+            <strong>{{ selectedNotification.system.title }}</strong>
+            <p>{{ selectedNotification.system.shortContent }}</p>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Thông tin thông báo</h4>
+
+          <div class="info-row">
+            <span>Mã thông báo</span>
+            <b>{{ selectedNotification.system.code }}</b>
+          </div>
+
+          <div class="info-row">
+            <span>Loại thông báo</span>
+            <b>{{ selectedNotification.system.type }}</b>
+          </div>
+
+          <div class="info-row">
+            <span>Mức độ</span>
+            <em>{{ selectedNotification.system.level }}</em>
+          </div>
+
+          <div class="info-row">
+            <span>Thời gian</span>
+            <b>{{ selectedNotification.system.time }}</b>
+          </div>
+
+          <div class="info-row">
+            <span>Khu vực ảnh hưởng</span>
+            <b>{{ selectedNotification.system.module }}</b>
+          </div>
+
+          <div class="info-row">
+            <span>Người gửi</span>
+            <b>{{ selectedNotification.system.sender }}</b>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Nội dung thông báo</h4>
+          <p class="note">{{ selectedNotification.system.content }}</p>
+        </div>
+
+        <div class="detail-actions">
+          <button class="accept-btn" @click="readSystemNotification">
+            Đã hiểu
+          </button>
+        </div>
+
+        <p class="hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Đây là thông báo hệ thống, không liên quan đến xác nhận đơn hàng.
+        </p>
+      </aside>
     </div>
   </div>
 </template>
@@ -192,7 +275,6 @@ const selectedNotification = ref(null);
 const tabs = [
   { key: "all", label: "Tất cả" },
   { key: "order", label: "Đơn hàng" },
-  { key: "customer", label: "Khách hàng" },
   { key: "system", label: "Hệ thống" },
 ];
 
@@ -207,26 +289,35 @@ const notifications = ref([
     actionText: "Vui lòng xác nhận đơn hàng",
     time: "25/05/2024 - 14:30",
     isNew: true,
+
     order: {
+      id: 128,
       code: "#AY24050128",
       date: "25/05/2024 - 14:30",
       status: "Chờ xác nhận",
       payment: "Chuyển khoản",
     },
+
     customer: {
+      id: 1,
       name: "Nguyễn Văn An",
       phone: "0901 234 567",
       email: "an.nguyenvan@gmail.com",
       address: "123 Đường An Lành, Phường Yên Hòa, Quận Cầu Giấy, Hà Nội",
     },
+
     product: {
+      id: 1,
       name: "Gói An Lạc",
+      desc: "Dịch vụ tang lễ trọn gói cơ bản",
       quantity: 1,
       price: 25000000,
       image: "https://via.placeholder.com/70x70",
     },
+
     note: "Gia đình cần hỗ trợ trang trí hoa sen trắng.",
   },
+
   {
     id: 2,
     category: "order",
@@ -237,88 +328,63 @@ const notifications = ref([
     actionText: "Vui lòng xác nhận đơn hàng",
     time: "25/05/2024 - 10:15",
     isNew: true,
+
     order: {
+      id: 127,
       code: "#AY24050127",
       date: "25/05/2024 - 10:15",
       status: "Chờ xác nhận",
       payment: "Tiền mặt",
     },
+
     customer: {
+      id: 2,
       name: "Trần Thị Bình",
       phone: "0912 345 678",
       email: "binh@gmail.com",
       address: "TP.HCM",
     },
+
     product: {
+      id: 2,
       name: "Gói An Nhiên",
+      desc: "Dịch vụ tang lễ đầy đủ nghi thức",
       quantity: 1,
       price: 35000000,
       image: "https://via.placeholder.com/70x70",
     },
+
     note: "Cần tư vấn thêm về nghi thức.",
   },
+
   {
     id: 3,
-    category: "customer",
-    type: "customer",
-    icon: "fa-regular fa-user",
-    title: "Thông tin khách hàng mới",
-    desc: "Khách hàng: Lê Văn Cường",
-    actionText: "Khách hàng vừa đăng ký",
-    time: "24/05/2024 - 16:45",
-    isNew: false,
-    order: {
-      code: "#KH24050126",
-      date: "24/05/2024 - 16:45",
-      status: "Khách hàng mới",
-      payment: "Chưa có",
-    },
-    customer: {
-      name: "Lê Văn Cường",
-      phone: "0912 345 678",
-      email: "cuong@gmail.com",
-      address: "Bình Dương",
-    },
-    product: {
-      name: "Chưa chọn dịch vụ",
-      quantity: 0,
-      price: 0,
-      image: "https://via.placeholder.com/70x70",
-    },
-    note: "Khách hàng mới đăng ký thông tin.",
-  },
-  {
-    id: 4,
     category: "system",
     type: "system",
     icon: "fa-regular fa-bell",
     title: "Cập nhật hệ thống",
     desc: "Hệ thống vừa cập nhật chính sách vận chuyển mới.",
-    actionText: "Thông báo hệ thống",
+    actionText: "Xem thông báo hệ thống",
     time: "24/05/2024 - 09:00",
     isNew: false,
-    order: {
-      code: "#SYSTEM",
-      date: "24/05/2024 - 09:00",
-      status: "Thông báo",
-      payment: "Không có",
+
+    system: {
+      id: 1,
+      code: "#SYSTEM24050001",
+      title: "Cập nhật hệ thống",
+      type: "Thông báo nội bộ",
+      level: "Bình thường",
+      time: "24/05/2024 - 09:00",
+      module: "Quản lý đơn hàng, Quản lý vận chuyển",
+      sender: "Hệ thống An Yên",
+      shortContent: "Hệ thống vừa cập nhật chính sách vận chuyển mới.",
+      content:
+          "Từ ngày 24/05/2024, hệ thống cập nhật chính sách vận chuyển mới. Nhân viên vui lòng kiểm tra kỹ khu vực giao hàng, phí vận chuyển và thời gian hỗ trợ trước khi xác nhận đơn hàng cho khách.",
     },
-    customer: {
-      name: "Hệ thống",
-      phone: "-",
-      email: "-",
-      address: "-",
-    },
-    product: {
-      name: "Không có",
-      quantity: 0,
-      price: 0,
-      image: "https://via.placeholder.com/70x70",
-    },
-    note: "Cập nhật chính sách vận chuyển.",
   },
+
   {
-    id: 5,
+    id: 4,
     category: "order",
     type: "order",
     icon: "fa-regular fa-clipboard",
@@ -327,25 +393,59 @@ const notifications = ref([
     actionText: "Vui lòng xác nhận đơn hàng",
     time: "24/05/2024 - 09:20",
     isNew: true,
+
     order: {
+      id: 126,
       code: "#AY24050126",
       date: "24/05/2024 - 09:20",
       status: "Chờ xác nhận",
       payment: "Chuyển khoản",
     },
+
     customer: {
+      id: 4,
       name: "Phạm Thị Dung",
       phone: "0988 111 222",
       email: "dung@gmail.com",
       address: "Hà Nội",
     },
+
     product: {
+      id: 3,
       name: "Dịch vụ tang lễ trọn gói",
+      desc: "Gói dịch vụ hỗ trợ đầy đủ theo yêu cầu gia đình",
       quantity: 1,
       price: 24000000,
       image: "https://via.placeholder.com/70x70",
     },
+
     note: "Gia đình cần liên hệ sớm.",
+  },
+
+  {
+    id: 5,
+    category: "system",
+    type: "system",
+    icon: "fa-regular fa-bell",
+    title: "Bảo trì hệ thống",
+    desc: "Hệ thống sẽ bảo trì vào 23:00 tối nay.",
+    actionText: "Xem thông báo hệ thống",
+    time: "23/05/2024 - 08:00",
+    isNew: true,
+
+    system: {
+      id: 2,
+      code: "#SYSTEM24050002",
+      title: "Bảo trì hệ thống",
+      type: "Thông báo bảo trì",
+      level: "Quan trọng",
+      time: "23/05/2024 - 08:00",
+      module: "Toàn bộ hệ thống",
+      sender: "Quản trị hệ thống",
+      shortContent: "Hệ thống sẽ bảo trì vào 23:00 tối nay.",
+      content:
+          "Hệ thống sẽ tiến hành bảo trì từ 23:00 đến 23:30. Trong thời gian này, một số chức năng như tạo đơn hàng, cập nhật sản phẩm và xác nhận thông báo có thể tạm thời gián đoạn.",
+    },
   },
 ]);
 
@@ -364,11 +464,17 @@ const getCount = (key) => {
     return notifications.value.length;
   }
 
-  return notifications.value.filter(item => item.category === key).length;
+  return notifications.value.filter(
+      item => item.category === key
+  ).length;
 };
 
 const selectNotification = (item) => {
   selectedNotification.value = item;
+};
+
+const closePopup = () => {
+  selectedNotification.value = null;
 };
 
 const formatPrice = (price) => {
@@ -377,12 +483,25 @@ const formatPrice = (price) => {
 
 const acceptOrder = () => {
   alert("Đã chấp nhận đơn hàng!");
-  selectedNotification.value = null;
+
+  selectedNotification.value.order.status = "Đã xác nhận";
+  selectedNotification.value.isNew = false;
+
+  closePopup();
 };
 
 const rejectOrder = () => {
   alert("Đã từ chối đơn hàng!");
-  selectedNotification.value = null;
+
+  selectedNotification.value.order.status = "Đã từ chối";
+  selectedNotification.value.isNew = false;
+
+  closePopup();
+};
+
+const readSystemNotification = () => {
+  selectedNotification.value.isNew = false;
+  closePopup();
 };
 </script>
 

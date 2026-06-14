@@ -6,20 +6,27 @@
 
     <div class="logo-section">
       <img
-          src="../assets/images/icon/logoAnYen.png.png"
+          src="../assets/images/icon/logoAnYen.png"
           alt="An Yên"
           class="logo-img"
       />
     </div>
 
-    <div class="partner-card">
+    <div class="partner-card" style="position: relative; cursor: pointer" @click="toggleProfile">
       <div class="avatar">
         <i class="bi bi-flower1"></i>
       </div>
       <div class="partner-info sidebar-text">
-        <h6 class="mb-1">Đối tác An Yên</h6>
-        <small>Đối tác bạc</small>
+        <h6 class="mb-1">{{ user?.hoTen || 'Đối tác' }}</h6>
+        <small>Nhà cung cấp</small>
       </div>
+
+      <UserProfileDropdown 
+        v-if="showProfile" 
+        :user="user" 
+        icon-class="bi bi-flower1"
+        @logout="logout" 
+      />
     </div>
 
     <nav class="menu">
@@ -68,14 +75,39 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
+import UserProfileDropdown from "./UserProfileDropdown.vue";
 
 const router = useRouter();
 const isCollapsed = ref(false);
+const showProfile = ref(false);
+const user = ref(null);
+
+onMounted(() => {
+  const userStr = localStorage.getItem("user");
+  if (userStr) {
+    user.value = JSON.parse(userStr);
+  }
+  document.addEventListener('click', closeProfile);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', closeProfile);
+});
+
+const closeProfile = (e) => {
+  if (!e.target.closest('.partner-card')) {
+    showProfile.value = false;
+  }
+};
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
+};
+
+const toggleProfile = () => {
+  showProfile.value = !showProfile.value;
 };
 
 const logout = () => {
@@ -84,7 +116,7 @@ const logout = () => {
   localStorage.removeItem("loaiTaiKhoan");
   localStorage.removeItem("tenDangNhap");
   localStorage.removeItem("id");
-
+  window.dispatchEvent(new Event('session-updated'));
   router.push("/");
 };
 </script>

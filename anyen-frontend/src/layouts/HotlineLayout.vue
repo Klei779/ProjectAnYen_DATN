@@ -3,9 +3,10 @@
     <div class="row min-vh-100">
 
       <div class="col-auto p-0">
-        <DoiTacSidebar />
+        <HotlineSidebar />
       </div>
 
+      <!-- Nội dung -->
       <div class="col p-0" style="background-color: #f8f9fa; display: flex; flex-direction: column;">
         <header class="page-topbar">
           <div class="topbar-left">
@@ -57,13 +58,13 @@
                   <i class="fa-solid fa-user"></i>
                 </div>
                 <div class="user-short-info">
-                  <strong>{{ user?.hoTen || 'Đối tác' }}</strong>
+                  <strong>{{ user?.hoTen || 'Hotline' }}</strong>
                 </div>
               </div>
               <UserProfileDropdown 
                 v-if="showProfile" 
                 :user="user" 
-                icon-class="bi bi-flower1"
+                icon-class="bi bi-headset"
                 @logout="logout" 
               />
             </div>
@@ -84,7 +85,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../api/api.js";
-import DoiTacSidebar from "../components/DoiTacSidebar.vue";
+import HotlineSidebar from "../components/HotlineSidebar.vue";
 import UserProfileDropdown from "../components/UserProfileDropdown.vue";
 
 const route = useRoute();
@@ -94,23 +95,19 @@ const user = ref(null);
 const showProfile = ref(false);
 
 const routeTitles = {
-  "/doi-tac/tong-quan": "Tổng quan",
-  "/doi-tac/quan-ly-san-pham": "Quản lý sản phẩm",
-  "/doi-tac/quan-ly-don-hang": "Quản lý đơn hàng",
-  "/doi-tac/thong-bao": "Thông báo",
-  "/doi-tac/thong-tin-tai-khoan": "Thông tin tài khoản",
-  "/doi-tac/doi-mat-khau": "Đổi mật khẩu",
+  "/hotline/quan-ly-cong-viec": "Quản lý công việc",
+  "/hotline/quan-ly-don-hang": "Quản lý đơn hàng",
 };
 
 const pageTitle = computed(() => {
-  return routeTitles[route.path] || "Trang Đối Tác";
+  return routeTitles[route.path] || "Trang Hotline";
 });
 
 // Notifications Logic
 const notifications = ref([]);
 const showMiniNoti = ref(false);
 let pollingInterval = null;
-const API_URL = "/api/doi-tac/thong-bao";
+const API_URL = "/api/nhan-vien/thong-bao";
 
 const unreadCount = computed(() => {
   return notifications.value.filter(item => item.trangThai === 'CHUA_DOC').length;
@@ -156,12 +153,12 @@ const markAllAsRead = async () => {
 
 const goToNotification = (item) => {
   showMiniNoti.value = false;
-  router.push('/doi-tac/thong-bao');
+  // router.push('/hotline/thong-bao');
 };
 
 const goToAllNotifications = () => {
   showMiniNoti.value = false;
-  router.push('/doi-tac/thong-bao');
+  // router.push('/hotline/thong-bao');
 };
 
 const getMiniIconClass = (item) => {

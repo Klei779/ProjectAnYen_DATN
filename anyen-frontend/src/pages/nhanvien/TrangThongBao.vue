@@ -23,7 +23,7 @@
         </div>
 
         <div v-else-if="filteredNotifications.length === 0" class="empty-state">
-          <img src="../../assets/images/icon/logoAnYen.png.png" alt="Empty" style="width: 100px; opacity: 0.5; margin-bottom: 20px;">
+          <img src="../../assets/images/icon/logoAnYen.png" alt="Empty" style="width: 100px; opacity: 0.5; margin-bottom: 20px;">
           <p>Không có công việc nào trong mục này</p>
         </div>
 

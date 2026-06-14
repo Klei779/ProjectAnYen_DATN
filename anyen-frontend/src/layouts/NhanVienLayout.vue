@@ -51,6 +51,24 @@
                 </div>
               </div>
             </div>
+
+            <div class="user-profile-wrapper" style="position: relative; cursor: pointer; margin-left: 20px" @click.stop="toggleProfile">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="avatar-small">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="user-short-info">
+                  <strong>{{ user?.hoTen || 'Nhân viên' }}</strong>
+                </div>
+              </div>
+              <UserProfileDropdown 
+                v-if="showProfile" 
+                :user="user" 
+                icon-class="fa-solid fa-user"
+                @logout="logout" 
+              />
+            </div>
+
           </div>
         </header>
 
@@ -68,9 +86,13 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../api/api.js";
 import NhanVienSidebar from "../components/NhanVienSidebar.vue";
+import UserProfileDropdown from "../components/UserProfileDropdown.vue";
 
 const route = useRoute();
 const router = useRouter();
+
+const user = ref(null);
+const showProfile = ref(false);
 
 const routeTitles = {
   "/nhan-vien/tong-quan": "Tổng quan",
@@ -163,10 +185,31 @@ const getMiniIconName = (item) => {
 onMounted(() => {
   document.addEventListener('click', () => {
     if (showMiniNoti.value) showMiniNoti.value = false;
+    if (showProfile.value) showProfile.value = false;
   });
+  
+  const userStr = localStorage.getItem("user");
+  if (userStr) {
+    user.value = JSON.parse(userStr);
+  }
+
   loadNotifications();
   startPolling();
 });
+
+const toggleProfile = () => {
+  showProfile.value = !showProfile.value;
+};
+
+const logout = () => {
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+  localStorage.removeItem("loaiTaiKhoan");
+  localStorage.removeItem("tenDangNhap");
+  localStorage.removeItem("id");
+  window.dispatchEvent(new Event('session-updated'));
+  router.push("/");
+};
 
 onUnmounted(() => {
   stopPolling();
@@ -443,5 +486,20 @@ onUnmounted(() => {
   text-align: center;
   color: #6b7280;
   font-size: 14px;
+}
+
+.avatar-small {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4b5563;
+}
+.user-short-info strong {
+  font-size: 14px;
+  color: #374151;
 }
 </style>

@@ -14,52 +14,30 @@
 
     <div class="partner-card" style="position: relative; cursor: pointer" @click="toggleProfile">
       <div class="avatar">
-        <i class="bi bi-person-badge"></i>
+        <i class="bi bi-headset"></i>
       </div>
       <div class="partner-info sidebar-text">
-        <h6 class="mb-1">{{ user?.hoTen || 'Nhân viên' }}</h6>
-        <small>Nhân viên An Yên</small>
+        <h6 class="mb-1">{{ user?.hoTen || 'Hotline' }}</h6>
+        <small>Nhân viên Hotline</small>
       </div>
       
       <UserProfileDropdown 
         v-if="showProfile" 
         :user="user" 
-        icon-class="bi bi-person-badge"
+        icon-class="bi bi-headset"
         @logout="logout" 
       />
     </div>
 
     <nav class="menu">
-      <RouterLink to="/nhan-vien/tong-quan" class="menu-item" title="Tổng quan">
-        <i class="fa-solid fa-chart-pie menu-icon"></i>
-        <span class="sidebar-text">Tổng quan</span>
+      <RouterLink to="/hotline/quan-ly-cong-viec" class="menu-item" title="Quản lý công việc">
+        <i class="fa-solid fa-briefcase menu-icon"></i>
+        <span class="sidebar-text">Quản lý công việc</span>
       </RouterLink>
-
-
-
-      <RouterLink to="/nhan-vien/quan-ly-don-hang" class="menu-item" title="Quản lý đơn hàng">
+      
+      <RouterLink to="/hotline/quan-ly-don-hang" class="menu-item" title="Quản lý đơn hàng">
         <i class="fa-solid fa-cart-shopping menu-icon"></i>
         <span class="sidebar-text">Quản lý đơn hàng</span>
-      </RouterLink>
-
-      <RouterLink to="/nhan-vien/thong-bao" class="menu-item" title="Thông báo">
-        <i class="fa-solid fa-bell menu-icon"></i>
-        <span class="sidebar-text">Thông báo</span>
-      </RouterLink>
-
-      <RouterLink to="/nhan-vien/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
-        <i class="fa-solid fa-user menu-icon"></i>
-        <span class="sidebar-text">Thông tin tài khoản</span>
-      </RouterLink>
-
-      <RouterLink to="/nhan-vien/quan-ly-khach-hang" class="menu-item" title="Quản lý khách hàng">
-        <i class="fa-solid fa-users menu-icon"></i>
-        <span class="sidebar-text">Quản lý khách hàng</span>
-      </RouterLink>
-
-      <RouterLink to="/nhan-vien/quan-ly-hop-dong" class="menu-item" title="Quản lý hợp đồng">
-        <i class="fa-solid fa-file-contract menu-icon"></i>
-        <span class="sidebar-text">Quản lý hợp đồng</span>
       </RouterLink>
 
       <div class="logout-btn-container mt-3">

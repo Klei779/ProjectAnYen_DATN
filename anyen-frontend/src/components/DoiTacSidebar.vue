@@ -91,7 +91,6 @@ const logout = () => {
   localStorage.removeItem("tenDangNhap");
   localStorage.removeItem("id");
 
-  router.push("/");
 
 };
 </script>

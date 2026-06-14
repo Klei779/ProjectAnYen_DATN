@@ -1,4 +1,4 @@
-package vn.anyen.dto;
+package vn.anyen.dto.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,16 +11,15 @@ import java.math.BigDecimal;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class SanPhamDoiTacResponse {
+public class SanPhamDoiTacRequest {
+// test
 
-    private Integer maSanPham;
     private String tenSanPham;
     private String loai;
     private String noiThat;
     private String quyCach;
     private String tonGiao;
     private BigDecimal giaTien;
-    private Integer maDoiTac;
     private Integer soLuong;
     private String thietKe;
     private String xuatXu;

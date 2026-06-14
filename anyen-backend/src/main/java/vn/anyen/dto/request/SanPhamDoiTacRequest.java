@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SanPhamDoiTacRequest {
+// test
 
     private String tenSanPham;
     private String loai;

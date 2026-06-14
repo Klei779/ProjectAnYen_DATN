@@ -1,9 +1,8 @@
 <script setup>
 import { computed } from "vue";
 import {
-  Printer, Close, User, ShoppingCart,
-  Timer, Phone, Message, Location,
-  Lock, Calendar, Van,
+  Calendar, User, Wallet, Phone, Message, Location,
+  Plus, Delete, Right
 } from "@element-plus/icons-vue";
 import { formatCurrency, formatDate } from "../../services/donHangService.js";
 import "../../assets/styles/PopChiTietDonHang.css";
@@ -13,7 +12,7 @@ const props = defineProps({
   donHang:    { type: Object,  default: null },
 });
 
-const emit = defineEmits(["update:modelValue", "huy-don", "dong"]);
+const emit = defineEmits(["update:modelValue", "huy-don", "dong", "luu"]);
 
 const visible = computed({
   get: () => props.modelValue,
@@ -32,275 +31,263 @@ const tongCong = computed(() => {
   return tamTinh.value - (order.value.giamGia || 0) + (order.value.phiVanChuyen || 0);
 });
 
-const ghiChuLines = computed(() => {
-  if (!order.value?.ghiChuKH) return [];
-  return order.value.ghiChuKH.split(".").filter((l) => l.trim() !== "");
+const STEPS = ["Chờ xác nhận", "Đã xác nhận", "Hoàn thành", "Thanh toán"];
+const getStepIndex = (trangThai) => STEPS.indexOf(trangThai);
+
+const lichSuArr = computed(() => {
+    if (!order.value) return [];
+    // If backend returns lichSu, we format it or we mock the 4 steps based on current status
+    const currentIdx = getStepIndex(order.value.trangThai);
+    
+    return STEPS.map((step, idx) => {
+        let isDone = false;
+        let isActive = false;
+        if (order.value.trangThai === "Đã hủy") {
+            isDone = false;
+        } else {
+            isDone = idx <= currentIdx;
+            isActive = idx === currentIdx && step !== "Thanh toán";
+        }
+
+        // Try to find matching step in backend lichSu
+        const backendStep = order.value.lichSu?.find(ls => ls.trangThai === step);
+
+        return {
+            title: step,
+            time: backendStep?.thoiGian || null,
+            desc: backendStep?.moTa || (isDone ? "" : "Chưa cập nhật"),
+            isDone,
+            isActive
+        };
+    });
 });
 
-const avatarInitials = computed(() => {
-  if (!order.value?.tenKhachHang) return "KH";
-  return order.value.tenKhachHang
-      .split(" ").slice(-2).map((w) => w[0]).join("").toUpperCase();
+const currentStatus = computed(() => order.value?.trangThai);
+const nextStatus = computed(() => {
+    const currentIdx = getStepIndex(currentStatus.value);
+    if (currentIdx >= 0 && currentIdx < STEPS.length - 1 && currentStatus.value !== "Đã hủy") {
+        return STEPS[currentIdx + 1];
+    }
+    return null;
 });
 
-const trangThaiClass = computed(() => {
-  const map = {
-    "Đã xác nhận":   "badge-green",
-    "Đang xử lý":    "badge-orange",
-    "Chờ thanh toán":"badge-blue",
-    "Đã hủy":        "badge-red",
-    "Hoàn thành":    "badge-green",
-  };
-  return map[order.value?.trangThai] || "badge-gray";
-});
+const handleHuy = () => emit("dong");
+const handleLuu = () => { emit("luu", order.value); emit("dong"); };
 
-const lichSuIconClass = (item) => {
-  if (!item.done) return "ls-icon ls-gray";
-  const map = {
-    green: "ls-icon ls-green", orange: "ls-icon ls-orange",
-    purple: "ls-icon ls-purple", blue: "ls-icon ls-blue",
-    cyan: "ls-icon ls-cyan",
-  };
-  return map[item.color] || "ls-icon ls-gray";
+const increaseQty = (sp) => { sp.SoLuong++; sp.thanhTien = sp.SoLuong * sp.giaTien; };
+const decreaseQty = (sp) => { 
+    if(sp.SoLuong > 1) { 
+        sp.SoLuong--; 
+        sp.thanhTien = sp.SoLuong * sp.giaTien; 
+    } 
+};
+const removeSp = (sp) => {
+    order.value.sanPhams = order.value.sanPhams.filter(item => item.MaSanPham !== sp.MaSanPham);
 };
 
-const handleHuyDon = () => emit("huy-don", order.value?.MaDonHang);
-const handleDong   = () => { visible.value = false; emit("dong"); };
+const capNhatTrangThaiTiep = () => {
+    if (nextStatus.value && order.value) {
+        order.value.trangThai = nextStatus.value;
+    }
+};
+
 </script>
 
 <template>
   <el-dialog
       v-model="visible"
-      width="92%"
-      top="3vh"
-      class="don-hang-dialog"
-      :show-close="false"
+      width="90%"
+      top="4vh"
+      class="chi-tiet-dialog"
+      :show-close="true"
       destroy-on-close
       :z-index="10050"
   >
     <!-- HEADER -->
     <template #header>
-      <div class="dh-header">
-        <div class="dh-header-left">
-          <h2 class="dh-title">
-            Chi tiết đơn hàng
-            <span class="dh-code">#{{ order?.maCode }}</span>
-          </h2>
-          <span v-if="order?.trangThai" class="dh-badge" :class="trangThaiClass">
-            {{ order.trangThai }}
-          </span>
-        </div>
-
-        <div class="dh-header-right">
-          <div class="dh-meta">
-            <span class="dh-meta-item">
-              <el-icon><Calendar /></el-icon>
-              Tạo đơn: {{ formatDate(order?.NgayTaoDon) }}
-            </span>
-            <span class="dh-meta-item">
-              <el-icon><User /></el-icon>
-              Nhân viên phụ trách: <strong>{{ order?.tenNhanVien }}</strong>
-            </span>
-          </div>
-          <div class="dh-header-actions">
-            <el-button size="small" plain>
-              <el-icon><Printer /></el-icon> In đơn hàng
-            </el-button>
-            <el-button size="small" plain circle @click="handleDong">
-              <el-icon><Close /></el-icon>
-            </el-button>
-          </div>
-        </div>
+      <div class="dialog-title-new">
+        Sửa đơn hàng #{{ order?.maCode }}
       </div>
     </template>
 
     <!-- BODY -->
-    <div class="dh-body" v-if="order">
+    <div class="popup-3col" v-if="order">
 
-      <!-- Cột trái: Khách hàng -->
-      <div class="col-left">
-        <div class="section-card">
-          <div class="section-header">
-            <el-icon class="sec-icon"><User /></el-icon>
-            <span>Thông tin khách hàng</span>
+      <!-- CỘT 1: THÔNG TIN CHUNG -->
+      <div class="col-panel info-col">
+          <!-- Thông tin đơn hàng -->
+          <div class="info-section">
+              <h4 class="section-title">Thông tin đơn hàng</h4>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Calendar/></el-icon> Mã đơn hàng:</div>
+                  <div class="info-val bold">#{{ order.maCode }}</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Calendar/></el-icon> Ngày tạo:</div>
+                  <div class="info-val">{{ formatDate(order.NgayTaoDon) }}</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Wallet/></el-icon> Phương thức thanh toán:</div>
+                  <div class="info-val">{{ order.phuongThucThanhToan || 'Chưa cập nhật' }}</div>
+              </div>
+          </div>
+          
+          <div class="divider"></div>
+
+          <!-- Thông tin khách hàng -->
+          <div class="info-section">
+              <h4 class="section-title">Thông tin khách hàng</h4>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><User/></el-icon> Họ tên:</div>
+                  <div class="info-val">{{ order.tenKhachHang }}</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Phone/></el-icon> SĐT:</div>
+                  <div class="info-val">{{ order.soDienThoaiKH || 'Chưa cập nhật' }}</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Message/></el-icon> Email:</div>
+                  <div class="info-val">{{ order.emailKH || 'Chưa cập nhật' }}</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Location/></el-icon> Địa chỉ:</div>
+                  <div class="info-val address-val">{{ order.diaChiKH || 'Chưa cập nhật' }}</div>
+              </div>
           </div>
 
-          <div class="kh-identity">
-            <div class="kh-avatar">{{ avatarInitials }}</div>
-            <div class="kh-name-block">
-              <span class="kh-name">{{ order.tenKhachHang }}</span>
-              <span v-if="order.loaiKH === 'VIP'" class="kh-vip">⭐ VIP</span>
-            </div>
-          </div>
+          <div class="divider"></div>
 
-          <div class="kh-info-list">
-            <div class="kh-info-item">
-              <el-icon><Phone /></el-icon>
-              <span>{{ order.soDienThoaiKH }}</span>
-            </div>
-            <div class="kh-info-item">
-              <el-icon><Message /></el-icon>
-              <span>{{ order.emailKH }}</span>
-            </div>
-            <div class="kh-info-item">
-              <el-icon><Location /></el-icon>
-              <span>{{ order.diaChiKH }}</span>
-            </div>
+          <!-- Nhân viên phụ trách -->
+          <div class="info-section">
+              <h4 class="section-title">Nhân viên phụ trách</h4>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><User/></el-icon> Họ tên:</div>
+                  <div class="info-val">{{ order.tenNhanVien || 'Chưa cập nhật' }}</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Phone/></el-icon> SĐT:</div>
+                  <div class="info-val">Chưa cập nhật</div>
+              </div>
+              <div class="info-row">
+                  <div class="info-label"><el-icon><Message/></el-icon> Email:</div>
+                  <div class="info-val">Chưa cập nhật</div>
+              </div>
           </div>
-
-          <div class="kh-stats">
-            <div class="kh-stat-item">
-              <span class="stat-label">Tổng số đơn</span>
-              <span class="stat-value">{{ order.tongDonKH }} đơn</span>
-            </div>
-            <div class="kh-stat-item">
-              <span class="stat-label">Tổng chi tiêu</span>
-              <span class="stat-value red">{{ formatCurrency(order.tongChiTieuKH) }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-card" v-if="ghiChuLines.length">
-          <div class="section-header">
-            <el-icon class="sec-icon"><Timer /></el-icon>
-            <span>Ghi chú khách hàng</span>
-          </div>
-          <ul class="note-list">
-            <template v-for="(line, i) in ghiChuLines" :key="i">
-              <li>{{ line.trim() }}</li>
-            </template>
-          </ul>
-        </div>
-
-        <div class="section-card" v-if="order.ghiChuNoiBo">
-          <div class="section-header">
-            <el-icon class="sec-icon"><Lock /></el-icon>
-            <span>Ghi chú nội bộ</span>
-          </div>
-          <p class="note-text">{{ order.ghiChuNoiBo }}</p>
-        </div>
       </div>
 
-      <!-- Cột giữa: Chi tiết đơn -->
-      <div class="col-middle">
-        <div class="section-card">
-          <div class="section-header">
-            <el-icon class="sec-icon"><ShoppingCart /></el-icon>
-            <span>Chi tiết đơn hàng</span>
-          </div>
-
-          <div class="order-methods">
-            <div class="method-item">
-              <el-icon class="method-icon"><Lock /></el-icon>
-              <div>
-                <p class="method-label">Phương thức thanh toán</p>
-                <p class="method-value">{{ order.phuongThucThanhToan }}</p>
-              </div>
-            </div>
-            <div class="method-item">
-              <el-icon class="method-icon"><Van /></el-icon>
-              <div>
-                <p class="method-label">Phương thức giao hàng</p>
-                <p class="method-value">{{ order.phuongThucGiaoHang }}</p>
-              </div>
-            </div>
-          </div>
-
-          <table class="sp-table">
-            <thead>
-            <tr>
-              <th class="col-sp">Sản phẩm</th>
-              <th class="col-gia">Đơn giá</th>
-              <th class="col-sl">SL</th>
-              <th class="col-tt">Thành tiền</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr v-for="sp in order.sanPhams" :key="sp.MaSanPham">
-              <td>
-                <div class="sp-cell">
-                  <img v-if="sp.HinhAnh" :src="sp.HinhAnh" :alt="sp.tenSanPham" class="sp-img" />
-                  <div v-else class="sp-img-placeholder">
-                    <el-icon><ShoppingCart /></el-icon>
+      <!-- CỘT 2: TIẾN TRÌNH -->
+      <div class="col-panel progress-col">
+          <h4 class="section-title">Tiến trình đơn hàng</h4>
+          
+          <div class="vertical-stepper">
+              <div v-for="(step, idx) in lichSuArr" :key="idx" class="v-step" :class="{ done: step.isDone, active: step.isActive }">
+                  <div class="v-step-indicator">
+                      <div class="v-step-circle">
+                         <span v-if="step.isDone && !step.isActive">✓</span>
+                         <span v-else-if="step.isActive"><el-icon><Timer/></el-icon></span>
+                         <span v-else>{{ idx + 1 }}</span>
+                      </div>
+                      <div class="v-step-line" v-if="idx < lichSuArr.length - 1"></div>
                   </div>
-                  <div class="sp-info">
-                    <span class="sp-name">{{ sp.tenSanPham }}</span>
-                    <span class="sp-sku">SKU: {{ sp.maSKU }}</span>
-                    <span class="sp-loai">Phân loại: {{ sp.phanLoai }}</span>
+                  <div class="v-step-content">
+                      <div class="v-step-title">{{ step.title }}</div>
+                      <div class="v-step-time" v-if="step.time">{{ step.time }}</div>
+                      <div class="v-step-time" v-else-if="step.isDone">Đã cập nhật</div>
+                      <div class="v-step-time" v-else>Chưa cập nhật</div>
+                      <div class="v-step-desc">{{ step.desc }}</div>
                   </div>
-                </div>
-              </td>
-              <td class="text-right">{{ formatCurrency(sp.giaTien) }}</td>
-              <td class="text-center">{{ sp.SoLuong }}</td>
-              <td class="text-right">{{ formatCurrency(sp.thanhTien) }}</td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="section-card">
-          <div class="order-summary">
-            <div class="summary-row">
-              <span>Tạm tính</span>
-              <span>{{ formatCurrency(tamTinh) }}</span>
-            </div>
-            <div class="summary-row giam" v-if="order.giamGia">
-              <span>Giảm giá</span>
-              <span>- {{ formatCurrency(order.giamGia) }}</span>
-            </div>
-            <div class="summary-row" v-if="order.phiVanChuyen">
-              <span>Phí vận chuyển</span>
-              <span>{{ formatCurrency(order.phiVanChuyen) }}</span>
-            </div>
-            <div class="summary-row total-row">
-              <span>Tổng cộng</span>
-              <span class="total-value">{{ formatCurrency(tongCong) }}</span>
-            </div>
+              </div>
           </div>
-        </div>
+
+          <div class="progress-actions">
+              <button v-if="nextStatus" class="btn-capnhat-tt" @click="capNhatTrangThaiTiep">
+                  <el-icon><Right/></el-icon> Cập nhật trạng thái tiếp theo
+              </button>
+              <div v-if="nextStatus" class="status-note">
+                  Trạng thái hiện tại: <strong>{{ currentStatus }}</strong><br/>
+                  Nhấn để chuyển sang trạng thái: <strong>{{ nextStatus }}</strong>
+              </div>
+          </div>
       </div>
 
-      <!-- Cột phải: Lịch sử -->
-      <div class="col-right">
-        <div class="section-card">
-          <div class="section-header">
-            <el-icon class="sec-icon"><Timer /></el-icon>
-            <span>Lịch sử giao đơn</span>
+      <!-- CỘT 3: SẢN PHẨM -->
+      <div class="col-panel products-col">
+          <div class="products-header">
+              <h4 class="section-title">Danh sách sản phẩm</h4>
+              <button class="btn-outline-green"><el-icon><Plus/></el-icon> Thêm sản phẩm</button>
           </div>
 
-          <div class="timeline">
-            <div v-for="(item, idx) in order.lichSu" :key="idx" class="tl-item">
-              <div class="tl-line-wrap">
-                <div :class="lichSuIconClass(item)">
-                  <span v-if="item.done">✓</span>
-                  <span v-else class="dot-inner"></span>
-                </div>
-                <div v-if="idx < order.lichSu.length - 1" class="tl-connector"></div>
-              </div>
-              <div class="tl-content">
-                <div class="tl-title-row">
-                  <span class="tl-title" :class="item.done ? 'tl-done' : 'tl-pending'">
-                    {{ item.trangThai }}
-                  </span>
-                  <span v-if="item.thoiGian" class="tl-time">{{ item.thoiGian }}</span>
-                  <span v-else class="tl-pending-label">Chưa thực hiện</span>
-                </div>
-                <p class="tl-desc">{{ item.moTa }}</p>
-              </div>
-            </div>
+          <div class="products-table-wrapper">
+              <table class="products-table">
+                  <thead>
+                      <tr>
+                          <th>Sản phẩm</th>
+                          <th style="text-align: right">Đơn giá</th>
+                          <th style="text-align: center">Số lượng</th>
+                          <th style="text-align: right">Thành tiền</th>
+                          <th style="text-align: center">Thao tác</th>
+                      </tr>
+                  </thead>
+                  <tbody>
+                      <tr v-if="!order.sanPhams || order.sanPhams.length === 0">
+                          <td colspan="5" style="text-align: center; color: #888;">Chưa có sản phẩm</td>
+                      </tr>
+                      <tr v-for="sp in order.sanPhams" :key="sp.MaSanPham">
+                          <td>
+                              <div class="sp-cell-new">
+                                  <img v-if="sp.HinhAnh" :src="sp.HinhAnh" />
+                                  <div v-else class="img-placeholder"></div>
+                                  <div class="sp-info-new">
+                                      <div class="sp-name-new">{{ sp.tenSanPham }}</div>
+                                      <div class="sp-sub-new">{{ sp.phanLoai || sp.SoLuong }}</div>
+                                  </div>
+                              </div>
+                          </td>
+                          <td style="text-align: right; font-weight: 600;">{{ formatCurrency(sp.giaTien) }}</td>
+                          <td>
+                              <div class="qty-control">
+                                  <button @click="decreaseQty(sp)">-</button>
+                                  <span>{{ sp.SoLuong }}</span>
+                                  <button @click="increaseQty(sp)">+</button>
+                              </div>
+                          </td>
+                          <td style="text-align: right; font-weight: 700;">{{ formatCurrency(sp.thanhTien) }}</td>
+                          <td style="text-align: center;">
+                              <button class="btn-trash" @click="removeSp(sp)"><el-icon><Delete/></el-icon></button>
+                          </td>
+                      </tr>
+                  </tbody>
+              </table>
           </div>
-        </div>
+
+          <div class="summary-section">
+              <div class="sum-row">
+                  <span>Tạm tính:</span>
+                  <span>{{ formatCurrency(tamTinh) }}</span>
+              </div>
+              <div class="sum-row">
+                  <span>Phí vận chuyển:</span>
+                  <span>{{ formatCurrency(order.phiVanChuyen || 0) }}</span>
+              </div>
+              <div class="sum-row red-text" v-if="order.giamGia">
+                  <span>Giảm giá:</span>
+                  <span>- {{ formatCurrency(order.giamGia) }}</span>
+              </div>
+              <div class="sum-divider"></div>
+              <div class="sum-row total">
+                  <span>Tổng cộng:</span>
+                  <span>{{ formatCurrency(tongCong) }}</span>
+              </div>
+          </div>
       </div>
+
     </div>
 
     <!-- FOOTER -->
     <template #footer>
-      <div class="dh-footer">
-        <el-button class="btn-huy" @click="handleHuyDon">
-          <el-icon style="margin-right: 6px;"><Close /></el-icon>
-          Hủy đơn
-        </el-button>
-        <el-button class="btn-dong" @click="handleDong">Đóng</el-button>
+      <div class="dialog-footer-new">
+        <button class="btn-cancel-new" @click="handleHuy">Hủy</button>
+        <button class="btn-save-new" @click="handleLuu">Lưu thay đổi</button>
       </div>
     </template>
   </el-dialog>

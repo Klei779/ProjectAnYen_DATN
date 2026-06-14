@@ -250,6 +250,7 @@ watch(visible, async (isOpen) => {
       top="2vh"
       class="custom-contract-dialog"
       :show-close="true"
+      :z-index="10050"
   >
     <template #header>
       <div class="dialog-header">

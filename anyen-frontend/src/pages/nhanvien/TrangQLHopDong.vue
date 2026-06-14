@@ -308,14 +308,7 @@ onMounted(() => {
   <div class="contract-page">
     <div class="page-header">
       <div class="title-left">
-        <button class="menu-btn">
-          <i class="fa-solid fa-bars"></i>
-        </button>
 
-        <div>
-          <h2>Quản lý hợp đồng</h2>
-          <p>Danh sách hợp đồng bạn phụ trách</p>
-        </div>
       </div>
     </div>
 

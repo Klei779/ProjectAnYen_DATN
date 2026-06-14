@@ -112,10 +112,6 @@ const handleCreateOrder = async (payload) => {
 
     <!-- ── Tiêu đề ── -->
     <div class="page-header">
-      <div class="page-title-wrap">
-        <h2 class="page-title">Quản lý đơn hàng</h2>
-        <span class="total-count">{{ filteredList.length }} đơn</span>
-      </div>
       <el-button type="primary" class="btn-tao" @click="showCreateOrder = true">
         <el-icon><Plus /></el-icon>
         Tạo đơn hàng

@@ -1,15 +1,8 @@
 <template>
   <div class="notification-page">
-    
-
-
     <div class="content-wrapper">
       <!-- Main Content (Left) -->
       <section class="main-column">
-        <div class="page-header-content">
-          <h3>Thông báo công việc</h3>
-          <p>Danh sách công việc mới được giao cho bạn</p>
-        </div>
 
         <div class="custom-tabs">
           <button

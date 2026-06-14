@@ -2,11 +2,7 @@
   <div class="container-fluid">
     <div class="row min-vh-100">
 
-      <!-- Sidebar -->
-      <div
-          class="col-auto p-0"
-          style="width:280px"
-      >
+      <div class="col-auto p-0">
         <NhanVienSidebar />
       </div>
 

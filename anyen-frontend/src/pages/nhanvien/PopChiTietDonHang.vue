@@ -40,7 +40,7 @@ const ghiChuLines = computed(() => {
 const avatarInitials = computed(() => {
   if (!order.value?.tenKhachHang) return "KH";
   return order.value.tenKhachHang
-    .split(" ").slice(-2).map((w) => w[0]).join("").toUpperCase();
+      .split(" ").slice(-2).map((w) => w[0]).join("").toUpperCase();
 });
 
 const trangThaiClass = computed(() => {
@@ -70,12 +70,13 @@ const handleDong   = () => { visible.value = false; emit("dong"); };
 
 <template>
   <el-dialog
-    v-model="visible"
-    width="92%"
-    top="3vh"
-    class="don-hang-dialog"
-    :show-close="false"
-    destroy-on-close
+      v-model="visible"
+      width="92%"
+      top="3vh"
+      class="don-hang-dialog"
+      :show-close="false"
+      destroy-on-close
+      :z-index="10050"
   >
     <!-- HEADER -->
     <template #header>
@@ -207,32 +208,32 @@ const handleDong   = () => { visible.value = false; emit("dong"); };
 
           <table class="sp-table">
             <thead>
-              <tr>
-                <th class="col-sp">Sản phẩm</th>
-                <th class="col-gia">Đơn giá</th>
-                <th class="col-sl">SL</th>
-                <th class="col-tt">Thành tiền</th>
-              </tr>
+            <tr>
+              <th class="col-sp">Sản phẩm</th>
+              <th class="col-gia">Đơn giá</th>
+              <th class="col-sl">SL</th>
+              <th class="col-tt">Thành tiền</th>
+            </tr>
             </thead>
             <tbody>
-              <tr v-for="sp in order.sanPhams" :key="sp.MaSanPham">
-                <td>
-                  <div class="sp-cell">
-                    <img v-if="sp.HinhAnh" :src="sp.HinhAnh" :alt="sp.tenSanPham" class="sp-img" />
-                    <div v-else class="sp-img-placeholder">
-                      <el-icon><ShoppingCart /></el-icon>
-                    </div>
-                    <div class="sp-info">
-                      <span class="sp-name">{{ sp.tenSanPham }}</span>
-                      <span class="sp-sku">SKU: {{ sp.maSKU }}</span>
-                      <span class="sp-loai">Phân loại: {{ sp.phanLoai }}</span>
-                    </div>
+            <tr v-for="sp in order.sanPhams" :key="sp.MaSanPham">
+              <td>
+                <div class="sp-cell">
+                  <img v-if="sp.HinhAnh" :src="sp.HinhAnh" :alt="sp.tenSanPham" class="sp-img" />
+                  <div v-else class="sp-img-placeholder">
+                    <el-icon><ShoppingCart /></el-icon>
                   </div>
-                </td>
-                <td class="text-right">{{ formatCurrency(sp.giaTien) }}</td>
-                <td class="text-center">{{ sp.SoLuong }}</td>
-                <td class="text-right">{{ formatCurrency(sp.thanhTien) }}</td>
-              </tr>
+                  <div class="sp-info">
+                    <span class="sp-name">{{ sp.tenSanPham }}</span>
+                    <span class="sp-sku">SKU: {{ sp.maSKU }}</span>
+                    <span class="sp-loai">Phân loại: {{ sp.phanLoai }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="text-right">{{ formatCurrency(sp.giaTien) }}</td>
+              <td class="text-center">{{ sp.SoLuong }}</td>
+              <td class="text-right">{{ formatCurrency(sp.thanhTien) }}</td>
+            </tr>
             </tbody>
           </table>
         </div>

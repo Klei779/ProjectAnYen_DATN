@@ -1,16 +1,20 @@
 package vn.anyen.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class SanPhamDoiTacPageResponse {
 
     private List<SanPhamDoiTacResponse> items;
     private long total;
+    private int page;
+    private int pageSize;
 }

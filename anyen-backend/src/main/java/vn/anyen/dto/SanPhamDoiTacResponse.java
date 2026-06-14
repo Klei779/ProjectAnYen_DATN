@@ -1,17 +1,18 @@
 package vn.anyen.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class SanPhamDoiTacResponse {
 
-    // Field theo database
     private Integer maSanPham;
     private String tenSanPham;
     private String loai;
@@ -32,14 +33,4 @@ public class SanPhamDoiTacResponse {
     private String kichThuoc;
     private String trongLuong;
     private String cnsx;
-
-    // Field phụ cho frontend TrangQLSanPham.vue
-    private Integer id;
-    private String name;
-    private String sku;
-    private String category;
-    private BigDecimal price;
-    private Integer stock;
-    private String status;
-    private String image;
 }

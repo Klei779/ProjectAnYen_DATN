@@ -2,7 +2,10 @@ package vn.anyen.service;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -11,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.SanPhamDoiTacPageResponse;
 import vn.anyen.dto.SanPhamDoiTacResponse;
-import vn.anyen.dto.request.SanPhamRequest;
+import vn.anyen.dto.request.SanPhamDoiTacRequest;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.SanPham;
 import vn.anyen.repository.DoiTacRepository;
@@ -20,14 +23,20 @@ import vn.anyen.repository.SanPhamDoiTacRepository;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class SanPhamDoiTacService {
 
-    private final SanPhamDoiTacRepository sanPhamRepository;
+    private static final String TRANG_THAI_DANG_BAN = "Đang bán";
+    private static final String TRANG_THAI_AN = "Ẩn";
+
+    private final SanPhamDoiTacRepository sanPhamDoiTacRepository;
     private final DoiTacRepository doiTacRepository;
 
+    @Transactional(readOnly = true)
     public SanPhamDoiTacPageResponse getSanPhamDoiTac(
             Authentication authentication,
             String keyword,
@@ -35,204 +44,120 @@ public class SanPhamDoiTacService {
             String vatLieu,
             String tonGiao,
             String mauSac,
+            String trangThai,
             BigDecimal minPrice,
             BigDecimal maxPrice,
             String sortBy,
             int page,
             int pageSize
     ) {
-        Integer maDoiTac = getMaDoiTacDangNhap(authentication);
+        Integer maDoiTac = getMaDoiTac(authentication);
+        Pageable pageable = PageRequest.of(Math.max(page, 0), Math.max(pageSize, 1), buildSort(sortBy));
 
-        Sort sort = buildSort(sortBy);
-
-        Pageable pageable = PageRequest.of(
-                Math.max(page - 1, 0),
-                Math.max(pageSize, 1),
-                sort
-        );
-
-        Specification<SanPham> spec = buildSpecification(
+        Specification<SanPham> spec = buildSpec(
                 maDoiTac,
                 keyword,
                 loai,
                 vatLieu,
                 tonGiao,
                 mauSac,
+                trangThai,
                 minPrice,
                 maxPrice
         );
 
-        Page<SanPham> result = sanPhamRepository.findAll(spec, pageable);
-
-        List<SanPhamDoiTacResponse> items = result
-                .getContent()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        Page<SanPham> result = sanPhamDoiTacRepository.findAll(spec, pageable);
 
         return SanPhamDoiTacPageResponse.builder()
-                .items(items)
+                .items(result.getContent().stream().map(this::toResponse).toList())
                 .total(result.getTotalElements())
+                .page(result.getNumber())
+                .pageSize(result.getSize())
                 .build();
     }
 
-    @Transactional
-    public SanPhamDoiTacResponse taoSanPham(
-            Authentication authentication,
-            SanPhamRequest request
-    ) {
-        Integer maDoiTac = getMaDoiTacDangNhap(authentication);
+    public SanPhamDoiTacResponse createSanPham(Authentication authentication, SanPhamDoiTacRequest request) {
+        Integer maDoiTac = getMaDoiTac(authentication);
+        validateRequest(request, true);
 
-        SanPham sanPham = SanPham.builder()
-                .tenSanPham(request.getTenSanPham())
-                .loai(request.getLoai())
-                .noiThat(request.getNoiThat())
-                .quyCach(request.getQuyCach())
-                .tonGiao(request.getTonGiao())
-                .giaTien(defaultMoney(request.getGiaTien()))
-                .maDoiTac(maDoiTac)
-                .soLuong(defaultInt(request.getSoLuong()))
-                .thietKe(request.getThietKe())
-                .xuatXu(request.getXuatXu())
-                .ghiChu(request.getGhiChu())
-                .khuyenMai(defaultMoney(request.getKhuyenMai()))
-                .mauSac(request.getMauSac())
-                .hinhAnh(request.getHinhAnh())
-                .vatLieu(request.getVatLieu())
-                .trangThai(defaultTrangThai(request.getTrangThai(), request.getSoLuong()))
-                .kichThuoc(request.getKichThuoc())
-                .trongLuong(request.getTrongLuong())
-                .cnsx(request.getCnsx())
-                .build();
+        SanPham sanPham = new SanPham();
+        applyRequest(sanPham, request);
+        sanPham.setMaDoiTac(maDoiTac);
 
-        return toResponse(sanPhamRepository.save(sanPham));
-    }
-
-    @Transactional
-    public SanPhamDoiTacResponse capNhatSanPham(
-            Authentication authentication,
-            Integer maSanPham,
-            SanPhamRequest request
-    ) {
-        Integer maDoiTac = getMaDoiTacDangNhap(authentication);
-
-        SanPham sanPham = getSanPhamCuaDoiTac(maSanPham, maDoiTac);
-
-        sanPham.setTenSanPham(request.getTenSanPham());
-        sanPham.setLoai(request.getLoai());
-        sanPham.setNoiThat(request.getNoiThat());
-        sanPham.setQuyCach(request.getQuyCach());
-        sanPham.setTonGiao(request.getTonGiao());
-        sanPham.setGiaTien(defaultMoney(request.getGiaTien()));
-        sanPham.setSoLuong(defaultInt(request.getSoLuong()));
-        sanPham.setThietKe(request.getThietKe());
-        sanPham.setXuatXu(request.getXuatXu());
-        sanPham.setGhiChu(request.getGhiChu());
-        sanPham.setKhuyenMai(defaultMoney(request.getKhuyenMai()));
-        sanPham.setMauSac(request.getMauSac());
-        sanPham.setHinhAnh(request.getHinhAnh());
-        sanPham.setVatLieu(request.getVatLieu());
-        sanPham.setTrangThai(defaultTrangThai(request.getTrangThai(), request.getSoLuong()));
-        sanPham.setKichThuoc(request.getKichThuoc());
-        sanPham.setTrongLuong(request.getTrongLuong());
-        sanPham.setCnsx(request.getCnsx());
-
-        return toResponse(sanPhamRepository.save(sanPham));
-    }
-
-    @Transactional
-    public SanPhamDoiTacResponse capNhatTonKho(
-            Authentication authentication,
-            Integer maSanPham,
-            Integer soLuong
-    ) {
-        Integer maDoiTac = getMaDoiTacDangNhap(authentication);
-
-        SanPham sanPham = getSanPhamCuaDoiTac(maSanPham, maDoiTac);
-
-        int soLuongMoi = Math.max(soLuong == null ? 0 : soLuong, 0);
-        sanPham.setSoLuong(soLuongMoi);
-
-        if (soLuongMoi <= 0) {
-            sanPham.setTrangThai("Hết hàng");
-        } else if (
-                sanPham.getTrangThai() == null ||
-                        sanPham.getTrangThai().isBlank() ||
-                        sanPham.getTrangThai().equalsIgnoreCase("Hết hàng")
-        ) {
-            sanPham.setTrangThai("Còn hàng");
+        if (isBlank(sanPham.getTrangThai())) {
+            sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
+        }
+        if (sanPham.getSoLuong() == null) {
+            sanPham.setSoLuong(0);
         }
 
-        return toResponse(sanPhamRepository.save(sanPham));
+        return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    @Transactional
-    public SanPhamDoiTacResponse anSanPham(
-            Authentication authentication,
-            Integer maSanPham
-    ) {
-        Integer maDoiTac = getMaDoiTacDangNhap(authentication);
+    public SanPhamDoiTacResponse updateSanPham(Authentication authentication, Integer id, SanPhamDoiTacRequest request) {
+        validateRequest(request, false);
+        SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
-        SanPham sanPham = getSanPhamCuaDoiTac(maSanPham, maDoiTac);
-        sanPham.setTrangThai("Ẩn");
-
-        return toResponse(sanPhamRepository.save(sanPham));
+        applyRequest(sanPham, request);
+        return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    @Transactional
-    public void xoaSanPhamMem(
-            Authentication authentication,
-            Integer maSanPham
-    ) {
-        Integer maDoiTac = getMaDoiTacDangNhap(authentication);
+    public SanPhamDoiTacResponse updateTonKho(Authentication authentication, Integer id, Integer soLuong) {
+        if (soLuong == null || soLuong < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số lượng tồn kho không hợp lệ");
+        }
 
-        SanPham sanPham = getSanPhamCuaDoiTac(maSanPham, maDoiTac);
-
-        // Không xóa cứng để tránh lỗi khóa ngoại nếu sản phẩm đã nằm trong chi tiết đơn hàng.
-        sanPham.setTrangThai("Ẩn");
-
-        sanPhamRepository.save(sanPham);
+        SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+        sanPham.setSoLuong(soLuong);
+        return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    private Integer getMaDoiTacDangNhap(Authentication authentication) {
+    public SanPhamDoiTacResponse anSanPham(Authentication authentication, Integer id) {
+        SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+        sanPham.setTrangThai(TRANG_THAI_AN);
+        return toResponse(sanPhamDoiTacRepository.save(sanPham));
+    }
+
+    public SanPhamDoiTacResponse hienSanPham(Authentication authentication, Integer id) {
+        SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+        sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
+        return toResponse(sanPhamDoiTacRepository.save(sanPham));
+    }
+
+    private SanPham getSanPhamCuaDoiTac(Authentication authentication, Integer maSanPham) {
+        Integer maDoiTac = getMaDoiTac(authentication);
+
+        SanPham sanPham = sanPhamDoiTacRepository.findById(maSanPham)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy sản phẩm"));
+
+        if (!maDoiTac.equals(sanPham.getMaDoiTac())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền thao tác sản phẩm này");
+        }
+
+        return sanPham;
+    }
+
+    private Integer getMaDoiTac(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED,
-                    "Bạn chưa đăng nhập"
-            );
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Bạn cần đăng nhập bằng tài khoản đối tác");
         }
 
         String tenDangNhap = authentication.getName();
 
-        DoiTac doiTac = doiTacRepository
-                .findByTenDangNhap(tenDangNhap)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.FORBIDDEN,
-                        "Tài khoản hiện tại không phải đối tác"
-                ));
+        DoiTac doiTac = doiTacRepository.findByTenDangNhap(tenDangNhap)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản hiện tại không phải đối tác"));
 
         return doiTac.getMaDoiTac();
     }
 
-    private SanPham getSanPhamCuaDoiTac(
-            Integer maSanPham,
-            Integer maDoiTac
-    ) {
-        return sanPhamRepository
-                .findByMaSanPhamAndMaDoiTac(maSanPham, maDoiTac)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Không tìm thấy sản phẩm của đối tác này"
-                ));
-    }
-
-    private Specification<SanPham> buildSpecification(
+    private Specification<SanPham> buildSpec(
             Integer maDoiTac,
             String keyword,
             String loai,
             String vatLieu,
             String tonGiao,
             String mauSac,
+            String trangThai,
             BigDecimal minPrice,
             BigDecimal maxPrice
     ) {
@@ -241,76 +166,118 @@ public class SanPhamDoiTacService {
 
             predicates.add(cb.equal(root.get("maDoiTac"), maDoiTac));
 
-            if (keyword != null && !keyword.trim().isEmpty()) {
-                String kw = "%" + keyword.trim().toLowerCase() + "%";
-
+            if (!isBlank(keyword)) {
+                String kw = like(keyword);
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("tenSanPham")), kw),
                         cb.like(cb.lower(root.get("loai")), kw),
-                        cb.like(cb.lower(root.get("vatLieu")), kw)
+                        cb.like(cb.lower(root.get("vatLieu")), kw),
+                        cb.like(cb.lower(root.get("mauSac")), kw)
                 ));
             }
 
-            if (loai != null && !loai.trim().isEmpty()) {
-                predicates.add(cb.equal(root.get("loai"), loai.trim()));
+            if (!isBlank(loai)) {
+                predicates.add(cb.like(cb.lower(root.get("loai")), like(loai)));
             }
 
-            if (vatLieu != null && !vatLieu.trim().isEmpty()) {
-                predicates.add(cb.like(
-                        cb.lower(root.get("vatLieu")),
-                        "%" + vatLieu.trim().toLowerCase() + "%"
-                ));
+            if (!isBlank(vatLieu)) {
+                predicates.add(buildMultiLikePredicate(root.get("vatLieu"), vatLieu, cb));
             }
 
-            if (tonGiao != null && !tonGiao.trim().isEmpty()) {
-                predicates.add(cb.like(
-                        cb.lower(root.get("tonGiao")),
-                        "%" + tonGiao.trim().toLowerCase() + "%"
-                ));
+            if (!isBlank(tonGiao)) {
+                predicates.add(buildMultiLikePredicate(root.get("tonGiao"), tonGiao, cb));
             }
 
-            if (mauSac != null && !mauSac.trim().isEmpty()) {
-                predicates.add(cb.like(
-                        cb.lower(root.get("mauSac")),
-                        "%" + mauSac.trim().toLowerCase() + "%"
-                ));
+            if (!isBlank(mauSac)) {
+                predicates.add(cb.like(cb.lower(root.get("mauSac")), like(mauSac)));
+            }
+
+            if (!isBlank(trangThai) && !"ALL".equalsIgnoreCase(trangThai)) {
+                predicates.add(cb.equal(cb.lower(root.get("trangThai")), trangThai.toLowerCase(Locale.ROOT)));
             }
 
             if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(
-                        root.get("giaTien"),
-                        minPrice
-                ));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice));
             }
 
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(
-                        root.get("giaTien"),
-                        maxPrice
-                ));
+                predicates.add(cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
+    private Predicate buildMultiLikePredicate(jakarta.persistence.criteria.Path<String> path, String rawValue, jakarta.persistence.criteria.CriteriaBuilder cb) {
+        List<Predicate> parts = new ArrayList<>();
+        for (String item : rawValue.split(",")) {
+            if (!isBlank(item)) {
+                parts.add(cb.like(cb.lower(path), like(item)));
+            }
+        }
+        return cb.or(parts.toArray(new Predicate[0]));
+    }
+
     private Sort buildSort(String sortBy) {
-        if (sortBy == null || sortBy.isBlank()) {
-            return Sort.by(Sort.Direction.DESC, "maSanPham");
+        if ("priceAsc".equalsIgnoreCase(sortBy)) {
+            return Sort.by(Sort.Direction.ASC, "giaTien");
+        }
+        if ("priceDesc".equalsIgnoreCase(sortBy)) {
+            return Sort.by(Sort.Direction.DESC, "giaTien");
+        }
+        if ("stockAsc".equalsIgnoreCase(sortBy)) {
+            return Sort.by(Sort.Direction.ASC, "soLuong");
+        }
+        if ("stockDesc".equalsIgnoreCase(sortBy)) {
+            return Sort.by(Sort.Direction.DESC, "soLuong");
+        }
+        return Sort.by(Sort.Direction.DESC, "maSanPham");
+    }
+
+    private void validateRequest(SanPhamDoiTacRequest request, boolean create) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dữ liệu sản phẩm không hợp lệ");
         }
 
-        return switch (sortBy) {
-            case "priceAsc" -> Sort.by(Sort.Direction.ASC, "giaTien");
-            case "priceDesc" -> Sort.by(Sort.Direction.DESC, "giaTien");
-            case "oldest" -> Sort.by(Sort.Direction.ASC, "maSanPham");
-            case "newest" -> Sort.by(Sort.Direction.DESC, "maSanPham");
-            default -> Sort.by(Sort.Direction.DESC, "maSanPham");
-        };
+        if (create && isBlank(request.getTenSanPham())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên sản phẩm không được để trống");
+        }
+
+        if (create && isBlank(request.getLoai())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Loại sản phẩm không được để trống");
+        }
+
+        if (request.getGiaTien() != null && request.getGiaTien().compareTo(BigDecimal.ZERO) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Giá tiền không hợp lệ");
+        }
+
+        if (request.getSoLuong() != null && request.getSoLuong() < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Số lượng không hợp lệ");
+        }
+    }
+
+    private void applyRequest(SanPham sanPham, SanPhamDoiTacRequest request) {
+        sanPham.setTenSanPham(request.getTenSanPham());
+        sanPham.setLoai(request.getLoai());
+        sanPham.setNoiThat(request.getNoiThat());
+        sanPham.setQuyCach(request.getQuyCach());
+        sanPham.setTonGiao(request.getTonGiao());
+        sanPham.setGiaTien(request.getGiaTien());
+        sanPham.setSoLuong(request.getSoLuong());
+        sanPham.setThietKe(request.getThietKe());
+        sanPham.setXuatXu(request.getXuatXu());
+        sanPham.setGhiChu(request.getGhiChu());
+        sanPham.setKhuyenMai(request.getKhuyenMai());
+        sanPham.setMauSac(request.getMauSac());
+        sanPham.setHinhAnh(request.getHinhAnh());
+        sanPham.setVatLieu(request.getVatLieu());
+        sanPham.setTrangThai(isBlank(request.getTrangThai()) ? TRANG_THAI_DANG_BAN : request.getTrangThai());
+        sanPham.setKichThuoc(request.getKichThuoc());
+        sanPham.setTrongLuong(request.getTrongLuong());
+        sanPham.setCnsx(request.getCnsx());
     }
 
     private SanPhamDoiTacResponse toResponse(SanPham sanPham) {
-        String image = sanPham.getHinhAnh();
-
         return SanPhamDoiTacResponse.builder()
                 .maSanPham(sanPham.getMaSanPham())
                 .tenSanPham(sanPham.getTenSanPham())
@@ -326,38 +293,20 @@ public class SanPhamDoiTacService {
                 .ghiChu(sanPham.getGhiChu())
                 .khuyenMai(sanPham.getKhuyenMai())
                 .mauSac(sanPham.getMauSac())
-                .hinhAnh(image)
+                .hinhAnh(sanPham.getHinhAnh())
                 .vatLieu(sanPham.getVatLieu())
                 .trangThai(sanPham.getTrangThai())
                 .kichThuoc(sanPham.getKichThuoc())
                 .trongLuong(sanPham.getTrongLuong())
                 .cnsx(sanPham.getCnsx())
-
-                // Alias cho frontend
-                .id(sanPham.getMaSanPham())
-                .name(sanPham.getTenSanPham())
-                .sku("SP-" + sanPham.getMaSanPham())
-                .category(sanPham.getLoai())
-                .price(sanPham.getGiaTien())
-                .stock(defaultInt(sanPham.getSoLuong()))
-                .status(sanPham.getTrangThai())
-                .image(image)
                 .build();
     }
 
-    private BigDecimal defaultMoney(BigDecimal value) {
-        return value == null ? BigDecimal.ZERO : value;
+    private String like(String value) {
+        return "%" + value.trim().toLowerCase(Locale.ROOT) + "%";
     }
 
-    private Integer defaultInt(Integer value) {
-        return value == null ? 0 : value;
-    }
-
-    private String defaultTrangThai(String trangThai, Integer soLuong) {
-        if (trangThai != null && !trangThai.isBlank()) {
-            return trangThai;
-        }
-
-        return defaultInt(soLuong) > 0 ? "Còn hàng" : "Hết hàng";
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

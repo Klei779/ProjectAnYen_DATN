@@ -1,18 +1,24 @@
 <script setup>
-import { ref } from "vue";
+import { ref,watch } from "vue";
+import { ElMessage } from "element-plus";
+import {
+  createHopDong,
+  getDonHangDetailForHopDong,
+  getDonHangOptionsForHopDong
+} from "../../services/hopDongService.js";
 import ContractPreview from "../../components/PreviewHopDong.vue";
-import { 
-  Document, 
-  User, 
-  Avatar, 
-  HomeFilled, 
-  Calendar, 
-  View, 
-  ZoomOut, 
-  Minus, 
-  Plus, 
-  Printer, 
-  Delete 
+import {
+  Document,
+  User,
+  Avatar,
+  HomeFilled,
+  Calendar,
+  View,
+  ZoomOut,
+  Minus,
+  Plus,
+  Printer,
+  Delete
 } from '@element-plus/icons-vue';
 
 const visible = defineModel();
@@ -71,7 +77,7 @@ const handlePrint = () => {
   const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
     .map(style => style.outerHTML)
     .join('');
-    
+
   const printWindow = window.open('', '', 'width=800,height=900');
   printWindow.document.write(`
     <html>
@@ -81,11 +87,11 @@ const handlePrint = () => {
         <style>
           @media print {
             @page { size: A4; margin: 0; }
-            body { 
-              margin: 0; 
-              padding: 0; 
-              background: white; 
-              -webkit-print-color-adjust: exact; 
+            body {
+              margin: 0;
+              padding: 0;
+              background: white;
+              -webkit-print-color-adjust: exact;
             }
             .preview-wrapper {
               height: auto !important;
@@ -93,9 +99,9 @@ const handlePrint = () => {
               padding: 0 !important;
               background: transparent !important;
             }
-            .contract-paper { 
-              box-shadow: none !important; 
-              margin: 0 !important; 
+            .contract-paper {
+              box-shadow: none !important;
+              margin: 0 !important;
               padding: 15mm !important; /* Optional: adjust printed margins here */
               width: 100% !important;
               min-height: auto !important;
@@ -124,6 +130,117 @@ const handlePrint = () => {
   `);
   printWindow.document.close();
 };
+const emit = defineEmits(["created"]);
+
+const selectedMaDonHang = ref(null);
+const donHangOptions = ref([]);
+const loadingOrders = ref(false);
+const loadingDetail = ref(false);
+const saving = ref(false);
+
+const orderProducts = ref([]);
+const selectedDonHangDetail = ref(null);
+
+const formatMoney = (value) => {
+  return Number(value || 0).toLocaleString("vi-VN") + " đ";
+};
+
+const loadDonHangOptions = async () => {
+  try {
+    loadingOrders.value = true;
+    donHangOptions.value = await getDonHangOptionsForHopDong();
+  } catch (error) {
+    console.error("Lỗi load đơn hàng:", error);
+    ElMessage.error("Không thể tải danh sách đơn hàng");
+  } finally {
+    loadingOrders.value = false;
+  }
+};
+const onSelectDonHang = async (maDonHang) => {
+  if (!maDonHang) return;
+
+  try {
+    loadingDetail.value = true;
+
+    const data = await getDonHangDetailForHopDong(maDonHang);
+    selectedDonHangDetail.value = data;
+
+    contract.value.orderCode =
+        data.maDonHangText || `DH${String(data.maDonHang).padStart(4, "0")}`;
+
+    contract.value.contractCode = "Tự động khi lưu";
+    contract.value.contractDate = new Date().toISOString().slice(0, 10);
+    contract.value.employee = data.tenNhanVien || "";
+
+    contract.value.customerName = data.tenKhachHang || "";
+    contract.value.citizenId = data.cccd || "";
+    contract.value.address = data.diaChi || "";
+    contract.value.phone = data.soDienThoai || "";
+
+    orderProducts.value = (data.sanPhams || []).map((item) => ({
+      name: item.tenSanPham || "---",
+      quantity: item.soLuong || 0,
+      price: Number(item.giaTien || 0),
+      thanhTien: Number(item.thanhTien || 0),
+      loai: item.loai || ""
+    }));
+
+  } catch (error) {
+    console.error("Lỗi load chi tiết đơn hàng:", error);
+
+    selectedDonHangDetail.value = null;
+    selectedMaDonHang.value = null;
+    orderProducts.value = [];
+
+    ElMessage.error(
+        error.response?.data?.message || "Không thể tải chi tiết đơn hàng"
+    );
+  } finally {
+    loadingDetail.value = false;
+
+  }
+};
+const saveContract = async () => {
+  if (!selectedMaDonHang.value || !selectedDonHangDetail.value) {
+    ElMessage.error("Vui lòng chọn và load đơn hàng trước khi lưu hợp đồng");
+    return;
+  }
+
+  try {
+    saving.value = true;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const saved = await createHopDong({
+      maDonHang: selectedMaDonHang.value,
+      ngayKyHD: contract.value.contractDate || today,
+      ngayViet: today,
+      trangThai: "Chờ ký"
+    });
+
+    ElMessage.success("Lưu hợp đồng thành công");
+    emit("created", saved);
+    visible.value = false;
+  } catch (error) {
+    console.error("Lỗi lưu hợp đồng:", error);
+    ElMessage.error(
+        error.response?.data?.message
+        || error.response?.data
+        || "Không thể lưu hợp đồng"
+    );
+  } finally {
+    saving.value = false;
+  }
+};
+watch(visible, async (isOpen) => {
+  if (isOpen) {
+    selectedMaDonHang.value = null;
+    selectedDonHangDetail.value = null;
+    orderProducts.value = [];
+    services.value = [];
+    await loadDonHangOptions();
+  }
+});
 </script>
 
 <template>
@@ -153,8 +270,24 @@ const handlePrint = () => {
           
           <el-row :gutter="16">
             <el-col :span="12">
-              <el-form-item label="Số đơn hàng" required>
-                <el-input v-model="contract.orderCode" />
+              <el-form-item label="Đơn hàng" required>
+                <el-select
+                    v-model="selectedMaDonHang"
+                    filterable
+                    clearable
+                    :loading="loadingOrders"
+                    placeholder="Chọn đơn hàng để tạo hợp đồng"
+                    style="width: 100%"
+                    @change="onSelectDonHang"
+                >
+                  <el-option
+                      v-for="item in donHangOptions"
+                      :key="item.maDonHang"
+                      :label="`${item.maDonHangText} - ${item.tenKhachHang || 'Chưa có khách'} - ${formatMoney(item.tongTien)}${item.daCoHopDong ? ' - Đã có HĐ' : ''}`"
+                      :value="item.maDonHang"
+                      :disabled="item.daCoHopDong"
+                  />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -221,8 +354,64 @@ const handlePrint = () => {
           </el-row>
 
           <div class="section-title mt-4">
-            <img src="https://api.iconify.design/mdi:lotus.svg?color=%238a181a" alt="lotus" class="custom-svg-icon" />
-            <span>3. THÔNG TIN NGƯỜI MẤT</span>
+            <span>3. SẢN PHẨM / DỊCH VỤ TRONG ĐƠN HÀNG</span>
+          </div>
+
+          <el-table
+              v-loading="loadingDetail"
+              :data="orderProducts"
+              border
+              style="width: 100%"
+          >
+            <el-table-column
+                type="index"
+                label="STT"
+                width="60"
+            />
+
+            <el-table-column
+                prop="name"
+                label="Tên sản phẩm / dịch vụ"
+            />
+
+            <el-table-column
+                prop="loai"
+                label="Loại"
+                width="160"
+            />
+
+            <el-table-column
+                prop="quantity"
+                label="Số lượng"
+                width="100"
+                align="center"
+            />
+
+            <el-table-column
+                label="Đơn giá"
+                width="150"
+                align="right"
+            >
+              <template #default="{ row }">
+                {{ formatMoney(row.price) }}
+              </template>
+            </el-table-column>
+
+            <el-table-column
+                label="Thành tiền"
+                width="160"
+                align="right"
+            >
+              <template #default="{ row }">
+                {{ formatMoney(row.thanhTien || row.price * row.quantity) }}
+              </template>
+            </el-table-column>
+          </el-table>
+
+
+          <div class="section-title mt-4">
+            <el-icon><Avatar /></el-icon>
+            <span>4. THÔNG TIN NGƯỜI MẤT</span>
           </div>
 
           <el-row :gutter="16">
@@ -260,7 +449,7 @@ const handlePrint = () => {
 
           <div class="section-title mt-4">
             <el-icon><HomeFilled /></el-icon>
-            <span>4. THÔNG TIN NƠI AN TÁNG</span>
+            <span>5. THÔNG TIN NƠI AN TÁNG</span>
           </div>
 
           <el-row :gutter="16">
@@ -299,7 +488,7 @@ const handlePrint = () => {
 
           <div class="section-title mt-4 flex-between">
             <div class="title-left">
-              <span>5. DỊCH VỤ SỬ DỤNG</span>
+              <span>6. DỊCH VỤ SỬ DỤNG</span>
             </div>
             <el-button size="small" plain class="add-service-btn" @click="addService">
               + Thêm dịch vụ
@@ -354,7 +543,12 @@ const handlePrint = () => {
         </el-button>
         <div class="btn-right">
           <el-button @click="visible = false" class="cancel-btn">Hủy</el-button>
-          <el-button type="primary" class="save-btn">
+          <el-button
+              type="primary"
+              class="save-btn"
+              :loading="saving"
+              @click="saveContract"
+          >
             <el-icon style="margin-right: 6px;"><Document /></el-icon>
             Lưu hợp đồng
           </el-button>

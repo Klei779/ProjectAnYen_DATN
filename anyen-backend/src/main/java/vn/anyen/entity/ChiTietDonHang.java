@@ -1,11 +1,12 @@
 package vn.anyen.entity;
+
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "ChiTietDonHang")
+@Table(name = "chitietdonhang")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -15,6 +16,7 @@ public class ChiTietDonHang {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "MaDonHangChiTiet")
     private Integer maDonHangChiTiet;
 
     @ManyToOne
@@ -25,7 +27,9 @@ public class ChiTietDonHang {
     @JoinColumn(name = "MaSanPham")
     private SanPham sanPham;
 
+    @Column(name = "SoLuong")
     private Integer soLuong;
 
+    @Column(name = "giaTien")
     private BigDecimal giaTien;
 }

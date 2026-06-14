@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from "vue";
-import { ElMessage } from "element-plus";
+import { computed, ref } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { formatCurrency, formatDate, capNhatTrangThai } from "../../services/donHangService.js";
 import "../../assets/styles/PopChiTietDonHang.css";
 
@@ -82,7 +82,50 @@ const removeSp = (sp) => {
     order.value.sanPhams = order.value.sanPhams.filter(item => item.MaSanPham !== sp.MaSanPham);
 };
 
+const showPaymentDialog = ref(false);
+const showCashConfirmDialog = ref(false);
+
+const confirmPayment = async () => {
+    if (order.value) {
+        try {
+            await capNhatTrangThai(order.value.maDonHang || order.value.MaDonHang, "Hoàn thành");
+            ElMessage.success(`Đã cập nhật trạng thái: Hoàn thành`);
+            order.value.trangThai = "Hoàn thành";
+            emit("cap-nhat");
+            showPaymentDialog.value = false;
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái:", error);
+            ElMessage.error(error.response?.data?.message || "Cập nhật trạng thái thất bại");
+        }
+    }
+};
+
+const confirmCashPayment = async () => {
+    if (order.value) {
+        try {
+            await capNhatTrangThai(order.value.maDonHang || order.value.MaDonHang, "Hoàn thành");
+            ElMessage.success(`Đã cập nhật trạng thái: Hoàn thành`);
+            order.value.trangThai = "Hoàn thành";
+            emit("cap-nhat");
+            showCashConfirmDialog.value = false;
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái:", error);
+            ElMessage.error(error.response?.data?.message || "Cập nhật trạng thái thất bại");
+        }
+    }
+};
+
 const capNhatTrangThaiTiep = async () => {
+    if (currentStatus.value === "Chờ thanh toán") {
+        if (order.value.phuongThucThanhToan === "Chuyển khoản") {
+            showPaymentDialog.value = true;
+            return;
+        } else if (order.value.phuongThucThanhToan === "Tiền mặt") {
+            showCashConfirmDialog.value = true;
+            return;
+        }
+    }
+
     if (nextStatus.value && order.value) {
         try {
             await capNhatTrangThai(order.value.maDonHang || order.value.MaDonHang, nextStatus.value);
@@ -204,7 +247,7 @@ const capNhatTrangThaiTiep = async () => {
 
           <div class="progress-actions">
               <button v-if="nextStatus" class="btn-capnhat-tt" @click="capNhatTrangThaiTiep">
-                  <i class="fa-solid fa-arrow-right"></i> Cập nhật trạng thái tiếp theo
+                  <i class="fa-solid fa-arrow-right"></i> {{ currentStatus === 'Chờ thanh toán' ? 'Thanh toán' : 'Cập nhật trạng thái tiếp theo' }}
               </button>
               <div v-if="nextStatus" class="status-note">
                   Trạng thái hiện tại: <strong>{{ currentStatus }}</strong><br/>
@@ -293,5 +336,57 @@ const capNhatTrangThaiTiep = async () => {
         <button class="btn-save-new" @click="handleLuu">Lưu thay đổi</button>
       </div>
     </template>
+
+    <!-- Popup thanh toán QR -->
+    <el-dialog
+        v-model="showPaymentDialog"
+        title="Thanh toán chuyển khoản"
+        width="400px"
+        center
+        :append-to-body="true"
+        :z-index="10060"
+    >
+        <div style="text-align: center;">
+            <p>Vui lòng quét mã QR bên dưới để thanh toán cho đơn hàng <strong>#{{ order?.maCode }}</strong></p>
+            <p style="font-size: 18px; font-weight: bold; color: #e74c3c; margin: 10px 0;">Số tiền: {{ formatCurrency(tongCong) }}</p>
+            <img 
+                v-if="order"
+                :src="`https://img.vietqr.io/image/MB-140213032008-compact.png?amount=${tongCong}&addInfo=${order.maCode}`" 
+                alt="QR Code Thanh Toán" 
+                style="max-width: 100%; border-radius: 8px; margin: 10px 0;"
+            />
+        </div>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="showPaymentDialog = false">Hủy</el-button>
+                <el-button type="primary" @click="confirmPayment">
+                    Xác nhận đã thanh toán
+                </el-button>
+            </span>
+        </template>
+    </el-dialog>
+
+    <!-- Popup xác nhận thanh toán tiền mặt -->
+    <el-dialog
+        v-model="showCashConfirmDialog"
+        title="Xác nhận thanh toán"
+        width="400px"
+        center
+        :append-to-body="true"
+        :z-index="10060"
+    >
+        <div style="text-align: center; padding: 20px 0;">
+            <p style="font-size: 16px;">Bạn có chắc chắn khách đã thanh toán đủ?</p>
+        </div>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="showCashConfirmDialog = false">Hủy</el-button>
+                <el-button type="primary" @click="confirmCashPayment">
+                    Xác nhận
+                </el-button>
+            </span>
+        </template>
+    </el-dialog>
+
   </el-dialog>
 </template>

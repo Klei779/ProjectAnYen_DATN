@@ -352,6 +352,7 @@
 </template>
 
 <script setup>
+
 import { computed, ref } from "vue";
 
 const showCustomerSuggestions = ref(false);

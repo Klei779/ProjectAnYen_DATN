@@ -65,6 +65,8 @@ public class SecurityConfig {
                         .hasRole("DOITAC")
 
                         // API nhân viên bắt buộc các role nhân sự
+                        .requestMatchers("/api/nhan-vien/hop-dong/**")
+                        .permitAll()
                         .requestMatchers("/api/nhan-vien/**")
                         .hasAnyRole("ADMIN", "HOTLINE", "NHANVIEN")
 

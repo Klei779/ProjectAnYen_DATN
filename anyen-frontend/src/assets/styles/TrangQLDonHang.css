@@ -1,8 +1,14 @@
-.don-hang-page {
-    padding: 24px;
-    min-height: 90vh;
-    background: #f5f7fa;
-    font-family: 'Inter', Arial, sans-serif;
+
+
+.don-hang-page{
+    padding:24px;
+    min-height:90vh;
+    background:#f5f7fa;
+    font-family:'Inter',Arial,sans-serif;
+
+    box-sizing:border-box;
+    width:100%;
+    overflow-x:hidden;
 }
 
 /* ── Filter bar ── */
@@ -92,11 +98,10 @@
 }
 
 /* ── Order Grid ── */
-.order-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 24px;
+.order-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:20px;
 }
 
 .empty-state {
@@ -296,4 +301,117 @@
 .pag-info {
     font-size: 13px;
     color: #666;
+}
+
+@media (max-width:1024px){
+
+    .don-hang-page{
+        padding:20px;
+    }
+
+    .order-grid{
+        grid-template-columns:repeat(2,1fr);
+    }
+
+    .card-actions{
+        grid-template-columns:1fr 1fr;
+    }
+
+    .btn-filled-green,
+    .btn-disabled{
+        grid-column:span 2;
+    }
+}
+
+@media (max-width:768px){
+
+    .don-hang-page{
+        padding:12px;
+    }
+
+    /* Filter */
+
+    .filter-bar{
+        flex-direction:column;
+        align-items:stretch;
+        gap:10px;
+    }
+
+    .search-wrap,
+    .filter-item,
+    .btn-create-order{
+        width:100%;
+    }
+
+    /* Card */
+
+    .order-grid{
+        grid-template-columns:1fr;
+        gap:14px;
+    }
+
+    .order-card{
+        padding:14px;
+    }
+
+    .card-header{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:10px;
+    }
+
+    .order-code{
+        font-size:16px;
+    }
+
+    /* Step */
+
+    .step-label{
+        font-size:10px;
+    }
+
+    .step-item{
+        width:50px;
+    }
+
+    /* Info */
+
+    .info-row{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:4px;
+    }
+
+    .info-row span{
+        width:auto;
+        font-size:11px;
+        color:#888;
+    }
+
+    .info-row strong{
+        width:100%;
+    }
+
+    /* Button */
+
+    .card-actions{
+        display:grid;
+        grid-template-columns:1fr;
+    }
+
+    .btn-outline-green,
+    .btn-outline-red,
+    .btn-filled-green,
+    .btn-disabled{
+        width:100%;
+        min-height:40px;
+    }
+
+    /* Pagination */
+
+    .pagination-bar{
+        flex-direction:column;
+        gap:12px;
+        align-items:center;
+    }
 }

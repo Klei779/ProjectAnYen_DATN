@@ -1,6 +1,6 @@
 
 .customer-management {
-    min-height: 100vh;
+    min-height: auto;
     background: #fafafa;
     color: #0f172a;
     font-family: Arial, sans-serif;
@@ -379,5 +379,32 @@
         border-radius: 5px;
         font-size: 12px;
         cursor: pointer;
+    }
+}
+@media (max-width:800px){
+
+    .customer-table thead{
+        display:none;
+    }
+
+    .customer-table,
+    .customer-table tbody,
+    .customer-table tr,
+    .customer-table td{
+        display:block;
+        width:100%;
+    }
+
+    .customer-table tr{
+        background:#fff;
+        border:1px solid #eee;
+        border-radius:12px;
+        padding:12px;
+        margin-bottom:12px;
+    }
+
+    .customer-table td{
+        border:none;
+        padding:6px 0;
     }
 }

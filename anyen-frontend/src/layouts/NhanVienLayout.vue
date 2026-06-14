@@ -502,4 +502,32 @@ onUnmounted(() => {
   font-size: 14px;
   color: #374151;
 }
+
+@media (max-width:768px){
+
+  .page-topbar{
+    padding: 12px 16px;
+  }
+
+  .topbar-left{
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .topbar-left h2{
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+
+  .topbar-right{
+    gap: 12px;
+  }
+
+  .user-short-info{
+    display:none;
+  }
+}
 </style>

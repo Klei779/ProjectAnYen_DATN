@@ -84,6 +84,7 @@ const removeSp = (sp) => {
 
 const showPaymentDialog = ref(false);
 const showCashConfirmDialog = ref(false);
+const activeTab = ref("info");
 
 const confirmPayment = async () => {
     if (order.value) {
@@ -159,8 +160,8 @@ const capNhatTrangThaiTiep = async () => {
     </template>
 
     <!-- BODY -->
-    <div class="popup-3col" v-if="order">
-
+    <el-tabs v-model="activeTab" class="order-tabs" v-if="order">
+      <el-tab-pane label="Thông tin" name="info">
       <!-- CỘT 1: THÔNG TIN CHUNG -->
       <div class="col-panel info-col">
           <!-- Thông tin đơn hàng -->
@@ -222,7 +223,8 @@ const capNhatTrangThaiTiep = async () => {
               </div>
           </div>
       </div>
-
+      </el-tab-pane>
+      <el-tab-pane label="Tiến trình" name="progress">
       <!-- CỘT 2: TIẾN TRÌNH -->
       <div class="col-panel progress-col">
           <h4 class="section-title">Tiến trình đơn hàng</h4>
@@ -255,7 +257,8 @@ const capNhatTrangThaiTiep = async () => {
               </div>
           </div>
       </div>
-
+      </el-tab-pane>
+      <el-tab-pane label="Sản phẩm" name="products">
       <!-- CỘT 3: SẢN PHẨM -->
       <div class="col-panel products-col">
           <div class="products-header">
@@ -326,8 +329,8 @@ const capNhatTrangThaiTiep = async () => {
               </div>
           </div>
       </div>
-
-    </div>
+      </el-tab-pane>
+    </el-tabs>
 
     <!-- FOOTER -->
     <template #footer>
@@ -390,3 +393,4 @@ const capNhatTrangThaiTiep = async () => {
 
   </el-dialog>
 </template>
+<style scoped src="../../assets/styles/PopChiTietDonHang.css"></style>

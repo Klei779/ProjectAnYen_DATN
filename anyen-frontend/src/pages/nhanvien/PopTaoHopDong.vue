@@ -23,6 +23,7 @@ import {
 
 const visible = defineModel();
 
+
 const contract = ref({
   orderCode: "",
   contractCode: "",
@@ -156,7 +157,12 @@ const formatMoney = (value) => {
 const loadDonHangOptions = async () => {
   try {
     loadingOrders.value = true;
-    donHangOptions.value = await getDonHangOptionsForHopDong();
+
+    const data = await getDonHangOptionsForHopDong();
+
+    console.log("API DATA:", data);
+
+    donHangOptions.value = data;
   } catch (error) {
     console.error("Lỗi load đơn hàng:", error);
     ElMessage.error("Không thể tải danh sách đơn hàng");
@@ -294,15 +300,30 @@ const saveContract = async () => {
     saving.value = false;
   }
 };
-watch(visible, async (isOpen) => {
-  if (isOpen) {
-    selectedMaDonHang.value = null;
-    selectedDonHangDetail.value = null;
-    orderProducts.value = [];
-    services.value = [];
-    await loadDonHangOptions();
-  }
-});
+  watch(
+      () => visible.value,
+      async (isOpen) => {
+        if (!isOpen) return;
+
+        selectedMaDonHang.value = null;
+        selectedDonHangDetail.value = null;
+        orderProducts.value = [];
+        services.value = [];
+
+        await loadDonHangOptions();
+
+        console.log(
+            "DON HANG OPTIONS:",
+            donHangOptions.value
+        );
+      },
+      {
+        immediate: true
+      }
+  );
+
+selectedMaDonHang.value = "";
+
 </script>
 
 <template>
@@ -334,23 +355,24 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Đơn hàng" required>
-                <el-select
+
+                <select
                     v-model="selectedMaDonHang"
-                    filterable
-                    clearable
-                    :loading="loadingOrders"
-                    placeholder="Chọn đơn hàng để tạo hợp đồng"
-                    style="width: 100%"
-                    @change="onSelectDonHang"
+                    @change="onSelectDonHang(selectedMaDonHang)"
+                    class="native-select"
                 >
-                  <el-option
+                  <option disabled value="">
+                    Chọn mã đơn hàng
+                  </option>
+                  <option
                       v-for="item in donHangOptions"
                       :key="item.maDonHang"
-                      :label="`${item.maDonHangText} - ${item.tenKhachHang || 'Chưa có khách'} - ${formatMoney(item.tongTien)}${item.daCoHopDong ? ' - Đã có HĐ' : ''}`"
                       :value="item.maDonHang"
-                      :disabled="item.daCoHopDong"
-                  />
-                </el-select>
+                  >
+                    {{ item.maDonHangText }}
+                  </option>
+                </select>
+
               </el-form-item>
             </el-col>
             <el-col :span="12">

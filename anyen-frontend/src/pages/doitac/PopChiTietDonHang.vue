@@ -1,11 +1,11 @@
 <script setup>
 import { computed } from "vue";
-import { 
-  Close, 
-  User, 
-  Phone, 
-  Message, 
-  Location, 
+import {
+  Close,
+  User,
+  Phone,
+  Message,
+  Location,
   Download,
   List,
   Check,
@@ -93,7 +93,7 @@ const getProgressWidth = (steps) => {
 
     <!-- BODY -->
     <div class="partner-dh-body" v-if="donHang">
-      
+
       <!-- Khối thông tin khách hàng & cơ bản -->
       <div class="info-top-block">
         <div class="customer-col">

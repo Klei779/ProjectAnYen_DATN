@@ -408,6 +408,61 @@ onMounted(() => {
     </div>
 
     <div class="table-card">
+      <div class="contract-mobile-list">
+        <div
+            v-for="item in tableHopDongs"
+            :key="item.maHopDong"
+            class="contract-mobile-card"
+            @click="openDetail(item.maHopDong)"
+        >
+          <div class="mobile-card-header">
+            <div>
+              <h4>{{ getContractCode(item) }}</h4>
+              <p>{{ item.tenKhachHang || "---" }}</p>
+            </div>
+
+            <span class="badge" :class="statusClass(item.trangThai)">
+        {{ displayStatus(item.trangThai) }}
+      </span>
+          </div>
+
+          <div class="mobile-info-row">
+            <span>Loại HĐ</span>
+            <b>{{ getContractType(item) }}</b>
+          </div>
+
+          <div class="mobile-info-row">
+            <span>Giá trị</span>
+            <b>{{ formatMoney(item.giaTriHopDong) }} đ</b>
+          </div>
+
+          <div class="mobile-info-row">
+            <span>Ngày ký</span>
+            <b>{{ formatDate(item.ngayKyHD || item.ngayTaoDon) }}</b>
+          </div>
+
+          <div class="mobile-info-row">
+            <span>Hết hạn</span>
+            <b>{{ getEndDate(item) }}</b>
+          </div>
+
+          <div class="mobile-actions">
+            <button
+                class="action-btn edit"
+                @click.stop="editContract(item)"
+            >
+              <i class="fa-regular fa-pen-to-square"></i>
+            </button>
+
+            <button
+                class="action-btn delete"
+                @click.stop="cancelContract(item)"
+            >
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      </div>
       <table>
         <thead>
         <tr>

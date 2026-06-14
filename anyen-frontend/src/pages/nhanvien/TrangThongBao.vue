@@ -32,7 +32,8 @@
           <div
               v-for="item in filteredNotifications"
               :key="item.maThongBao"
-              class="task-card"
+              class="task-card clickable-card"
+              @click="selectNotification(item)"
           >
             <!-- Content Left -->
             <div class="card-main-content">
@@ -42,8 +43,6 @@
               <div class="card-details">
                 <div class="card-title-row">
                   <h4>{{ item.tieuDe || 'Tư vấn trực tiếp khách hàng' }}</h4>
-                  <!-- Thẻ Xem chi tiết nhỏ -->
-                  <button class="view-detail-link" @click="selectNotification(item)">Xem chi tiết</button>
                 </div>
                 
                 <p class="customer-info" v-if="item.loaiThongBao === 'CONG_VIEC' && item.tenKhachHang">

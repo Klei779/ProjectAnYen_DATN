@@ -19,3 +19,18 @@ export async function getChiTietHopDong(id) {
     const response = await api.get(`${API_URL}/${id}`);
     return response.data;
 }
+
+export async function getDonHangOptionsForHopDong() {
+    const response = await api.get(`${API_URL}/don-hang-options`);
+    return response.data;
+}
+
+export async function getDonHangDetailForHopDong(maDonHang) {
+    const response = await api.get(`${API_URL}/don-hang/${maDonHang}`);
+    return response.data;
+}
+
+export async function createHopDong(payload) {
+    const response = await api.post(API_URL, payload);
+    return response.data;
+}

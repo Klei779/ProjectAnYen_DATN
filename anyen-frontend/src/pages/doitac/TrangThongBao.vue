@@ -147,7 +147,11 @@
           <h4>Thông tin sản phẩm / dịch vụ</h4>
 
           <div class="product-line">
-            <img :src="selectedNotification.product.image" alt="" />
+            <img
+                :src="getProductImage(selectedNotification.product.image)"
+                alt=""
+                @error="handleImageError"
+            />
 
             <div>
               <h5>{{ selectedNotification.product.name }}</h5>
@@ -267,10 +271,37 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import {
+  getThongBaoDoiTac,
+  chapNhanThongBao,
+  tuChoiThongBao
+} from "../../services/thongBaoDoiTacService.js";
+
+const fallbackImage =
+    "data:image/svg+xml;utf8," +
+    encodeURIComponent(`
+      <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70">
+        <rect width="70" height="70" rx="10" fill="#f3f3f3"/>
+        <text x="35" y="40" text-anchor="middle" font-size="12" fill="#999">
+          An Yên
+        </text>
+      </svg>
+    `);
+const productImages = import.meta.glob(
+    "../../assets/images/TrangSanPham/*",
+    {
+      eager: true,
+      import: "default"
+    }
+);
+const router = useRouter();
 
 const activeTab = ref("all");
 const selectedNotification = ref(null);
+const notifications = ref([]);
 
 const tabs = [
   { key: "all", label: "Tất cả" },
@@ -278,87 +309,9 @@ const tabs = [
   { key: "system", label: "Hệ thống" },
 ];
 
-const notifications = ref([
+const systemNotifications = [
   {
-    id: 1,
-    category: "order",
-    type: "order",
-    icon: "fa-regular fa-clipboard",
-    title: "Đơn hàng mới #AY24050128",
-    desc: "Khách hàng: Nguyễn Văn An",
-    actionText: "Vui lòng xác nhận đơn hàng",
-    time: "25/05/2024 - 14:30",
-    isNew: true,
-
-    order: {
-      id: 128,
-      code: "#AY24050128",
-      date: "25/05/2024 - 14:30",
-      status: "Chờ xác nhận",
-      payment: "Chuyển khoản",
-    },
-
-    customer: {
-      id: 1,
-      name: "Nguyễn Văn An",
-      phone: "0901 234 567",
-      email: "an.nguyenvan@gmail.com",
-      address: "123 Đường An Lành, Phường Yên Hòa, Quận Cầu Giấy, Hà Nội",
-    },
-
-    product: {
-      id: 1,
-      name: "Gói An Lạc",
-      desc: "Dịch vụ tang lễ trọn gói cơ bản",
-      quantity: 1,
-      price: 25000000,
-      image: "https://via.placeholder.com/70x70",
-    },
-
-    note: "Gia đình cần hỗ trợ trang trí hoa sen trắng.",
-  },
-
-  {
-    id: 2,
-    category: "order",
-    type: "order",
-    icon: "fa-regular fa-clipboard",
-    title: "Đơn hàng mới #AY24050127",
-    desc: "Khách hàng: Trần Thị Bình",
-    actionText: "Vui lòng xác nhận đơn hàng",
-    time: "25/05/2024 - 10:15",
-    isNew: true,
-
-    order: {
-      id: 127,
-      code: "#AY24050127",
-      date: "25/05/2024 - 10:15",
-      status: "Chờ xác nhận",
-      payment: "Tiền mặt",
-    },
-
-    customer: {
-      id: 2,
-      name: "Trần Thị Bình",
-      phone: "0912 345 678",
-      email: "binh@gmail.com",
-      address: "TP.HCM",
-    },
-
-    product: {
-      id: 2,
-      name: "Gói An Nhiên",
-      desc: "Dịch vụ tang lễ đầy đủ nghi thức",
-      quantity: 1,
-      price: 35000000,
-      image: "https://via.placeholder.com/70x70",
-    },
-
-    note: "Cần tư vấn thêm về nghi thức.",
-  },
-
-  {
-    id: 3,
+    id: "system-1",
     category: "system",
     type: "system",
     icon: "fa-regular fa-bell",
@@ -381,73 +334,30 @@ const notifications = ref([
       content:
           "Từ ngày 24/05/2024, hệ thống cập nhật chính sách vận chuyển mới. Nhân viên vui lòng kiểm tra kỹ khu vực giao hàng, phí vận chuyển và thời gian hỗ trợ trước khi xác nhận đơn hàng cho khách.",
     },
-  },
+  }
+];
 
-  {
-    id: 4,
-    category: "order",
-    type: "order",
-    icon: "fa-regular fa-clipboard",
-    title: "Đơn hàng mới #AY24050126",
-    desc: "Khách hàng: Phạm Thị Dung",
-    actionText: "Vui lòng xác nhận đơn hàng",
-    time: "24/05/2024 - 09:20",
-    isNew: true,
+const loadThongBao = async () => {
+  try {
+    const data = await getThongBaoDoiTac();
 
-    order: {
-      id: 126,
-      code: "#AY24050126",
-      date: "24/05/2024 - 09:20",
-      status: "Chờ xác nhận",
-      payment: "Chuyển khoản",
-    },
+    const orderNotifications = Array.isArray(data)
+        ? data
+        : [];
 
-    customer: {
-      id: 4,
-      name: "Phạm Thị Dung",
-      phone: "0988 111 222",
-      email: "dung@gmail.com",
-      address: "Hà Nội",
-    },
+    notifications.value = [
+      ...orderNotifications,
+      ...systemNotifications
+    ];
+  } catch (error) {
+    console.error("Lỗi tải thông báo:", error);
+    alert("Không thể tải danh sách thông báo");
+  }
+};
 
-    product: {
-      id: 3,
-      name: "Dịch vụ tang lễ trọn gói",
-      desc: "Gói dịch vụ hỗ trợ đầy đủ theo yêu cầu gia đình",
-      quantity: 1,
-      price: 24000000,
-      image: "https://via.placeholder.com/70x70",
-    },
-
-    note: "Gia đình cần liên hệ sớm.",
-  },
-
-  {
-    id: 5,
-    category: "system",
-    type: "system",
-    icon: "fa-regular fa-bell",
-    title: "Bảo trì hệ thống",
-    desc: "Hệ thống sẽ bảo trì vào 23:00 tối nay.",
-    actionText: "Xem thông báo hệ thống",
-    time: "23/05/2024 - 08:00",
-    isNew: true,
-
-    system: {
-      id: 2,
-      code: "#SYSTEM24050002",
-      title: "Bảo trì hệ thống",
-      type: "Thông báo bảo trì",
-      level: "Quan trọng",
-      time: "23/05/2024 - 08:00",
-      module: "Toàn bộ hệ thống",
-      sender: "Quản trị hệ thống",
-      shortContent: "Hệ thống sẽ bảo trì vào 23:00 tối nay.",
-      content:
-          "Hệ thống sẽ tiến hành bảo trì từ 23:00 đến 23:30. Trong thời gian này, một số chức năng như tạo đơn hàng, cập nhật sản phẩm và xác nhận thông báo có thể tạm thời gián đoạn.",
-    },
-  },
-]);
+onMounted(() => {
+  loadThongBao();
+});
 
 const filteredNotifications = computed(() => {
   if (activeTab.value === "all") {
@@ -478,31 +388,84 @@ const closePopup = () => {
 };
 
 const formatPrice = (price) => {
-  return new Intl.NumberFormat("vi-VN").format(price) + " đ";
+  const value = Number(price || 0);
+
+  return new Intl.NumberFormat("vi-VN").format(value) + " đ";
 };
 
-const acceptOrder = () => {
-  alert("Đã chấp nhận đơn hàng!");
+const acceptOrder = async () => {
+  if (!selectedNotification.value) return;
 
-  selectedNotification.value.order.status = "Đã xác nhận";
-  selectedNotification.value.isNew = false;
+  try {
+    const maThongBao = selectedNotification.value.id;
 
-  closePopup();
+    const result = await chapNhanThongBao(maThongBao);
+
+    closePopup();
+
+    await router.push(
+        result.redirectUrl || "/doi-tac/quan-ly-don-hang"
+    );
+  } catch (error) {
+    console.error("Lỗi chấp nhận đơn hàng:", error);
+    alert("Chấp nhận đơn hàng thất bại");
+  }
 };
 
-const rejectOrder = () => {
-  alert("Đã từ chối đơn hàng!");
+const rejectOrder = async () => {
+  if (!selectedNotification.value) return;
 
-  selectedNotification.value.order.status = "Đã từ chối";
-  selectedNotification.value.isNew = false;
+  const lyDo = prompt("Nhập lý do từ chối đơn hàng:");
 
-  closePopup();
+  if (!lyDo || !lyDo.trim()) {
+    alert("Vui lòng nhập lý do từ chối");
+    return;
+  }
+
+  try {
+    const maThongBao = selectedNotification.value.id;
+
+    await tuChoiThongBao(maThongBao, lyDo.trim());
+
+    notifications.value = notifications.value.filter(
+        item => item.id !== maThongBao
+    );
+
+    closePopup();
+
+    alert("Đã từ chối đơn hàng");
+  } catch (error) {
+    console.error("Lỗi từ chối đơn hàng:", error);
+    alert("Từ chối đơn hàng thất bại");
+  }
 };
 
 const readSystemNotification = () => {
+  if (!selectedNotification.value) return;
+
   selectedNotification.value.isNew = false;
   closePopup();
 };
-</script>
+const getProductImage = (image) => {
+  if (!image) {
+    return fallbackImage;
+  }
 
+  if (
+      image.startsWith("http") ||
+      image.startsWith("data:") ||
+      image.startsWith("blob:")
+  ) {
+    return image;
+  }
+
+  const imagePath = `../../assets/images/TrangSanPham/${image}`;
+
+  return productImages[imagePath] || fallbackImage;
+};
+
+const handleImageError = (event) => {
+  event.target.src = fallbackImage;
+};
+</script>
 <style scoped src="../../assets/styles/TrangThongBao.css"></style>

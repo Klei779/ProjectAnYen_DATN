@@ -10,6 +10,8 @@ import vn.anyen.entity.HopDong;
 
 public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
 
+    boolean existsByDonHang_MaDonHang(Integer maDonHang);
+
     @Query("""
         SELECT hd
         FROM HopDong hd

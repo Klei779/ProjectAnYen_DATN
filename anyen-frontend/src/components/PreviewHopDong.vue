@@ -11,17 +11,16 @@ const props = defineProps({
     type: Array,
     required: false,
     default: () => []
+  },
+  orderProducts: {
+    type: Array,
+    required: false,
+    default: () => []
   }
 });
 
-const mockServices = ref([
-  { name: 'Xe phục vụ tang lễ', quantity: 1, price: 1500000 },
-  { name: 'Áo quan', quantity: 1, price: 8000000 },
-  { name: 'Vòng hoa', quantity: 3, price: 500000 }
-]);
-
-const mockServicesTotal = computed(() => {
-  return mockServices.value.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+const productsTotal = computed(() => {
+  return props.orderProducts.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 });
 
 const extraServicesTotal = computed(() => {
@@ -29,7 +28,7 @@ const extraServicesTotal = computed(() => {
 });
 
 const grandTotal = computed(() => {
-  return mockServicesTotal.value + extraServicesTotal.value;
+  return productsTotal.value + extraServicesTotal.value;
 });
 
 const readVietnameseNumber = (num) => {
@@ -117,11 +116,11 @@ const formatDate = (date) => {
         <div class="meta-left">
           <div class="flex-row">
             <span style="width: 55px;">Số ĐH:</span>
-            <input type="text" class="dotted-input flex-grow" v-model="contract.orderCode" />
+            <span class="dotted-input flex-grow">{{ contract.orderCode }}</span>
           </div>
           <div class="flex-row mt-1">
             <span style="width: 55px;">Số HĐ:</span>
-            <input type="text" class="dotted-input flex-grow" v-model="contract.contractCode" />
+            <span class="dotted-input flex-grow">{{ contract.contractCode }}</span>
           </div>
         </div>
         <div class="meta-right">
@@ -134,16 +133,16 @@ const formatDate = (date) => {
       <div class="content">
         <div class="flex-row">
           <span class="font-bold">Bên A:&nbsp;</span>Đại diện tang chủ:
-          <input type="text" class="dotted-input flex-grow" v-model="contract.customerName" />
+          <span class="dotted-input flex-grow">{{ contract.customerName }}</span>
           CMND:
-          <input type="text" class="dotted-input w-25" v-model="contract.citizenId" />
+          <span class="dotted-input w-25">{{ contract.citizenId }}</span>
         </div>
         
         <div class="flex-row mt-1">
           Địa chỉ:
-          <input type="text" class="dotted-input flex-grow" v-model="contract.address" />
+          <span class="dotted-input flex-grow">{{ contract.address }}</span>
           Điện thoại:
-          <input type="text" class="dotted-input w-30" v-model="contract.phone" />
+          <span class="dotted-input w-30">{{ contract.phone }}</span>
         </div>
 
         <div class="mt-1">
@@ -168,28 +167,28 @@ const formatDate = (date) => {
 
         <div class="flex-row mt-1">
           Tên người chết:
-          <input type="text" class="dotted-input flex-grow" v-model="contract.deceasedName" />
+          <span class="dotted-input flex-grow">{{ contract.deceasedName }}</span>
           ngày chết:
-          <input type="text" class="dotted-input w-30" :value="formatDate(contract.deathDate)" />
+          <span class="dotted-input w-30">{{ formatDate(contract.deathDate) }}</span>
         </div>
 
         <div class="flex-row mt-1">
           Giấy báo tử, trích lục khai tử số:
-          <input type="text" class="dotted-input flex-grow" v-model="contract.deathCertificateNo" />
+          <span class="dotted-input flex-grow">{{ contract.deathCertificateNo }}</span>
           Nơi cấp:
-          <input type="text" class="dotted-input w-25" v-model="contract.issuedPlace" />
+          <span class="dotted-input w-25">{{ contract.issuedPlace }}</span>
         </div>
 
         <div class="flex-row mt-1">
           Được mai táng vào Khu mộ:
-          <input type="text" class="dotted-input flex-grow" v-model="contract.cemeteryArea" />
+          <span class="dotted-input flex-grow">{{ contract.cemeteryArea }}</span>
           Số mộ:
-          <input type="text" class="dotted-input w-30" v-model="contract.graveNumber" />
+          <span class="dotted-input w-30">{{ contract.graveNumber }}</span>
         </div>
 
         <div class="flex-row mt-1">
           Thời gian thực hiện hợp đồng:
-          <input type="text" class="dotted-input flex-grow" :value="formatDate(contract.executionDate)" />
+          <span class="dotted-input flex-grow">{{ formatDate(contract.executionDate) }}</span>
         </div>
 
         <div class="font-bold mt-2">
@@ -211,12 +210,15 @@ const formatDate = (date) => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in mockServices" :key="index">
+            <tr v-for="(item, index) in orderProducts" :key="index">
               <td class="text-center">{{ index + 1 }}</td>
               <td>{{ item.name }}</td>
               <td class="text-center">{{ item.quantity }}</td>
               <td class="text-right">{{ formatCurrency(item.price) }}</td>
               <td class="text-right">{{ formatCurrency(item.quantity * item.price) }}</td>
+            </tr>
+            <tr v-if="orderProducts.length === 0">
+              <td colspan="5" class="text-center">Chưa có sản phẩm / dịch vụ</td>
             </tr>
           </tbody>
         </table>
@@ -400,6 +402,8 @@ const formatDate = (date) => {
   padding: 0 4px;
   margin: 0 4px;
   box-sizing: border-box;
+  display: inline-block;
+  min-height: 22px;
 }
 
 .w-25 { width: 25%; }

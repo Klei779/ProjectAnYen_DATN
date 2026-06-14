@@ -1,0 +1,617 @@
+-- =========================================================
+-- DATABASE TONG HOP: dich_vu_mai_tang
+-- MySQL 8.x | Charset utf8mb4
+-- Mat khau test cho cac tai khoan da ma hoa BCrypt: 123456
+-- =========================================================
+
+DROP DATABASE IF EXISTS dich_vu_mai_tang;
+
+CREATE DATABASE dich_vu_mai_tang
+CHARACTER SET utf8mb4
+COLLATE utf8mb4_unicode_ci;
+
+USE dich_vu_mai_tang;
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- =========================================================
+-- 1. KHACH HANG
+-- =========================================================
+CREATE TABLE khachhang (
+MaKhachHang INT AUTO_INCREMENT PRIMARY KEY,
+TenKhachHang VARCHAR(100) NOT NULL,
+CCCD VARCHAR(20),
+DiaChi VARCHAR(255),
+Email VARCHAR(100),
+SoDienThoai VARCHAR(20),
+MaNhanVienPhuTrach INT NULL,
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 2. NHAN VIEN
+-- =========================================================
+CREATE TABLE nhanvien (
+MaNhanVien INT AUTO_INCREMENT PRIMARY KEY,
+HoTen VARCHAR(100) NOT NULL,
+TenDangNhap VARCHAR(50) NOT NULL UNIQUE,
+MatKhau VARCHAR(255) NOT NULL,
+Email VARCHAR(100),
+SoDienThoai VARCHAR(20),
+DiaChi VARCHAR(255),
+VaiTro VARCHAR(50),
+TrangThai VARCHAR(50),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE khachhang
+ADD CONSTRAINT fk_khachhang_nhanvien_phutrach
+FOREIGN KEY (MaNhanVienPhuTrach) REFERENCES nhanvien(MaNhanVien);
+
+-- =========================================================
+-- 3. DOI TAC
+-- =========================================================
+CREATE TABLE doitac (
+MaDoiTac INT AUTO_INCREMENT PRIMARY KEY,
+TenDoiTac VARCHAR(100) NOT NULL,
+TenDoanhNghiep VARCHAR(150),
+MaSoThue VARCHAR(50),
+SoTaiKhoan VARCHAR(50),
+NganHang VARCHAR(100),
+TenDangNhap VARCHAR(50) NOT NULL UNIQUE,
+MatKhau VARCHAR(255) NOT NULL,
+Email VARCHAR(100),
+SoDienThoai VARCHAR(20),
+DiaChi VARCHAR(255),
+TrangThai VARCHAR(50),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 4. SAN PHAM
+-- =========================================================
+CREATE TABLE sanpham (
+MaSanPham INT AUTO_INCREMENT PRIMARY KEY,
+TenSanPham VARCHAR(255) NOT NULL,
+Loai VARCHAR(255),
+NoiThat VARCHAR(255),
+QuyCach VARCHAR(255),
+TonGiao VARCHAR(255),
+GiaTien DECIMAL(38,2) NOT NULL DEFAULT 0,
+MaDoiTac INT,
+SoLuong INT NOT NULL DEFAULT 0,
+ThietKe VARCHAR(255),
+XuatXu VARCHAR(255),
+GhiChu TEXT,
+KhuyenMai DECIMAL(38,2) DEFAULT 0,
+MauSac VARCHAR(255),
+HinhAnh VARCHAR(255),
+VatLieu VARCHAR(255),
+TrangThai VARCHAR(255),
+KichThuoc VARCHAR(255),
+TrongLuong VARCHAR(255),
+CNSX VARCHAR(255),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CONSTRAINT fk_sanpham_doitac
+FOREIGN KEY (MaDoiTac) REFERENCES doitac(MaDoiTac)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 5. DON HANG
+-- =========================================================
+CREATE TABLE donhang (
+MaDonHang INT AUTO_INCREMENT PRIMARY KEY,
+MaKhachHang INT,
+MaNhanVien INT,
+NgayTaoDon DATE,
+TongTien DECIMAL(38,2) NOT NULL DEFAULT 0,
+TrangThai VARCHAR(255),
+GhiChu TEXT,
+PhuongThucThanhToan VARCHAR(100),
+TrangThaiThanhToan VARCHAR(100),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CONSTRAINT fk_donhang_khachhang
+FOREIGN KEY (MaKhachHang) REFERENCES khachhang(MaKhachHang),
+CONSTRAINT fk_donhang_nhanvien
+FOREIGN KEY (MaNhanVien) REFERENCES nhanvien(MaNhanVien)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 6. CHI TIET DON HANG
+-- =========================================================
+CREATE TABLE chitietdonhang (
+MaDonHangChiTiet INT AUTO_INCREMENT PRIMARY KEY,
+MaDonHang INT,
+MaSanPham INT,
+SoLuong INT NOT NULL DEFAULT 1,
+GiaTien DECIMAL(38,2) NOT NULL DEFAULT 0,
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT fk_ctdh_donhang
+FOREIGN KEY (MaDonHang) REFERENCES donhang(MaDonHang) ON DELETE CASCADE,
+CONSTRAINT fk_ctdh_sanpham
+FOREIGN KEY (MaSanPham) REFERENCES sanpham(MaSanPham),
+UNIQUE KEY uk_ctdh_donhang_sanpham (MaDonHang, MaSanPham)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 7. HOA DON
+-- =========================================================
+CREATE TABLE hoadon (
+MaHoaDon INT AUTO_INCREMENT PRIMARY KEY,
+MaDonHang INT,
+NgayIn DATE,
+TongTien DECIMAL(38,2) NOT NULL DEFAULT 0,
+PhuongThucThanhToan VARCHAR(100),
+TrangThai VARCHAR(100),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT fk_hoadon_donhang
+FOREIGN KEY (MaDonHang) REFERENCES donhang(MaDonHang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 8. HOP DONG
+-- =========================================================
+CREATE TABLE hopdong (
+MaHopDong INT AUTO_INCREMENT PRIMARY KEY,
+MaDonHang INT,
+NgayKyHD DATE,
+NgayViet DATE,
+TrangThai VARCHAR(255),
+GhiChu TEXT,
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT fk_hopdong_donhang
+FOREIGN KEY (MaDonHang) REFERENCES donhang(MaDonHang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 9. COMBO
+-- =========================================================
+CREATE TABLE combo (
+ComboId INT AUTO_INCREMENT PRIMARY KEY,
+TenCombo VARCHAR(255),
+Gia DECIMAL(38,2) NOT NULL DEFAULT 0,
+MoTa VARCHAR(500),
+HinhAnh VARCHAR(255),
+TrangThai VARCHAR(255),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 10. COMBO CHI TIET
+-- =========================================================
+CREATE TABLE combochitiet (
+ComboChiTietId INT AUTO_INCREMENT PRIMARY KEY,
+MaSanPham INT NULL,
+ComboID INT,
+Loai VARCHAR(255),
+NoiDung VARCHAR(500),
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT fk_combochitiet_sanpham
+FOREIGN KEY (MaSanPham) REFERENCES sanpham(MaSanPham),
+CONSTRAINT fk_combochitiet_combo
+FOREIGN KEY (ComboID) REFERENCES combo(ComboId) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 11. LICH SU KHACH HANG
+-- =========================================================
+CREATE TABLE lichsukhachhang (
+MaLichSu INT AUTO_INCREMENT PRIMARY KEY,
+MaKhachHang INT NOT NULL,
+MaNhanVien INT NULL,
+GiaiDoan VARCHAR(100),
+TrangThai VARCHAR(100),
+NoiDung TEXT,
+GhiChu TEXT,
+ThoiGian DATETIME DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT fk_lskh_khachhang
+FOREIGN KEY (MaKhachHang) REFERENCES khachhang(MaKhachHang),
+CONSTRAINT fk_lskh_nhanvien
+FOREIGN KEY (MaNhanVien) REFERENCES nhanvien(MaNhanVien)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 12. THONG BAO DOI TAC
+-- =========================================================
+CREATE TABLE thongbaodoitac (
+MaThongBao INT AUTO_INCREMENT PRIMARY KEY,
+MaDoiTac INT NOT NULL,
+MaDonHang INT NOT NULL,
+Loai VARCHAR(50) NOT NULL DEFAULT 'DON_HANG',
+TieuDe VARCHAR(255),
+NoiDung TEXT,
+TrangThaiThongBao VARCHAR(50) NOT NULL DEFAULT 'CHO_XAC_NHAN',
+LyDoTuChoi TEXT,
+DaDoc BOOLEAN DEFAULT FALSE,
+ThoiGianTao DATETIME DEFAULT CURRENT_TIMESTAMP,
+ThoiGianXuLy DATETIME,
+CONSTRAINT fk_tbdoitac_doitac
+FOREIGN KEY (MaDoiTac) REFERENCES doitac(MaDoiTac),
+CONSTRAINT fk_tbdoitac_donhang
+FOREIGN KEY (MaDonHang) REFERENCES donhang(MaDonHang),
+UNIQUE KEY uk_tb_doitac_donhang_loai (MaDoiTac, MaDonHang, Loai)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 13. THONG BAO NHAN VIEN / HE THONG
+-- =========================================================
+CREATE TABLE thongbao (
+MaThongBao INT AUTO_INCREMENT PRIMARY KEY,
+TieuDe VARCHAR(255),
+NoiDung TEXT,
+LoaiThongBao VARCHAR(50),
+NguoiGuiId INT NULL,
+NguoiNhanId INT NULL,
+MaKhachHang INT NULL,
+TrangThai VARCHAR(50) DEFAULT 'CHUA_DOC',
+LyDoTuChoi TEXT,
+NgayTao DATETIME DEFAULT CURRENT_TIMESTAMP,
+NgayCapNhat DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CONSTRAINT fk_thongbao_nguoigui
+FOREIGN KEY (NguoiGuiId) REFERENCES nhanvien(MaNhanVien),
+CONSTRAINT fk_thongbao_nguoinhan
+FOREIGN KEY (NguoiNhanId) REFERENCES nhanvien(MaNhanVien),
+CONSTRAINT fk_thongbao_khachhang
+FOREIGN KEY (MaKhachHang) REFERENCES khachhang(MaKhachHang)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+-- =========================================================
+-- INSERT DATA
+-- BCrypt hash test: password = 123456
+-- =========================================================
+
+-- NHAN VIEN
+INSERT INTO nhanvien
+(MaNhanVien, HoTen, TenDangNhap, MatKhau, Email, SoDienThoai, DiaChi, VaiTro, TrangThai)
+VALUES
+(1, 'Phạm Minh Đức', 'ducpm', '$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'duc@anyen.vn',
+'0911111111', 'TP.HCM', 'Admin', 'Đang làm việc'),
+(2, 'Võ Thanh Hải', 'haivt', '$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'hai@anyen.vn',
+'0922222222', 'TP.HCM', 'Nhân viên bán hàng', 'Đang làm việc'),
+(3, 'Đặng Ngọc Lan', 'landn', '$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'lan@anyen.vn',
+'0933333333', 'Đồng Nai', 'Nhân viên tư vấn', 'Đang làm việc'),
+(4, 'Nguyễn Minh Long', 'longnm', '$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'long@anyen.vn',
+'0944444444', 'Bình Dương', 'Hotline', 'Đang làm việc'),
+(5, 'Trần Anh Kiên', 'kienta', '$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'kien@anyen.vn',
+'0955555555', 'TP.HCM', 'Kế toán', 'Đang làm việc');
+
+-- KHACH HANG
+INSERT INTO khachhang
+(MaKhachHang, TenKhachHang, CCCD, DiaChi, Email, SoDienThoai, MaNhanVienPhuTrach)
+VALUES
+(1, 'Nguyễn Văn An', '079201000001', 'Quận 1, TP.HCM', 'an@gmail.com', '0901111111', 2),
+(2, 'Trần Thị Bình', '079202000002', 'Biên Hòa, Đồng Nai', 'binh@gmail.com', '0902222222', 3),
+(3, 'Lê Văn Cường', '079203000003', 'Thủ Dầu Một, Bình Dương', 'cuong@gmail.com', '0903333333', 2),
+(4, 'Phạm Thị Dung', '079204000004', 'Quận 7, TP.HCM', 'dung@gmail.com', '0904444444', 4),
+(5, 'Hoàng Minh Khang', '079205000005', 'Dĩ An, Bình Dương', 'khang@gmail.com', '0905555555', 3),
+(6, 'Đỗ Ngọc Mai', '079206000006', 'Long Thành, Đồng Nai', 'mai@gmail.com', '0906666666', 4);
+
+-- DOI TAC
+INSERT INTO doitac
+(MaDoiTac, TenDoiTac, TenDoanhNghiep, MaSoThue, SoTaiKhoan, NganHang, TenDangNhap, MatKhau, Email, SoDienThoai, DiaChi,
+TrangThai)
+VALUES
+(1, 'Công ty An Phúc', 'An Phúc Funeral', '0311111111', '123456789', 'Vietcombank', 'anphuc',
+'$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'anphuc@gmail.com', '0981111111', 'TP.HCM', 'Đang hợp
+tác'),
+(2, 'Công ty Tâm Đức', 'Tâm Đức Service', '0322222222', '987654321', 'ACB', 'tamduc',
+'$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'tamduc@gmail.com', '0982222222', 'Bình Dương', 'Đang
+hợp tác'),
+(3, 'Công ty Phúc Lộc', 'Phúc Lộc Co., Ltd', '0333333333', '456789123', 'Techcombank', 'phucloc',
+'$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'phucloc@gmail.com', '0983333333', 'Đồng Nai', 'Tạm
+ngưng'),
+(4, 'Dịch vụ Hoa Sen', 'Hoa Sen Memorial', '0344444444', '112233445', 'MB Bank', 'hoasen',
+'$2a$10$pE8YJ.bsepBVEkyXLegnrOzcsDxebdzwJ/K1xoCzExF0C.24QzvvW', 'hoasen@gmail.com', '0984444444', 'TP.HCM', 'Đang hợp
+tác');
+
+-- SAN PHAM
+INSERT INTO sanpham
+(MaSanPham, TenSanPham, Loai, NoiThat, QuyCach, TonGiao, GiaTien, MaDoiTac, SoLuong, ThietKe, XuatXu, GhiChu, KhuyenMai,
+MauSac, HinhAnh, VatLieu, TrangThai, KichThuoc, TrongLuong, CNSX)
+VALUES
+(1, 'Quan tài gỗ thông', 'Quan tài', 'Có đệm lót', 'Tiêu chuẩn', 'Phật giáo', 12000000.00, 1, 10, 'Truyền thống', 'Việt
+Nam', 'Hàng phổ thông', 0.00, 'Nâu', 'quan_tai_go_thong.jpg', 'Gỗ thông', 'Còn hàng', '2m x 0.7m', '80kg', '2025'),
+(2, 'Bình tro cốt gốm sứ', 'Bình tro cốt', 'Không', 'Nhỏ', 'Không phân biệt', 2500000.00, 2, 25, 'Hoa văn sen', 'Việt
+Nam', 'Sản phẩm cao cấp', 0.00, 'Trắng', 'binh_tro_cot.jpg', 'Gốm sứ', 'Còn hàng', '30cm x 20cm', '3kg', '2025'),
+(3, 'Bộ lễ tang trọn gói', 'Dịch vụ', 'Đầy đủ', 'Trọn gói', 'Công giáo', 35000000.00, 1, 5, 'Trang trọng', 'Việt Nam',
+'Gói dịch vụ cơ bản', 0.00, 'Trắng đen', 'bo_le_tang.jpg', 'Tổng hợp', 'Còn hàng', 'Theo yêu cầu', 'Không có', '2025'),
+(4, 'Xe tang lễ 16 chỗ', 'Dịch vụ vận chuyển', 'Máy lạnh', 'Theo chuyến', 'Không phân biệt', 5000000.00, 3, 3, 'Trang
+nghiêm', 'Việt Nam', 'Có tài xế', 0.00, 'Đen', 'xe-tang-le.jpg', 'Xe chuyên dụng', 'Còn dịch vụ', '16 chỗ', '2500kg',
+'Đăng kiểm định kỳ'),
+(5, 'Bàn thờ tang lễ', 'Vật phẩm tang lễ', 'Có khăn phủ', 'Trọn bộ', 'Phật giáo', 3200000.00, 1, 12, 'Truyền thống',
+'Việt Nam', 'Bao gồm lư hương và đèn', 0.00, 'Nâu vàng', 'ban-tho.jpg', 'Gỗ MDF', 'Còn hàng', '120x60x100cm', '35kg',
+'Lắp ráp nhanh'),
+(6, 'Hoa tang lễ cao cấp', 'Vật phẩm tang lễ', 'Không', 'Vòng hoa', 'Không phân biệt', 1800000.00, 4, 30, 'Hiện đại',
+'Việt Nam', 'Hoa tươi trong ngày', 0.00, 'Trắng', 'hoa-tang-le.jpg', 'Hoa tươi', 'Còn hàng', '1.8m x 0.9m', '10kg',
+'Theo ngày'),
+(7, 'Khăn tang gia quyến', 'Vật phẩm tang lễ', 'Không', 'Bộ 20 cái', 'Không phân biệt', 400000.00, 2, 100, 'Đơn giản',
+'Việt Nam', 'Vải mềm', 0.00, 'Trắng', 'khan-tang.jpg', 'Vải', 'Còn hàng', 'Free size', '1kg', '2025'),
+(8, 'Quan tài gỗ cao cấp', 'Quan tài', 'Đệm lót cao cấp', 'Cao cấp', 'Công giáo', 28000000.00, 1, 4, 'Chạm khắc', 'Việt
+Nam', 'Gỗ chất lượng cao', 0.00, 'Nâu đỏ', 'quan-tai-cao-cap.jpg', 'Gỗ tự nhiên', 'Còn hàng', '2.1m x 0.75m', '120kg',
+'2025'),
+(9, 'Dịch vụ hỏa táng', 'Dịch vụ', 'Không', 'Theo yêu cầu', 'Không phân biệt', 9000000.00, 3, 8, 'Trang nghiêm', 'Việt
+Nam', 'Bao gồm hỗ trợ thủ tục', 0.00, 'Không', 'hoa-tang.jpg', 'Dịch vụ', 'Còn dịch vụ', 'Theo yêu cầu', 'Không có',
+'2025'),
+(10, 'Bộ đồ liệm truyền thống', 'Vật phẩm tang lễ', 'Không', 'Trọn bộ', 'Phật giáo', 1500000.00, 4, 40, 'Truyền thống',
+'Việt Nam', 'Đủ phụ kiện cơ bản', 0.00, 'Trắng', 'do-liem.jpg', 'Vải', 'Còn hàng', 'Free size', '2kg', '2025');
+
+-- DON HANG
+INSERT INTO donhang
+(MaDonHang, MaKhachHang, MaNhanVien, NgayTaoDon, TongTien, TrangThai, GhiChu, PhuongThucThanhToan, TrangThaiThanhToan)
+VALUES
+(1, 1, 2, '2026-06-01', 15200000.00, 'Đã xác nhận', 'Khách cần giao trong ngày', 'Tiền mặt', 'Chưa thanh toán'),
+(2, 2, 3, '2026-06-02', 38600000.00, 'Đang xử lý', 'Khách chọn gói cao cấp', 'Chuyển khoản', 'Đã đặt cọc'),
+(3, 3, 2, '2026-06-03', 5000000.00, 'Chờ thanh toán', 'Khách cần tư vấn thêm', 'Tiền mặt', 'Chưa thanh toán'),
+(4, 4, 4, '2026-06-04', 14500000.00, 'Mới tạo', 'Khách cần hỗ trợ hotline', 'Chuyển khoản', 'Chưa thanh toán'),
+(5, 5, 3, '2026-06-05', 28000000.00, 'Đã xác nhận', 'Đơn quan tài cao cấp', 'Tiền mặt', 'Đã thanh toán'),
+(6, 6, 4, '2026-06-06', 6800000.00, 'Đang xử lý', 'Giao vật phẩm tang lễ', 'Chuyển khoản', 'Đã thanh toán');
+
+-- CHI TIET DON HANG
+INSERT INTO chitietdonhang
+(MaDonHang, MaSanPham, SoLuong, GiaTien)
+VALUES
+(1, 1, 1, 12000000.00),
+(1, 5, 1, 3200000.00),
+(2, 3, 1, 35000000.00),
+(2, 6, 2, 1800000.00),
+(3, 4, 1, 5000000.00),
+(4, 9, 1, 9000000.00),
+(4, 2, 1, 2500000.00),
+(4, 10, 2, 1500000.00),
+(5, 8, 1, 28000000.00),
+(6, 5, 1, 3200000.00),
+(6, 6, 2, 1800000.00);
+
+-- HOA DON
+INSERT INTO hoadon
+(MaHoaDon, MaDonHang, NgayIn, TongTien, PhuongThucThanhToan, TrangThai)
+VALUES
+(1, 2, '2026-06-02', 38600000.00, 'Chuyển khoản', 'Đã in'),
+(2, 5, '2026-06-05', 28000000.00, 'Tiền mặt', 'Đã in'),
+(3, 6, '2026-06-06', 6800000.00, 'Chuyển khoản', 'Đã in');
+
+-- HOP DONG
+INSERT INTO hopdong
+(MaHopDong, MaDonHang, NgayKyHD, NgayViet, TrangThai, GhiChu)
+VALUES
+(1, 1, '2026-06-01', '2026-06-01', 'Đã ký / Hiệu lực', 'Hợp đồng dịch vụ mai táng cơ bản'),
+(2, 2, '2026-06-02', '2026-06-02', 'Chờ ký', 'Đang chờ khách xác nhận bản cuối'),
+(3, 5, '2026-06-05', '2026-06-05', 'Đang thực hiện', 'Đã thanh toán đủ');
+
+-- COMBO
+INSERT INTO combo
+(ComboId, TenCombo, Gia, MoTa, HinhAnh, TrangThai)
+VALUES
+(1, 'Gói Tiết Kiệm', 15000000.00, 'Gói mai táng cơ bản, đầy đủ các nghi thức cần thiết', 'goi1.png', 'Đang áp dụng'),
+(2, 'Gói Tiêu Chuẩn', 25000000.00, 'Gói mai táng trang trọng với nhiều tiện ích bổ sung', 'goi2.png', 'Đang áp dụng'),
+(3, 'Gói Cao Cấp', 40000000.00, 'Gói mai táng cao cấp với đầy đủ dịch vụ chuyên nghiệp', 'goi3.png', 'Đang áp dụng'),
+(4, 'Gói VIP', 80000000.00, 'Gói dịch vụ tang lễ cao cấp nhất của An Yên', 'goi4.png', 'Đang áp dụng');
+
+-- COMBO CHI TIET
+INSERT INTO combochitiet
+(ComboChiTietId, MaSanPham, ComboID, Loai, NoiDung)
+VALUES
+(1, NULL, 1, 'Tiện ích', 'Tư vấn và hỗ trợ 24/7'),
+(2, 4, 1, 'Sản phẩm', 'Xe đưa đón theo chương trình'),
+(3, NULL, 1, 'Tiện ích', 'Sảnh, bàn ghế, phông rạp cơ bản'),
+(4, 1, 1, 'Sản phẩm', 'Áo quan tiêu chuẩn'),
+(5, NULL, 1, 'Tiện ích', 'Nhân sự phục vụ tang lễ'),
+(6, NULL, 2, 'Tiện ích', 'Tư vấn và hỗ trợ 24/7'),
+(7, 4, 2, 'Sản phẩm', 'Xe đưa đón theo chương trình'),
+(8, NULL, 2, 'Tiện ích', 'Sảnh, bàn ghế, phông rạp cao cấp'),
+(9, 1, 2, 'Sản phẩm', 'Áo quan tiêu chuẩn'),
+(10, NULL, 2, 'Tiện ích', 'Nhân sự phục vụ chuyên nghiệp'),
+(11, NULL, 2, 'Tiện ích', 'Nghi thức theo tôn giáo'),
+(12, NULL, 3, 'Tiện ích', 'Tư vấn và hỗ trợ 24/7'),
+(13, 4, 3, 'Sản phẩm', 'Xe đưa đón cao cấp'),
+(14, NULL, 3, 'Tiện ích', 'Sảnh, bàn ghế, phông rạp cao cấp'),
+(15, 8, 3, 'Sản phẩm', 'Áo quan cao cấp'),
+(16, NULL, 3, 'Tiện ích', 'Nhân sự phục vụ chuyên nghiệp'),
+(17, NULL, 3, 'Tiện ích', 'Nghi thức theo tôn giáo'),
+(18, NULL, 3, 'Tiện ích', 'Quay phim và chụp ảnh tang lễ'),
+(19, NULL, 4, 'Tiện ích', 'Tư vấn và hỗ trợ 24/7'),
+(20, 4, 4, 'Sản phẩm', 'Xe đưa đón hạng sang'),
+(21, NULL, 4, 'Tiện ích', 'Sảnh, bàn ghế, phông rạp VIP'),
+(22, 8, 4, 'Sản phẩm', 'Áo quan nhập khẩu cao cấp'),
+(23, NULL, 4, 'Tiện ích', 'Nhân sự phục vụ tận tâm 1:1'),
+(24, NULL, 4, 'Tiện ích', 'Nghi thức theo tôn giáo'),
+(25, NULL, 4, 'Tiện ích', 'Quay phim, chụp ảnh, livestream'),
+(26, 2, 4, 'Sản phẩm', 'Bình tro cốt cao cấp'),
+(27, NULL, 4, 'Tiện ích', 'Hậu sự và lưu tro cốt');
+
+-- LICH SU KHACH HANG
+INSERT INTO lichsukhachhang
+(MaLichSu, MaKhachHang, MaNhanVien, GiaiDoan, TrangThai, NoiDung, GhiChu, ThoiGian)
+VALUES
+(1, 1, 2, 'Tiếp nhận', 'Hoàn tất', 'Tiếp nhận thông tin nhu cầu dịch vụ từ khách hàng.', 'Khách ưu tiên giao nhanh',
+'2026-06-01 08:30:00'),
+(2, 1, 2, 'Tư vấn', 'Hoàn tất', 'Tư vấn chọn quan tài gỗ thông và bàn thờ tang lễ.', NULL, '2026-06-01 09:00:00'),
+(3, 2, 3, 'Tư vấn', 'Đang xử lý', 'Khách chọn gói cao cấp và cần báo giá chi tiết.', 'Cần gọi lại sau 14h', '2026-06-02
+10:15:00'),
+(4, 3, 2, 'Thanh toán', 'Chờ xử lý', 'Khách chờ xác nhận phương thức thanh toán.', NULL, '2026-06-03 11:00:00'),
+(5, 4, 4, 'Hotline', 'Mới', 'Khách liên hệ qua hotline cần hỗ trợ dịch vụ hỏa táng.', 'Ưu tiên trong ngày', '2026-06-04
+07:45:00'),
+(6, 5, 3, 'Hợp đồng', 'Hoàn tất', 'Đã tạo hợp đồng cho đơn quan tài cao cấp.', NULL, '2026-06-05 13:20:00');
+
+-- THONG BAO DOI TAC
+INSERT INTO thongbaodoitac
+(MaDoiTac, MaDonHang, Loai, TieuDe, NoiDung, TrangThaiThongBao, DaDoc, ThoiGianTao)
+SELECT DISTINCT
+sp.MaDoiTac,
+dh.MaDonHang,
+'DON_HANG',
+CONCAT('Đơn hàng mới #DH', LPAD(dh.MaDonHang, 3, '0')),
+CONCAT('Khách hàng: ', kh.TenKhachHang, ' - Tổng tiền: ', FORMAT(dh.TongTien, 0), ' đ'),
+CASE
+WHEN dh.TrangThai IN ('Đã xác nhận', 'Đang xử lý') THEN 'DA_XAC_NHAN'
+ELSE 'CHO_XAC_NHAN'
+END,
+FALSE,
+NOW()
+FROM donhang dh
+JOIN chitietdonhang ct ON ct.MaDonHang = dh.MaDonHang
+JOIN sanpham sp ON sp.MaSanPham = ct.MaSanPham
+JOIN khachhang kh ON kh.MaKhachHang = dh.MaKhachHang;
+
+-- THONG BAO NHAN VIEN / HE THONG
+INSERT INTO thongbao
+(MaThongBao, TieuDe, NoiDung, LoaiThongBao, NguoiGuiId, NguoiNhanId, MaKhachHang, TrangThai, LyDoTuChoi, NgayTao,
+NgayCapNhat)
+VALUES
+(1, 'Bảo trì hệ thống định kỳ', 'Hệ thống sẽ bảo trì từ 22:00 đến 23:00 tối nay. Vui lòng lưu lại các công việc đang làm
+dở.', 'HE_THONG', NULL, 1, NULL, 'CHUA_DOC', NULL, NOW(), NOW()),
+(2, 'Tư vấn trực tiếp khách hàng mới', 'Khách hàng Nguyễn Văn An cần tư vấn thêm về gói dịch vụ.', 'CONG_VIEC', 4, 2, 1,
+'CHUA_DOC', NULL, NOW(), NOW()),
+(3, 'Hỗ trợ khách hàng VIP', 'Khách hàng Trần Thị Bình cần gặp gấp để chốt hợp đồng.', 'CONG_VIEC', 4, 3, 2, 'DA_DOC',
+NULL, DATE_SUB(NOW(), INTERVAL 2 HOUR), DATE_SUB(NOW(), INTERVAL 1 HOUR)),
+(4, 'Tư vấn dịch vụ hỏa táng', 'Khách hàng Phạm Thị Dung đang tìm hiểu dịch vụ hỏa táng.', 'CONG_VIEC', 4, 2, 4,
+'DA_CHAP_NHAN', NULL, DATE_SUB(NOW(), INTERVAL 1 DAY), NOW()),
+(5, 'Khảo sát nhu cầu khách hàng', 'Cần nhân viên gọi xác nhận nhu cầu dịch vụ và thời gian tổ chức.', 'CONG_VIEC', 4,
+3, 5, 'DA_TU_CHOI', 'Tôi đang xử lý công việc khác, không thể nhận thêm trong hôm nay.', DATE_SUB(NOW(), INTERVAL 2
+DAY), DATE_SUB(NOW(), INTERVAL 1 DAY));
+
+-- =========================================================
+-- KIEM TRA NHANH SO DONG
+-- =========================================================
+SELECT 'khachhang' AS Bang, COUNT(*) AS SoDong FROM khachhang
+UNION ALL SELECT 'nhanvien', COUNT(*) FROM nhanvien
+UNION ALL SELECT 'doitac', COUNT(*) FROM doitac
+UNION ALL SELECT 'sanpham', COUNT(*) FROM sanpham
+UNION ALL SELECT 'donhang', COUNT(*) FROM donhang
+UNION ALL SELECT 'chitietdonhang', COUNT(*) FROM chitietdonhang
+UNION ALL SELECT 'hoadon', COUNT(*) FROM hoadon
+UNION ALL SELECT 'hopdong', COUNT(*) FROM hopdong
+UNION ALL SELECT 'combo', COUNT(*) FROM combo
+UNION ALL SELECT 'combochitiet', COUNT(*) FROM combochitiet
+UNION ALL SELECT 'lichsukhachhang', COUNT(*) FROM lichsukhachhang
+UNION ALL SELECT 'thongbaodoitac', COUNT(*) FROM thongbaodoitac
+UNION ALL SELECT 'thongbao', COUNT(*) FROM thongbao;
+
+-- =========================================================
+-- KIEM TRA TONG TIEN DON HANG CO KHOP CHI TIET KHONG
+-- Neu dung thi ChenhLech = 0 het
+-- =========================================================
+SELECT
+dh.MaDonHang,
+dh.TongTien AS TongTienDonHang,
+SUM(ct.SoLuong * ct.GiaTien) AS TongTienChiTiet,
+dh.TongTien - SUM(ct.SoLuong * ct.GiaTien) AS ChenhLech
+FROM donhang dh
+JOIN chitietdonhang ct ON ct.MaDonHang = dh.MaDonHang
+GROUP BY dh.MaDonHang, dh.TongTien;
+
+-- =========================================================
+-- KIEM TRA GIA CHI TIET CO KHOP GIA SAN PHAM KHONG
+-- Neu khong co dong nao tra ve la dung
+-- =========================================================
+SELECT
+ct.MaDonHang,
+ct.MaSanPham,
+sp.TenSanPham,
+sp.GiaTien AS GiaSanPham,
+ct.GiaTien AS GiaTrongChiTiet
+FROM chitietdonhang ct
+JOIN sanpham sp ON sp.MaSanPham = ct.MaSanPham
+WHERE ct.GiaTien <> sp.GiaTien;
+
+
+
+
+  CREATE TABLE combochitiet_hinhanh (
+  MaHinhAnh INT AUTO_INCREMENT PRIMARY KEY,
+  ComboChiTietId INT NOT NULL,
+  TenHinhAnh VARCHAR(255) NOT NULL,
+  HinhAnh VARCHAR(255) NOT NULL,
+  ThuTu INT DEFAULT 1,
+
+  FOREIGN KEY (ComboChiTietId)
+  REFERENCES combochitiet(ComboChiTietId)
+  );
+  INSERT INTO combochitiet_hinhanh
+  (ComboChiTietId, TenHinhAnh, HinhAnh, ThuTu)
+  VALUES
+
+  -- GÓI 1 - TIẾT KIỆM
+  (1, 'Tư vấn và hỗ trợ 24/7', '/images/TrangDichVuChiTiet/tu-van-24-7.jpg', 1),
+
+  (2, 'Xe đưa đón tiêu chuẩn', '/images/TrangDichVuChiTiet/xe-tang-le-tieu-chuan.jpg', 1),
+
+  (3, 'Trang trí cơ bản mẫu 1', '/images/TrangDichVuChiTiet/trang-tri-co-ban-1.jpg', 1),
+  (3, 'Trang trí cơ bản mẫu 2', '/images/TrangDichVuChiTiet/trang-tri-co-ban-2.jpg', 2),
+  (3, 'Trang trí cơ bản mẫu 3', '/images/TrangDichVuChiTiet/trang-tri-co-ban-3.jpg', 3),
+
+  (4, 'Quan tài gỗ thông tiêu chuẩn', '/images/TrangDichVuChiTiet/quan-tai-go-thong.jpg', 1),
+  (4, 'Quan tài tiêu chuẩn mẫu 2', '/images/TrangDichVuChiTiet/quan-tai-tieu-chuan-2.jpg', 2),
+  (4, 'Quan tài tiêu chuẩn mẫu 3', '/images/TrangDichVuChiTiet/quan-tai-tieu-chuan-3.jpg', 3),
+
+  (5, 'Nhân sự phục vụ tang lễ', '/images/TrangDichVuChiTiet/nhan-su-phuc-vu.jpg', 1),
+
+
+  -- GÓI 2 - TIÊU CHUẨN
+  (6, 'Tư vấn và hỗ trợ 24/7', '/images/TrangDichVuChiTiet/tu-van-24-7.jpg', 1),
+
+  (7, 'Xe đưa đón theo chương trình', '/images/TrangDichVuChiTiet/xe-tang-le-tieu-chuan.jpg', 1),
+
+  (8, 'Trang trí cao cấp mẫu 1', '/images/TrangDichVuChiTiet/trang-tri-cao-cap-1.jpg', 1),
+  (8, 'Trang trí cao cấp mẫu 2', '/images/TrangDichVuChiTiet/trang-tri-cao-cap-2.jpg', 2),
+  (8, 'Trang trí cao cấp mẫu 3', '/images/TrangDichVuChiTiet/trang-tri-cao-cap-3.jpg', 3),
+
+  (9, 'Quan tài gỗ căm xe cao cấp', '/images/TrangDichVuChiTiet/quan-tai-cam-xe.jpg', 1),
+  (9, 'Quan tài cao cấp mẫu 2', '/images/TrangDichVuChiTiet/quan-tai-cao-cap-2.jpg', 2),
+  (9, 'Quan tài cao cấp mẫu 3', '/images/TrangDichVuChiTiet/quan-tai-cao-cap-3.jpg', 3),
+
+  (10, 'Nhân sự phục vụ chuyên nghiệp', '/images/TrangDichVuChiTiet/nhan-su-chuyen-nghiep.jpg', 1),
+
+  (11, 'Nghi thức theo tôn giáo', '/images/TrangDichVuChiTiet/nghi-thuc-ton-giao.jpg', 1),
+
+
+  -- GÓI 3 - CAO CẤP
+  (12, 'Tư vấn và hỗ trợ 24/7', '/images/TrangDichVuChiTiet/tu-van-24-7.jpg', 1),
+
+  (13, 'Xe đưa đón cao cấp', '/images/TrangDichVuChiTiet/xe-tang-le-cao-cap.jpg', 1),
+
+  (14, 'Trang trí cao cấp mẫu 1', '/images/TrangDichVuChiTiet/trang-tri-cao-cap-1.jpg', 1),
+  (14, 'Trang trí cao cấp mẫu 2', '/images/TrangDichVuChiTiet/trang-tri-cao-cap-2.jpg', 2),
+  (14, 'Trang trí cao cấp mẫu 3', '/images/TrangDichVuChiTiet/trang-tri-cao-cap-3.jpg', 3),
+
+  (15, 'Quan tài nhập khẩu mẫu 1', '/images/TrangDichVuChiTiet/quan-tai-nhap-khau-1.jpg', 1),
+  (15, 'Quan tài nhập khẩu mẫu 2', '/images/TrangDichVuChiTiet/quan-tai-nhap-khau-2.jpg', 2),
+  (15, 'Quan tài nhập khẩu mẫu 3', '/images/TrangDichVuChiTiet/quan-tai-nhap-khau-3.jpg', 3),
+
+  (16, 'Nhân sự phục vụ chuyên nghiệp', '/images/TrangDichVuChiTiet/nhan-su-chuyen-nghiep.jpg', 1),
+
+  (17, 'Nghi thức theo tôn giáo', '/images/TrangDichVuChiTiet/nghi-thuc-ton-giao.jpg', 1),
+  (18, 'Quay phim và chụp ảnh tang lễ', '/images/TrangDichVuChiTiet/quay-phim-chup-anh.jpg', 1),
+
+
+  -- GÓI 4 - VIP
+  (19, 'Tư vấn và hỗ trợ 24/7', '/images/TrangDichVuChiTiet/tu-van-24-7.jpg', 1),
+
+  (20, 'Xe đưa đón hạng sang', '/images/TrangDichVuChiTiet/xe-tang-le-hang-sang.jpg', 1),
+
+  (21, 'Trang trí VIP mẫu 1', '/images/TrangDichVuChiTiet/trang-tri-vip-1.jpg', 1),
+  (21, 'Trang trí VIP mẫu 2', '/images/TrangDichVuChiTiet/trang-tri-vip-2.jpg', 2),
+  (21, 'Trang trí VIP mẫu 3', '/images/TrangDichVuChiTiet/trang-tri-vip-3.jpg', 3),
+
+  (22, 'Quan tài nhập khẩu cao cấp mẫu 1', '/images/TrangDichVuChiTiet/quan-tai-vip-1.jpg', 1),
+  (22, 'Quan tài nhập khẩu cao cấp mẫu 2', '/images/TrangDichVuChiTiet/quan-tai-vip-2.jpg', 2),
+  (22, 'Quan tài nhập khẩu cao cấp mẫu 3', '/images/TrangDichVuChiTiet/quan-tai-vip-3.jpg', 3),
+
+  (23, 'Nhân sự phục vụ tận tâm 1:1', '/images/TrangDichVuChiTiet/nhan-su-1-1.jpg', 1),
+
+  (24, 'Nghi thức theo tôn giáo', '/images/TrangDichVuChiTiet/nghi-thuc-ton-giao.jpg', 1),
+
+  (25, 'Quay phim, chụp ảnh, livestream', '/images/TrangDichVuChiTiet/livestream-tang-le.jpg', 1),
+
+  (26, 'Bình tro cốt cao cấp', '/images/TrangDichVuChiTiet/binh-tro-cot-cao-cap.jpg', 1),
+
+  (27, 'Hậu sự và lưu tro cốt', '/images/TrangDichVuChiTiet/hau-su-luu-tro-cot.jpg', 1);

@@ -34,9 +34,15 @@ public class DonHang {
     @Column(name = "tongTien")
     private BigDecimal tongTien;
 
-    @Column(name = "trangThai")
+    @Column(name = "TrangThai")
     private String trangThai;
 
     @Column(name = "GhiChu", columnDefinition = "TEXT")
     private String ghiChu;
+
+    @Column(name = "PhuongThucThanhToan")
+    private String phuongThucThanhToan;
+
+    @Column(name = "TrangThaiThanhToan")
+    private String trangThaiThanhToan;
 }

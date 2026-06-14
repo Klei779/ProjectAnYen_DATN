@@ -2,6 +2,7 @@ package vn.anyen.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DonHang;
@@ -9,7 +10,10 @@ import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DonHangRepository;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,9 +24,62 @@ public class DonHangService {
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
 
+    // Thứ tự trạng thái đơn hàng theo quy trình
+    private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
+            "Mới tạo",
+            "Đã xác nhận",
+            "Đang xử lý",
+            "Chờ thanh toán",
+            "Hoàn thành"
+    );
+
     public List<DonHangResponse> getAllDonHang() {
         List<DonHang> donHangs = donHangRepository.findAll();
         return donHangs.stream().map(this::mapToDonHangResponse).collect(Collectors.toList());
+    }
+
+    public DonHangResponse getDonHangById(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
+        return mapToDonHangResponse(donHang);
+    }
+
+    @Transactional
+    public DonHangResponse capNhatTrangThai(Integer maDonHang, String trangThaiMoi) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
+
+        String trangThaiHienTai = donHang.getTrangThai();
+
+        // Không cho cập nhật nếu đã hủy
+        if ("Đã hủy".equals(trangThaiHienTai)) {
+            throw new RuntimeException("Đơn hàng đã bị hủy, không thể cập nhật trạng thái.");
+        }
+
+        // Validate trạng thái mới phải hợp lệ
+        if (!"Đã hủy".equals(trangThaiMoi) && !TRANG_THAI_ORDER.contains(trangThaiMoi)) {
+            throw new RuntimeException("Trạng thái '" + trangThaiMoi + "' không hợp lệ.");
+        }
+
+        // Nếu chuyển tiếp, kiểm tra thứ tự (chỉ được chuyển đúng 1 bước tiếp theo, hoặc hủy)
+        if (!"Đã hủy".equals(trangThaiMoi)) {
+            int currentIdx = TRANG_THAI_ORDER.indexOf(trangThaiHienTai);
+            int nextIdx = TRANG_THAI_ORDER.indexOf(trangThaiMoi);
+            if (nextIdx != currentIdx + 1) {
+                throw new RuntimeException("Chỉ có thể chuyển sang trạng thái tiếp theo. " +
+                        "Hiện tại: '" + trangThaiHienTai + "', yêu cầu: '" + trangThaiMoi + "'.");
+            }
+        }
+
+        donHang.setTrangThai(trangThaiMoi);
+        donHangRepository.save(donHang);
+
+        return mapToDonHangResponse(donHang);
+    }
+
+    @Transactional
+    public DonHangResponse huyDonHang(Integer maDonHang) {
+        return capNhatTrangThai(maDonHang, "Đã hủy");
     }
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {
@@ -41,24 +98,45 @@ public class DonHangService {
                 .build()
         ).collect(Collectors.toList());
 
-        List<DonHangResponse.LichSuDonHangResponse> lichSu = new ArrayList<>();
-        lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                .trangThai("Đơn đã được tạo").thoiGian(donHang.getNgayTaoDon() != null ? donHang.getNgayTaoDon().toString() : "").moTa("Đơn hàng đã được tạo.").color("green").done(true).build());
-        
-        boolean isDangXuLy = "Đang xử lý".equals(donHang.getTrangThai());
-        boolean isHoanThanh = "Hoàn thành".equals(donHang.getTrangThai()) || "Đã xác nhận".equals(donHang.getTrangThai());
-        
-        lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                .trangThai("Đang chờ đối tác tiếp nhận").thoiGian("").moTa("").color("orange").done(isDangXuLy || isHoanThanh).build());
-        lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                .trangThai("Ký hợp đồng").thoiGian("").moTa("").color("purple").done(isHoanThanh).build());
-        lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                .trangThai("Đối tác đang chuẩn bị đơn").thoiGian("").moTa("").color("blue").done(false).build());
-        lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                .trangThai("Đang giao").thoiGian("").moTa("").color("cyan").done(false).build());
-        lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                .trangThai("Đã giao").thoiGian("").moTa("").color("gray").done(false).build());
+        // Build lịch sử theo đúng thứ tự trạng thái
+        String currentTrangThai = donHang.getTrangThai();
+        int currentIdx = TRANG_THAI_ORDER.indexOf(currentTrangThai);
+        boolean isDaHuy = "Đã hủy".equals(currentTrangThai);
 
+        List<DonHangResponse.LichSuDonHangResponse> lichSu = new ArrayList<>();
+        for (int i = 0; i < TRANG_THAI_ORDER.size(); i++) {
+            String step = TRANG_THAI_ORDER.get(i);
+            boolean done = !isDaHuy && i <= currentIdx;
+            String time = "";
+            String moTa = "";
+
+            if (i == 0 && donHang.getNgayTaoDon() != null) {
+                time = donHang.getNgayTaoDon().toString();
+                moTa = "Đơn hàng đã được tạo.";
+            } else if (done) {
+                moTa = "Đã hoàn thành.";
+            } else {
+                moTa = "Chưa cập nhật";
+            }
+
+            String color;
+            switch (step) {
+                case "Mới tạo": color = "yellow"; break;
+                case "Đã xác nhận": color = "blue"; break;
+                case "Đang xử lý": color = "orange"; break;
+                case "Chờ thanh toán": color = "purple"; break;
+                case "Hoàn thành": color = "green"; break;
+                default: color = "gray"; break;
+            }
+
+            lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
+                    .trangThai(step)
+                    .thoiGian(time)
+                    .moTa(moTa)
+                    .color(color)
+                    .done(done)
+                    .build());
+        }
 
         return DonHangResponse.builder()
                 .MaDonHang(donHang.getMaDonHang())
@@ -79,7 +157,8 @@ public class DonHangService {
                 .tongTien(donHang.getTongTien())
                 .trangThai(donHang.getTrangThai())
                 .GhiChu(donHang.getGhiChu())
-                .phuongThucThanhToan("Chuyển khoản")
+                .phuongThucThanhToan(donHang.getPhuongThucThanhToan())
+                .trangThaiThanhToan(donHang.getTrangThaiThanhToan())
                 .phuongThucGiaoHang("Giao hàng tận nơi")
                 .phiVanChuyen(BigDecimal.ZERO)
                 .giamGia(BigDecimal.ZERO)
@@ -88,3 +167,4 @@ public class DonHangService {
                 .build();
     }
 }
+

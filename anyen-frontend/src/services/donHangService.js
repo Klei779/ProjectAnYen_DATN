@@ -14,6 +14,13 @@ export async function getDonHangById(maDonHang) {
   return response.data;
 }
 
+export async function capNhatTrangThai(maDonHang, trangThai) {
+  const response = await api.put(`/api/don-hang/${maDonHang}/trang-thai`, {
+    trangThai,
+  });
+  return response.data;
+}
+
 export async function huyDonHang(maDonHang) {
   const response = await api.put(`/api/don-hang/${maDonHang}/huy`);
   return response.data;
@@ -24,8 +31,6 @@ export async function getChiTietDonHang(maDonHang) {
   const response = await api.get(`/api/don-hang/${maDonHang}/chi-tiet`);
   return response.data || [];
 }
-
-// MOCK DATA REMOVED - Using actual DB data
 
 export function formatCurrency(value) {
   if (!value && value !== 0) return "—";
@@ -45,3 +50,4 @@ export function formatDate(dateStr) {
     year: "numeric",
   });
 }
+

@@ -32,6 +32,7 @@ public class DonHangResponse {
     private String trangThai;
     private String GhiChu;
     private String phuongThucThanhToan;
+    private String trangThaiThanhToan;
     private String phuongThucGiaoHang;
     private BigDecimal phiVanChuyen;
     private BigDecimal giamGia;

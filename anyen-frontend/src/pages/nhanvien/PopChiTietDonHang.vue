@@ -1,10 +1,7 @@
 <script setup>
 import { computed } from "vue";
-import {
-  Calendar, User, Wallet, Phone, Message, Location,
-  Plus, Delete, Right
-} from "@element-plus/icons-vue";
-import { formatCurrency, formatDate } from "../../services/donHangService.js";
+import { ElMessage } from "element-plus";
+import { formatCurrency, formatDate, capNhatTrangThai } from "../../services/donHangService.js";
 import "../../assets/styles/PopChiTietDonHang.css";
 
 const props = defineProps({
@@ -12,7 +9,7 @@ const props = defineProps({
   donHang:    { type: Object,  default: null },
 });
 
-const emit = defineEmits(["update:modelValue", "huy-don", "dong", "luu"]);
+const emit = defineEmits(["update:modelValue", "huy-don", "dong", "luu", "cap-nhat"]);
 
 const visible = computed({
   get: () => props.modelValue,
@@ -31,22 +28,22 @@ const tongCong = computed(() => {
   return tamTinh.value - (order.value.giamGia || 0) + (order.value.phiVanChuyen || 0);
 });
 
-const STEPS = ["Chờ xác nhận", "Đã xác nhận", "Hoàn thành", "Thanh toán"];
+const STEPS = ["Mới tạo", "Đã xác nhận", "Đang xử lý", "Chờ thanh toán", "Hoàn thành"];
 const getStepIndex = (trangThai) => STEPS.indexOf(trangThai);
 
 const lichSuArr = computed(() => {
     if (!order.value) return [];
-    // If backend returns lichSu, we format it or we mock the 4 steps based on current status
     const currentIdx = getStepIndex(order.value.trangThai);
+    const isDaHuy = order.value.trangThai === "Đã hủy";
     
     return STEPS.map((step, idx) => {
         let isDone = false;
         let isActive = false;
-        if (order.value.trangThai === "Đã hủy") {
+        if (isDaHuy) {
             isDone = false;
         } else {
             isDone = idx <= currentIdx;
-            isActive = idx === currentIdx && step !== "Thanh toán";
+            isActive = idx === currentIdx;
         }
 
         // Try to find matching step in backend lichSu
@@ -55,7 +52,7 @@ const lichSuArr = computed(() => {
         return {
             title: step,
             time: backendStep?.thoiGian || null,
-            desc: backendStep?.moTa || (isDone ? "" : "Chưa cập nhật"),
+            desc: backendStep?.moTa || (isDone ? "Đã hoàn thành" : "Chưa cập nhật"),
             isDone,
             isActive
         };
@@ -85,9 +82,17 @@ const removeSp = (sp) => {
     order.value.sanPhams = order.value.sanPhams.filter(item => item.MaSanPham !== sp.MaSanPham);
 };
 
-const capNhatTrangThaiTiep = () => {
+const capNhatTrangThaiTiep = async () => {
     if (nextStatus.value && order.value) {
-        order.value.trangThai = nextStatus.value;
+        try {
+            await capNhatTrangThai(order.value.maDonHang || order.value.MaDonHang, nextStatus.value);
+            ElMessage.success(`Đã cập nhật trạng thái: ${nextStatus.value}`);
+            order.value.trangThai = nextStatus.value;
+            emit("cap-nhat");
+        } catch (error) {
+            console.error("Lỗi khi cập nhật trạng thái:", error);
+            ElMessage.error(error.response?.data?.message || "Cập nhật trạng thái thất bại");
+        }
     }
 };
 
@@ -119,15 +124,15 @@ const capNhatTrangThaiTiep = () => {
           <div class="info-section">
               <h4 class="section-title">Thông tin đơn hàng</h4>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Calendar/></el-icon> Mã đơn hàng:</div>
+                  <div class="info-label"><i class="fa-solid fa-calendar"></i> Mã đơn hàng:</div>
                   <div class="info-val bold">#{{ order.maCode }}</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Calendar/></el-icon> Ngày tạo:</div>
+                  <div class="info-label"><i class="fa-solid fa-calendar-days"></i> Ngày tạo:</div>
                   <div class="info-val">{{ formatDate(order.NgayTaoDon) }}</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Wallet/></el-icon> Phương thức thanh toán:</div>
+                  <div class="info-label"><i class="fa-solid fa-wallet"></i> Phương thức thanh toán:</div>
                   <div class="info-val">{{ order.phuongThucThanhToan || 'Chưa cập nhật' }}</div>
               </div>
           </div>
@@ -138,19 +143,19 @@ const capNhatTrangThaiTiep = () => {
           <div class="info-section">
               <h4 class="section-title">Thông tin khách hàng</h4>
               <div class="info-row">
-                  <div class="info-label"><el-icon><User/></el-icon> Họ tên:</div>
+                  <div class="info-label"><i class="fa-solid fa-user"></i> Họ tên:</div>
                   <div class="info-val">{{ order.tenKhachHang }}</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Phone/></el-icon> SĐT:</div>
+                  <div class="info-label"><i class="fa-solid fa-phone"></i> SĐT:</div>
                   <div class="info-val">{{ order.soDienThoaiKH || 'Chưa cập nhật' }}</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Message/></el-icon> Email:</div>
+                  <div class="info-label"><i class="fa-solid fa-envelope"></i> Email:</div>
                   <div class="info-val">{{ order.emailKH || 'Chưa cập nhật' }}</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Location/></el-icon> Địa chỉ:</div>
+                  <div class="info-label"><i class="fa-solid fa-location-dot"></i> Địa chỉ:</div>
                   <div class="info-val address-val">{{ order.diaChiKH || 'Chưa cập nhật' }}</div>
               </div>
           </div>
@@ -161,15 +166,15 @@ const capNhatTrangThaiTiep = () => {
           <div class="info-section">
               <h4 class="section-title">Nhân viên phụ trách</h4>
               <div class="info-row">
-                  <div class="info-label"><el-icon><User/></el-icon> Họ tên:</div>
+                  <div class="info-label"><i class="fa-solid fa-user"></i> Họ tên:</div>
                   <div class="info-val">{{ order.tenNhanVien || 'Chưa cập nhật' }}</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Phone/></el-icon> SĐT:</div>
+                  <div class="info-label"><i class="fa-solid fa-phone"></i> SĐT:</div>
                   <div class="info-val">Chưa cập nhật</div>
               </div>
               <div class="info-row">
-                  <div class="info-label"><el-icon><Message/></el-icon> Email:</div>
+                  <div class="info-label"><i class="fa-solid fa-envelope"></i> Email:</div>
                   <div class="info-val">Chưa cập nhật</div>
               </div>
           </div>
@@ -184,7 +189,7 @@ const capNhatTrangThaiTiep = () => {
                   <div class="v-step-indicator">
                       <div class="v-step-circle">
                          <span v-if="step.isDone && !step.isActive">✓</span>
-                         <span v-else-if="step.isActive"><el-icon><Timer/></el-icon></span>
+                         <span v-else-if="step.isActive"><i class="fa-solid fa-clock"></i></span>
                          <span v-else>{{ idx + 1 }}</span>
                       </div>
                       <div class="v-step-line" v-if="idx < lichSuArr.length - 1"></div>
@@ -192,8 +197,6 @@ const capNhatTrangThaiTiep = () => {
                   <div class="v-step-content">
                       <div class="v-step-title">{{ step.title }}</div>
                       <div class="v-step-time" v-if="step.time">{{ step.time }}</div>
-                      <div class="v-step-time" v-else-if="step.isDone">Đã cập nhật</div>
-                      <div class="v-step-time" v-else>Chưa cập nhật</div>
                       <div class="v-step-desc">{{ step.desc }}</div>
                   </div>
               </div>
@@ -201,7 +204,7 @@ const capNhatTrangThaiTiep = () => {
 
           <div class="progress-actions">
               <button v-if="nextStatus" class="btn-capnhat-tt" @click="capNhatTrangThaiTiep">
-                  <el-icon><Right/></el-icon> Cập nhật trạng thái tiếp theo
+                  <i class="fa-solid fa-arrow-right"></i> Cập nhật trạng thái tiếp theo
               </button>
               <div v-if="nextStatus" class="status-note">
                   Trạng thái hiện tại: <strong>{{ currentStatus }}</strong><br/>
@@ -214,7 +217,7 @@ const capNhatTrangThaiTiep = () => {
       <div class="col-panel products-col">
           <div class="products-header">
               <h4 class="section-title">Danh sách sản phẩm</h4>
-              <button class="btn-outline-green"><el-icon><Plus/></el-icon> Thêm sản phẩm</button>
+              <button class="btn-outline-green"><i class="fa-solid fa-plus"></i> Thêm sản phẩm</button>
           </div>
 
           <div class="products-table-wrapper">
@@ -253,7 +256,7 @@ const capNhatTrangThaiTiep = () => {
                           </td>
                           <td style="text-align: right; font-weight: 700;">{{ formatCurrency(sp.thanhTien) }}</td>
                           <td style="text-align: center;">
-                              <button class="btn-trash" @click="removeSp(sp)"><el-icon><Delete/></el-icon></button>
+                              <button class="btn-trash" @click="removeSp(sp)"><i class="fa-solid fa-trash"></i></button>
                           </td>
                       </tr>
                   </tbody>

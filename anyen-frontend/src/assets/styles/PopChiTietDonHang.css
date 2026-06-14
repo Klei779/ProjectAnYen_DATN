@@ -4,6 +4,7 @@
     overflow: hidden;
     max-width: clamp(420px, 95%, 1400px);
     max-height: 90vh;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
 .chi-tiet-dialog .el-dialog__body {

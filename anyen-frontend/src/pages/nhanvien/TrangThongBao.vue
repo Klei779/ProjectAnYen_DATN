@@ -1,52 +1,7 @@
 <template>
   <div class="notification-page">
     
-    <!-- Top Bar Mockup (To match design) -->
-    <header class="page-topbar">
-      <div class="topbar-left">
-        <i class="fa-solid fa-bars"></i>
-        <h2>Thông báo công việc</h2>
-      </div>
-      <div class="topbar-right">
-        <div class="bell-wrapper" @click.stop="toggleMiniNoti">
-          <i class="fa-regular fa-bell"></i>
-          <span class="bell-badge" v-if="unreadCount > 0">{{ unreadCount }}</span>
 
-          <!-- Mini Notification Dropdown -->
-          <div class="mini-noti-dropdown" v-if="showMiniNoti" @click.stop>
-            <div class="mini-header">
-              <div class="header-title">
-                 <h4>Thông báo <span class="badge">{{ unreadCount }}</span></h4>
-                 <button class="mark-read-btn" @click.stop="markAllAsRead">Đánh dấu tất cả đã đọc</button>
-              </div>
-              <button class="close-mini-btn" @click.stop="showMiniNoti = false">
-                <i class="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-
-            <div class="mini-list">
-              <div v-for="item in miniNotifications" :key="item.maThongBao" class="mini-item" :class="{'unread': item.trangThai === 'CHUA_DOC'}">
-                <div class="mini-icon" :class="getMiniIconClass(item)">
-                  <i :class="getMiniIconName(item)"></i>
-                </div>
-                <div class="mini-info">
-                  <h5>{{ item.tieuDe }}</h5>
-                  <p>{{ item.noiDung }}</p>
-                  <small>{{ item.ngayTao }}</small>
-                </div>
-                <button class="mini-view-btn" @click="selectNotification(item); showMiniNoti = false;">Xem</button>
-              </div>
-              <div v-if="miniNotifications.length === 0" class="empty-mini">Không có thông báo mới</div>
-            </div>
-
-            <div class="mini-footer">
-              <button @click="showMiniNoti = false">Xem tất cả thông báo</button>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </header>
 
     <div class="content-wrapper">
       <!-- Main Content (Left) -->

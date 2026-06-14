@@ -1,21 +1,21 @@
 <template>
   <div class="popup-overlay">
-    <div class="create-order-modal">
+    <div class="create-order-modal fixed-order-modal">
       <!-- HEADER -->
       <div class="modal-header">
         <div>
           <h2>Tạo đơn hàng mới</h2>
-          <p>Nhập thông tin khách hàng, chọn đối tác và thêm sản phẩm</p>
+          <p>Nhập thông tin khách hàng, thông tin đơn và chọn sản phẩm</p>
         </div>
 
         <button class="icon-close" @click="$emit('close')">×</button>
       </div>
 
-      <!-- TOP FORM -->
-      <div class="top-form-grid">
-        <!-- THÔNG TIN KHÁCH HÀNG -->
-        <div class="card-box">
-          <div class="card-title" style="color: #142d4d;">
+      <!-- BODY -->
+      <div class="create-order-3col">
+        <!-- CỘT 1: THÔNG TIN KHÁCH HÀNG -->
+        <div class="card-box small-card">
+          <div class="card-title title-blue">
             Thông tin khách hàng
           </div>
 
@@ -48,162 +48,152 @@
           <div class="form-row-2">
             <div class="form-group">
               <label>Tên khách hàng <span>*</span></label>
-              <input v-model="form.tenKhachHang" type="text"/>
+              <input v-model="form.tenKhachHang" type="text" />
             </div>
 
             <div class="form-group">
               <label>Số điện thoại <span>*</span></label>
-              <input v-model="form.soDienThoai" type="text"/>
+              <input v-model="form.soDienThoai" type="text" />
             </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label>CCCD</label>
-              <input v-model="form.cccd" type="text"/>
+              <input v-model="form.cccd" type="text" />
             </div>
 
             <div class="form-group">
               <label>Email</label>
-              <input v-model="form.email" type="text"/>
+              <input v-model="form.email" type="text" />
             </div>
           </div>
 
           <div class="form-group">
             <label>Địa chỉ</label>
-            <input v-model="form.diaChi" type="text"/>
+            <input v-model="form.diaChi" type="text" />
           </div>
         </div>
 
-        <!-- THÔNG TIN ĐƠN HÀNG -->
-        <div class="card-box">
-          <div class="card-title" style="color: #142d4d;">
+        <!-- CỘT 2: THÔNG TIN ĐƠN HÀNG -->
+        <div class="card-box small-card">
+          <div class="card-title title-blue">
             Thông tin đơn hàng
-          </div>
-
-          <div class="form-group">
-            <label>Đối tác nhận đơn <span>*</span></label>
-            <select v-model="form.maDoiTac" @change="onPartnerChange">
-              <option value="">-- Chọn đối tác --</option>
-              <option
-                  v-for="dt in partners"
-                  :key="dt.maDoiTac"
-                  :value="dt.maDoiTac"
-              >
-                {{ dt.tenDoiTac }}
-              </option>
-            </select>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label>Nhân viên phụ trách</label>
-              <input v-model="form.nhanVienPhuTrach" type="text" readonly/>
+              <input v-model="form.nhanVienPhuTrach" type="text" readonly />
             </div>
 
             <div class="form-group">
               <label>Ngày tạo đơn</label>
-              <input v-model="form.ngayTaoDon" type="date"/>
+              <input v-model="form.ngayTaoDon" type="date" />
             </div>
+          </div>
+
+          <div class="form-group">
+            <label>Đối tác trong đơn</label>
+            <input :value="partnerSummary" type="text" readonly />
           </div>
 
           <div class="form-group">
             <label>Ghi chú tư vấn</label>
             <textarea
                 v-model="form.ghiChu"
-                rows="4"
+                rows="3"
                 placeholder="Nhập ghi chú tư vấn của nhân viên..."
             ></textarea>
           </div>
         </div>
-      </div>
 
-      <!-- PRODUCT ACTION -->
-      <div class="product-action-bar">
-        <div class="left-note">
-          Chọn sản phẩm thuộc đối tác đã chọn để đưa vào đơn hàng
-        </div>
+        <!-- CỘT 3: GIỎ HÀNG -->
+        <div class="cart-panel card-box">
+          <div class="cart-header">
+            <div>
+              <div class="card-title title-blue cart-title">
+                Giỏ hàng
+              </div>
+              <p>
+                {{ form.items.length }} sản phẩm •
+                {{ selectedPartnerNames.length }} đối tác
+              </p>
+            </div>
 
-        <button
-            class="btn-primary-outline"
-            :disabled="!form.maDoiTac"
-            @click="openProductModal"
-        >
-          + Chọn sản phẩm
-        </button>
-      </div>
-
-      <!-- SẢN PHẨM TRONG ĐƠN -->
-      <div class="card-box product-order-box">
-        <div class="card-title" style="color: #142d4d;">
-          Sản phẩm trong đơn
-        </div>
-
-        <div v-if="form.items.length === 0" class="empty-box">
-          Chưa có sản phẩm nào trong đơn. Hãy bấm
-          <strong>“Chọn sản phẩm”</strong>.
-        </div>
-
-        <div v-else class="order-product-table">
-          <div class="table-head">
-            <div>Sản phẩm</div>
-            <div>Đơn giá</div>
-            <div>SL</div>
-            <div>Thành tiền</div>
-            <div>Xóa</div>
+            <button
+                class="btn-primary-outline btn-add-product-top"
+                @click="openProductModal"
+            >
+              + Thêm sản phẩm
+            </button>
           </div>
 
-          <div
-              v-for="item in form.items"
-              :key="item.maSanPham"
-              class="table-row"
-          >
-            <div class="product-cell">
-              <div class="thumb">
-                <img :src="item.hinhAnh" alt=""/>
-              </div>
-              <div class="product-info">
-                <div class="product-name">{{ item.tenSanPham }}</div>
-                <div class="product-sub">
-                  {{ item.loai }} • Tồn: {{ item.tonKho }}
+          <div v-if="form.items.length === 0" class="empty-box cart-empty">
+            Chưa có sản phẩm nào trong đơn.
+          </div>
+
+          <div v-else class="cart-list">
+            <div
+                v-for="item in form.items"
+                :key="item.maSanPham"
+                class="cart-item"
+            >
+              <div class="cart-product-main">
+                <div class="thumb cart-thumb">
+                  <img :src="item.hinhAnh" alt="" />
+                </div>
+
+                <div class="cart-product-info">
+                  <div class="product-name">
+                    {{ item.tenSanPham }}
+                  </div>
+
+                  <div class="product-sub">
+                    {{ item.tenDoiTac || getPartnerName(item.maDoiTac) }}
+                    •
+                    {{ item.loai }}
+                  </div>
+
+                  <div class="cart-price">
+                    {{ formatMoney(item.giaTien) }}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>{{ formatMoney(item.giaTien) }}</div>
+              <div class="cart-item-bottom">
+                <div class="qty-box">
+                  <button @click="decreaseQty(item)">−</button>
+                  <span>{{ item.soLuong }}</span>
+                  <button @click="increaseQty(item)">+</button>
+                </div>
 
-            <div>
-              <div class="qty-box">
-                <button @click="decreaseQty(item)">−</button>
-                <span>{{ item.soLuong }}</span>
-                <button @click="increaseQty(item)">+</button>
+                <div class="money-red">
+                  {{ formatMoney(item.giaTien * item.soLuong) }}
+                </div>
+
+                <button
+                    class="btn-delete"
+                    @click="removeItem(item.maSanPham)"
+                >
+                  🗑
+                </button>
               </div>
             </div>
-
-            <div class="money-red">
-              {{ formatMoney(item.giaTien * item.soLuong) }}
-            </div>
-
-            <div>
-              <button class="btn-delete" @click="removeItem(item.maSanPham)">
-                🗑
-              </button>
-            </div>
-          </div>
-        </div>
-
-
-        <div class="summary-row">
-          <div class="summary-item">
-            <span>Tạm tính</span>
-            <strong>{{ formatMoney(subtotal) }}</strong>
           </div>
 
-          <div class="summary-divider"></div>
+          <div class="summary-row cart-summary">
+            <div class="summary-item">
+              <span>Tạm tính</span>
+              <strong>{{ formatMoney(subtotal) }}</strong>
+            </div>
 
-          <div class="summary-item total">
-            <span>Tổng thanh toán</span>
-            <strong>{{ formatMoney(totalMoney) }}</strong>
+            <div class="summary-divider"></div>
+
+            <div class="summary-item total">
+              <span>Tổng thanh toán</span>
+              <strong>{{ formatMoney(totalMoney) }}</strong>
+            </div>
           </div>
         </div>
       </div>
@@ -222,20 +212,27 @@
 
     <!-- POPUP CHỌN SẢN PHẨM FULL -->
     <div v-if="showProductModal" class="product-popup-overlay">
-      <div class="product-popup">
+      <div class="product-popup product-popup-new">
         <div class="product-popup-header">
           <div>
             <h3>Chọn sản phẩm</h3>
-            <p>
-              Đối tác:
-              <strong>{{ selectedPartnerName }}</strong>
-            </p>
+            <p>Chọn sản phẩm từ nhiều đối tác khác nhau</p>
           </div>
 
           <button class="icon-close" @click="closeProductModal">×</button>
         </div>
 
-        <div class="product-popup-toolbar">
+        <div class="product-popup-toolbar product-toolbar-new">
+          <select v-model="selectedProductPartnerId">
+            <option
+                v-for="dt in partners"
+                :key="dt.maDoiTac"
+                :value="dt.maDoiTac"
+            >
+              {{ dt.tenDoiTac }}
+            </option>
+          </select>
+
           <input
               v-model="productKeyword"
               type="text"
@@ -256,16 +253,18 @@
               <div
                   v-for="sp in filteredPartnerProducts"
                   :key="sp.maSanPham"
-                  class="product-card"
+                  class="product-card product-card-new"
               >
                 <div class="product-card-left">
-                  <div class="product-image">
+                  <div class="product-image square-product-image">
                     <img :src="sp.hinhAnh" alt=""/>
                   </div>
 
                   <div class="product-card-info">
                     <div class="product-card-name">{{ sp.tenSanPham }}</div>
-                    <div class="product-card-sub">{{ sp.loai }}</div>
+                    <div class="product-card-sub">
+                      {{ sp.loai }} • {{ getPartnerName(sp.maDoiTac) }}
+                    </div>
                     <div class="product-card-price">
                       {{ formatMoney(sp.giaTien) }}
                     </div>
@@ -275,15 +274,16 @@
 
                 <div class="product-card-action">
                   <template v-if="getTempQty(sp.maSanPham) === 0">
-                    <button class="btn-secondary" @click="addTempProduct(sp)">
-                      Thêm
+                    <button class="btn-add-cart" @click="addTempProduct(sp)">
+                      🛒 Thêm
                     </button>
                   </template>
 
                   <template v-else>
-                    <div class="qty-box big">
+                    <div class="cart-qty-pill">
+                      <span class="cart-icon">🛒</span>
                       <button @click="decreaseTempQty(sp.maSanPham)">−</button>
-                      <span>{{ getTempQty(sp.maSanPham) }}</span>
+                      <strong>{{ getTempQty(sp.maSanPham) }}</strong>
                       <button @click="increaseTempQty(sp)">+</button>
                     </div>
                   </template>
@@ -292,29 +292,31 @@
             </div>
           </div>
 
-          <!-- RIGHT: SẢN PHẨM ĐÃ CHỌN -->
+          <!-- RIGHT: NOTE SẢN PHẨM ĐÃ CHỌN -->
           <div class="selected-panel">
-            <div class="panel-title">Sản phẩm đã chọn</div>
+            <div class="panel-title">Đã thêm vào giỏ</div>
 
             <div v-if="tempItems.length === 0" class="empty-box">
               Chưa chọn sản phẩm nào.
             </div>
 
-            <div v-else class="selected-list">
+            <div v-else class="selected-note-list">
               <div
                   v-for="item in tempItems"
                   :key="item.maSanPham"
-                  class="selected-item"
+                  class="selected-note"
               >
-                <div>
+                <div class="note-cart-icon">🛒</div>
+
+                <div class="note-content">
                   <div class="selected-name">{{ item.tenSanPham }}</div>
                   <div class="selected-sub">
-                    {{ formatMoney(item.giaTien) }} × {{ item.soLuong }}
+                    {{ item.tenDoiTac }} • {{ formatMoney(item.giaTien) }}
                   </div>
                 </div>
 
-                <div class="selected-right">
-                  <strong>{{ formatMoney(item.giaTien * item.soLuong) }}</strong>
+                <div class="note-right">
+                  <span>x{{ item.soLuong }}</span>
                   <button
                       class="btn-delete small"
                       @click="removeTempItem(item.maSanPham)"
@@ -350,16 +352,16 @@
 </template>
 
 <script setup>
-import {computed, ref} from "vue";
+import { computed, ref } from "vue";
 
 const showCustomerSuggestions = ref(false);
 
 const emit = defineEmits(["close", "submit", "save-draft"]);
 
 const partners = ref([
-  {maDoiTac: 1, tenDoiTac: "Công ty Thiên Phúc"},
-  {maDoiTac: 2, tenDoiTac: "Cơ sở An Lạc"},
-  {maDoiTac: 3, tenDoiTac: "Hoa viên Vĩnh Hằng"},
+  { maDoiTac: 1, tenDoiTac: "Công ty Thiên Phúc" },
+  { maDoiTac: 2, tenDoiTac: "Cơ sở An Lạc" },
+  { maDoiTac: 3, tenDoiTac: "Hoa viên Vĩnh Hằng" },
 ]);
 
 const allCustomers = ref([
@@ -397,8 +399,7 @@ const allProducts = ref([
     giaTien: 8500000,
     tonKho: 10,
     maDoiTac: 1,
-    hinhAnh:
-        "https://cdn-icons-png.flaticon.com/512/3659/3659898.png",
+    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3659/3659898.png",
   },
   {
     maSanPham: 3,
@@ -407,8 +408,7 @@ const allProducts = ref([
     giaTien: 2500000,
     tonKho: 20,
     maDoiTac: 1,
-    hinhAnh:
-        "https://cdn-icons-png.flaticon.com/512/3534/3534012.png",
+    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3534/3534012.png",
   },
   {
     maSanPham: 6,
@@ -417,8 +417,7 @@ const allProducts = ref([
     giaTien: 3200000,
     tonKho: 12,
     maDoiTac: 1,
-    hinhAnh:
-        "https://cdn-icons-png.flaticon.com/512/1046/1046874.png",
+    hinhAnh: "https://cdn-icons-png.flaticon.com/512/1046/1046874.png",
   },
   {
     maSanPham: 2,
@@ -427,8 +426,7 @@ const allProducts = ref([
     giaTien: 18000000,
     tonKho: 5,
     maDoiTac: 2,
-    hinhAnh:
-        "https://cdn-icons-png.flaticon.com/512/3659/3659898.png",
+    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3659/3659898.png",
   },
   {
     maSanPham: 4,
@@ -437,8 +435,7 @@ const allProducts = ref([
     giaTien: 1500000,
     tonKho: 30,
     maDoiTac: 3,
-    hinhAnh:
-        "https://cdn-icons-png.flaticon.com/512/3468/3468379.png",
+    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3468/3468379.png",
   },
 ]);
 
@@ -447,6 +444,7 @@ const today = new Date().toISOString().split("T")[0];
 const customerKeyword = ref("");
 const showProductModal = ref(false);
 const productKeyword = ref("");
+const selectedProductPartnerId = ref(1);
 
 const form = ref({
   maKhachHang: null,
@@ -455,7 +453,6 @@ const form = ref({
   cccd: "",
   email: "",
   diaChi: "",
-  maDoiTac: "",
   nhanVienPhuTrach: "Võ Thị Mai",
   ngayTaoDon: today,
   nguonTaoDon: "Khách đã trao đổi trước",
@@ -479,22 +476,35 @@ const customerSuggestions = computed(() => {
 });
 
 const selectedPartnerName = computed(() => {
-  const found = partners.value.find(
-      (p) => p.maDoiTac === Number(form.value.maDoiTac)
-  );
-  return found ? found.tenDoiTac : "";
+  return getPartnerName(selectedProductPartnerId.value);
 });
 
 const filteredPartnerProducts = computed(() => {
   const keyword = productKeyword.value.trim().toLowerCase();
 
   return allProducts.value.filter((sp) => {
-    const matchPartner = sp.maDoiTac === Number(form.value.maDoiTac);
+    const matchPartner = sp.maDoiTac === Number(selectedProductPartnerId.value);
     const matchKeyword =
         !keyword || sp.tenSanPham.toLowerCase().includes(keyword);
 
     return matchPartner && matchKeyword;
   });
+});
+
+const selectedPartnerNames = computed(() => {
+  const names = form.value.items.map((item) => {
+    return item.tenDoiTac || getPartnerName(item.maDoiTac);
+  });
+
+  return [...new Set(names)];
+});
+
+const partnerSummary = computed(() => {
+  if (selectedPartnerNames.value.length === 0) {
+    return "Chưa chọn sản phẩm";
+  }
+
+  return selectedPartnerNames.value.join(", ");
 });
 
 const subtotal = computed(() => {
@@ -513,8 +523,16 @@ const tempSubtotal = computed(() => {
   );
 });
 
+function getPartnerName(maDoiTac) {
+  const found = partners.value.find(
+      (p) => p.maDoiTac === Number(maDoiTac)
+  );
+
+  return found ? found.tenDoiTac : "Không rõ đối tác";
+}
+
 function formatMoney(value) {
-  return new Intl.NumberFormat("vi-VN").format(value) + " ₫";
+  return new Intl.NumberFormat("vi-VN").format(value || 0) + " ₫";
 }
 
 function handleCustomerKeywordInput() {
@@ -533,21 +551,7 @@ function selectCustomer(kh) {
   form.value.diaChi = kh.diaChi;
 
   customerKeyword.value = kh.tenKhachHang;
-
-  // Bấm chọn xong thì ẩn gợi ý
   showCustomerSuggestions.value = false;
-}
-
-function onPartnerChange() {
-  if (form.value.items.length > 0) {
-    const ok = window.confirm(
-        "Đổi đối tác sẽ xóa các sản phẩm đã chọn. Bạn có muốn tiếp tục không?"
-    );
-
-    if (!ok) return;
-
-    form.value.items = [];
-  }
 }
 
 function cloneItems(items) {
@@ -555,12 +559,14 @@ function cloneItems(items) {
 }
 
 function openProductModal() {
-  if (!form.value.maDoiTac) {
-    alert("Vui lòng chọn đối tác trước");
-    return;
+  tempItems.value = cloneItems(form.value.items);
+
+  if (tempItems.value.length > 0) {
+    selectedProductPartnerId.value = tempItems.value[0].maDoiTac;
+  } else {
+    selectedProductPartnerId.value = partners.value[0]?.maDoiTac || "";
   }
 
-  tempItems.value = cloneItems(form.value.items);
   productKeyword.value = "";
   showProductModal.value = true;
 }
@@ -592,6 +598,8 @@ function addTempProduct(sp) {
     loai: sp.loai,
     giaTien: sp.giaTien,
     tonKho: sp.tonKho,
+    maDoiTac: sp.maDoiTac,
+    tenDoiTac: getPartnerName(sp.maDoiTac),
     hinhAnh: sp.hinhAnh,
     soLuong: 1,
   });
@@ -599,10 +607,12 @@ function addTempProduct(sp) {
 
 function increaseTempQty(sp) {
   const existing = getTempItem(sp.maSanPham);
+
   if (!existing) {
     addTempProduct(sp);
     return;
   }
+
   existing.soLuong += 1;
 }
 
@@ -640,18 +650,16 @@ function increaseQty(item) {
 function decreaseQty(item) {
   if (item.soLuong > 1) {
     item.soLuong -= 1;
+    return;
   }
+
+  removeItem(item.maSanPham);
 }
 
 function removeItem(maSanPham) {
   form.value.items = form.value.items.filter(
       (item) => item.maSanPham !== maSanPham
   );
-}
-
-function saveDraft() {
-  emit("save-draft", {...form.value});
-  alert("Đã tạm lưu");
 }
 
 function submitOrder() {
@@ -665,11 +673,6 @@ function submitOrder() {
     return;
   }
 
-  if (!form.value.maDoiTac) {
-    alert("Vui lòng chọn đối tác");
-    return;
-  }
-
   if (form.value.items.length === 0) {
     alert("Vui lòng chọn ít nhất 1 sản phẩm");
     return;
@@ -677,6 +680,7 @@ function submitOrder() {
 
   const payload = {
     ...form.value,
+    doiTacs: selectedPartnerNames.value,
     tongTien: totalMoney.value,
   };
 

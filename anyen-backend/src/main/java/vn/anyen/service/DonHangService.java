@@ -8,6 +8,8 @@ import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DonHang;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DonHangRepository;
+import vn.anyen.entity.HoaDon;
+import vn.anyen.repository.HoaDonRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -23,6 +25,7 @@ public class DonHangService {
 
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
+    private final HoaDonRepository hoaDonRepository;
 
     // Thứ tự trạng thái đơn hàng theo quy trình
     private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
@@ -84,6 +87,9 @@ public class DonHangService {
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {
         List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(donHang.getMaDonHang());
+        HoaDon hoaDon = hoaDonRepository
+                .findByDonHang_MaDonHang(donHang.getMaDonHang())
+                .orElse(null);
 
         List<DonHangResponse.ChiTietDonHangResponse> sanPhams = chiTiets.stream().map(ct -> 
             DonHangResponse.ChiTietDonHangResponse.builder()
@@ -159,6 +165,11 @@ public class DonHangService {
                 .GhiChu(donHang.getGhiChu())
                 .phuongThucThanhToan(donHang.getPhuongThucThanhToan())
                 .trangThaiThanhToan(donHang.getTrangThaiThanhToan())
+
+                .maHoaDon(hoaDon != null ? hoaDon.getMaHoaDon() : null)
+                .daCoHoaDon(hoaDon != null)
+                .trangThaiHoaDon(hoaDon != null ? hoaDon.getTrangThai() : null)
+
                 .phuongThucGiaoHang("Giao hàng tận nơi")
                 .phiVanChuyen(BigDecimal.ZERO)
                 .giamGia(BigDecimal.ZERO)

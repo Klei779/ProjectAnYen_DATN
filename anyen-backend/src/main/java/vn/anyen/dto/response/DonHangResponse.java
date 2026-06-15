@@ -36,6 +36,9 @@ public class DonHangResponse {
     private String phuongThucGiaoHang;
     private BigDecimal phiVanChuyen;
     private BigDecimal giamGia;
+    private Integer maHoaDon;
+    private Boolean daCoHoaDon;
+    private String trangThaiHoaDon;
     
     private List<ChiTietDonHangResponse> sanPhams;
     private List<LichSuDonHangResponse> lichSu;

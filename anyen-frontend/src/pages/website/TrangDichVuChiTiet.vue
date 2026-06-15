@@ -90,7 +90,6 @@
                   <i class="fa-regular fa-heart"></i>
                   <p><b>Phục vụ chu đáo</b><br />Đội ngũ chuyên nghiệp</p>
                 </div>
-
                 <div>
                   <i class="fa-regular fa-clipboard"></i>
                   <p><b>Minh bạch chi phí</b><br />Không phát sinh</p>
@@ -294,7 +293,6 @@ const setFakeImage = (event) => {
 const changeImage = (index) => {
   currentIndex.value = index
 }
-
 const nextImage = () => {
   if (images.value.length === 0) return
 

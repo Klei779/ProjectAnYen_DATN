@@ -157,7 +157,22 @@
     font-size: 13px;
     font-weight: 500;
 }
+.native-select option:disabled,
+.native-select option[disabled] {
+    background-color: #eeeeee !important;
+    color: #999999 !important;
+    font-style: italic;
+}
 
+.native-select option:not(:disabled) {
+    background-color: #ffffff;
+    color: #222222;
+}
+
+.native-select option:checked {
+    background-color: #f8e6e6;
+    color: #8a181a;
+}
 .preview-content {
     flex: 1;
     overflow-y: auto;

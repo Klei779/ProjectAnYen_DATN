@@ -186,7 +186,6 @@ img {
     object-fit: cover;
     display: block;
 }
-
 /* phòng trường hợp template cũ vẫn dùng thumb-list img trực tiếp */
 .thumb-list > img {
     width: 100%;

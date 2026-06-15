@@ -1,12 +1,14 @@
 <script setup>
-import { ref,watch } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { ElMessage } from "element-plus";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   createHopDong,
   getDonHangDetailForHopDong,
   getDonHangOptionsForHopDong
 } from "../../services/hopDongService.js";
-import ContractPreview from "../../components/PreviewHopDong.vue";
+import ContractPreview from "../../pages/nhanvien/PreviewHopDong.vue";
 import {
   Document,
   User,
@@ -18,6 +20,7 @@ import {
   Minus,
   Plus,
   Printer,
+  Download,
   Delete
 } from '@element-plus/icons-vue';
 
@@ -79,13 +82,57 @@ contract.value.employee =
     user?.hoTen ||
     user?.tenNhanVien ||
     "";
+const handleDownloadPDF = async () => {
+  try {
+    if (!previewRef.value) {
+      ElMessage.error("Không có nội dung hợp đồng để tải");
+      return;
+    }
+
+    ElMessage.info("Đang xuất file PDF...");
+
+    const oldZoom = zoomLevel.value;
+    zoomLevel.value = 100;
+    await nextTick();
+
+    const paper = previewRef.value.querySelector(".contract-paper");
+
+    if (!paper) {
+      zoomLevel.value = oldZoom;
+      ElMessage.error("Không tìm thấy khung hợp đồng");
+      return;
+    }
+
+    const canvas = await html2canvas(paper, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: "#ffffff"
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+
+    pdf.save(`${contract.value.contractCode || "hop-dong"}.pdf`);
+
+    zoomLevel.value = oldZoom;
+
+    ElMessage.success("Tải PDF thành công");
+  } catch (error) {
+    console.error("Lỗi xuất PDF:", error);
+    ElMessage.error("Không thể xuất PDF");
+  }
+};
+
 
 const handlePrint = () => {
   if (!previewRef.value) return;
   const content = previewRef.value.innerHTML;
   const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map(style => style.outerHTML)
-    .join('');
+      .map(style => style.outerHTML)
+      .join('');
 
   const printWindow = window.open('', '', 'width=800,height=900');
   printWindow.document.write(`
@@ -139,7 +186,7 @@ const handlePrint = () => {
   `);
   printWindow.document.close();
 };
-const emit = defineEmits(["created"]);
+const emit = defineEmits(["success"]);
 
 const selectedMaDonHang = ref(null);
 const donHangOptions = ref([]);
@@ -160,9 +207,12 @@ const loadDonHangOptions = async () => {
 
     const data = await getDonHangOptionsForHopDong();
 
-    console.log("API DATA:", data);
+    donHangOptions.value = data.map((item) => ({
+      ...item,
+      daCoHopDong: item.daCoHopDong === true
+    }));
 
-    donHangOptions.value = data;
+
   } catch (error) {
     console.error("Lỗi load đơn hàng:", error);
     ElMessage.error("Không thể tải danh sách đơn hàng");
@@ -229,6 +279,7 @@ const onSelectDonHang = async (maDonHang) => {
   }
 };
 const saveContract = async () => {
+  console.log("Đã bấm nút lưu hợp đồng");
   if (!selectedMaDonHang.value || !selectedDonHangDetail.value) {
     ElMessage.error("Vui lòng chọn và load đơn hàng trước khi lưu hợp đồng");
     return;
@@ -280,8 +331,10 @@ const saveContract = async () => {
     const today = new Date().toISOString().slice(0, 10);
 
     const saved = await createHopDong({
-      maDonHang: selectedMaDonHang.value,
-      ngayKyHD: contract.value.contractDate ? contract.value.contractDate.substring(0, 10) : today,
+      maDonHang: Number(selectedMaDonHang.value),
+      ngayKyHD: contract.value.contractDate
+          ? contract.value.contractDate.substring(0, 10)
+          : today,
       ngayViet: today,
       trangThai: "Chờ ký"
     });
@@ -292,9 +345,9 @@ const saveContract = async () => {
   } catch (error) {
     console.error("Lỗi lưu hợp đồng:", error);
     ElMessage.error(
-        error.response?.data?.message
-        || error.response?.data
-        || "Không thể lưu hợp đồng"
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể lưu hợp đồng"
     );
   } finally {
     saving.value = false;
@@ -368,8 +421,12 @@ selectedMaDonHang.value = "";
                       v-for="item in donHangOptions"
                       :key="item.maDonHang"
                       :value="item.maDonHang"
+                      :disabled="item.daCoHopDong"
                   >
+                    {{ item.daCoHopDong ? '' : '' }}
                     {{ item.maDonHangText }}
+                    {{ item.tenKhachHang ? ' - ' + item.tenKhachHang : '' }}
+                    {{ item.daCoHopDong ? ' - Đã có hợp đồng' : '' }}
                   </option>
                 </select>
 
@@ -629,13 +686,31 @@ selectedMaDonHang.value = "";
             <el-icon class="action-icon" @click="zoomOut"><Minus /></el-icon>
             <span class="zoom-text">{{ zoomLevel }}%</span>
             <el-icon class="action-icon" @click="zoomIn"><Plus /></el-icon>
-            <el-icon class="action-icon" @click="handlePrint"><Printer /></el-icon>
+            <el-icon
+                class="action-icon"
+                title="Tải PDF"
+                @click="handleDownloadPDF"
+            >
+              <Download />
+            </el-icon>
+
+            <el-icon
+                class="action-icon"
+                title="In hợp đồng"
+                @click="handlePrint"
+            >
+              <Printer />
+            </el-icon>
           </div>
         </div>
         <div class="preview-content">
           <div :style="{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }">
             <div ref="previewRef">
-              <ContractPreview :contract="contract" :extraServices="services" :orderProducts="orderProducts" />
+              <ContractPreview
+                  :contract="contract"
+                  :extraServices="services"
+                  :orderProducts="orderProducts"
+              />
             </div>
           </div>
         </div>
@@ -665,4 +740,4 @@ selectedMaDonHang.value = "";
     </template>
   </el-dialog>
 </template>
-<style scoped src="../../assets/styles/PopTaoHopDong.css"></style>
+<style scoped src="../../assets/styles/nhanvien/QLHopDong/PopTaoHopDong.css"></style>

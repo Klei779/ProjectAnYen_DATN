@@ -75,7 +75,7 @@
               <div class="price">
                 Từ
                 <strong>
-                  {{ Number(service.gia).toLocaleString('vi-VN') }} đ
+                  {{ formatPrice(service.gia) }} đ
                 </strong>
                 <small>(Đã bao gồm VAT)</small>
               </div>
@@ -214,15 +214,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import axios from 'axios'
 
-import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
-import dividerIcon from "../../assets/images/icon/flower_icon.png";
+import heroBanner from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png"
+import dividerIcon from "../../assets/images/icon/flower_icon.png"
 
 const route = useRoute()
-const id = route.params.id
 
 const makeFakeImage = () => {
   const svg = `
@@ -250,7 +249,6 @@ const service = ref({
 })
 
 const comboChiTiet = ref([])
-
 const images = ref([FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE])
 const currentIndex = ref(0)
 
@@ -258,7 +256,38 @@ const mainImage = computed(() => {
   return images.value[currentIndex.value] || FAKE_IMAGE
 })
 
+const formatPrice = (value) => {
+  return Number(value || 0).toLocaleString('vi-VN')
+}
+
+const normalizeImagePath = (path) => {
+  if (!path || typeof path !== 'string') {
+    return FAKE_IMAGE
+  }
+
+  const cleanPath = path.trim()
+
+  if (!cleanPath) {
+    return FAKE_IMAGE
+  }
+
+  if (
+      cleanPath.startsWith('http://') ||
+      cleanPath.startsWith('https://') ||
+      cleanPath.startsWith('data:image')
+  ) {
+    return cleanPath
+  }
+
+  if (cleanPath.startsWith('/')) {
+    return cleanPath
+  }
+
+  return `/images/TrangDichVuChiTiet/${cleanPath}`
+}
+
 const setFakeImage = (event) => {
+  event.target.onerror = null
   event.target.src = FAKE_IMAGE
 }
 
@@ -308,7 +337,8 @@ const normalDetailItems = computed(() => {
 })
 
 const getFirstImage = (item) => {
-  return item.hinhAnhs?.[0]?.hinhAnh || FAKE_IMAGE
+  const imagePath = item.hinhAnhs?.[0]?.hinhAnh
+  return normalizeImagePath(imagePath)
 }
 
 const getImageName = (item) => {
@@ -318,7 +348,11 @@ const getImageName = (item) => {
 
 const getTrangTriImages = (item) => {
   const list = item.hinhAnhs || []
-  const result = list.slice(0, 3)
+
+  const result = list.slice(0, 3).map(img => ({
+    ...img,
+    hinhAnh: normalizeImagePath(img.hinhAnh)
+  }))
 
   while (result.length < 3) {
     result.push({
@@ -331,28 +365,51 @@ const getTrangTriImages = (item) => {
   return result
 }
 
+const resetData = () => {
+  service.value = {
+    tenCombo: '',
+    gia: 0,
+    moTa: ''
+  }
+
+  comboChiTiet.value = []
+  images.value = [FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE]
+  currentIndex.value = 0
+}
+
 const loadCombo = async () => {
   try {
+    const id = route.params.id
+
     const res = await axios.get(
         `http://localhost:8080/api/dich-vu/${id}`
     )
 
-    service.value = res.data
+    service.value = {
+      tenCombo: res.data.tenCombo || '',
+      gia: res.data.gia || 0,
+      moTa: res.data.moTa || ''
+    }
 
   } catch (e) {
-    console.log('Không lấy được dữ liệu, dùng dữ liệu mặc định')
+    console.log('Không lấy được dữ liệu gói dịch vụ', e)
   }
 }
 
 const loadComboChiTiet = async () => {
   try {
+    const id = route.params.id
+
     const res = await axios.get(
         `http://localhost:8080/api/dich-vu/${id}/chitiet`
     )
 
     comboChiTiet.value = res.data.map(item => ({
       ...item,
-      hinhAnhs: item.hinhAnhs || []
+      hinhAnhs: (item.hinhAnhs || []).map(img => ({
+        ...img,
+        hinhAnh: normalizeImagePath(img.hinhAnh)
+      }))
     }))
 
     const quanTaiItem = comboChiTiet.value.find(item =>
@@ -360,7 +417,7 @@ const loadComboChiTiet = async () => {
     )
 
     const quanTaiImages = quanTaiItem?.hinhAnhs
-        ?.map(img => img.hinhAnh)
+        ?.map(img => normalizeImagePath(img.hinhAnh))
         ?.filter(Boolean)
         ?.slice(0, 3) || []
 
@@ -372,17 +429,31 @@ const loadComboChiTiet = async () => {
     currentIndex.value = 0
 
   } catch (e) {
-    console.log('Không lấy được chi tiết')
+    console.log('Không lấy được chi tiết dịch vụ', e)
     images.value = [FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE]
   }
 }
 
-onMounted(() => {
+const loadPage = async () => {
   window.scrollTo(0, 0)
+  resetData()
 
-  loadCombo()
-  loadComboChiTiet()
+  await Promise.all([
+    loadCombo(),
+    loadComboChiTiet()
+  ])
+}
+
+onMounted(() => {
+  loadPage()
 })
+
+watch(
+    () => route.params.id,
+    () => {
+      loadPage()
+    }
+)
 </script>
 
 <style scoped src="../../assets/styles/TrangDichVuChiTiet.css"></style>

@@ -1,4 +1,19 @@
 package vn.anyen.dto.response;
 
-public class ComboChiTietHinhAnhResponse {
+import lombok.*;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class ComBoChiTietHinhAnhResponse {
+
+    private Integer maHinhAnh;
+
+    private String tenHinhAnh;
+
+    private String hinhAnh;
+
+    private Integer thuTu;
 }

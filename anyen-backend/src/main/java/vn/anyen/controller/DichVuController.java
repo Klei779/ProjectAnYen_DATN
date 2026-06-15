@@ -1,7 +1,7 @@
 package vn.anyen.controller;
 
 import vn.anyen.dto.GoiDichVuResponse;
-import vn.anyen.entity.ComBoChiTiet;
+import vn.anyen.dto.response.ComBoChiTietResponse;
 import vn.anyen.service.ComBoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -30,10 +30,9 @@ public class DichVuController {
     }
 
     @GetMapping("/{id}/chitiet")
-    public List<ComBoChiTiet> getChiTiet(
+    public List<ComBoChiTietResponse> getChiTiet(
             @PathVariable Integer id
     ) {
-
-        return comboService.getComboChiTiet(id);
+        return comboService.getComBoChiTiet(id);
     }
 }

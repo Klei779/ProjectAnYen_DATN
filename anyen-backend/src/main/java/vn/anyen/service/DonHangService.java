@@ -166,5 +166,36 @@ public class DonHangService {
                 .lichSu(lichSu)
                 .build();
     }
+    @Transactional
+    public DonHangResponse capNhatTrangThaiNhanVien(Integer maDonHang, String trangThaiMoi) {
+
+        if (trangThaiMoi == null || trangThaiMoi.trim().isEmpty()) {
+            throw new RuntimeException("Trạng thái đơn hàng không được để trống.");
+        }
+
+        trangThaiMoi = trangThaiMoi.trim();
+
+        List<String> trangThaiHopLe = Arrays.asList(
+                "Mới tạo",
+                "Đã xác nhận",
+                "Đang xử lý",
+                "Chờ thanh toán",
+                "Hoàn thành",
+                "Đã hủy"
+        );
+
+        if (!trangThaiHopLe.contains(trangThaiMoi)) {
+            throw new RuntimeException("Trạng thái '" + trangThaiMoi + "' không hợp lệ.");
+        }
+
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
+
+        donHang.setTrangThai(trangThaiMoi);
+
+        DonHang saved = donHangRepository.save(donHang);
+
+        return mapToDonHangResponse(saved);
+    }
 }
 

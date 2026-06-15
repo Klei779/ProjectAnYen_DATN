@@ -13,7 +13,7 @@
             <i class="fa-solid fa-bars"></i>
             <h2>{{ pageTitle }}</h2>
           </div>
-          
+
           <div class="topbar-right">
             <div class="bell-wrapper" @click.stop="toggleMiniNoti">
               <i class="fa-regular fa-bell"></i>
@@ -61,11 +61,11 @@
                   <strong>{{ user?.hoTen || 'Quản lý' }}</strong>
                 </div>
               </div>
-              <UserProfileDropdown 
-                v-if="showProfile" 
-                :user="user" 
+              <UserProfileDropdown
+                v-if="showProfile"
+                :user="user"
                 icon-class="fa-solid fa-user-shield"
-                @logout="logout" 
+                @logout="logout"
               />
             </div>
 
@@ -183,7 +183,7 @@ onMounted(() => {
     if (showMiniNoti.value) showMiniNoti.value = false;
     if (showProfile.value) showProfile.value = false;
   });
-  
+
   const userStr = localStorage.getItem("user");
   if (userStr) {
     user.value = JSON.parse(userStr);

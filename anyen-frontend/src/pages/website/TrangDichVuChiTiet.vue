@@ -266,4 +266,4 @@ onMounted(() => {
 
 </script>
 
-<style scoped src="../../assets/styles/TrangDichVuChiTiet.css"></style>
+<style scoped src="../../assets/styles/website/TrangDichVuChiTiet.css"></style>

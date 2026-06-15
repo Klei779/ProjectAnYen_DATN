@@ -139,4 +139,4 @@ import DucCha from "../../assets/images/TrangGioiThieu/ducCha.png";
 
 
 </template>
-<style scoped src="../../assets/styles/TrangGioiThieu.css"></style>
+<style scoped src="../../assets/styles/website/TrangGioiThieu.css"></style>

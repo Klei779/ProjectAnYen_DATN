@@ -14,7 +14,7 @@
             <div class="col-5 login-banner">
 
               <img
-                  src="../assets/images/icon/boat_login.png"
+                  src="../../assets/images/icon/boat_login.png"
                   alt="Boat"
                   class="boat-image"
               />
@@ -28,7 +28,7 @@
                 </p>
 
                 <img
-                    src="../assets/images/icon/icon_flower_large.png"
+                    src="../../assets/images/icon/icon_flower_large.png"
                     alt="Flower"
                     class="flower-divider"
                 />
@@ -42,7 +42,7 @@
               <h2>ĐĂNG NHẬP</h2>
 
               <img
-                  src="../assets/images/icon/icon_flower_large.png"
+                  src="../../assets/images/icon/icon_flower_large.png"
                   class="title-flower"
                   alt=""
               />
@@ -245,34 +245,4 @@ const handleLogin = async () => {
 };
 </script>
 
-<style scoped src="../assets/styles/PopDangNhap.css"></style>
-<style scoped>
-.error-msg-box {
-  background-color: #fef2f2;
-  color: #dc2626;
-  padding: 10px 15px;
-  border-radius: 6px;
-  margin-bottom: 15px;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #fecaca;
-  animation: shake 0.4s ease;
-}
-
-@keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-}
-
-.has-error :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #dc2626 inset !important;
-}
-
-.has-error :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 1px #dc2626 inset !important;
-}
-</style>
+<style scoped src="../../assets/styles/components/PopDangNhap.css"></style>

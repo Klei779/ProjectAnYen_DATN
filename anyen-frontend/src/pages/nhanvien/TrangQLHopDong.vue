@@ -677,4 +677,4 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped src="../../assets/styles/TrangQLHopDong.css"></style>
+<style scoped src="../../assets/styles/nhanvien/QLHopDong/TrangQLHopDong.css"></style>

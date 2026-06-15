@@ -1,0 +1,50 @@
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    width: 400px;
+    padding: 30px;
+    border-radius: 12px;
+    position: relative;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #8b0016;
+}
+
+.phone-card {
+    padding: 12px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+}
+
+.phone-role {
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.phone-number {
+    color: #8b0016;
+    text-decoration: none;
+    font-weight: 700;
+}

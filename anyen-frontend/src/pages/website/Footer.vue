@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import logofooter from "../assets/images/icon/logofooter.png";
+import logofooter from "../../assets/images/icon/logofooter.png";
 </script>
 
-<style src="../assets/styles/footer.css"></style>
+<style src="../../assets/styles/components/Footer.css"></style>

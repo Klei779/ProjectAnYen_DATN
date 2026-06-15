@@ -19,7 +19,7 @@ import TrangLienHe from "../pages/website/TrangLienHe.vue";
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
 import TrangQLDonHang from "../pages/doitac/TrangQLDonHang.vue";
-import TrangThongBao from "../pages/doitac/TrangThongBao.vue";
+import TrangThongBao from "../pages/doitac/TrangThongBaoDT.vue";
 import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
 import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 
@@ -27,7 +27,7 @@ import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
 import TrangQLDoiTac from "../pages/nhanvien/TrangQLDoiTac.vue";
 import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
-import TrangThongBaoNV from "../pages/nhanvien/TrangThongBao.vue";
+import TrangThongBaoNV from "../pages/nhanvien/TrangThongBaoNV.vue";
 import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";

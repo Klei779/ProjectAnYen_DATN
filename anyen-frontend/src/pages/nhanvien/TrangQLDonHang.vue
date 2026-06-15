@@ -418,4 +418,4 @@ const confirmCashPayment = async () => {
     </el-dialog>
   </div>
 </template>
-<style scoped src="../../assets/styles/TrangQLDonHang.css"></style>
+<style scoped src="../../assets/styles/nhanvien/QLDonHang/TrangQLDonHang.css"></style>

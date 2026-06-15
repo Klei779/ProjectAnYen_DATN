@@ -9,10 +9,11 @@ import "element-plus/dist/index.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
-import "./assets/styles/global.css";
-import "./assets/styles/design-system.css";
+import "./assets/styles/website/global.css";
+import "./assets/styles/website/design-system.css";
 
 createApp(App)
     .use(router)
     .use(ElementPlus)
     .mount("#app");
+

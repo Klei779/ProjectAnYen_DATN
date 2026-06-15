@@ -101,4 +101,4 @@ const logout = () => {
 };
 </script>
 
-<style scoped src="../assets/styles/DoiTacSidebar.css"></style>
+<style scoped src="../assets/styles/components/SideBar.css"></style>

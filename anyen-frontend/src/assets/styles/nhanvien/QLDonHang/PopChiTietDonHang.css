@@ -8,7 +8,8 @@
 }
 
 .chi-tiet-dialog .el-dialog__body {
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 0;
 }
 
@@ -650,4 +651,75 @@
 
 .order-tabs .products-table-wrapper {
     max-height: 55vh;
+}
+
+.desktop-layout{
+    display:grid;
+}
+
+.mobile-layout{
+    display:none;
+}
+
+@media (max-width:768px){
+
+    .desktop-layout{
+        display:none !important;
+    }
+
+    .mobile-layout{
+        display:block !important;
+    }
+}
+
+@media (max-width:768px){
+
+    .chi-tiet-dialog .el-dialog__body{
+        max-height:calc(100vh - 220px);
+        overflow-y:auto !important;
+    }
+
+    .chi-tiet-dialog .el-dialog__footer{
+        padding:16px !important;
+    }
+
+    .dialog-footer-new{
+        width:100%;
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+    }
+
+    .btn-cancel-new,
+    .btn-save-new{
+        width:100%;
+        min-height:44px;
+        margin:0;
+    }
+
+    .order-tabs{
+        max-height:none;
+        overflow:visible;
+    }
+}
+@media (max-width:768px){
+
+    .chi-tiet-dialog{
+        max-height:95vh !important;
+    }
+
+    .chi-tiet-dialog .el-dialog{
+        max-height:95vh !important;
+        display:flex;
+        flex-direction:column;
+    }
+
+    .chi-tiet-dialog .el-dialog__body{
+        flex:1;
+        min-height:0;
+    }
+
+    .chi-tiet-dialog .el-dialog__footer{
+        flex-shrink:0;
+    }
 }

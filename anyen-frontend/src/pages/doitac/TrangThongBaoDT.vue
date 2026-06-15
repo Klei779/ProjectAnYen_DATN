@@ -468,4 +468,4 @@ const handleImageError = (event) => {
   event.target.src = fallbackImage;
 };
 </script>
-<style scoped src="../../assets/styles/TrangThongBao.css"></style>
+<style scoped src="../../assets/styles/doitac/QLThongBao/TrangThongBaoDT.css"></style>

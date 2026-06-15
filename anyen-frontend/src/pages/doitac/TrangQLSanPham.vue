@@ -957,7 +957,7 @@ const handleImageUpload = (event) => {
   </div>
 </template>
 
-<style scoped src="../../assets/styles/TrangQLSanPham.css"></style>
+<style scoped src="../../assets/styles/doitac/QLSanPham/TrangQLSanPham.css"></style>
 
 <style scoped>
 .category-header {

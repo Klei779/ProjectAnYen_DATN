@@ -420,4 +420,4 @@ function searchProducts() {
 }
 </script>
 
-<style scoped src="../../assets/styles/TrangSanPham.css"></style>
+<style scoped src="../../assets/styles/website/TrangSanPham.css"></style>

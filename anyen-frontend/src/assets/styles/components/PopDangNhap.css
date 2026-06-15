@@ -6,7 +6,7 @@
     justify-content: center;
     align-items: center;
 
-    background: rgba(0,0,0,.55);
+    background: rgba(0, 0, 0, .55);
     backdrop-filter: blur(4px);
 
     z-index: 9999;
@@ -23,7 +23,7 @@
     position: relative;
     --el-color-primary: gray;
 
-    box-shadow: 0 20px 60px rgba(0,0,0,.2);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
 }
 
 .row {
@@ -42,7 +42,7 @@
     border-radius: 50%;
     background: white;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(5,5,5,.10);
+    box-shadow: 0 2px 8px rgba(5, 5, 5, .10);
     z-index: 2;
 }
 
@@ -196,19 +196,15 @@
 }
 
 .login-btn.staff {
-    background: linear-gradient(
-            90deg,
-            #7a0011,
-            #a40018
-    );
+    background: linear-gradient(90deg,
+    #7a0011,
+    #a40018);
 }
 
 .login-btn.partner {
-    background: linear-gradient(
-            90deg,
-            #0d47a1,
-            #1565c0
-    );
+    background: linear-gradient(90deg,
+    #0d47a1,
+    #1565c0);
 }
 
 .login-popup-enter-active,
@@ -232,67 +228,109 @@
     transition: all .3s ease;
 }
 
+.error-msg-box {
+    background-color: #fef2f2;
+    color: #dc2626;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #fecaca;
+    animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    50% {
+        transform: translateX(5px);
+    }
+
+    75% {
+        transform: translateX(-5px);
+    }
+}
+
+.has-error :deep(.el-input__wrapper) {
+    box-shadow: 0 0 0 1px #dc2626 inset !important;
+}
+
+.has-error :deep(.el-input__wrapper.is-focus) {
+    box-shadow: 0 0 0 1px #dc2626 inset !important;
+}
+
 /* =========================================
    MOBILE
 ========================================= */
 
-@media (max-width:768px){
+@media (max-width:768px) {
 
-    .modal-overlay{
-        padding:16px;
-        align-items:center;
+    .modal-overlay {
+        padding: 16px;
+        align-items: center;
     }
 
-    .login-modal{
-        width:100%;
-        max-width:420px;
-        height:auto;
-        max-height:90vh;
-        overflow-y:auto;
-        border-radius:16px;
+    .login-modal {
+        width: 100%;
+        max-width: 420px;
+        height: auto;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 16px;
     }
 
-    .row{
-        flex-direction:column;
-        height:auto;
+    .row {
+        flex-direction: column;
+        height: auto;
     }
 
     /* Ẩn banner bên trái */
-    .login-banner{
-        display:none;
+    .login-banner {
+        display: none;
     }
 
-    .login-content{
-        width:100%;
-        padding:20px;
+    .login-content {
+        width: 100%;
+        padding: 20px;
     }
 
-    .login-content h2{
-        margin-top:20px;
-        font-size:22px;
+    .login-content h2 {
+        margin-top: 20px;
+        font-size: 22px;
     }
 
-    .title-flower{
-        width:100px;
+    .title-flower {
+        width: 100px;
     }
 
-    .tabs button{
-        font-size:13px;
-        padding:12px 6px;
+    .tabs button {
+        font-size: 13px;
+        padding: 12px 6px;
     }
 
-    .form-group input{
-        height:46px;
-        font-size:14px;
+    .form-group input {
+        height: 46px;
+        font-size: 14px;
     }
 
-    .login-btn{
-        height:48px;
-        font-size:15px;
+    .login-btn {
+        height: 48px;
+        font-size: 15px;
     }
 
-    .close-btn{
-        top:10px;
-        right:10px;
+    .close-btn {
+        top: 10px;
+        right: 10px;
     }
 }

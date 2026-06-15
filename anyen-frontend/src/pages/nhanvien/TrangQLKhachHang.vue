@@ -221,4 +221,4 @@ const stageClass = (stage) => {
 </template>
 
 
-<style scoped src="../../assets/styles/TrangQLKhachHang.css"></style>
+<style scoped src="../../assets/styles/nhanvien/QLKhachHang/TrangQLKhachHang.css"></style>

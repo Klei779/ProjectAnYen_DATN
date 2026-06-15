@@ -464,4 +464,4 @@ window.addEventListener('click', () => {
 });
 </script>
 
-<style scoped src="../../assets/styles/TrangThongBaoNhanVienTrucTiep.css"></style>
+<style scoped src="../../assets/styles/nhanvien/QLThongBao/TrangThongBaoNV.css"></style>

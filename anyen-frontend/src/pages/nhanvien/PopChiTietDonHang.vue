@@ -2,7 +2,7 @@
 import { computed, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { formatCurrency, formatDate, capNhatTrangThai } from "../../services/donHangService.js";
-import "../../assets/styles/PopChiTietDonHang.css";
+import "../../assets/styles/nhanvien/QLDonHang/PopChiTietDonHang.css";
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -160,7 +160,11 @@ const capNhatTrangThaiTiep = async () => {
     </template>
 
     <!-- BODY -->
-    <el-tabs v-model="activeTab" class="order-tabs" v-if="order">
+    <el-tabs
+        v-model="activeTab"
+        class="order-tabs mobile-layout"
+        v-if="order"
+    >
       <el-tab-pane label="Thông tin" name="info">
       <!-- CỘT 1: THÔNG TIN CHUNG -->
       <div class="col-panel info-col">
@@ -332,6 +336,170 @@ const capNhatTrangThaiTiep = async () => {
       </el-tab-pane>
     </el-tabs>
 
+    <div class="popup-3col desktop-layout" v-if="order">
+      <div class="col-panel info-col">
+        <!-- Thông tin đơn hàng -->
+        <div class="info-section">
+          <h4 class="section-title">Thông tin đơn hàng</h4>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-calendar"></i> Mã đơn hàng:</div>
+            <div class="info-val bold">#{{ order.maCode }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-calendar-days"></i> Ngày tạo:</div>
+            <div class="info-val">{{ formatDate(order.NgayTaoDon) }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-wallet"></i> Phương thức thanh toán:</div>
+            <div class="info-val">{{ order.phuongThucThanhToan || 'Chưa cập nhật' }}</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Thông tin khách hàng -->
+        <div class="info-section">
+          <h4 class="section-title">Thông tin khách hàng</h4>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-user"></i> Họ tên:</div>
+            <div class="info-val">{{ order.tenKhachHang }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-phone"></i> SĐT:</div>
+            <div class="info-val">{{ order.soDienThoaiKH || 'Chưa cập nhật' }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-envelope"></i> Email:</div>
+            <div class="info-val">{{ order.emailKH || 'Chưa cập nhật' }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-location-dot"></i> Địa chỉ:</div>
+            <div class="info-val address-val">{{ order.diaChiKH || 'Chưa cập nhật' }}</div>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Nhân viên phụ trách -->
+        <div class="info-section">
+          <h4 class="section-title">Nhân viên phụ trách</h4>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-user"></i> Họ tên:</div>
+            <div class="info-val">{{ order.tenNhanVien || 'Chưa cập nhật' }}</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-phone"></i> SĐT:</div>
+            <div class="info-val">Chưa cập nhật</div>
+          </div>
+          <div class="info-row">
+            <div class="info-label"><i class="fa-solid fa-envelope"></i> Email:</div>
+            <div class="info-val">Chưa cập nhật</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-panel progress-col">
+        <h4 class="section-title">Tiến trình đơn hàng</h4>
+
+        <div class="vertical-stepper">
+          <div v-for="(step, idx) in lichSuArr" :key="idx" class="v-step" :class="{ done: step.isDone, active: step.isActive }">
+            <div class="v-step-indicator">
+              <div class="v-step-circle">
+                <span v-if="step.isDone && !step.isActive">✓</span>
+                <span v-else-if="step.isActive"><i class="fa-solid fa-clock"></i></span>
+                <span v-else>{{ idx + 1 }}</span>
+              </div>
+              <div class="v-step-line" v-if="idx < lichSuArr.length - 1"></div>
+            </div>
+            <div class="v-step-content">
+              <div class="v-step-title">{{ step.title }}</div>
+              <div class="v-step-time" v-if="step.time">{{ step.time }}</div>
+              <div class="v-step-desc">{{ step.desc }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="progress-actions">
+          <button v-if="nextStatus" class="btn-capnhat-tt" @click="capNhatTrangThaiTiep">
+            <i class="fa-solid fa-arrow-right"></i> {{ currentStatus === 'Chờ thanh toán' ? 'Thanh toán' : 'Cập nhật trạng thái tiếp theo' }}
+          </button>
+          <div v-if="nextStatus" class="status-note">
+            Trạng thái hiện tại: <strong>{{ currentStatus }}</strong><br/>
+            Nhấn để chuyển sang trạng thái: <strong>{{ nextStatus }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-panel products-col">
+        <div class="products-header">
+          <h4 class="section-title">Danh sách sản phẩm</h4>
+          <button class="btn-outline-green"><i class="fa-solid fa-plus"></i> Thêm sản phẩm</button>
+        </div>
+
+        <div class="products-table-wrapper">
+          <table class="products-table">
+            <thead>
+            <tr>
+              <th>Sản phẩm</th>
+              <th style="text-align: right">Đơn giá</th>
+              <th style="text-align: center">Số lượng</th>
+              <th style="text-align: right">Thành tiền</th>
+              <th style="text-align: center">Thao tác</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="!order.sanPhams || order.sanPhams.length === 0">
+              <td colspan="5" style="text-align: center; color: #888;">Chưa có sản phẩm</td>
+            </tr>
+            <tr v-for="sp in order.sanPhams" :key="sp.MaSanPham">
+              <td>
+                <div class="sp-cell-new">
+                  <img v-if="sp.HinhAnh" :src="sp.HinhAnh" />
+                  <div v-else class="img-placeholder"></div>
+                  <div class="sp-info-new">
+                    <div class="sp-name-new">{{ sp.tenSanPham }}</div>
+                    <div class="sp-sub-new">{{ sp.phanLoai || sp.SoLuong }}</div>
+                  </div>
+                </div>
+              </td>
+              <td style="text-align: right; font-weight: 600;">{{ formatCurrency(sp.giaTien) }}</td>
+              <td>
+                <div class="qty-control">
+                  <button @click="decreaseQty(sp)">-</button>
+                  <span>{{ sp.SoLuong }}</span>
+                  <button @click="increaseQty(sp)">+</button>
+                </div>
+              </td>
+              <td style="text-align: right; font-weight: 700;">{{ formatCurrency(sp.thanhTien) }}</td>
+              <td style="text-align: center;">
+                <button class="btn-trash" @click="removeSp(sp)"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="summary-section">
+          <div class="sum-row">
+            <span>Tạm tính:</span>
+            <span>{{ formatCurrency(tamTinh) }}</span>
+          </div>
+          <div class="sum-row">
+            <span>Phí vận chuyển:</span>
+            <span>{{ formatCurrency(order.phiVanChuyen || 0) }}</span>
+          </div>
+          <div class="sum-row red-text" v-if="order.giamGia">
+            <span>Giảm giá:</span>
+            <span>- {{ formatCurrency(order.giamGia) }}</span>
+          </div>
+          <div class="sum-divider"></div>
+          <div class="sum-row total">
+            <span>Tổng cộng:</span>
+            <span>{{ formatCurrency(tongCong) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- FOOTER -->
     <template #footer>
       <div class="dialog-footer-new">
@@ -393,4 +561,4 @@ const capNhatTrangThaiTiep = async () => {
 
   </el-dialog>
 </template>
-<style scoped src="../../assets/styles/PopChiTietDonHang.css"></style>
+<style scoped src="../../assets/styles/nhanvien/QLDonHang/PopChiTietDonHang.css"></style>

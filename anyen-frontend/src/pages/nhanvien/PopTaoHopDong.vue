@@ -1,6 +1,8 @@
 <script setup>
-import { ref,watch } from "vue";
+import { ref, watch, nextTick } from "vue";
 import { ElMessage } from "element-plus";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   createHopDong,
   getDonHangDetailForHopDong,
@@ -18,9 +20,9 @@ import {
   Minus,
   Plus,
   Printer,
+  Download,
   Delete
 } from '@element-plus/icons-vue';
-
 const visible = defineModel();
 
 
@@ -80,14 +82,61 @@ contract.value.employee =
     user?.tenNhanVien ||
     "";
 
+const handleDownloadPDF = async () => {
+  try {
+    if (!previewRef.value) {
+      ElMessage.error("Không có nội dung hợp đồng để tải");
+      return;
+    }
+
+    ElMessage.info("Đang xuất file PDF...");
+
+    const oldZoom = zoomLevel.value;
+    zoomLevel.value = 100;
+    await nextTick();
+
+    const paper = previewRef.value.querySelector(".contract-paper");
+
+    if (!paper) {
+      zoomLevel.value = oldZoom;
+      ElMessage.error("Không tìm thấy khung hợp đồng");
+      return;
+    }
+
+    const canvas = await html2canvas(paper, {
+      scale: 2.5,
+      useCORS: true,
+      backgroundColor: "#ffffff"
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    pdf.addImage(imgData, "PNG", 0, 0, 210, 297);
+
+    pdf.save(`${contract.value.contractCode || "hop-dong"}.pdf`);
+
+    zoomLevel.value = oldZoom;
+
+    ElMessage.success("Tải PDF thành công");
+  } catch (error) {
+    console.error("Lỗi xuất PDF:", error);
+    ElMessage.error("Không thể xuất PDF");
+  }
+};
+
 const handlePrint = () => {
   if (!previewRef.value) return;
+
   const content = previewRef.value.innerHTML;
+
   const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-    .map(style => style.outerHTML)
-    .join('');
+      .map(style => style.outerHTML)
+      .join('');
 
   const printWindow = window.open('', '', 'width=800,height=900');
+
   printWindow.document.write(`
     <html>
       <head>
@@ -111,11 +160,10 @@ const handlePrint = () => {
             .contract-paper {
               box-shadow: none !important;
               margin: 0 !important;
-              padding: 15mm !important; /* Optional: adjust printed margins here */
+              padding: 15mm !important;
               width: 100% !important;
               min-height: auto !important;
             }
-            /* Hide the dotted border and background from the input elements for a cleaner print */
             input, .dotted-input {
               background: transparent !important;
             }
@@ -137,9 +185,11 @@ const handlePrint = () => {
       </body>
     </html>
   `);
+
   printWindow.document.close();
 };
-const emit = defineEmits(["created"]);
+
+const emit = defineEmits(["success"]);
 
 const selectedMaDonHang = ref(null);
 const donHangOptions = ref([]);
@@ -160,9 +210,11 @@ const loadDonHangOptions = async () => {
 
     const data = await getDonHangOptionsForHopDong();
 
-    console.log("API DATA:", data);
+    donHangOptions.value = data.map((item) => ({
+      ...item,
+      daCoHopDong: item.daCoHopDong === true
+    }));
 
-    donHangOptions.value = data;
   } catch (error) {
     console.error("Lỗi load đơn hàng:", error);
     ElMessage.error("Không thể tải danh sách đơn hàng");
@@ -229,50 +281,12 @@ const onSelectDonHang = async (maDonHang) => {
   }
 };
 const saveContract = async () => {
+  console.log("Đã bấm nút lưu hợp đồng");
+
   if (!selectedMaDonHang.value || !selectedDonHangDetail.value) {
     ElMessage.error("Vui lòng chọn và load đơn hàng trước khi lưu hợp đồng");
     return;
   }
-  if (!contract.value.customerName?.trim()) {
-    ElMessage.error("Vui lòng nhập họ tên tang chủ");
-    return;
-  }
-
-  if (!contract.value.citizenId?.trim()) {
-    ElMessage.error("Vui lòng nhập CCCD");
-    return;
-  }
-
-  if (!contract.value.address?.trim()) {
-    ElMessage.error("Vui lòng nhập địa chỉ");
-    return;
-  }
-
-  if (!contract.value.phone?.trim()) {
-    ElMessage.error("Vui lòng nhập số điện thoại");
-    return;
-  }
-  const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
-  if (!phoneRegex.test(contract.value.phone.trim())) {
-    ElMessage.error("Số điện thoại không hợp lệ");
-    return;
-  }
-
-  if (!contract.value.deceasedName?.trim()) {
-    ElMessage.error("Vui lòng nhập tên người mất");
-    return;
-  }
-
-  if (!contract.value.deathDate) {
-    ElMessage.error("Vui lòng chọn ngày mất");
-    return;
-  }
-
-  if (!contract.value.facility) {
-    ElMessage.error("Vui lòng chọn cơ sở mai táng");
-    return;
-  }
-
 
   try {
     saving.value = true;
@@ -280,21 +294,26 @@ const saveContract = async () => {
     const today = new Date().toISOString().slice(0, 10);
 
     const saved = await createHopDong({
-      maDonHang: selectedMaDonHang.value,
-      ngayKyHD: contract.value.contractDate ? contract.value.contractDate.substring(0, 10) : today,
+      maDonHang: Number(selectedMaDonHang.value),
+      ngayKyHD: contract.value.contractDate
+          ? contract.value.contractDate.substring(0, 10)
+          : today,
       ngayViet: today,
       trangThai: "Chờ ký"
     });
 
     ElMessage.success("Lưu hợp đồng thành công");
+
     emit("success", saved);
+
     visible.value = false;
   } catch (error) {
     console.error("Lỗi lưu hợp đồng:", error);
+
     ElMessage.error(
-        error.response?.data?.message
-        || error.response?.data
-        || "Không thể lưu hợp đồng"
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể lưu hợp đồng"
     );
   } finally {
     saving.value = false;
@@ -320,10 +339,10 @@ const saveContract = async () => {
       {
         immediate: true
       }
+
   );
 
 selectedMaDonHang.value = "";
-
 </script>
 
 <template>
@@ -346,12 +365,12 @@ selectedMaDonHang.value = "";
       <!-- LEFT FORM PANEL -->
       <div class="form-panel">
         <el-form label-position="top" :model="contract" class="custom-form">
-          
+
           <div class="section-title">
             <el-icon><Document /></el-icon>
             <span>1. THÔNG TIN HỢP ĐỒNG</span>
           </div>
-          
+
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Đơn hàng" required>
@@ -364,12 +383,17 @@ selectedMaDonHang.value = "";
                   <option disabled value="">
                     Chọn mã đơn hàng
                   </option>
+
                   <option
                       v-for="item in donHangOptions"
                       :key="item.maDonHang"
                       :value="item.maDonHang"
+                      :disabled="item.daCoHopDong"
                   >
+                    {{ item.daCoHopDong ? '' : '' }}
                     {{ item.maDonHangText }}
+                    {{ item.tenKhachHang ? ' - ' + item.tenKhachHang : '' }}
+                    {{ item.daCoHopDong ? ' - Đã có hợp đồng' : '' }}
                   </option>
                 </select>
 
@@ -381,7 +405,7 @@ selectedMaDonHang.value = "";
               </el-form-item>
             </el-col>
           </el-row>
-          
+
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Ngày lập hợp đồng" required>
@@ -629,13 +653,32 @@ selectedMaDonHang.value = "";
             <el-icon class="action-icon" @click="zoomOut"><Minus /></el-icon>
             <span class="zoom-text">{{ zoomLevel }}%</span>
             <el-icon class="action-icon" @click="zoomIn"><Plus /></el-icon>
-            <el-icon class="action-icon" @click="handlePrint"><Printer /></el-icon>
+
+            <el-icon
+                class="action-icon"
+                title="Tải PDF"
+                @click="handleDownloadPDF"
+            >
+              <Download />
+            </el-icon>
+
+            <el-icon
+                class="action-icon"
+                title="In hợp đồng"
+                @click="handlePrint"
+            >
+              <Printer />
+            </el-icon>
           </div>
         </div>
         <div class="preview-content">
           <div :style="{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }">
             <div ref="previewRef">
-              <ContractPreview :contract="contract" :extraServices="services" :orderProducts="orderProducts" />
+              <ContractPreview
+                  :contract="contract"
+                  :extraServices="services"
+                  :orderProducts="orderProducts"
+              />
             </div>
           </div>
         </div>

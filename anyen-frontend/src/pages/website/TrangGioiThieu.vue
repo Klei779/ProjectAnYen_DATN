@@ -1181,6 +1181,7 @@ const experts = [
     pointer-events: none;
   }
 
+
   .certificate-btn {
     position: absolute;
     left: 69%;

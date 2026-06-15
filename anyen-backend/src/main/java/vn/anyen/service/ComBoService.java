@@ -1,7 +1,7 @@
 package vn.anyen.service;
 
 import vn.anyen.dto.GoiDichVuResponse;
-import vn.anyen.entity.ComBoChiTiet;
+import vn.anyen.dto.response.ComBoChiTietResponse;
 
 import java.util.List;
 public interface ComBoService {
@@ -9,6 +9,6 @@ public interface ComBoService {
 
     GoiDichVuResponse getComboById(Integer id);
 
-    List<ComBoChiTiet> getComboChiTiet(Integer comboId);
+    List<ComBoChiTietResponse> getComBoChiTiet(Integer comboId);
 }
 

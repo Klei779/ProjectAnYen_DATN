@@ -5,11 +5,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.anyen.dto.SanPhamFilterOptionResponse;
+import vn.anyen.dto.SanPhamFilterResponse;
 import vn.anyen.dto.SanPhamPageResponse;
 import vn.anyen.dto.SanPhamResponse;
+import vn.anyen.dto.request.SanPhamRequest;
 import vn.anyen.entity.SanPham;
 import vn.anyen.repository.SanPhamRepository;
-import vn.anyen.dto.request.SanPhamRequest;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -21,6 +23,8 @@ import java.util.List;
 public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
+
+    private static final String TRANG_THAI_AN = "Ẩn";
 
     public SanPhamPageResponse getSanPham(
             String keyword,
@@ -41,6 +45,12 @@ public class SanPhamService {
 
         Specification<SanPham> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            // Website chỉ hiện sản phẩm chưa bị ẩn
+            predicates.add(cb.or(
+                    cb.isNull(root.get("trangThai")),
+                    cb.notEqual(root.get("trangThai"), TRANG_THAI_AN)
+            ));
 
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";
@@ -100,6 +110,15 @@ public class SanPhamService {
                 .build();
     }
 
+    public SanPhamFilterResponse getBoLocSanPham() {
+        return SanPhamFilterResponse.builder()
+                .categories(mapOptions(sanPhamRepository.countVisibleByLoai()))
+                .materials(mapOptions(sanPhamRepository.countVisibleByVatLieu()))
+                .religions(mapOptions(sanPhamRepository.countVisibleByTonGiao()))
+                .colors(mapOptions(sanPhamRepository.countVisibleByMauSac()))
+                .build();
+    }
+
     public SanPhamResponse updateSanPham(Integer id, SanPhamRequest request) {
         SanPham sp = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
@@ -132,11 +151,26 @@ public class SanPhamService {
         SanPham sp = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        sp.setTrangThai("Ẩn");
+        sp.setTrangThai(TRANG_THAI_AN);
 
         SanPham saved = sanPhamRepository.save(sp);
 
         return mapToResponse(saved);
+    }
+
+    private List<SanPhamFilterOptionResponse> mapOptions(List<Object[]> rows) {
+        return rows.stream()
+                .map(row -> {
+                    String name = String.valueOf(row[0]);
+                    Long total = ((Number) row[1]).longValue();
+
+                    return SanPhamFilterOptionResponse.builder()
+                            .id(name)
+                            .name(name)
+                            .total(total)
+                            .build();
+                })
+                .toList();
     }
 
     private List<String> splitParam(String value) {

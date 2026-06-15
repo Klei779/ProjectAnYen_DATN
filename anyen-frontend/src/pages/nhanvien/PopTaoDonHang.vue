@@ -354,6 +354,14 @@
 <script setup>
 
 import { computed, ref } from "vue";
+const userStr = localStorage.getItem("user");
+const userDangNhap = userStr ? JSON.parse(userStr) : null;
+
+const tenNhanVienDangNhap =
+    userDangNhap?.hoTen ||
+    userDangNhap?.tenNhanVien ||
+    userDangNhap?.tenDangNhap ||
+    "";
 
 const showCustomerSuggestions = ref(false);
 
@@ -454,7 +462,7 @@ const form = ref({
   cccd: "",
   email: "",
   diaChi: "",
-  nhanVienPhuTrach: "Võ Thị Mai",
+  nhanVienPhuTrach: tenNhanVienDangNhap,
   ngayTaoDon: today,
   nguonTaoDon: "Khách đã trao đổi trước",
   ghiChu: "",

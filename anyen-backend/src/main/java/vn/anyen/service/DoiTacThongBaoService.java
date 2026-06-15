@@ -280,13 +280,18 @@ public class DoiTacThongBaoService {
                     ? donHang.getKhachHang().getTenKhachHang()
                     : "Khách hàng";
 
+            String tongTien = donHang.getTongTien() != null
+                    ? donHang.getTongTien().toPlainString()
+                    : "0";
+
             ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
                     .doiTac(doiTac)
                     .donHang(donHang)
                     .loai(LOAI_DON_HANG)
                     .tieuDe("Đơn hàng mới #DH"
                             + String.format("%03d", maDonHang))
-                    .noiDung("Khách hàng: " + tenKhachHang)
+                    .noiDung("Khách hàng: " + tenKhachHang
+                            + " - Tổng tiền: " + tongTien + " đ")
                     .trangThaiThongBao(CHO_XAC_NHAN)
                     .daDoc(false)
                     .thoiGianTao(LocalDateTime.now())

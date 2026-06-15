@@ -1,70 +1,109 @@
 import api from "../api/api.js";
 
 const API_URL = "/api/san-pham";
+const RELIGION_OPTIONS = [
+  "Không phân biệt",
+  "Phật giáo",
+  "Công giáo",
+  "Tin Lành",
+  "Cao Đài",
+  "Hòa Hảo",
+  "Hồi giáo",
+  "Ấn Độ giáo",
+];
 
 export async function getProducts(params = {}) {
-
   const response = await api.get(API_URL, {
     params: {
-      keyword: params.keyword || '',
-      loai: params.loai || '',
+      keyword: params.keyword || "",
+      loai: params.loai || "",
       vatLieu: Array.isArray(params.vatLieu)
-          ? params.vatLieu.join(',')
-          : '',
+          ? params.vatLieu.join(",")
+          : "",
       tonGiao: Array.isArray(params.tonGiao)
-          ? params.tonGiao.join(',')
-          : '',
-      mauSac: params.mauSac || '',
+          ? params.tonGiao.join(",")
+          : "",
+      mauSac: params.mauSac || "",
       minPrice: params.priceRange?.[0] ?? 0,
       maxPrice: params.priceRange?.[1] ?? 999999999,
-      sortBy: params.sortBy || 'newest',
+      sortBy: params.sortBy || "newest",
       page: params.page || 1,
-      pageSize: params.pageSize || 16
-    }
+      pageSize: params.pageSize || 16,
+    },
   });
 
   return {
     items: response.data.items || [],
-    total: response.data.total || 0
+    total: response.data.total || 0,
   };
 }
 
-export async function getCategories() {
-  return [
-    { id: 1, name: 'Quan tai', total: 0, icon: 'fa-solid fa-box' },
-    { id: 2, name: 'Binh tro cot', total: 0, icon: 'fa-solid fa-vase' },
-    { id: 3, name: 'Dich vu', total: 0, icon: 'fa-solid fa-briefcase' },
-    { id: 4, name: 'Dịch vụ vận chuyển', total: 0, icon: 'fa-solid fa-car' },
-    { id: 5, name: 'Vật phẩm tang lễ', total: 0, icon: 'fa-solid fa-hands-praying' }
-  ];
+export async function getFilterOptions() {
+  const response = await api.get(`${API_URL}/bo-loc`);
+  const data = response.data || {};
+
+  return {
+    categories: mapCategoryOptions(data.categories || []),
+    materials: mapBasicOptions(data.materials || []),
+
+    // Tôn giáo hiện full danh sách, không phụ thuộc dữ liệu sản phẩm
+    religions: RELIGION_OPTIONS.map((name) => ({
+      id: name,
+      name,
+      total: 0,
+    })),
+
+    colors: mapColorOptions(data.colors || []),
+  };
 }
 
-export async function getMaterials() {
-  return [
-    { id: 1, name: 'Go thong', total: 0 },
-    { id: 2, name: 'Gom su', total: 0 },
-    { id: 3, name: 'Tong hop', total: 0 },
-    { id: 4, name: 'Xe chuyên dụng', total: 0 },
-    { id: 5, name: 'Gỗ MDF', total: 0 }
-  ];
+function mapBasicOptions(items) {
+  return items.map((item) => ({
+    id: item.id || item.name,
+    name: item.name,
+    total: Number(item.total || 0),
+  }));
 }
 
-export async function getReligions() {
-  return [
-    { id: 1, name: 'Phat giao', total: 0 },
-    { id: 2, name: 'Khong phan biet', total: 0 },
-    { id: 3, name: 'Cong giao', total: 0 },
-    { id: 4, name: 'Không phân biệt', total: 0 },
-    { id: 5, name: 'Phật giáo', total: 0 }
-  ];
+function mapCategoryOptions(items) {
+  return items.map((item) => ({
+    id: item.id || item.name,
+    name: item.name,
+    total: Number(item.total || 0),
+    icon: getCategoryIcon(item.name),
+  }));
 }
 
-export async function getColors() {
-  return [
-    { name: 'Nau', hex: '#8B4513' },
-    { name: 'Trang', hex: '#ffffff' },
-    { name: 'Trang den', hex: '#222222' },
-    { name: 'Đen', hex: '#000000' },
-    { name: 'Nâu vàng', hex: '#b8860b' }
-  ];
+function mapColorOptions(items) {
+  return items.map((item) => ({
+    id: item.id || item.name,
+    name: item.name,
+    total: Number(item.total || 0),
+    hex: getColorHex(item.name),
+  }));
+}
+
+function getCategoryIcon(name = "") {
+  const value = name.toLowerCase();
+
+  if (value.includes("quan tài")) return "fa-solid fa-box";
+  if (value.includes("bình tro")) return "fa-solid fa-vase";
+  if (value.includes("vận chuyển") || value.includes("xe")) return "fa-solid fa-car";
+  if (value.includes("vật phẩm")) return "fa-solid fa-hands-praying";
+  if (value.includes("dịch vụ")) return "fa-solid fa-briefcase";
+
+  return "fa-solid fa-box-open";
+}
+
+function getColorHex(name = "") {
+  const value = name.toLowerCase();
+
+  if (value.includes("đen")) return "#000000";
+  if (value.includes("trắng")) return "#ffffff";
+  if (value.includes("nâu đỏ")) return "#7f1d1d";
+  if (value.includes("nâu vàng")) return "#b8860b";
+  if (value.includes("nâu")) return "#8b4513";
+  if (value.includes("vàng")) return "#d4a017";
+
+  return "#d9d9d9";
 }

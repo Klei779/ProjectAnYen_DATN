@@ -7,6 +7,7 @@ import PopTaoHoaDon from "./PopTaoHoaDon.vue";
 
 import {
   getDonHangs,
+  taoDonHang,
   capNhatTrangThai,
   huyDonHang as huyDonHangAPI,
   formatCurrency,
@@ -196,15 +197,22 @@ const handleSaveDraft = (payload) => {
 
 const handleCreateOrder = async (payload) => {
   try {
-    alert("Tạo đơn hàng thành công");
+    await taoDonHang(payload);
+
+    ElMessage.success("Tạo đơn hàng và gửi thông báo đối tác thành công");
+
     showCreateOrder.value = false;
     await loadDonHangs();
   } catch (error) {
     console.error("Lỗi khi tạo đơn hàng:", error);
-    alert("Tạo đơn hàng thất bại");
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Tạo đơn hàng thất bại"
+    );
   }
 };
-
 const nextStatus = (dh) => {
   const currentIdx = getStepIndex(dh.trangThai);
   if (currentIdx >= 0 && currentIdx < STEPS.length - 1 && dh.trangThai !== "Đã hủy") {

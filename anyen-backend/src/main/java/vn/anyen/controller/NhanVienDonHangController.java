@@ -3,8 +3,10 @@ package vn.anyen.controller;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
+import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.service.DonHangService;
 
@@ -15,6 +17,19 @@ import vn.anyen.service.DonHangService;
 public class NhanVienDonHangController {
 
     private final DonHangService donHangService;
+
+    @PostMapping
+    public ResponseEntity<DonHangResponse> taoDonHang(
+            @Valid @RequestBody TaoDonHangRequest request,
+            Authentication authentication
+    ) {
+        DonHangResponse response = donHangService.taoDonHang(
+                request,
+                authentication
+        );
+
+        return ResponseEntity.ok(response);
+    }
 
     @PutMapping("/{maDonHang}/trang-thai")
     public ResponseEntity<DonHangResponse> capNhatTrangThaiDonHang(

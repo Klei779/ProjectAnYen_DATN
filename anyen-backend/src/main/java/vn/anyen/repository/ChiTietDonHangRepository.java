@@ -14,11 +14,11 @@ public interface ChiTietDonHangRepository
     List<ChiTietDonHang> findByDonHang_MaDonHang(Integer maDonHang);
 
     @Query("""
-            SELECT DISTINCT ct.sanPham.maDoiTac
-            FROM ChiTietDonHang ct
-            WHERE ct.donHang.maDonHang = :maDonHang
-              AND ct.sanPham.maDoiTac IS NOT NULL
-            """)
+        SELECT DISTINCT ct.sanPham.maDoiTac
+        FROM ChiTietDonHang ct
+        WHERE ct.donHang.maDonHang = :maDonHang
+          AND ct.sanPham.maDoiTac IS NOT NULL
+        """)
     List<Integer> findMaDoiTacsByDonHang(
             @Param("maDonHang") Integer maDonHang
     );

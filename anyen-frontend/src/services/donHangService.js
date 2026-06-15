@@ -9,6 +9,12 @@ export async function getDonHangs(params = {}) {
   };
 }
 
+// Tạo đơn hàng nhân viên + gửi thông báo qua đối tác
+export async function taoDonHang(payload) {
+  const response = await api.post("/api/nhan-vien/don-hang", payload);
+  return response.data;
+}
+
 export async function getDonHangById(maDonHang) {
   const response = await api.get(`/api/don-hang/${maDonHang}`);
   return response.data;
@@ -26,7 +32,7 @@ export async function huyDonHang(maDonHang) {
   return response.data;
 }
 
-// ── Chi tiết đơn hàng (sản phẩm trong đơn) ───────────────
+// ── Chi tiết đơn hàng ─────────────────────────────────────
 export async function getChiTietDonHang(maDonHang) {
   const response = await api.get(`/api/don-hang/${maDonHang}/chi-tiet`);
   return response.data || [];
@@ -50,4 +56,3 @@ export function formatDate(dateStr) {
     year: "numeric",
   });
 }
-

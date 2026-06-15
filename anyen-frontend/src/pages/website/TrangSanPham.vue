@@ -137,13 +137,12 @@
                 <label v-for="item in religions" :key="item.id" class="checkbox-row">
                   <el-checkbox v-model="item.checked" />
                   <span class="checkbox-name">{{ item.name }}</span>
-                  <span class="checkbox-count">{{ item.total }}</span>
                 </label>
                 <button class="view-more-btn">Xem thêm <i class="fa-solid fa-plus"></i></button>
               </div>
             </div>
 
-            <button class="apply-filter-btn" @click="applyFilter">ÁP DỤNG BỘ LỌC</button>
+
             <button class="reset-filter-btn" @click="resetFilter">XÓA BỘ LỌC</button>
 
           </div>
@@ -252,85 +251,70 @@
 import { ref, watch, onMounted } from 'vue'
 import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
 import flowerIcon from '../../assets/images/icon/flower_icon.png'
-import {
-  getProducts,
-  getCategories,
-  getMaterials,
-  getReligions,
-  getColors
-} from '../../services/productService.js'
+import { getProducts, getFilterOptions } from '../../services/productService.js'
 
-// ─── UI state ────────────────────────────────────────────────
-const isPriceOpen    = ref(true)
+const isPriceOpen = ref(true)
 const isMaterialOpen = ref(true)
-const isColorOpen    = ref(true)
+const isColorOpen = ref(true)
 const isReligionOpen = ref(true)
-const loading        = ref(false)
-
-// ─── Filter / Sort state ─────────────────────────────────────
-const keyword           = ref('')
-const sortBy            = ref('newest')
-const currentPage       = ref(1)
-const pageSize          = ref(16)
-const priceRange        = ref([0, 999_999_999])
-const selectedCategoryId = ref(null)   // null = tất cả
-const selectedColor     = ref(null)    // null = tất cả
-
-// ─── Data từ service ──────────────────────────────────────────
-const products   = ref([])
-const totalProducts = ref(0)
-
-// Bộ lọc — mỗi phần tử có thêm `checked` để bind v-model
-const categories = ref([])
-const materials  = ref([])
-const religions  = ref([])
-const colors     = ref([])
-
-// Danh sách id chất liệu & tôn giáo đang được chọn (computed từ checked)
-const selectedMaterialIds = ref([])
-const selectedReligionIds = ref([])
+const loading = ref(false)
 const showFilter = ref(false)
 
-// Trust bar (tĩnh — không cần JSON riêng)
+const keyword = ref('')
+const sortBy = ref('newest')
+const currentPage = ref(1)
+const pageSize = ref(16)
+const priceRange = ref([0, 999_999_999])
+const selectedCategoryId = ref(null)
+const selectedColor = ref(null)
+
+const products = ref([])
+const totalProducts = ref(0)
+const categories = ref([])
+const materials = ref([])
+const religions = ref([])
+const colors = ref([])
+const filtersReady = ref(false)
+
+let reloadTimer = null
+let ignoreAutoWatch = false
+let settingPageForFilter = false
+
 const trustItems = [
-  { icon: 'fa-solid fa-medal',       title: 'Sản phẩm chất lượng', desc: 'Được tuyển chọn kỹ lưỡng' },
-  { icon: 'fa-solid fa-truck',       title: 'Giao hàng toàn quốc', desc: 'Nhanh chóng, an toàn'     },
-  { icon: 'fa-solid fa-headset',     title: 'Tư vấn tận tâm',      desc: 'Hỗ trợ 24/7'             },
-  { icon: 'fa-solid fa-rotate-left', title: 'Đổi trả dễ dàng',     desc: 'Trong 7 ngày'            }
+  { icon: 'fa-solid fa-medal', title: 'Sản phẩm chất lượng', desc: 'Được tuyển chọn kỹ lưỡng' },
+  { icon: 'fa-solid fa-truck', title: 'Giao hàng toàn quốc', desc: 'Nhanh chóng, an toàn' },
+  { icon: 'fa-solid fa-headset', title: 'Tư vấn tận tâm', desc: 'Hỗ trợ 24/7' },
+  { icon: 'fa-solid fa-rotate-left', title: 'Đổi trả dễ dàng', desc: 'Trong 7 ngày' }
 ]
 
-// ─── Wishlist (dùng ref<number[]> thay vì Set để tránh vấn đề reactive) ──
 const wishedIds = ref([])
-const isWished  = (id) => wishedIds.value.includes(id)
+const isWished = (id) => wishedIds.value.includes(id)
 const toggleWish = (id) => {
   const idx = wishedIds.value.indexOf(id)
   if (idx === -1) wishedIds.value.push(id)
   else wishedIds.value.splice(idx, 1)
 }
 
-// ─── Format ──────────────────────────────────────────────────
 const formatPrice = (val) => {
   if (val === null || val === undefined) return 'Liên hệ'
-  return val.toLocaleString('vi-VN') + ' đ'
+  return Number(val).toLocaleString('vi-VN') + ' đ'
 }
 
-// ─── Load filter options (chạy một lần) ─────────────────────
+const getProductImage = (image) => {
+  if (!image) return '/no-image.png'
+  if (image.startsWith('http') || image.startsWith('/') || image.startsWith('blob:')) return image
+  return `/images/${image}`
+}
+
 async function loadFilterOptions() {
-  const [cats, mats, rels, cols] = await Promise.all([
-    getCategories(),
-    getMaterials(),
-    getReligions(),
-    getColors()
-  ])
+  const options = await getFilterOptions()
 
-  categories.value = cats
-  // Thêm checked để bind với el-checkbox
-  materials.value  = mats.map((m) => ({ ...m, checked: false }))
-  religions.value  = rels.map((r) => ({ ...r, checked: false }))
-  colors.value     = cols
+  categories.value = options.categories
+  materials.value = options.materials.map((m) => ({ ...m, checked: false }))
+  religions.value = options.religions.map((r) => ({ ...r, checked: false }))
+  colors.value = options.colors
 }
 
-// ─── Load products ────────────────────────────────────────────
 async function loadProducts() {
   loading.value = true
 
@@ -361,63 +345,76 @@ async function loadProducts() {
 
     products.value = items
     totalProducts.value = total
+  } catch (error) {
+    console.error('Lỗi tải sản phẩm website:', error)
+    products.value = []
+    totalProducts.value = 0
   } finally {
     loading.value = false
   }
 }
 
-// ─── Đồng bộ selectedMaterialIds / selectedReligionIds khi checkbox thay đổi ─
-watch(
-    () => materials.value.map((m) => m.checked),
-    () => {
-      selectedMaterialIds.value = materials.value
-          .filter((m) => m.checked)
-          .map((m) => m.id)
-    },
-    { deep: true }
-)
+function queueLoad(resetPage = true) {
+  if (!filtersReady.value || ignoreAutoWatch) return
 
-watch(
-    () => religions.value.map((r) => r.checked),
-    () => {
-      selectedReligionIds.value = religions.value
-          .filter((r) => r.checked)
-          .map((r) => r.id)
-    },
-    { deep: true }
-)
+  clearTimeout(reloadTimer)
 
-// ─── Áp dụng bộ lọc khi người dùng nhấn nút ─────────────────
-function applyFilter() {
-  currentPage.value = 1
-  loadProducts()
+  if (resetPage && currentPage.value !== 1) {
+    settingPageForFilter = true
+    currentPage.value = 1
+  }
+
+  reloadTimer = setTimeout(async () => {
+    settingPageForFilter = false
+    await loadProducts()
+  }, 300)
 }
 
 function resetFilter() {
+  ignoreAutoWatch = true
+
   selectedCategoryId.value = null
   selectedColor.value = null
-  priceRange.value = [0, 999_999_99]
+  priceRange.value = [0, 999_999_999]
   materials.value.forEach((m) => (m.checked = false))
   religions.value.forEach((r) => (r.checked = false))
   keyword.value = ''
   sortBy.value = 'newest'
   currentPage.value = 1
+
+  ignoreAutoWatch = false
+  clearTimeout(reloadTimer)
   loadProducts()
 }
 
-// ─── Tự động tải lại khi sortBy hoặc trang thay đổi ─────────
-watch([sortBy, currentPage], () => loadProducts())
+watch(keyword, () => queueLoad(true))
+watch(sortBy, () => queueLoad(true))
+watch(selectedCategoryId, () => queueLoad(true))
+watch(selectedColor, () => queueLoad(true))
+watch(priceRange, () => queueLoad(true), { deep: true })
 
-// ─── Khởi tạo ────────────────────────────────────────────────
-onMounted(async () => {
-  await loadFilterOptions()
-  await loadProducts()
+watch(
+    () => materials.value.map((m) => m.checked),
+    () => queueLoad(true),
+    { deep: true }
+)
+
+watch(
+    () => religions.value.map((r) => r.checked),
+    () => queueLoad(true),
+    { deep: true }
+)
+
+watch(currentPage, () => {
+  if (!filtersReady.value || ignoreAutoWatch || settingPageForFilter) return
+  loadProducts()
 })
 
-function searchProducts() {
-  currentPage.value = 1
-  loadProducts()
-}
+onMounted(async () => {
+  await loadFilterOptions()
+  filtersReady.value = true
+  await loadProducts()
+})
 </script>
 
 <style scoped src="../../assets/styles/website/TrangSanPham.css"></style>

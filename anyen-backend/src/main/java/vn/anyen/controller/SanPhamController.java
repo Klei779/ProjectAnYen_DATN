@@ -6,6 +6,7 @@ import vn.anyen.dto.SanPhamPageResponse;
 import vn.anyen.service.SanPhamService;
 import vn.anyen.dto.request.SanPhamRequest;
 import vn.anyen.dto.SanPhamResponse;
+import vn.anyen.dto.SanPhamFilterResponse;
 
 import java.math.BigDecimal;
 
@@ -43,7 +44,10 @@ public class SanPhamController {
                 pageSize
         );
     }
-
+    @GetMapping("/bo-loc")
+    public SanPhamFilterResponse getBoLocSanPham() {
+        return sanPhamService.getBoLocSanPham();
+    }
     @PutMapping("/{id}")
     public SanPhamResponse updateSanPham(
             @PathVariable Integer id,

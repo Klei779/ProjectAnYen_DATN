@@ -10,6 +10,18 @@ import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DonHangRepository;
 import vn.anyen.entity.HoaDon;
 import vn.anyen.repository.HoaDonRepository;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
+import vn.anyen.dto.request.TaoDonHangRequest;
+import vn.anyen.entity.KhachHang;
+import vn.anyen.entity.NhanVien;
+import vn.anyen.entity.SanPham;
+import vn.anyen.repository.KhachHangRepository;
+import vn.anyen.repository.NhanVienRepository;
+import vn.anyen.repository.SanPhamRepository;
+
+import java.time.LocalDate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -27,6 +39,11 @@ public class DonHangService {
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final HoaDonRepository hoaDonRepository;
 
+    private final KhachHangRepository khachHangRepository;
+    private final NhanVienRepository nhanVienRepository;
+    private final SanPhamRepository sanPhamRepository;
+    private final DoiTacThongBaoService doiTacThongBaoService;
+
     // Thứ tự trạng thái đơn hàng theo quy trình
     private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
             "Mới tạo",
@@ -35,7 +52,164 @@ public class DonHangService {
             "Chờ thanh toán",
             "Hoàn thành"
     );
+    @Transactional
+    public DonHangResponse taoDonHang(
+            TaoDonHangRequest request,
+            Authentication authentication
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Chưa đăng nhập"
+            );
+        }
 
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Vui lòng chọn ít nhất 1 sản phẩm"
+            );
+        }
+
+        NhanVien nhanVien = nhanVienRepository
+                .findByTenDangNhap(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Không tìm thấy nhân viên đăng nhập"
+                ));
+
+        KhachHang khachHang = layHoacTaoKhachHang(request, nhanVien);
+
+        DonHang donHang = DonHang.builder()
+                .khachHang(khachHang)
+                .nhanVien(nhanVien)
+                .ngayTaoDon(
+                        request.getNgayTaoDon() != null
+                                ? request.getNgayTaoDon()
+                                : LocalDate.now()
+                )
+                .tongTien(BigDecimal.ZERO)
+                .trangThai("Mới tạo")
+                .ghiChu(request.getGhiChu())
+                .phuongThucThanhToan(
+                        request.getPhuongThucThanhToan() != null
+                                ? request.getPhuongThucThanhToan()
+                                : "Chưa chọn"
+                )
+                .trangThaiThanhToan(
+                        request.getTrangThaiThanhToan() != null
+                                ? request.getTrangThaiThanhToan()
+                                : "Chưa thanh toán"
+                )
+                .build();
+
+        DonHang savedDonHang = donHangRepository.save(donHang);
+
+        BigDecimal tongTien = BigDecimal.ZERO;
+
+        for (TaoDonHangRequest.SanPhamTrongDonRequest item : request.getItems()) {
+            SanPham sanPham = sanPhamRepository
+                    .findById(item.getMaSanPham())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Không tìm thấy sản phẩm #" + item.getMaSanPham()
+                    ));
+
+            Integer soLuongDat = item.getSoLuong();
+
+            if (soLuongDat == null || soLuongDat <= 0) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Số lượng sản phẩm phải lớn hơn 0"
+                );
+            }
+
+            Integer tonKho = sanPham.getSoLuong() == null
+                    ? 0
+                    : sanPham.getSoLuong();
+
+            if (tonKho < soLuongDat) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Sản phẩm '" + sanPham.getTenSanPham()
+                                + "' không đủ tồn kho. Còn: " + tonKho
+                );
+            }
+
+            BigDecimal donGia = sanPham.getGiaTien() == null
+                    ? BigDecimal.ZERO
+                    : sanPham.getGiaTien();
+
+            tongTien = tongTien.add(
+                    donGia.multiply(BigDecimal.valueOf(soLuongDat))
+            );
+
+            ChiTietDonHang chiTiet = ChiTietDonHang.builder()
+                    .donHang(savedDonHang)
+                    .sanPham(sanPham)
+                    .soLuong(soLuongDat)
+                    .giaTien(donGia)
+                    .build();
+
+            chiTietDonHangRepository.save(chiTiet);
+
+            sanPham.setSoLuong(tonKho - soLuongDat);
+            sanPhamRepository.save(sanPham);
+        }
+
+        savedDonHang.setTongTien(tongTien);
+
+        DonHang donHangDaLuu = donHangRepository.save(savedDonHang);
+
+        doiTacThongBaoService.taoThongBaoChoDonHang(
+                donHangDaLuu.getMaDonHang()
+        );
+
+        return mapToDonHangResponse(donHangDaLuu);
+    }
+
+    private KhachHang layHoacTaoKhachHang(
+            TaoDonHangRequest request,
+            NhanVien nhanVien
+    ) {
+        if (request.getMaKhachHang() != null) {
+            return khachHangRepository.findById(request.getMaKhachHang())
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND,
+                            "Không tìm thấy khách hàng #"
+                                    + request.getMaKhachHang()
+                    ));
+        }
+
+        if (request.getTenKhachHang() == null
+                || request.getTenKhachHang().trim().isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Tên khách hàng không được để trống"
+            );
+        }
+
+        if (request.getSoDienThoai() == null
+                || request.getSoDienThoai().trim().isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Số điện thoại không được để trống"
+            );
+        }
+
+        KhachHang khachHang = KhachHang.builder()
+                .tenKhachHang(request.getTenKhachHang().trim())
+                .soDienThoai(request.getSoDienThoai().trim())
+                .cccd(request.getCccd())
+                .email(request.getEmail())
+                .diaChi(request.getDiaChi())
+                .maNhanVienPhuTrach(nhanVien.getMaNhanVien())
+                .ngayDangKy(LocalDateTime.now())
+                .nguonDangKy("Tạo từ đơn hàng")
+                .build();
+
+        return khachHangRepository.save(khachHang);
+    }
     public List<DonHangResponse> getAllDonHang() {
         List<DonHang> donHangs = donHangRepository.findAll();
         return donHangs.stream().map(this::mapToDonHangResponse).collect(Collectors.toList());

@@ -116,8 +116,10 @@ const logout = () => {
   localStorage.removeItem("loaiTaiKhoan");
   localStorage.removeItem("tenDangNhap");
   localStorage.removeItem("id");
+
   window.dispatchEvent(new Event('session-updated'));
   router.push("/");
+
 };
 </script>
 

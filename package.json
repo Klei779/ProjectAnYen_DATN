@@ -2,6 +2,10 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@fortawesome/fontawesome-free": "^7.2.0",
-    "jwt-decode": "^4.0.0"
+    "cloudflared": "^0.7.1",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jwt-decode": "^4.0.0",
+    "vue-turnstile": "^1.0.11"
   }
 }

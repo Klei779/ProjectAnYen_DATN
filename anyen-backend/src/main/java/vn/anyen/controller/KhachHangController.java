@@ -1,8 +1,13 @@
 package vn.anyen.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import vn.anyen.entity.KhachHang;
+import vn.anyen.dto.request.CapNhatTrangThaiKHRequest;
+import vn.anyen.dto.request.KhachHangRequest;
+import vn.anyen.dto.response.KhachHangLichSuResponse;
+import vn.anyen.dto.response.KhachHangResponse;
 import vn.anyen.service.JwtService;
 import vn.anyen.service.KhachHangService;
 
@@ -17,22 +22,64 @@ public class KhachHangController {
     private final KhachHangService khachHangService;
     private final JwtService jwtService;
 
-    /**
-     * Lấy danh sách khách hàng do nhân viên đang đăng nhập phụ trách
-     */
-    @GetMapping
-    public List<KhachHang> getAll(
-            @RequestHeader("Authorization") String authHeader) {
+    private Integer getUserIdFromHeader(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new RuntimeException("Không có token xác thực");
+        }
 
         String token = authHeader.substring(7);
-        Integer userId = jwtService.getUserIdFromToken(token);
+        return jwtService.getUserIdFromToken(token);
+    }
 
+    @GetMapping
+    public List<KhachHangResponse> getAll(
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Integer userId = getUserIdFromHeader(authHeader);
         return khachHangService.getByNhanVien(userId);
     }
 
     @GetMapping("/{maKhachHang}")
-    public KhachHang getById(@PathVariable Integer maKhachHang) {
-        return khachHangService.getById(maKhachHang);
+    public KhachHangResponse getById(
+            @PathVariable Integer maKhachHang,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Integer userId = getUserIdFromHeader(authHeader);
+        return khachHangService.getByIdResponse(maKhachHang, userId);
     }
 
+    @PostMapping
+    public ResponseEntity<KhachHangResponse> create(
+            @Valid @RequestBody KhachHangRequest request,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Integer userId = getUserIdFromHeader(authHeader);
+        return ResponseEntity.ok(khachHangService.create(request, userId));
+    }
+
+    @PutMapping("/{maKhachHang}/trang-thai-lam-viec")
+    public ResponseEntity<KhachHangResponse> updateTrangThaiLamViec(
+            @PathVariable Integer maKhachHang,
+            @Valid @RequestBody CapNhatTrangThaiKHRequest request,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Integer userId = getUserIdFromHeader(authHeader);
+
+        return ResponseEntity.ok(
+                khachHangService.updateTrangThaiLamViec(
+                        maKhachHang,
+                        userId,
+                        request.getTrangThaiLamViec()
+                )
+        );
+    }
+
+    @GetMapping("/{maKhachHang}/lich-su")
+    public List<KhachHangLichSuResponse> getLichSu(
+            @PathVariable Integer maKhachHang,
+            @RequestHeader("Authorization") String authHeader
+    ) {
+        Integer userId = getUserIdFromHeader(authHeader);
+        return khachHangService.getLichSu(maKhachHang, userId);
+    }
 }

@@ -8,12 +8,20 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class KhachHangResponse {
-    private Integer id;
-    private String name;
-    private String phone;
+
+    private Integer maKhachHang;
+    private String tenKhachHang;
+    private String cccd;
+    private String diaChi;
     private String email;
-    private String address;
-    private String status;
-    private String stage;
+    private String soDienThoai;
+    private Integer maNhanVienPhuTrach;
+    private String ngayDangKy;
+    private String nguonDangKy;
+    private String nhuCauHoTro;
+    private String ghiChu;
+
+    private String trangThaiHienTai;
+    private String giaiDoanHienTai;
     private String avatar;
 }

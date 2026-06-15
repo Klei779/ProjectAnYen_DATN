@@ -55,8 +55,13 @@ public class HopDongController {
         return hopDongService.taoHopDong(request);
     }
 
-    @GetMapping("/{id}")
+   @GetMapping("/{id}")
     public HopDongResponse getChiTiet(@PathVariable Integer id) {
         return hopDongService.getChiTiet(id);
+    }
+
+    @PutMapping("/{id}/huy")
+    public HopDongResponse huyHopDong(@PathVariable Integer id) {
+        return hopDongService.huyHopDong(id);
     }
 }

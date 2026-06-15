@@ -34,3 +34,7 @@ export async function createHopDong(payload) {
     const response = await api.post(API_URL, payload);
     return response.data;
 }
+export async function cancelHopDong(id) {
+    const response = await api.put(`${API_URL}/${id}/huy`);
+    return response.data;
+}

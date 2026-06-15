@@ -8,6 +8,8 @@ import org.springframework.data.repository.query.Param;
 
 import vn.anyen.entity.HopDong;
 
+import java.util.List;
+
 public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
 
     boolean existsByDonHang_MaDonHang(Integer maDonHang);
@@ -39,4 +41,7 @@ public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
             @Param("trangThai") String trangThai,
             Pageable pageable
     );
+    boolean existsByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
+
+    List<HopDong> findByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
 }

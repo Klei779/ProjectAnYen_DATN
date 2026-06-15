@@ -69,7 +69,29 @@ public class HopDongService {
 
         return toResponse(hopDong);
     }
+    @Transactional
+    public HopDongResponse huyHopDong(Integer id) {
+        HopDong hopDong = hopDongRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Không tìm thấy hợp đồng"
+                        )
+                );
 
+        if ("Đã hủy".equalsIgnoreCase(hopDong.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Hợp đồng này đã bị hủy trước đó"
+            );
+        }
+
+        hopDong.setTrangThai("Đã hủy");
+
+        HopDong saved = hopDongRepository.save(hopDong);
+
+        return toResponse(saved);
+    }
     public List<DonHangHopDongOptionResponse> getDonHangOptions() {
         return donHangRepository
                 .findAll(Sort.by(Sort.Direction.DESC, "maDonHang"))

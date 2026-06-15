@@ -28,4 +28,11 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     @Modifying
     @Query("UPDATE ThongBao t SET t.trangThai = 'DA_DOC' WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 'CHUA_DOC'")
     void markAllAsRead(@Param("nguoiNhanId") Integer nguoiNhanId);
+    boolean existsByMaKhachHangAndNguoiNhanIdAndTrangThai(
+            Integer maKhachHang,
+            Integer nguoiNhanId,
+            String trangThai
+    );
+
+    List<ThongBao> findByMaKhachHangOrderByNgayTaoDesc(Integer maKhachHang);
 }

@@ -1,7 +1,18 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 import api from "../../api/api.js";
 import PopTaoHopDong from "./PopTaoHopDong.vue";
+
+/*
+  Nếu file popup của bạn tên là PopChiTietHopDong.vue thì giữ dòng này:
+  import PopXemHopDong from "./PopChiTietHopDong.vue";
+
+  Nếu bạn đã tạo đúng file PopXemHopDong.vue thì dùng dòng dưới:
+*/
+import PopXemHopDong from "./PopChiTietHopDong.vue";
+
+import { cancelHopDong } from "../../services/hopDongService.js";
 
 const keyword = ref("");
 const trangThai = ref("Tất cả");
@@ -9,15 +20,16 @@ const loaiHopDong = ref("Tất cả");
 const dateRange = ref("01/05/2024 - 31/05/2024");
 
 const showCreateContract = ref(false);
+const showDetailModal = ref(false);
+
 const hopDongs = ref([]);
-const selectedHopDong = ref(null);
+const selectedHopDongId = ref(null);
 
 const page = ref(1);
 const pageSize = ref(10);
 const total = ref(0);
 
 const loading = ref(false);
-const showDetailModal = ref(false);
 
 const statusOptions = [
   "Tất cả",
@@ -45,40 +57,34 @@ const loadHopDongs = async () => {
 
     const response = await api.get("/api/nhan-vien/hop-dong", {
       params: {
-        keyword: keyword.value,
-        trangThai: mapStatusToBackend(trangThai.value),
-        loaiHopDong: loaiHopDong.value === "Tất cả" ? "" : loaiHopDong.value,
-        dateRange: dateRange.value,
-        page: page.value,
-        pageSize: pageSize.value,
+        keyword: keyword.value || "",
+        trangThai: mapStatusToBackend(trangThai.value || "Tất cả"),
+        page: page.value || 1,
+        pageSize: pageSize.value || 10,
       },
     });
 
     hopDongs.value = response.data.items || [];
     total.value = response.data.total || 0;
   } catch (error) {
-    console.error("Lỗi load hợp đồng:", error);
-    alert("Không thể tải danh sách hợp đồng");
+    console.error("Lỗi tải hợp đồng:", error);
+
+    hopDongs.value = [];
+    total.value = 0;
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể tải danh sách hợp đồng"
+    );
   } finally {
     loading.value = false;
   }
 };
 
-const openDetail = async (id) => {
-  try {
-    const response = await api.get(`/api/nhan-vien/hop-dong/${id}`);
-
-    selectedHopDong.value = response.data;
-    showDetailModal.value = true;
-  } catch (error) {
-    console.error("Lỗi xem chi tiết hợp đồng:", error);
-    alert("Không thể xem chi tiết hợp đồng");
-  }
-};
-
-const closeDetail = () => {
-  selectedHopDong.value = null;
-  showDetailModal.value = false;
+const openDetail = (id) => {
+  selectedHopDongId.value = id;
+  showDetailModal.value = true;
 };
 
 const searchHopDong = () => {
@@ -112,16 +118,53 @@ const afterCreateContract = () => {
   loadHopDongs();
 };
 
+const afterCancelContract = async () => {
+  showDetailModal.value = false;
+  selectedHopDongId.value = null;
+  await loadHopDongs();
+};
+
 const exportExcel = () => {
   alert("Chức năng xuất Excel đang được phát triển");
 };
 
-const editContract = () => {
-  alert("Chức năng sửa hợp đồng đang được phát triển");
-};
 
-const cancelContract = () => {
-  alert("Chức năng hủy hợp đồng đang được phát triển");
+
+const cancelContract = async (item) => {
+  if (!item?.maHopDong) return;
+
+  if (displayStatus(item.trangThai) === "Đã hủy") {
+    ElMessage.warning("Hợp đồng này đã bị hủy trước đó");
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+        `Bạn có chắc muốn hủy hợp đồng ${getContractCode(item)}?`,
+        "Xác nhận hủy hợp đồng",
+        {
+          confirmButtonText: "Hủy hợp đồng",
+          cancelButtonText: "Không",
+          type: "warning",
+        }
+    );
+
+    await cancelHopDong(item.maHopDong);
+
+    ElMessage.success("Hủy hợp đồng thành công");
+
+    await loadHopDongs();
+  } catch (error) {
+    if (error === "cancel" || error === "close") return;
+
+    console.error("Lỗi hủy hợp đồng:", error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Không thể hủy hợp đồng"
+    );
+  }
 };
 
 const formatMoney = (value) => {
@@ -143,10 +186,6 @@ const formatDate = (value) => {
 
 const getContractCode = (item) => {
   return item.maHopDongText || `HD${String(item.maHopDong).padStart(6, "0")}`;
-};
-
-const getOrderCode = (item) => {
-  return item.maDonHangText || item.maDonHang || "---";
 };
 
 const getProjectName = (item) => {
@@ -213,6 +252,14 @@ const countByStatus = (statuses) => {
   }).length;
 };
 
+const getPercent = (count) => {
+  const all = total.value || hopDongs.value.length || 0;
+
+  if (all === 0) return "0%";
+
+  return ((count / all) * 100).toFixed(2) + "%";
+};
+
 const stats = computed(() => {
   const effective = countByStatus(["Đang hiệu lực"]);
   const pending = countByStatus(["Chờ ký"]);
@@ -258,14 +305,6 @@ const stats = computed(() => {
   ];
 });
 
-const getPercent = (count) => {
-  const all = total.value || hopDongs.value.length || 0;
-
-  if (all === 0) return "0%";
-
-  return ((count / all) * 100).toFixed(2) + "%";
-};
-
 const totalPages = computed(() => {
   return Math.max(Math.ceil(total.value / pageSize.value), 1);
 });
@@ -303,7 +342,6 @@ onMounted(() => {
   loadHopDongs();
 });
 </script>
-
 <template>
   <div class="contract-page">
     <div class="page-header">
@@ -535,15 +573,6 @@ onMounted(() => {
               >
                 <i class="fa-regular fa-eye"></i>
               </button>
-
-              <button
-                  class="action-btn edit"
-                  title="Sửa hợp đồng"
-                  @click="editContract(item)"
-              >
-                <i class="fa-regular fa-pen-to-square"></i>
-              </button>
-
               <button
                   class="action-btn delete"
                   title="Hủy hợp đồng"
@@ -601,78 +630,17 @@ onMounted(() => {
       </div>
     </div>
 
-    <div
-        v-if="showDetailModal"
-        class="modal-overlay"
-        @click.self="closeDetail"
-    >
-      <div class="modal">
-        <div class="modal-header">
-          <h3>Chi tiết hợp đồng</h3>
-
-          <button @click="closeDetail">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-
-        <div v-if="selectedHopDong" class="detail-grid">
-          <p>
-            <span>Mã hợp đồng</span>
-            <b>{{ getContractCode(selectedHopDong) }}</b>
-          </p>
-
-          <p>
-            <span>Khách hàng</span>
-            <b>{{ selectedHopDong.tenKhachHang || "---" }}</b>
-          </p>
-
-          <p>
-            <span>Số điện thoại</span>
-            <b>{{ selectedHopDong.soDienThoai || "---" }}</b>
-          </p>
-
-          <p>
-            <span>Mã đơn hàng</span>
-            <b>{{ getOrderCode(selectedHopDong) }}</b>
-          </p>
-
-          <p>
-            <span>Dự án</span>
-            <b>{{ getProjectName(selectedHopDong) }}</b>
-          </p>
-
-          <p>
-            <span>Loại hợp đồng</span>
-            <b>{{ getContractType(selectedHopDong) }}</b>
-          </p>
-
-          <p>
-            <span>Ngày ký</span>
-            <b>{{ formatDate(selectedHopDong.ngayKyHD) }}</b>
-          </p>
-
-          <p>
-            <span>Ngày hết hạn</span>
-            <b>{{ getEndDate(selectedHopDong) }}</b>
-          </p>
-
-          <p>
-            <span>Giá trị hợp đồng</span>
-            <b>{{ formatMoney(selectedHopDong.giaTriHopDong) }} VNĐ</b>
-          </p>
-
-          <p>
-            <span>Trạng thái</span>
-            <b>{{ displayStatus(selectedHopDong.trangThai) }}</b>
-          </p>
-        </div>
-      </div>
-    </div>
 
     <PopTaoHopDong
         v-model="showCreateContract"
         @saved="afterCreateContract"
         @success="afterCreateContract"
+    />
+
+    <PopXemHopDong
+        v-model="showDetailModal"
+        :hop-dong-id="selectedHopDongId"
+        @canceled="afterCancelContract"
     />
   </div>
 </template>

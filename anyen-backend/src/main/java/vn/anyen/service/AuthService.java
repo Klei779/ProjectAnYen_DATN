@@ -21,7 +21,21 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
+    // Turnstile test secret key (always passes with test sitekey)
+    // Replace with real secret key in production
+    private final String TURNSTILE_SECRET = "1x0000000000000000000000000000000AA";
+
     public LoginResponse login(LoginRequest request) {
+
+        // Validate Captcha if provided
+        if (request.getCaptchaToken() != null && !request.getCaptchaToken().isEmpty()) {
+            boolean isValidCaptcha = verifyTurnstile(request.getCaptchaToken());
+            if (!isValidCaptcha) {
+                LoginResponse response = new LoginResponse();
+                response.setSuccess(false);
+                return response;
+            }
+        }
 
         LoginResponse response = new LoginResponse();
 
@@ -40,11 +54,27 @@ public class AuthService {
                         request.getMatKhau(),
                         nv.getMatKhau())) {
 
+                    // Determine specific role
+                    String rawRole = nv.getVaiTro() != null ? nv.getVaiTro().trim() : "";
+                    String specificRole = null;
+                    if (rawRole.equalsIgnoreCase("Quản lý An yên") || rawRole.equalsIgnoreCase("Admin") || rawRole.equalsIgnoreCase("Quản lý")) {
+                        specificRole = "ADMIN";
+                    } else if (rawRole.equalsIgnoreCase("Nhân viên hotline") || rawRole.equalsIgnoreCase("Hotline")) {
+                        specificRole = "HOTLINE";
+                    } else if (rawRole.equalsIgnoreCase("Nhân viên trực tiếp") || rawRole.equalsIgnoreCase("Nhân viên bán hàng") || rawRole.equalsIgnoreCase("Nhân viên tư vấn")) {
+                        specificRole = "NHANVIEN";
+                    }
+
+                    if (specificRole == null) {
+                        response.setSuccess(false);
+                        return response; // Role không tồn tại
+                    }
+
                     String token =
                             jwtService.generateToken(
                                     nv.getMaNhanVien(),
                                     nv.getTenDangNhap(),
-                                    "NHAN_VIEN"
+                                    specificRole
                             );
 
                     response.setSuccess(true);
@@ -52,6 +82,7 @@ public class AuthService {
                     response.setHoTen(nv.getHoTen());
                     response.setTenDangNhap(nv.getTenDangNhap());
                     response.setLoaiTaiKhoan("NHAN_VIEN");
+                    response.setVaiTroChiTiet(specificRole);
                     response.setToken(token);
                 }
             }
@@ -76,7 +107,7 @@ public class AuthService {
                             jwtService.generateToken(
                                     dt.getMaDoiTac(),
                                     dt.getTenDangNhap(),
-                                    "DOI_TAC"
+                                    "DOITAC"
                             );
 
                     response.setSuccess(true);
@@ -84,11 +115,35 @@ public class AuthService {
                     response.setHoTen(dt.getTenDoiTac());
                     response.setTenDangNhap(dt.getTenDangNhap());
                     response.setLoaiTaiKhoan("DOI_TAC");
+                    response.setVaiTroChiTiet("DOITAC");
                     response.setToken(token);
                 }
             }
         }
 
         return response;
+    }
+
+    private boolean verifyTurnstile(String token) {
+        try {
+            org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+            org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+            headers.setContentType(org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED);
+
+            org.springframework.util.MultiValueMap<String, String> map = new org.springframework.util.LinkedMultiValueMap<>();
+            map.add("secret", TURNSTILE_SECRET);
+            map.add("response", token);
+
+            org.springframework.http.HttpEntity<org.springframework.util.MultiValueMap<String, String>> request = new org.springframework.http.HttpEntity<>(map, headers);
+
+            org.springframework.http.ResponseEntity<java.util.Map> response = restTemplate.postForEntity("https://challenges.cloudflare.com/turnstile/v0/siteverify", request, java.util.Map.class);
+
+            if (response.getBody() != null && Boolean.TRUE.equals(response.getBody().get("success"))) {
+                return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 }

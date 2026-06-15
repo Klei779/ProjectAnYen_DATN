@@ -6,11 +6,11 @@
 .notification-page {
   font-family: 'Inter', sans-serif;
   background-color: #f8f9fa;
-  min-height: 100vh;
   color: #111827;
   padding-bottom: 50px;
-}
 
+  min-height: auto;
+}
 /* =========================================
    TOP BAR (MOCKUP HEADER)
 ========================================= */
@@ -1033,4 +1033,41 @@
   .card-main-content { flex-direction: column; gap: 10px; }
   .card-actions-wrapper { align-items: flex-start; margin-top: 16px; }
   .task-card { flex-direction: column; }
+}
+@media (max-width:768px){
+
+  .notification-page{
+    min-height:auto !important;
+    padding-bottom:20px;
+  }
+
+  .content-wrapper{
+    padding:12px;
+    margin:0;
+    max-width:none;
+  }
+
+  .main-column{
+    width:100%;
+  }
+}
+@media (max-width:768px){
+
+  .custom-tabs{
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:8px;
+  }
+
+  .custom-tabs button{
+    font-size:13px;
+    padding:0 0 10px;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+
+  .tab-badge{
+    font-size:10px;
+    padding:1px 6px;
+  }
 }

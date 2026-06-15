@@ -60,14 +60,15 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
-                        // API đối tác bắt buộc role DOI_TAC
+                        // API đối tác bắt buộc role DOITAC
                         .requestMatchers("/api/doi-tac/**")
-                        .hasRole("DOI_TAC")
+                        .hasRole("DOITAC")
 
-                        // API nhân viên bắt buộc role NHAN_VIEN
+                        // API nhân viên bắt buộc các role nhân sự
+                        .requestMatchers("/api/nhan-vien/hop-dong/**")
+                        .permitAll()
                         .requestMatchers("/api/nhan-vien/**")
-
-                        .hasRole("NHAN_VIEN")
+                        .hasAnyRole("ADMIN", "HOTLINE", "NHANVIEN")
 
                         // Còn lại phải đăng nhập
                         .anyRequest()

@@ -9,4 +9,5 @@ public class LoginRequest {
     private String tenDangNhap;
     private String matKhau;
     private String loaiTaiKhoan;
+    private String captchaToken;
 }

@@ -4,6 +4,8 @@ import { jwtDecode } from "jwt-decode";
 import WebsiteLayout from "../layouts/WebsiteLayout.vue";
 import DoiTacLayout from "../layouts/DoiTacLayout.vue";
 import NhanVienLayout from "../layouts/NhanVienLayout.vue";
+import AdminLayout from "../layouts/AdminLayout.vue";
+import HotlineLayout from "../layouts/HotlineLayout.vue";
 
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
@@ -29,6 +31,11 @@ import TrangThongBaoNV from "../pages/nhanvien/TrangThongBao.vue";
 import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
+
+// Hotline
+import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
+import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
+
 const routes = [
     // WEBSITE
     {
@@ -69,7 +76,7 @@ const routes = [
         component: DoiTacLayout,
         meta: {
             requiresAuth: true,
-            role: "DOI_TAC",
+            role: "DOITAC",
         },
         children: [
             {
@@ -103,13 +110,13 @@ const routes = [
         ],
     },
 
-    // NHÂN VIÊN
+    // NHÂN VIÊN TRỰC TIẾP
     {
         path: "/nhan-vien",
         component: NhanVienLayout,
         meta: {
             requiresAuth: true,
-            role: "NHAN_VIEN",
+            role: "NHANVIEN",
         },
         children: [
             {
@@ -119,10 +126,6 @@ const routes = [
             {
                 path: "tong-quan",
                 component: TrangTongQuanNV,
-            },
-            {
-                path: "quan-ly-doi-tac",
-                component: TrangQLDoiTac,
             },
             {
                 path: "quan-ly-don-hang",
@@ -143,6 +146,58 @@ const routes = [
             {
                 path: "quan-ly-hop-dong",
                 component:TrangQLHopDong,
+            }
+        ],
+    },
+
+    // QUẢN LÝ AN YÊN (ADMIN)
+    {
+        path: "/admin",
+        component: AdminLayout,
+        meta: {
+            requiresAuth: true,
+            role: "ADMIN",
+        },
+        children: [
+            {
+                path: "",
+                redirect: "/admin/tong-quan",
+            },
+            {
+                path: "tong-quan",
+                component: TrangTongQuanNV,
+            },
+            {
+                path: "quan-ly-doi-tac",
+                component: TrangQLDoiTac,
+            },
+            {
+                path: "thong-bao",
+                component: TrangThongBaoNV,
+            }
+        ],
+    },
+
+    // HOTLINE
+    {
+        path: "/hotline",
+        component: HotlineLayout,
+        meta: {
+            requiresAuth: true,
+            role: "HOTLINE",
+        },
+        children: [
+            {
+                path: "",
+                redirect: "/hotline/quan-ly-cong-viec",
+            },
+            {
+                path: "quan-ly-cong-viec",
+                component: TrangQLCongViec,
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangHL,
             }
         ],
     },
@@ -210,10 +265,14 @@ router.beforeEach((to, from, next) => {
 
     // Có token nhưng sai quyền
     if (requiredRole && roleFromToken !== requiredRole) {
-        if (roleFromToken === "NHAN_VIEN") {
+        if (roleFromToken === "NHANVIEN") {
             next("/nhan-vien/tong-quan");
-        } else if (roleFromToken === "DOI_TAC") {
+        } else if (roleFromToken === "DOITAC") {
             next("/doi-tac/tong-quan");
+        } else if (roleFromToken === "ADMIN") {
+            next("/admin/tong-quan");
+        } else if (roleFromToken === "HOTLINE") {
+            next("/hotline/quan-ly-cong-viec");
         } else {
             next("/");
         }

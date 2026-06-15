@@ -1,37 +1,52 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 import PopTaoDonHang from "./PopTaoDonHang.vue";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
-import { getDonHangs, formatCurrency, formatDate } from "../../services/donHangService.js";
+import { getDonHangs, capNhatTrangThai, huyDonHang as huyDonHangAPI, formatCurrency, formatDate } from "../../services/donHangService.js";
 import {
   Search,
-  Plus,
   Filter,
-  Printer,
-  View,
+  Check,
+  User,
+  Avatar,
+  Wallet,
+  Calendar,
+  EditPen,
+  Delete,
+  Right,
+  Plus
 } from "@element-plus/icons-vue";
 
 // ── Trạng thái ──────────────────────────────────────────
 const showCreateOrder = ref(false);
 const showChiTiet         = ref(false);
 const selectedDonHang     = ref(null);
+const showPaymentDialog   = ref(false);
+const showCashConfirmDialog = ref(false);
+const selectedOrderForPayment = ref(null);
 
 const keyword      = ref("");
 const trangThaiFilter = ref("Tất cả");
+const ptThanhToanFilter = ref("Tất cả");
+const dateRange = ref([]);
+
 const currentPage  = ref(1);
-const pageSize     = ref(10);
+const pageSize     = ref(3);
 
 // ── Dữ liệu ─────────────────────────────
 const donHangs = ref([]);
 
-onMounted(async () => {
+const loadDonHangs = async () => {
   try {
     const data = await getDonHangs();
     donHangs.value = data.items || data || [];
   } catch (error) {
     console.error("Lỗi khi tải đơn hàng:", error);
   }
-});
+};
+
+onMounted(loadDonHangs);
 
 // ── Lọc + tìm kiếm ─────────────────────────────────────
 const filteredList = computed(() => {
@@ -39,13 +54,29 @@ const filteredList = computed(() => {
     const kw = keyword.value.toLowerCase();
     const matchKw =
       !kw ||
-      dh.maCode.toLowerCase().includes(kw) ||
-      dh.tenKhachHang.toLowerCase().includes(kw) ||
-      dh.tenNhanVien.toLowerCase().includes(kw);
+      dh.maCode?.toLowerCase().includes(kw) ||
+      dh.tenKhachHang?.toLowerCase().includes(kw) ||
+      dh.tenNhanVien?.toLowerCase().includes(kw);
+      
     const matchTT =
       trangThaiFilter.value === "Tất cả" ||
       dh.trangThai === trangThaiFilter.value;
-    return matchKw && matchTT;
+
+    const matchPT = 
+      ptThanhToanFilter.value === "Tất cả" ||
+      dh.phuongThucThanhToan === ptThanhToanFilter.value;
+      
+    let matchDate = true;
+    if (dateRange.value && dateRange.value.length === 2) {
+        const orderDate = new Date(dh.NgayTaoDon);
+        const startDate = new Date(dateRange.value[0]);
+        const endDate = new Date(dateRange.value[1]);
+        if (orderDate < startDate || orderDate > endDate) {
+            matchDate = false;
+        }
+    }
+
+    return matchKw && matchTT && matchPT && matchDate;
   });
 });
 
@@ -60,24 +91,49 @@ const xemChiTiet = (dh) => {
   showChiTiet.value = true;
 };
 
-const huyDon = (maDonHang) => {
-  const idx = donHangs.value.findIndex((d) => d.MaDonHang === maDonHang);
-  if (idx !== -1) {
-    donHangs.value[idx].trangThai = "Đã hủy";
-    // Cập nhật lichSu
-    donHangs.value[idx].lichSu.forEach((ls) => { ls.done = false; });
+const huyDon = async (maDonHang) => {
+  try {
+    await huyDonHangAPI(maDonHang);
+    ElMessage.success("Đã hủy đơn hàng thành công");
+    await loadDonHangs();
+    showChiTiet.value = false;
+  } catch (error) {
+    console.error("Lỗi khi hủy đơn hàng:", error);
+    ElMessage.error(error.response?.data?.message || "Hủy đơn hàng thất bại");
   }
-  showChiTiet.value = false;
+};
+
+// ── Stepper Logic ───────────────────────────────────────
+const STEPS = ["Mới tạo", "Đã xác nhận", "Đang xử lý", "Chờ thanh toán", "Hoàn thành"];
+
+const getStepIndex = (trangThai) => {
+    return STEPS.indexOf(trangThai);
+};
+
+const isStepCompleted = (dh, stepName) => {
+    const currentIdx = getStepIndex(dh.trangThai);
+    const targetIdx = getStepIndex(stepName);
+    if (dh.trangThai === "Đã hủy") return false;
+    return targetIdx < currentIdx;
+};
+
+const isStepActive = (dh, stepName) => {
+    return dh.trangThai === stepName;
+};
+
+const isLineCompleted = (dh, targetStep) => {
+    return isStepCompleted(dh, targetStep) || isStepActive(dh, targetStep);
 };
 
 // ── Badge class ─────────────────────────────────────────
-const trangThaiClass = (tt) => {
-  if (tt === "Đã xác nhận")   return "badge green";
-  if (tt === "Đang xử lý")    return "badge orange";
-  if (tt === "Chờ thanh toán") return "badge blue";
-  if (tt === "Đã hủy")        return "badge red";
-  if (tt === "Hoàn thành")    return "badge green";
-  return "badge gray";
+const trangThaiBadgeClass = (tt) => {
+  if (tt === "Đã xác nhận")   return "badge-blue";
+  if (tt === "Đang xử lý")    return "badge-orange";
+  if (tt === "Mới tạo")       return "badge-yellow";
+  if (tt === "Chờ thanh toán") return "badge-purple";
+  if (tt === "Hoàn thành")    return "badge-green";
+  if (tt === "Đã hủy")        return "badge-red";
+  return "badge-gray";
 };
 
 const handleSaveDraft = (payload) => {
@@ -87,40 +143,71 @@ const handleSaveDraft = (payload) => {
 
 const handleCreateOrder = async (payload) => {
   try {
-    console.log("Dữ liệu tạo đơn:", payload);
-
-    // Sau này nối API thật:
-    // await createDonHang(payload);
-
     alert("Tạo đơn hàng thành công");
-
     showCreateOrder.value = false;
-
-    // Load lại danh sách đơn hàng
-    const data = await getDonHangs();
-    donHangs.value = data.items || data || [];
+    await loadDonHangs();
   } catch (error) {
     console.error("Lỗi khi tạo đơn hàng:", error);
     alert("Tạo đơn hàng thất bại");
   }
 };
 
+const nextStatus = (dh) => {
+    const currentIdx = getStepIndex(dh.trangThai);
+    if (currentIdx >= 0 && currentIdx < STEPS.length - 1 && dh.trangThai !== "Đã hủy") {
+        return STEPS[currentIdx + 1];
+    }
+    return null;
+}
+
+const doUpdateStatus = async (dh, next) => {
+    try {
+        await capNhatTrangThai(dh.maDonHang || dh.MaDonHang, next);
+        ElMessage.success(`Đã cập nhật trạng thái: ${next}`);
+        await loadDonHangs();
+    } catch (error) {
+        console.error("Lỗi khi cập nhật trạng thái:", error);
+        ElMessage.error(error.response?.data?.message || "Cập nhật trạng thái thất bại");
+    }
+};
+
+const updateNextStatus = async (dh) => {
+    const next = nextStatus(dh);
+    if (next) {
+        if (dh.trangThai === "Chờ thanh toán") {
+            if (dh.phuongThucThanhToan === "Chuyển khoản") {
+                selectedOrderForPayment.value = dh;
+                showPaymentDialog.value = true;
+                return;
+            } else if (dh.phuongThucThanhToan === "Tiền mặt") {
+                selectedOrderForPayment.value = dh;
+                showCashConfirmDialog.value = true;
+                return;
+            }
+        }
+        await doUpdateStatus(dh, next);
+    }
+};
+
+const confirmPayment = async () => {
+    if (selectedOrderForPayment.value) {
+        await doUpdateStatus(selectedOrderForPayment.value, "Hoàn thành");
+        showPaymentDialog.value = false;
+        selectedOrderForPayment.value = null;
+    }
+};
+
+const confirmCashPayment = async () => {
+    if (selectedOrderForPayment.value) {
+        await doUpdateStatus(selectedOrderForPayment.value, "Hoàn thành");
+        showCashConfirmDialog.value = false;
+        selectedOrderForPayment.value = null;
+    }
+};
 </script>
 
 <template>
   <div class="don-hang-page">
-
-    <!-- ── Tiêu đề ── -->
-    <div class="page-header">
-      <div class="page-title-wrap">
-        <h2 class="page-title">Quản lý đơn hàng</h2>
-        <span class="total-count">{{ filteredList.length }} đơn</span>
-      </div>
-      <el-button type="primary" class="btn-tao" @click="showCreateOrder = true">
-        <el-icon><Plus /></el-icon>
-        Tạo đơn hàng
-      </el-button>
-    </div>
 
     <!-- ── Bộ lọc ── -->
     <div class="filter-bar">
@@ -129,93 +216,139 @@ const handleCreateOrder = async (payload) => {
         <input
           v-model="keyword"
           class="search-input"
-          placeholder="Tìm kiếm mã đơn, khách hàng, nhân viên..."
+          placeholder="Tìm kiếm mã đơn, khách hàng..."
         />
       </div>
 
-      <select v-model="trangThaiFilter" class="select-filter">
-        <option>Tất cả</option>
-        <option>Đã xác nhận</option>
-        <option>Đang xử lý</option>
-        <option>Chờ thanh toán</option>
-        <option>Đã hủy</option>
-        <option>Hoàn thành</option>
-      </select>
+      <div class="filter-item">
+          <span class="filter-label">Trạng thái:</span>
+          <select v-model="trangThaiFilter" class="select-filter">
+            <option>Tất cả</option>
+            <option>Mới tạo</option>
+            <option>Đã xác nhận</option>
+            <option>Đang xử lý</option>
+            <option>Chờ thanh toán</option>
+            <option>Hoàn thành</option>
+            <option>Đã hủy</option>
+          </select>
+      </div>
 
-      <button class="btn-filter">
+      <div class="filter-item">
+          <span class="filter-label">Phương thức thanh toán:</span>
+          <select v-model="ptThanhToanFilter" class="select-filter">
+            <option>Tất cả</option>
+            <option>Chuyển khoản</option>
+            <option>Tiền mặt</option>
+          </select>
+      </div>
+
+      <div class="filter-item date-picker-item">
+          <span class="filter-label">Ngày tạo:</span>
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="-"
+            start-placeholder="Bắt đầu"
+            end-placeholder="Kết thúc"
+            format="DD/MM/YYYY"
+            size="small"
+            style="width: 200px"
+          />
+      </div>
+
+      <button class="btn-create-order" @click="showCreateOrder = true">
         <el-icon><Filter /></el-icon>
         Bộ lọc
       </button>
+      
+      <!-- User requested to replace filter with create button -->
+      <button class="btn-create-order btn-tao" @click="showCreateOrder = true">
+        <el-icon><Plus /></el-icon>
+        Tạo đơn hàng
+      </button>
     </div>
 
-    <!-- ── Bảng đơn hàng ── -->
-    <div class="table-card">
-      <table class="dh-table">
-        <thead>
-          <tr>
-            <th>Mã đơn</th>
-            <th>Khách hàng</th>
-            <th>Nhân viên phụ trách</th>
-            <th>Ngày tạo</th>
-            <th>Tổng tiền</th>
-            <th>Trạng thái</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-if="pagedList.length === 0">
-            <td colspan="7" class="empty-row">Không có đơn hàng nào.</td>
-          </tr>
-          <tr
-            v-for="dh in pagedList"
-            :key="dh.MaDonHang"
-            class="dh-row"
-            @click="xemChiTiet(dh)"
-          >
-            <td class="col-code">
-              <span class="code-text">#{{ dh.maCode }}</span>
-            </td>
-            <td>
-              <div class="kh-cell">
-                <div class="mini-avatar">{{ dh.avatarKH }}</div>
-                <div>
-                  <p class="kh-name">{{ dh.tenKhachHang }}</p>
-                  <p class="kh-phone">{{ dh.soDienThoaiKH }}</p>
-                </div>
-              </div>
-            </td>
-            <td class="col-nv">{{ dh.tenNhanVien }}</td>
-            <td>{{ formatDate(dh.NgayTaoDon) }}</td>
-            <td class="col-tien">{{ formatCurrency(dh.tongTien) }}</td>
-            <td>
-              <span :class="trangThaiClass(dh.trangThai)">{{ dh.trangThai }}</span>
-            </td>
-            <td class="col-action" @click.stop>
-              <el-button size="small" plain @click="xemChiTiet(dh)">
-                <el-icon><View /></el-icon>
-                Chi tiết
-              </el-button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <!-- ── Phân trang ── -->
-      <div class="pagination-bar">
-        <span class="pag-info">
-          Hiển thị {{ Math.min((currentPage - 1) * pageSize + 1, filteredList.length) }}
-          –
-          {{ Math.min(currentPage * pageSize, filteredList.length) }}
-          của {{ filteredList.length }} đơn hàng
-        </span>
-        <el-pagination
-          v-model:current-page="currentPage"
-          :page-size="pageSize"
-          :total="filteredList.length"
-          layout="prev, pager, next"
-          small
-        />
+    <!-- ── Grid đơn hàng ── -->
+    <div class="order-grid">
+      <div v-if="pagedList.length === 0" class="empty-state">
+         Không có đơn hàng nào.
       </div>
+      <div v-for="dh in pagedList" :key="dh.maDonHang || dh.MaDonHang" class="order-card">
+          <!-- Header -->
+          <div class="card-header">
+              <h3 class="order-code">#{{ dh.maCode }}</h3>
+              <span class="badge" :class="trangThaiBadgeClass(dh.trangThai)">{{ dh.trangThai }}</span>
+          </div>
+
+          <!-- Stepper ngang -->
+          <div class="card-stepper">
+              <div class="stepper-track">
+                  <template v-for="(step, idx) in STEPS" :key="step">
+                      <div class="step-item" :class="{ completed: isStepCompleted(dh, step), active: isStepActive(dh, step) }">
+                          <div class="step-circle">
+                              <el-icon v-if="isStepCompleted(dh, step)"><Check/></el-icon>
+                              <div v-else class="inner-dot"></div>
+                          </div>
+                          <div class="step-label">{{ step }}</div>
+                      </div>
+                      <div v-if="idx < STEPS.length - 1" class="step-line" :class="{ completed: isLineCompleted(dh, STEPS[idx + 1]) }"></div>
+                  </template>
+              </div>
+          </div>
+
+          <!-- Thông tin -->
+          <div class="card-info">
+              <div class="info-row">
+                  <el-icon><User/></el-icon> <span>Khách hàng:</span>
+                  <strong>{{ dh.tenKhachHang }}</strong>
+              </div>
+              <div class="info-row">
+                  <el-icon><Avatar/></el-icon> <span>Nhân viên phụ trách:</span>
+                  <strong>{{ dh.tenNhanVien || 'Không có' }}</strong>
+              </div>
+              <div class="info-row">
+                  <el-icon><Wallet/></el-icon> <span>Phương thức thanh toán:</span>
+                  <strong>{{ dh.phuongThucThanhToan || 'Không có' }}</strong>
+              </div>
+              <div class="info-row">
+                  <el-icon><Calendar/></el-icon> <span>Ngày tạo:</span>
+                  <strong>{{ formatDate(dh.ngayTaoDon || dh.NgayTaoDon) }}</strong>
+              </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="card-actions">
+              <button class="btn-outline-green" @click="xemChiTiet(dh)">
+                  <el-icon><EditPen/></el-icon> Sửa
+              </button>
+              <button class="btn-outline-red" @click="huyDon(dh.maDonHang || dh.MaDonHang)">
+                  <el-icon><Delete/></el-icon> Hủy
+              </button>
+              
+              <button v-if="nextStatus(dh)" class="btn-filled-green" @click="updateNextStatus(dh)">
+                  {{ dh.trangThai === 'Chờ thanh toán' ? 'Thanh toán' : 'Cập nhật trạng thái tiếp theo' }}
+              </button>
+              <button v-else class="btn-disabled">
+                  Không còn trạng thái tiếp theo
+              </button>
+          </div>
+      </div>
+    </div>
+
+    <!-- ── Phân trang ── -->
+    <div class="pagination-bar">
+      <span class="pag-info">
+        Hiển thị {{ Math.min((currentPage - 1) * pageSize + 1, filteredList.length) }}
+        -
+        {{ Math.min(currentPage * pageSize, filteredList.length) }}
+        của {{ filteredList.length }} đơn hàng
+      </span>
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="filteredList.length"
+        layout="prev, pager, next"
+      />
     </div>
 
     <!-- ── Popup tạo đơn hàng ── -->
@@ -231,216 +364,58 @@ const handleCreateOrder = async (payload) => {
       v-model="showChiTiet"
       :don-hang="selectedDonHang"
       @huy-don="huyDon"
+      @cap-nhat="loadDonHangs"
     />
+
+    <!-- ── Popup thanh toán QR ── -->
+    <el-dialog
+        v-model="showPaymentDialog"
+        title="Thanh toán chuyển khoản"
+        width="400px"
+        center
+        :append-to-body="true"
+        :z-index="10060"
+    >
+        <div style="text-align: center;">
+            <p>Vui lòng quét mã QR bên dưới để thanh toán cho đơn hàng <strong>#{{ selectedOrderForPayment?.maCode }}</strong></p>
+            <img 
+                v-if="selectedOrderForPayment"
+                :src="`https://img.vietqr.io/image/MB-140213032008-compact.png?addInfo=${selectedOrderForPayment.maCode}`" 
+                alt="QR Code Thanh Toán" 
+                style="max-width: 100%; border-radius: 8px; margin: 20px 0;"
+            />
+        </div>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="showPaymentDialog = false">Hủy</el-button>
+                <el-button type="primary" @click="confirmPayment">
+                    Xác nhận đã thanh toán
+                </el-button>
+            </span>
+        </template>
+    </el-dialog>
+
+    <!-- ── Popup xác nhận thanh toán tiền mặt ── -->
+    <el-dialog
+        v-model="showCashConfirmDialog"
+        title="Xác nhận thanh toán"
+        width="400px"
+        center
+        :append-to-body="true"
+        :z-index="10060"
+    >
+        <div style="text-align: center; padding: 20px 0;">
+            <p style="font-size: 16px;">Bạn có chắc chắn khách đã thanh toán đủ?</p>
+        </div>
+        <template #footer>
+            <span class="dialog-footer">
+                <el-button @click="showCashConfirmDialog = false">Hủy</el-button>
+                <el-button type="primary" @click="confirmCashPayment">
+                    Xác nhận
+                </el-button>
+            </span>
+        </template>
+    </el-dialog>
   </div>
 </template>
-
-<style scoped>
-.don-hang-page {
-  padding: 24px 28px;
-  min-height: 100vh;
-  background: #fafafa;
-  font-family: 'Inter', Arial, sans-serif;
-}
-
-/* ── Header ── */
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-.page-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.page-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0;
-}
-.total-count {
-  background: #fff1f2;
-  color: #8a181a;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 20px;
-}
-.btn-tao {
-  background: #8a181a;
-  border-color: #8a181a;
-  font-weight: 600;
-}
-.btn-tao:hover {
-  background: #a31c1e;
-  border-color: #a31c1e;
-}
-
-/* ── Filter bar ── */
-.filter-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.search-wrap {
-  flex: 1;
-  min-width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 0 12px;
-  height: 38px;
-}
-.search-icon {
-  color: #aaa;
-  font-size: 15px;
-}
-.search-input {
-  border: none;
-  outline: none;
-  flex: 1;
-  font-size: 13px;
-  background: transparent;
-}
-.select-filter {
-  height: 38px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 0 10px;
-  font-size: 13px;
-  background: #fff;
-  min-width: 170px;
-  cursor: pointer;
-}
-.btn-filter {
-  height: 38px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 0 14px;
-  font-size: 13px;
-  background: #fff;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* ── Table ── */
-.table-card {
-  background: #fff;
-  border: 1px solid #eee;
-  border-radius: 12px;
-  overflow: hidden;
-}
-.dh-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-.dh-table th {
-  background: #f8f8f8;
-  color: #555;
-  font-weight: 600;
-  padding: 12px 14px;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-  white-space: nowrap;
-}
-.dh-table td {
-  padding: 14px 14px;
-  border-bottom: 1px solid #f5f5f5;
-  color: #333;
-  vertical-align: middle;
-}
-.dh-row {
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.dh-row:hover {
-  background: #fafafa;
-}
-.dh-row:hover .code-text {
-  color: #8a181a;
-}
-.empty-row {
-  text-align: center;
-  color: #aaa;
-  padding: 40px !important;
-}
-
-/* Cells */
-.col-code  { width: 100px; }
-.col-nv    { white-space: nowrap; }
-.col-tien  { font-weight: 600; white-space: nowrap; }
-.col-action { width: 100px; }
-
-.code-text {
-  font-weight: 700;
-  color: #1a1a2e;
-  font-size: 13px;
-  transition: color 0.15s;
-}
-.kh-cell {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.mini-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #fff1f2;
-  color: #8a181a;
-  font-weight: 700;
-  font-size: 12px;
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-}
-.kh-name {
-  font-weight: 600;
-  color: #1a1a2e;
-  margin: 0 0 2px;
-}
-.kh-phone {
-  font-size: 12px;
-  color: #888;
-  margin: 0;
-}
-
-/* Badge trạng thái */
-.badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-.badge.green  { background: #e8f8ef; color: #17934a; }
-.badge.orange { background: #fff4e5; color: #e67e22; }
-.badge.blue   { background: #e8f0fe; color: #1565c0; }
-.badge.red    { background: #fdecea; color: #c62828; }
-.badge.gray   { background: #f5f5f5; color: #757575; }
-
-/* ── Phân trang ── */
-.pagination-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 14px;
-  border-top: 1px solid #f0f0f0;
-}
-.pag-info {
-  font-size: 13px;
-  color: #888;
-}
-</style>
+<style scoped src="../../assets/styles/TrangQLDonHang.css"></style>

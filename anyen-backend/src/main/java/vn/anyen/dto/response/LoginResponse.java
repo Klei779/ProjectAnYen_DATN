@@ -10,6 +10,7 @@ public class LoginResponse {
     private String tenDangNhap;
     private String hoTen;
     private String loaiTaiKhoan;
+    private String vaiTroChiTiet;
 
     private String token;
 }

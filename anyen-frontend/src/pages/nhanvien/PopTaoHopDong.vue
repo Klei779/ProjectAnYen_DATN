@@ -23,6 +23,7 @@ import {
 
 const visible = defineModel();
 
+
 const contract = ref({
   orderCode: "",
   contractCode: "",
@@ -70,6 +71,14 @@ const zoomOut = () => {
 const resetZoom = () => {
   zoomLevel.value = 100;
 };
+
+const userStr = localStorage.getItem("user");
+const user = userStr ? JSON.parse(userStr) : null;
+
+contract.value.employee =
+    user?.hoTen ||
+    user?.tenNhanVien ||
+    "";
 
 const handlePrint = () => {
   if (!previewRef.value) return;
@@ -148,7 +157,12 @@ const formatMoney = (value) => {
 const loadDonHangOptions = async () => {
   try {
     loadingOrders.value = true;
-    donHangOptions.value = await getDonHangOptionsForHopDong();
+
+    const data = await getDonHangOptionsForHopDong();
+
+    console.log("API DATA:", data);
+
+    donHangOptions.value = data;
   } catch (error) {
     console.error("Lỗi load đơn hàng:", error);
     ElMessage.error("Không thể tải danh sách đơn hàng");
@@ -168,7 +182,21 @@ const onSelectDonHang = async (maDonHang) => {
     contract.value.orderCode =
         data.maDonHangText || `DH${String(data.maDonHang).padStart(4, "0")}`;
 
-    contract.value.contractCode = "Tự động khi lưu";
+    const generateCode = () => {
+      const now = new Date();
+
+      return (
+          "HD" +
+          now.getFullYear() +
+          String(now.getMonth() + 1).padStart(2, "0") +
+          String(now.getDate()).padStart(2, "0") +
+          Math.floor(Math.random() * 10000)
+              .toString()
+              .padStart(4, "0")
+      );
+    };
+
+    contract.value.contractCode = generateCode();
     contract.value.contractDate = new Date().toISOString().slice(0, 10);
     contract.value.employee = data.tenNhanVien || "";
 
@@ -205,6 +233,46 @@ const saveContract = async () => {
     ElMessage.error("Vui lòng chọn và load đơn hàng trước khi lưu hợp đồng");
     return;
   }
+  if (!contract.value.customerName?.trim()) {
+    ElMessage.error("Vui lòng nhập họ tên tang chủ");
+    return;
+  }
+
+  if (!contract.value.citizenId?.trim()) {
+    ElMessage.error("Vui lòng nhập CCCD");
+    return;
+  }
+
+  if (!contract.value.address?.trim()) {
+    ElMessage.error("Vui lòng nhập địa chỉ");
+    return;
+  }
+
+  if (!contract.value.phone?.trim()) {
+    ElMessage.error("Vui lòng nhập số điện thoại");
+    return;
+  }
+  const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+  if (!phoneRegex.test(contract.value.phone.trim())) {
+    ElMessage.error("Số điện thoại không hợp lệ");
+    return;
+  }
+
+  if (!contract.value.deceasedName?.trim()) {
+    ElMessage.error("Vui lòng nhập tên người mất");
+    return;
+  }
+
+  if (!contract.value.deathDate) {
+    ElMessage.error("Vui lòng chọn ngày mất");
+    return;
+  }
+
+  if (!contract.value.facility) {
+    ElMessage.error("Vui lòng chọn cơ sở mai táng");
+    return;
+  }
+
 
   try {
     saving.value = true;
@@ -213,13 +281,13 @@ const saveContract = async () => {
 
     const saved = await createHopDong({
       maDonHang: selectedMaDonHang.value,
-      ngayKyHD: contract.value.contractDate || today,
+      ngayKyHD: contract.value.contractDate ? contract.value.contractDate.substring(0, 10) : today,
       ngayViet: today,
       trangThai: "Chờ ký"
     });
 
     ElMessage.success("Lưu hợp đồng thành công");
-    emit("created", saved);
+    emit("success", saved);
     visible.value = false;
   } catch (error) {
     console.error("Lỗi lưu hợp đồng:", error);
@@ -232,15 +300,30 @@ const saveContract = async () => {
     saving.value = false;
   }
 };
-watch(visible, async (isOpen) => {
-  if (isOpen) {
-    selectedMaDonHang.value = null;
-    selectedDonHangDetail.value = null;
-    orderProducts.value = [];
-    services.value = [];
-    await loadDonHangOptions();
-  }
-});
+  watch(
+      () => visible.value,
+      async (isOpen) => {
+        if (!isOpen) return;
+
+        selectedMaDonHang.value = null;
+        selectedDonHangDetail.value = null;
+        orderProducts.value = [];
+        services.value = [];
+
+        await loadDonHangOptions();
+
+        console.log(
+            "DON HANG OPTIONS:",
+            donHangOptions.value
+        );
+      },
+      {
+        immediate: true
+      }
+  );
+
+selectedMaDonHang.value = "";
+
 </script>
 
 <template>
@@ -250,6 +333,7 @@ watch(visible, async (isOpen) => {
       top="2vh"
       class="custom-contract-dialog"
       :show-close="true"
+      :z-index="10050"
   >
     <template #header>
       <div class="dialog-header">
@@ -271,28 +355,29 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Đơn hàng" required>
-                <el-select
+
+                <select
                     v-model="selectedMaDonHang"
-                    filterable
-                    clearable
-                    :loading="loadingOrders"
-                    placeholder="Chọn đơn hàng để tạo hợp đồng"
-                    style="width: 100%"
-                    @change="onSelectDonHang"
+                    @change="onSelectDonHang(selectedMaDonHang)"
+                    class="native-select"
                 >
-                  <el-option
+                  <option disabled value="">
+                    Chọn mã đơn hàng
+                  </option>
+                  <option
                       v-for="item in donHangOptions"
                       :key="item.maDonHang"
-                      :label="`${item.maDonHangText} - ${item.tenKhachHang || 'Chưa có khách'} - ${formatMoney(item.tongTien)}${item.daCoHopDong ? ' - Đã có HĐ' : ''}`"
                       :value="item.maDonHang"
-                      :disabled="item.daCoHopDong"
-                  />
-                </el-select>
+                  >
+                    {{ item.maDonHangText }}
+                  </option>
+                </select>
+
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Số hợp đồng" required>
-                <el-input v-model="contract.contractCode" />
+                <el-input v-model="contract.contractCode" placeholder="Số hợp đồng (Tự động)" />
               </el-form-item>
             </el-col>
           </el-row>
@@ -300,18 +385,25 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Ngày lập hợp đồng" required>
-                <el-input v-model="contract.contractDate" placeholder="DD/MM/YYYY">
-                  <template #suffix>
-                    <el-icon><Calendar /></el-icon>
-                  </template>
-                </el-input>
+                <el-date-picker
+                    v-model="contract.contractDate"
+                    type="datetime"
+                    placeholder="Chọn Ngày lập hợp đồng"
+                    format="DD/MM/YYYY HH:mm"
+                    value-format="YYYY-MM-DD HH:mm:ss"
+                    style="width: 100%;"
+                    :teleported="false"
+                    placement="top-start"
+                />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Nhân viên lập">
-                <el-select v-model="contract.employee" style="width: 100%">
-                  <el-option label="Nguyễn Văn A" value="Nguyễn Văn A" />
-                </el-select>
+                <el-input
+                    v-model="contract.employee"
+                    placeholder="Nhân viên lập hợp đồng"
+                    disabled
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -324,30 +416,34 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Họ và tên" required>
-                <el-input v-model="contract.customerName" />
+                <el-input v-model="contract.customerName" placeholder="Nhập họ và tên tang chủ" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Số CCCD/CMND" required>
-                <el-input v-model="contract.citizenId" />
+                <el-input v-model="contract.citizenId" placeholder="Nhập số CCCD/CMND" />
               </el-form-item>
             </el-col>
           </el-row>
 
           <el-form-item label="Địa chỉ" required>
-            <el-input v-model="contract.address" />
+            <el-input v-model="contract.address" placeholder="Nhập địa chỉ tang chủ" />
           </el-form-item>
 
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Số điện thoại" required>
-                <el-input v-model="contract.phone" />
+                <el-input v-model="contract.phone" placeholder="Nhập số điện thoại tang chủ" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Quan hệ với người mất" required>
-                <el-select v-model="contract.relationship" style="width: 100%">
+                <el-select v-model="contract.relationship" placeholder="Chọn quan hệ" style="width: 100%">
                   <el-option label="Con trai" value="Con trai" />
+                  <el-option label="Con gái" value="Con gái" />
+                  <el-option label="Chồng" value="Chồng" />
+                  <el-option label="Vợ" value="Vợ" />
+                  <el-option label="Khác" value="Khác" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -417,16 +513,21 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Họ và tên" required>
-                <el-input v-model="contract.deceasedName" />
+                <el-input v-model="contract.deceasedName" placeholder="Nhập họ tên người mất" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Ngày mất" required>
-                <el-input v-model="contract.deathDate">
-                  <template #suffix>
-                    <el-icon><Calendar /></el-icon>
-                  </template>
-                </el-input>
+                <el-date-picker
+                    v-model="contract.deathDate"
+                    type="datetime"
+                    placeholder="nhập ngày mất"
+                    format="DD/MM/YYYY HH:mm"
+                    value-format="YYYY-MM-DD HH:mm:ss"
+                    style="width: 100%;"
+                    :teleported="false"
+                    placement="top-start"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -434,12 +535,12 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Tuổi">
-                <el-input v-model="contract.age" />
+                <el-input v-model="contract.age" placeholder="Nhập tuổi" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Giới tính">
-                <el-select v-model="contract.gender" style="width: 100%">
+                <el-select v-model="contract.gender" placeholder="Chọn giới tính" style="width: 100%">
                   <el-option label="Nữ" value="Nữ" />
                   <el-option label="Nam" value="Nam" />
                 </el-select>
@@ -455,15 +556,17 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Cơ sở mai táng" required>
-                <el-select v-model="contract.facility" style="width: 100%">
+                <el-select v-model="contract.facility" placeholder="Chọn cơ sở" style="width: 100%">
                   <el-option label="Công viên nghĩa trang An Yên" value="Công viên nghĩa trang An Yên" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Khu mộ" required>
-                <el-select v-model="contract.cemeteryArea" style="width: 100%">
+                <el-select v-model="contract.cemeteryArea" placeholder="Chọn khu mộ" style="width: 100%">
                   <el-option label="Khu A" value="Khu A" />
+                  <el-option label="Khu B" value="Khu B" />
+                  <el-option label="Khu C" value="Khu C" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -472,16 +575,21 @@ watch(visible, async (isOpen) => {
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Số mộ" required>
-                <el-input v-model="contract.graveNumber" />
+                <el-input v-model="contract.graveNumber" placeholder="Nhập số mộ" />
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Ngày giờ an táng" required>
-                <el-input v-model="contract.burialDatetime">
-                  <template #suffix>
-                    <el-icon><Calendar /></el-icon>
-                  </template>
-                </el-input>
+                <el-date-picker
+                    v-model="contract.burialDatetime"
+                    type="datetime"
+                    placeholder="Chọn ngày giờ an táng"
+                    format="DD/MM/YYYY HH:mm"
+                    value-format="YYYY-MM-DD HH:mm:ss"
+                    style="width: 100%;"
+                    :teleported="false"
+                    placement="top-start"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -527,7 +635,7 @@ watch(visible, async (isOpen) => {
         <div class="preview-content">
           <div :style="{ transform: `scale(${zoomLevel / 100})`, transformOrigin: 'top center', transition: 'transform 0.2s' }">
             <div ref="previewRef">
-              <ContractPreview :contract="contract" :extraServices="services" />
+              <ContractPreview :contract="contract" :extraServices="services" :orderProducts="orderProducts" />
             </div>
           </div>
         </div>
@@ -557,211 +665,4 @@ watch(visible, async (isOpen) => {
     </template>
   </el-dialog>
 </template>
-
-<style scoped>
-:deep(.custom-contract-dialog) {
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-:deep(.custom-contract-dialog .el-dialog__header) {
-  margin-right: 0;
-  padding: 16px 20px;
-  border-bottom: 1px solid #eee;
-}
-
-:deep(.custom-contract-dialog .el-dialog__body) {
-  padding: 0 !important;
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-}
-
-.header-icon {
-  margin-right: 8px;
-  font-size: 20px;
-}
-
-.contract-layout {
-  display: grid;
-  grid-template-columns: 450px 1fr;
-  height: 75vh;
-}
-
-/* LEFT FORM PANEL */
-.form-panel {
-  overflow-y: auto;
-  padding: 20px 24px;
-  border-right: 1px solid #eaeaea;
-  background-color: #fff;
-}
-
-.section-title {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: bold;
-  color: #8a181a;
-  margin-bottom: 16px;
-  text-transform: uppercase;
-}
-
-.section-title .el-icon {
-  margin-right: 8px;
-  font-size: 18px;
-}
-
-.custom-svg-icon {
-  width: 18px;
-  height: 18px;
-  margin-right: 8px;
-}
-
-.mt-4 {
-  margin-top: 24px;
-}
-
-.flex-between {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.title-left {
-  display: flex;
-  align-items: center;
-}
-
-.add-service-btn {
-  color: #8a181a;
-  border-color: #8a181a;
-}
-.add-service-btn:hover {
-  background-color: #fcf0f0;
-  color: #8a181a;
-  border-color: #8a181a;
-}
-
-.service-row {
-  margin-bottom: 12px;
-}
-
-/* Form Overrides */
-:deep(.custom-form .el-form-item__label) {
-  font-weight: 500;
-  color: #333;
-  padding-bottom: 4px;
-  line-height: 1.2;
-}
-
-:deep(.custom-form .el-form-item) {
-  margin-bottom: 16px;
-}
-
-:deep(.custom-form .el-input__wrapper),
-:deep(.custom-form .el-select .el-input__wrapper) {
-  box-shadow: 0 0 0 1px #dcdfe6 inset;
-  border-radius: 6px;
-}
-
-:deep(.custom-form .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label-wrap > .el-form-item__label:before), 
-:deep(.custom-form .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label:before) {
-  color: #f56c6c;
-  margin-right: 4px;
-}
-
-/* RIGHT PREVIEW PANEL */
-.preview-panel {
-  display: flex;
-  flex-direction: column;
-  background: #f5f7fa;
-  overflow: hidden;
-}
-
-.preview-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 24px;
-  background-color: #fdfdfd;
-  border-bottom: 1px solid #eaeaea;
-}
-
-.preview-title {
-  font-weight: bold;
-  font-size: 13px;
-  color: #333;
-}
-
-.preview-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #666;
-}
-
-.action-icon {
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.action-icon:hover {
-  color: #333;
-}
-
-.zoom-text {
-  font-size: 13px;
-  font-weight: 500;
-}
-
-.preview-content {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-}
-
-/* FOOTER */
-:deep(.el-dialog__footer) {
-  padding: 16px 20px;
-  border-top: 1px solid #eee;
-  background-color: #fff;
-  margin-top: 0;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.btn-left {
-  background-color: #f5f7fa;
-  border-color: #e4e7ed;
-  color: #606266;
-}
-
-.btn-right {
-  display: flex;
-  gap: 12px;
-}
-
-.cancel-btn {
-  background-color: #f5f7fa;
-  border-color: #e4e7ed;
-  color: #606266;
-}
-
-.save-btn {
-  background-color: #8a181a;
-  border-color: #8a181a;
-}
-.save-btn:hover {
-  background-color: #a31c1e;
-  border-color: #a31c1e;
-}
-</style>
+<style scoped src="../../assets/styles/PopTaoHopDong.css"></style>

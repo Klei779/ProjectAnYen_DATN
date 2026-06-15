@@ -231,3 +231,68 @@
 .login-popup-leave-active .login-modal {
     transition: all .3s ease;
 }
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width:768px){
+
+    .modal-overlay{
+        padding:16px;
+        align-items:center;
+    }
+
+    .login-modal{
+        width:100%;
+        max-width:420px;
+        height:auto;
+        max-height:90vh;
+        overflow-y:auto;
+        border-radius:16px;
+    }
+
+    .row{
+        flex-direction:column;
+        height:auto;
+    }
+
+    /* Ẩn banner bên trái */
+    .login-banner{
+        display:none;
+    }
+
+    .login-content{
+        width:100%;
+        padding:20px;
+    }
+
+    .login-content h2{
+        margin-top:20px;
+        font-size:22px;
+    }
+
+    .title-flower{
+        width:100px;
+    }
+
+    .tabs button{
+        font-size:13px;
+        padding:12px 6px;
+    }
+
+    .form-group input{
+        height:46px;
+        font-size:14px;
+    }
+
+    .login-btn{
+        height:48px;
+        font-size:15px;
+    }
+
+    .close-btn{
+        top:10px;
+        right:10px;
+    }
+}

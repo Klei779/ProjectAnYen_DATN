@@ -69,14 +69,18 @@
 
               <form @submit.prevent="handleLogin">
 
-                <div class="form-group">
+                <div v-if="hasError" class="error-msg-box">
+                  <i class="fa-solid fa-triangle-exclamation"></i> {{ errorMessage }}
+                </div>
+
+                <div class="form-group" :class="{'has-error': hasError}">
                   <label>Email hoặc số điện thoại</label>
 
                   <el-input v-model="form.username" :prefix-icon="User"
-                            placeholder="Nhập email hoặc số điện thoại" />
+                            placeholder="Nhập email hoặc số điện thoại" @input="hasError = false" />
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" :class="{'has-error': hasError}">
 
                   <div class="password-header">
                     <label>Mật khẩu</label>
@@ -87,8 +91,12 @@
                   </div>
 
                   <el-input v-model="form.password" :prefix-icon="Lock" type="password" show-password
-                            placeholder="Nhập mật khẩu" />
+                            placeholder="Nhập mật khẩu" @input="hasError = false" />
 
+                </div>
+
+                <div v-if="loginFailures >= 10" class="captcha-container" style="margin-top: 15px; margin-bottom: 15px; display: flex; justify-content: center;">
+                   <vue-turnstile site-key="1x00000000000000000000AA" v-model="captchaToken" />
                 </div>
 
                 <el-button class="login-btn" :class="activeTab" :icon="Lock" native-type="submit">
@@ -113,6 +121,7 @@ import { User, Lock } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import axios from "axios";
 import { useRouter } from "vue-router";
+import VueTurnstile from "vue-turnstile";
 
 defineProps({
   show: {
@@ -129,6 +138,10 @@ const emit = defineEmits([
 ]);
 
 const activeTab = ref("staff");
+const loginFailures = ref(0);
+const captchaToken = ref("");
+const hasError = ref(false);
+const errorMessage = ref("");
 
 const form = reactive({
   username: "",
@@ -136,6 +149,20 @@ const form = reactive({
 });
 
 const handleLogin = async () => {
+  hasError.value = false;
+  errorMessage.value = "";
+
+  if (!form.username.trim() || !form.password.trim()) {
+      hasError.value = true;
+      errorMessage.value = "Vui lòng nhập đầy đủ tài khoản và mật khẩu";
+      return;
+  }
+
+  if (loginFailures.value >= 10 && !captchaToken.value) {
+      hasError.value = true;
+      errorMessage.value = "Vui lòng xác nhận bạn không phải là robot";
+      return;
+  }
 
   try {
 
@@ -147,11 +174,14 @@ const handleLogin = async () => {
           loaiTaiKhoan:
               activeTab.value === "staff"
                   ? "NHAN_VIEN"
-                  : "DOI_TAC"
+                  : "DOI_TAC",
+          captchaToken: captchaToken.value
         }
     );
 
     if (response.data.success) {
+      
+      loginFailures.value = 0; // Reset failures on success
 
       // Lưu thông tin user
       localStorage.setItem(
@@ -164,6 +194,9 @@ const handleLogin = async () => {
           "token",
           response.data.token
       );
+      
+      // Update session global state via custom event if needed
+      window.dispatchEvent(new Event('session-updated'));
 
       emit(
           "login-success",
@@ -177,45 +210,69 @@ const handleLogin = async () => {
       );
 
       // Điều hướng theo role
-      if (
-          response.data.loaiTaiKhoan ===
-          "DOI_TAC"
-      ) {
-
-        router.push(
-            "/doi-tac/tong-quan"
-        );
-
-      } else if (
-          response.data.loaiTaiKhoan ===
-          "NHAN_VIEN"
-      ) {
-
-        router.push(
-            "/nhan-vien/tong-quan"
-        );
-
+      const vaiTroChiTiet = response.data.vaiTroChiTiet;
+      if (vaiTroChiTiet === "DOITAC") {
+        router.push("/doi-tac/tong-quan");
+      } else if (vaiTroChiTiet === "ADMIN") {
+        router.push("/admin/tong-quan");
+      } else if (vaiTroChiTiet === "HOTLINE") {
+        router.push("/hotline/quan-ly-cong-viec");
+      } else if (vaiTroChiTiet === "NHANVIEN") {
+        router.push("/nhan-vien/tong-quan");
+      } else {
+        hasError.value = true;
+        errorMessage.value = "Không xác định được quyền truy cập";
+        form.username = "";
+        form.password = "";
       }
 
     } else {
-
-      ElMessage.error(
-          "Sai tài khoản hoặc mật khẩu"
-      );
-
+      loginFailures.value++;
+      hasError.value = true;
+      errorMessage.value = "Sai tài khoản, mật khẩu hoặc không có quyền truy cập";
+      form.username = "";
+      form.password = "";
     }
 
   } catch (error) {
 
     console.error(error);
-
-    ElMessage.error(
-        "Không thể kết nối máy chủ"
-    );
-
+    loginFailures.value++;
+    hasError.value = true;
+    errorMessage.value = "Không thể kết nối máy chủ";
   }
 
 };
 </script>
 
 <style scoped src="../assets/styles/PopDangNhap.css"></style>
+<style scoped>
+.error-msg-box {
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 10px 15px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #fecaca;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+}
+
+.has-error :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px #dc2626 inset !important;
+}
+
+.has-error :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #dc2626 inset !important;
+}
+</style>

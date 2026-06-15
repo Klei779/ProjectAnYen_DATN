@@ -41,7 +41,22 @@
       <div class="sp-layout">
 
         <!-- SIDEBAR -->
-        <aside class="sp-sidebar">
+        <button
+            class="mobile-filter-btn"
+            @click="showFilter = !showFilter"
+        >
+          <span>Bộ lọc sản phẩm</span>
+          <i
+              class="fa-solid"
+              :class="showFilter ? 'fa-chevron-up' : 'fa-chevron-down'"
+          ></i>
+        </button>
+
+        <!-- SIDEBAR -->
+        <aside
+            class="sp-sidebar mobile-filter-panel"
+            :class="{ active: showFilter }"
+        >
           <div class="sidebar-panel">
 
             <h3 class="filter-header">DANH MỤC SẢN PHẨM</h3>
@@ -137,6 +152,7 @@
         <!-- MAIN CONTENT -->
         <main class="sp-main">
           <div class="content-panel">
+
 
             <!-- TOOLBAR -->
             <div class="product-toolbar">
@@ -273,6 +289,7 @@ const colors     = ref([])
 // Danh sách id chất liệu & tôn giáo đang được chọn (computed từ checked)
 const selectedMaterialIds = ref([])
 const selectedReligionIds = ref([])
+const showFilter = ref(false)
 
 // Trust bar (tĩnh — không cần JSON riêng)
 const trustItems = [

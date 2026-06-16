@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import api from "../../api/api.js";
-import PopTaoHopDong from "./PopTaoHopDong.vue";
+import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
 
 /*
   Nếu file popup của bạn tên là PopChiTietHopDong.vue thì giữ dòng này:

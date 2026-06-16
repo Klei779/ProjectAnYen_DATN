@@ -39,6 +39,7 @@ const showCashConfirmDialog = ref(false);
 const selectedOrderForPayment = ref(null);
 const showTaoHoaDon = ref(false);
 const selectedDonHangHoaDon = ref(null);
+const hoaDonMode = ref("create");
 
 const keyword = ref("");
 const trangThaiFilter = ref("Tất cả");
@@ -134,27 +135,15 @@ const canTaoHoaDon = (dh) => {
 };
 
 const taoHoaDon = (dh) => {
+  hoaDonMode.value = "create";
   selectedDonHangHoaDon.value = dh;
   showTaoHoaDon.value = true;
 };
 
-const handleTaoHoaDonSubmit = async (payload) => {
-  try {
-    await taoHoaDonAPI(payload);
-
-    ElMessage.success("Tạo hóa đơn thành công");
-    showTaoHoaDon.value = false;
-    selectedDonHangHoaDon.value = null;
-
-    await loadDonHangs();
-  } catch (error) {
-    console.error("Lỗi khi tạo hóa đơn:", error);
-    ElMessage.error(error.response?.data?.message || "Tạo hóa đơn thất bại");
-  }
-};
-
 const xemHoaDon = (dh) => {
-  ElMessage.info(`Xem hóa đơn của đơn hàng #${dh.maCode}`);
+  hoaDonMode.value = "view";
+  selectedDonHangHoaDon.value = dh;
+  showTaoHoaDon.value = true;
 };
 
 // ── Stepper Logic ───────────────────────────────────────
@@ -431,11 +420,11 @@ const confirmCashPayment = async () => {
               class="btn-filled-green"
               @click="updateNextStatus(dh)"
           >
-            {{ dh.trangThai === 'Chờ thanh toán' ? 'Thanh toán' : 'Cập nhật trạng thái tiếp theo' }}
+            {{ dh.trangThai === 'Chờ thanh toán' ? 'Thanh toán' : 'Cập nhật' }}
           </button>
 
           <button v-else class="btn-disabled">
-            Không còn trạng thái tiếp theo
+            Hoàn tất
           </button>
         </div>
       </div>
@@ -468,7 +457,8 @@ const confirmCashPayment = async () => {
     <PopTaoHoaDon
         v-model="showTaoHoaDon"
         :don-hang="selectedDonHangHoaDon"
-        @submit="handleTaoHoaDonSubmit"
+        :mode="hoaDonMode"
+        @created="loadDonHangs"
     />
 
     <!-- ── Popup chi tiết đơn hàng ── -->

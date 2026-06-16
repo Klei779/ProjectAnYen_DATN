@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
+import api from "../../api/api.js";
 import {
   Close,
   Tickets,
@@ -18,15 +19,23 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  mode: {
+    type: String,
+    default: "create",
+  },
 });
 
-const emit = defineEmits(["update:modelValue", "submit"]);
+const emit = defineEmits(["update:modelValue", "created"]);
 
 const form = ref({
   ngayIn: "",
   phuongThucThanhToan: "",
   trangThai: "Chưa thanh toán",
 });
+
+const loading = ref(false);
+
+const isViewMode = computed(() => props.mode === "view");
 
 const formatDateInput = (value) => {
   if (!value) {
@@ -47,14 +56,21 @@ watch(
     (dh) => {
       if (!dh) return;
 
+      const pttt = dh.phuongThucThanhToan || dh.PhuongThucThanhToan;
+      const phuongThucHopLe = ["Tiền mặt", "Chuyển khoản"].includes(pttt)
+          ? pttt
+          : "Tiền mặt";
+
       form.value = {
         ngayIn: formatDateInput(new Date()),
-        phuongThucThanhToan: dh.phuongThucThanhToan || dh.PhuongThucThanhToan || "Tiền mặt",
+        phuongThucThanhToan: phuongThucHopLe,
         trangThai:
-            dh.trangThaiThanhToan === "Đã thanh toán" ||
-            dh.TrangThaiThanhToan === "Đã thanh toán"
-                ? "Đã thanh toán"
-                : "Chưa thanh toán",
+            props.mode === "view" && dh.trangThaiHoaDon
+                ? dh.trangThaiHoaDon
+                : dh.trangThaiThanhToan === "Đã thanh toán" ||
+                dh.TrangThaiThanhToan === "Đã thanh toán"
+                    ? "Đã thanh toán"
+                    : "Chưa thanh toán",
       };
     },
     { immediate: true }
@@ -107,6 +123,7 @@ const tenKhachHang = computed(() => {
 const soDienThoai = computed(() => {
   return (
       props.donHang?.soDienThoai ||
+      props.donHang?.soDienThoaiKH ||
       props.donHang?.SoDienThoai ||
       props.donHang?.sdt ||
       "Không có"
@@ -174,6 +191,7 @@ const getTenSanPham = (item) => {
 
 const getLoaiSanPham = (item) => {
   return (
+      item.phanLoai ||
       item.loai ||
       item.Loai ||
       item.sanPham?.loai ||
@@ -230,7 +248,7 @@ const badgeThanhToanClass = computed(() => {
   return "badge-orange";
 });
 
-const submitHoaDon = () => {
+const submitHoaDon = async () => {
   if (!props.donHang) {
     ElMessage.error("Không tìm thấy đơn hàng");
     return;
@@ -259,7 +277,25 @@ const submitHoaDon = () => {
     trangThai: form.value.trangThai,
   };
 
-  emit("submit", payload);
+  try {
+    loading.value = true;
+
+    await api.post("/api/nhan-vien/hoa-don", payload);
+
+    ElMessage.success("Tạo hóa đơn thành công");
+
+    emit("update:modelValue", false);
+    emit("created");
+  } catch (error) {
+    console.error("Lỗi tạo hóa đơn:", error);
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Tạo hóa đơn thất bại"
+    );
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
@@ -277,8 +313,10 @@ const submitHoaDon = () => {
             </div>
 
             <div>
-              <h2>Tạo hóa đơn</h2>
-              <p>Xác nhận thông tin và tạo hóa đơn cho đơn hàng</p>
+              <h2>{{ isViewMode ? "Xem hóa đơn" : "Tạo hóa đơn" }}</h2>
+              <p>
+                {{ isViewMode ? "Thông tin hóa đơn của đơn hàng" : "Xác nhận thông tin và tạo hóa đơn cho đơn hàng" }}
+              </p>
             </div>
           </div>
 
@@ -375,7 +413,7 @@ const submitHoaDon = () => {
               <div class="form-group">
                 <label>Ngày in hóa đơn <em>*</em></label>
                 <div class="input-icon">
-                  <input v-model="form.ngayIn" type="date" />
+                  <input v-model="form.ngayIn" type="date" :disabled="isViewMode" />
                   <el-icon>
                     <Calendar />
                   </el-icon>
@@ -384,7 +422,7 @@ const submitHoaDon = () => {
 
               <div class="form-group">
                 <label>Phương thức thanh toán <em>*</em></label>
-                <select v-model="form.phuongThucThanhToan">
+                <select v-model="form.phuongThucThanhToan" :disabled="isViewMode">
                   <option>Tiền mặt</option>
                   <option>Chuyển khoản</option>
                 </select>
@@ -392,7 +430,7 @@ const submitHoaDon = () => {
 
               <div class="form-group">
                 <label>Trạng thái hóa đơn <em>*</em></label>
-                <select v-model="form.trangThai">
+                <select v-model="form.trangThai" :disabled="isViewMode">
                   <option>Chưa thanh toán</option>
                   <option>Đã thanh toán</option>
                   <option>Đã in</option>
@@ -482,17 +520,27 @@ const submitHoaDon = () => {
         <!-- Footer -->
         <div class="popup-footer">
           <button
+              v-if="isViewMode"
               class="btn-submit"
-              :class="{ disabled: !canCreateInvoice }"
+              @click="closePopup"
+          >
+            Đóng
+          </button>
+
+          <button
+              v-else
+              class="btn-submit"
+              :class="{ disabled: !canCreateInvoice || loading }"
+              :disabled="!canCreateInvoice || loading"
               @click="submitHoaDon"
           >
             <el-icon>
               <Money />
             </el-icon>
-            Tạo hóa đơn
+            {{ loading ? "Đang tạo..." : "Tạo hóa đơn" }}
           </button>
         </div>
-      </div>
+    </div>
     </div>
   </Teleport>
 </template>

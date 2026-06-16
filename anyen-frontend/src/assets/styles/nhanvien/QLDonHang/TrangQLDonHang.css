@@ -1,12 +1,11 @@
-.don-hang-page{
-    padding:24px;
-    min-height:90vh;
-    background:#f5f7fa;
-    font-family:'Inter',Arial,sans-serif;
-
-    box-sizing:border-box;
-    width:100%;
-    overflow-x:hidden;
+.don-hang-page {
+    padding: 24px;
+    min-height: 90vh;
+    background: #f5f7fa;
+    font-family: 'Inter', Arial, sans-serif;
+    box-sizing: border-box;
+    width: 100%;
+    overflow-x: hidden;
 }
 
 /* ── Filter bar ── */
@@ -18,6 +17,7 @@
     flex-wrap: wrap;
     background: transparent;
 }
+
 .search-wrap {
     flex: 1;
     min-width: 250px;
@@ -30,10 +30,12 @@
     padding: 0 12px;
     height: 38px;
 }
+
 .search-icon {
     color: #aaa;
     font-size: 15px;
 }
+
 .search-input {
     border: none;
     outline: none;
@@ -52,10 +54,12 @@
     padding: 0 10px;
     gap: 8px;
 }
+
 .filter-label {
     font-size: 13px;
     color: #666;
 }
+
 .select-filter {
     border: none;
     font-size: 13px;
@@ -65,6 +69,7 @@
     color: #333;
     font-weight: 500;
 }
+
 .date-picker-item :deep(.el-date-editor) {
     border: none;
     box-shadow: none;
@@ -90,16 +95,17 @@
     border: 1px solid #17934a;
     background: #e8f8ef;
 }
+
 .btn-tao:hover {
     background: #17934a;
     color: #fff;
 }
 
 /* ── Order Grid ── */
-.order-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
-    gap:20px;
+.order-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
 }
 
 .empty-state {
@@ -116,7 +122,7 @@
     border: 1px solid #f0f0f0;
     border-radius: 12px;
     padding: 20px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
     display: flex;
     flex-direction: column;
 }
@@ -127,6 +133,7 @@
     align-items: center;
     margin-bottom: 20px;
 }
+
 .order-code {
     margin: 0;
     font-size: 18px;
@@ -140,18 +147,47 @@
     font-size: 12px;
     font-weight: 700;
 }
-.badge-yellow { background: #fff8e1; color: #f57f17; }
-.badge-blue { background: #e8f0fe; color: #1967d2; }
-.badge-purple { background: #f3e8fd; color: #7b1fa2; }
-.badge-green { background: #e8f8ef; color: #17934a; }
-.badge-orange { background: #fff3e0; color: #e65100; }
-.badge-red { background: #fce8e6; color: #c5221f; }
-.badge-gray { background: #f1f3f4; color: #5f6368; }
+
+.badge-yellow {
+    background: #fff8e1;
+    color: #f57f17;
+}
+
+.badge-blue {
+    background: #e8f0fe;
+    color: #1967d2;
+}
+
+.badge-purple {
+    background: #f3e8fd;
+    color: #7b1fa2;
+}
+
+.badge-green {
+    background: #e8f8ef;
+    color: #17934a;
+}
+
+.badge-orange {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.badge-red {
+    background: #fce8e6;
+    color: #c5221f;
+}
+
+.badge-gray {
+    background: #f1f3f4;
+    color: #5f6368;
+}
 
 /* ── Stepper ── */
 .card-stepper {
     margin-bottom: 24px;
 }
+
 .stepper-track {
     display: flex;
     align-items: center;
@@ -167,6 +203,7 @@
     z-index: 2;
     width: 60px;
 }
+
 .step-circle {
     width: 24px;
     height: 24px;
@@ -178,23 +215,28 @@
     color: #fff;
     font-size: 12px;
 }
+
 .inner-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: #ccc;
 }
+
 .step-item.active .step-circle {
     background: #f57f17;
     border: 2px solid #fff8e1;
     box-shadow: 0 0 0 3px #f57f17;
 }
+
 .step-item.active .inner-dot {
     background: #fff;
 }
+
 .step-item.completed .step-circle {
     background: #17934a;
 }
+
 .step-label {
     font-size: 11px;
     color: #666;
@@ -206,10 +248,11 @@
     flex: 1;
     height: 3px;
     background: #f0f0f0;
-    margin: 0 0px;
+    margin: 0;
     position: relative;
     top: -10px;
 }
+
 .step-line.completed {
     background: #17934a;
 }
@@ -219,23 +262,27 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
     flex: 1;
 }
+
 .info-row {
     display: flex;
     align-items: center;
     font-size: 11.5px;
     color: #555;
 }
+
 .info-row .el-icon {
     margin-right: 8px;
     color: #888;
     font-size: 16px;
 }
+
 .info-row span {
     width: 150px;
 }
+
 .info-row strong {
     color: #222;
     font-weight: 600;
@@ -245,48 +292,99 @@
 /* ── Actions ── */
 .card-actions {
     display: grid;
-    grid-template-columns: auto auto 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    width: 100%;
+    align-items: center;
 }
-.btn-outline-green, .btn-outline-red, .btn-filled-green, .btn-disabled {
+
+/* Style chung cho tất cả nút */
+.card-actions button {
+    width: 100%;
+    height: 32px;
+    min-width: 0;
     border-radius: 6px;
-    padding: 8px 12px;
-    font-size: 11.5px;
-    font-weight: 600;
+    padding: 0 4px;
+    font-size: 10.5px;
+    font-weight: 700;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
     transition: all 0.2s;
 }
+
+.card-actions button .el-icon {
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+/* Nút Sửa */
 .btn-outline-green {
     border: 1px solid #17934a;
     color: #17934a;
     background: #fff;
 }
-.btn-outline-green:hover { background: #e8f8ef; }
 
+.btn-outline-green:hover {
+    background: #e8f8ef;
+}
+
+/* Nút Hủy */
 .btn-outline-red {
     border: 1px solid #dc3545;
     color: #dc3545;
     background: #fff;
 }
-.btn-outline-red:hover { background: #fce8e6; }
 
+.btn-outline-red:hover {
+    background: #fce8e6;
+}
+
+/* Nút Tạo hóa đơn - giống nút Sửa */
+.btn-invoice {
+    border: 1px solid #17934a;
+    color: #17934a;
+    background: #fff;
+}
+
+.btn-invoice:hover {
+    background: #e8f8ef;
+}
+
+/* Nút Xem hóa đơn */
+.btn-invoice-created {
+    border: 1px solid #17934a;
+    color: #17934a;
+    background: #fff;
+}
+
+.btn-invoice-created:hover {
+    background: #e8f8ef;
+}
+
+/* Nút Thanh toán / Cập nhật */
 .btn-filled-green {
     border: 1px solid #17934a;
     color: #fff;
     background: #17934a;
 }
-.btn-filled-green:hover { background: #137d3e; }
 
+.btn-filled-green:hover {
+    background: #137d3e;
+}
+
+/* Nút Hoàn tất */
 .btn-disabled {
     border: 1px solid #e0e0e0;
     color: #aaa;
     background: #f5f5f5;
     cursor: not-allowed;
-    grid-column: span 1;
 }
 
 /* ── Pagination ── */
@@ -296,120 +394,124 @@
     align-items: center;
     padding-top: 16px;
 }
+
 .pag-info {
     font-size: 13px;
     color: #666;
 }
 
-@media (max-width:1024px){
-
-    .don-hang-page{
-        padding:20px;
+@media (max-width: 1024px) {
+    .don-hang-page {
+        padding: 20px;
     }
 
-    .order-grid{
-        grid-template-columns:repeat(2,1fr);
+    .order-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 
-    .card-actions{
-        grid-template-columns:1fr 1fr;
+    .card-actions {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
     }
 
-    .btn-filled-green,
-    .btn-disabled{
-        grid-column:span 2;
+    .card-actions button {
+        height: 31px;
+        font-size: 10px;
+        padding: 0 3px;
+    }
+
+    .card-actions button .el-icon {
+        font-size: 11px;
     }
 }
 
-@media (max-width:768px){
-
-    .don-hang-page{
-        padding:12px;
+@media (max-width: 768px) {
+    .don-hang-page {
+        padding: 12px;
     }
 
     /* Filter */
-
-    .filter-bar{
-        flex-direction:column;
-        align-items:stretch;
-        gap:10px;
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
     }
 
     .search-wrap,
     .filter-item,
-    .btn-create-order{
-        width:100%;
+    .btn-create-order {
+        width: 100%;
     }
 
     /* Card */
-
-    .order-grid{
-        grid-template-columns:1fr;
-        gap:14px;
+    .order-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
     }
 
-    .order-card{
-        padding:14px;
+    .order-card {
+        padding: 14px;
     }
 
-    .card-header{
-        flex-direction:column;
-        align-items:flex-start;
-        gap:10px;
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
 
-    .order-code{
-        font-size:16px;
+    .order-code {
+        font-size: 16px;
     }
 
     /* Step */
-
-    .step-label{
-        font-size:10px;
+    .step-label {
+        font-size: 10px;
     }
 
-    .step-item{
-        width:50px;
+    .step-item {
+        width: 50px;
     }
 
     /* Info */
-
-    .info-row{
-        flex-direction:column;
-        align-items:flex-start;
-        gap:4px;
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
     }
 
-    .info-row span{
-        width:auto;
-        font-size:11px;
-        color:#888;
+    .info-row span {
+        width: auto;
+        font-size: 11px;
+        color: #888;
     }
 
-    .info-row strong{
-        width:100%;
+    .info-row strong {
+        width: 100%;
     }
 
     /* Button */
-
-    .card-actions{
-        display:grid;
-        grid-template-columns:1fr;
+    .card-actions {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 4px;
     }
 
-    .btn-outline-green,
-    .btn-outline-red,
-    .btn-filled-green,
-    .btn-disabled{
-        width:100%;
-        min-height:40px;
+    .card-actions button {
+        width: 100%;
+        height: 30px;
+        font-size: 9.5px;
+        padding: 0 2px;
+        border-radius: 5px;
+        gap: 2px;
+    }
+
+    .card-actions button .el-icon {
+        font-size: 10px;
     }
 
     /* Pagination */
-
-    .pagination-bar{
-        flex-direction:column;
-        gap:12px;
-        align-items:center;
+    .pagination-bar {
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
     }
 }

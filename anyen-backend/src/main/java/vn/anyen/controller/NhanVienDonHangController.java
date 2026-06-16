@@ -9,6 +9,11 @@ import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.service.DonHangService;
+import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
+import vn.anyen.service.SanPhamService;
+
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/nhan-vien/don-hang")
@@ -17,6 +22,7 @@ import vn.anyen.service.DonHangService;
 public class NhanVienDonHangController {
 
     private final DonHangService donHangService;
+    private final SanPhamService sanPhamService;
 
     @PostMapping
     public ResponseEntity<DonHangResponse> taoDonHang(
@@ -42,5 +48,11 @@ public class NhanVienDonHangController {
         );
 
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/san-pham-options")
+    public ResponseEntity<List<SanPhamTaoDonHangResponse>> getSanPhamTaoDonHangOptions() {
+        return ResponseEntity.ok(
+                sanPhamService.getSanPhamTaoDonHangOptions()
+        );
     }
 }

@@ -1,18 +1,22 @@
 import api from "../api/api.js";
 
-// ── Đơn hàng ──────────────────────────────────────────────
 export async function getDonHangs(params = {}) {
   const response = await api.get("/api/don-hang", { params });
+
   return {
     items: response.data.items || response.data || [],
     total: response.data.total || 0,
   };
 }
 
-// Tạo đơn hàng nhân viên + gửi thông báo qua đối tác
 export async function taoDonHang(payload) {
   const response = await api.post("/api/nhan-vien/don-hang", payload);
   return response.data;
+}
+
+export async function getSanPhamTaoDonHang() {
+  const response = await api.get("/api/nhan-vien/don-hang/san-pham-options");
+  return response.data || [];
 }
 
 export async function getDonHangById(maDonHang) {
@@ -24,6 +28,7 @@ export async function capNhatTrangThai(maDonHang, trangThai) {
   const response = await api.put(`/api/don-hang/${maDonHang}/trang-thai`, {
     trangThai,
   });
+
   return response.data;
 }
 
@@ -32,7 +37,6 @@ export async function huyDonHang(maDonHang) {
   return response.data;
 }
 
-// ── Chi tiết đơn hàng ─────────────────────────────────────
 export async function getChiTietDonHang(maDonHang) {
   const response = await api.get(`/api/don-hang/${maDonHang}/chi-tiet`);
   return response.data || [];
@@ -40,6 +44,7 @@ export async function getChiTietDonHang(maDonHang) {
 
 export function formatCurrency(value) {
   if (!value && value !== 0) return "—";
+
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
@@ -48,8 +53,11 @@ export function formatCurrency(value) {
 
 export function formatDate(dateStr) {
   if (!dateStr) return "—";
+
   const d = new Date(dateStr);
+
   if (isNaN(d)) return dateStr;
+
   return d.toLocaleDateString("vi-VN", {
     day: "2-digit",
     month: "2-digit",

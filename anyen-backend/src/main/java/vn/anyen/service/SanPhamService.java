@@ -10,19 +10,26 @@ import vn.anyen.dto.SanPhamFilterResponse;
 import vn.anyen.dto.SanPhamPageResponse;
 import vn.anyen.dto.SanPhamResponse;
 import vn.anyen.dto.request.SanPhamRequest;
+import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
+import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.SanPham;
+import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamRepository;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
+    private final DoiTacRepository doiTacRepository;
 
     private static final String TRANG_THAI_AN = "Ẩn";
 
@@ -46,7 +53,6 @@ public class SanPhamService {
         Specification<SanPham> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Website chỉ hiện sản phẩm chưa bị ẩn
             predicates.add(cb.or(
                     cb.isNull(root.get("trangThai")),
                     cb.notEqual(root.get("trangThai"), TRANG_THAI_AN)
@@ -66,7 +72,10 @@ public class SanPhamService {
 
             if (loai != null && !loai.isBlank()) {
                 predicates.add(
-                        cb.equal(cb.lower(root.get("loai")), loai.trim().toLowerCase())
+                        cb.equal(
+                                cb.lower(root.get("loai")),
+                                loai.trim().toLowerCase()
+                        )
                 );
             }
 
@@ -82,16 +91,23 @@ public class SanPhamService {
 
             if (mauSac != null && !mauSac.isBlank()) {
                 predicates.add(
-                        cb.equal(cb.lower(root.get("mauSac")), mauSac.trim().toLowerCase())
+                        cb.equal(
+                                cb.lower(root.get("mauSac")),
+                                mauSac.trim().toLowerCase()
+                        )
                 );
             }
 
             if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice));
+                predicates.add(
+                        cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice)
+                );
             }
 
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice));
+                predicates.add(
+                        cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice)
+                );
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -156,6 +172,40 @@ public class SanPhamService {
         SanPham saved = sanPhamRepository.save(sp);
 
         return mapToResponse(saved);
+    }
+
+    public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
+        List<SanPham> sanPhams =
+                sanPhamRepository.findAllVisibleForTaoDonHang(TRANG_THAI_AN);
+
+        Map<Integer, DoiTac> doiTacMap = doiTacRepository.findAll()
+                .stream()
+                .collect(Collectors.toMap(
+                        DoiTac::getMaDoiTac,
+                        Function.identity()
+                ));
+
+        return sanPhams.stream()
+                .map(sp -> {
+                    DoiTac doiTac = doiTacMap.get(sp.getMaDoiTac());
+
+                    return SanPhamTaoDonHangResponse.builder()
+                            .maSanPham(sp.getMaSanPham())
+                            .tenSanPham(sp.getTenSanPham())
+                            .loai(sp.getLoai())
+                            .giaTien(sp.getGiaTien())
+                            .tonKho(sp.getSoLuong() == null ? 0 : sp.getSoLuong())
+                            .maDoiTac(sp.getMaDoiTac())
+                            .tenDoiTac(
+                                    doiTac != null
+                                            ? doiTac.getTenDoiTac()
+                                            : "Không rõ đối tác"
+                            )
+                            .hinhAnh(sp.getHinhAnh())
+                            .trangThai(sp.getTrangThai())
+                            .build();
+                })
+                .toList();
     }
 
     private List<SanPhamFilterOptionResponse> mapOptions(List<Object[]> rows) {

@@ -20,6 +20,7 @@ import vn.anyen.entity.SanPham;
 import vn.anyen.repository.KhachHangRepository;
 import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.repository.SanPhamRepository;
+import java.time.ZoneId;
 
 import java.time.LocalDate;
 
@@ -83,11 +84,7 @@ public class DonHangService {
         DonHang donHang = DonHang.builder()
                 .khachHang(khachHang)
                 .nhanVien(nhanVien)
-                .ngayTaoDon(
-                        request.getNgayTaoDon() != null
-                                ? request.getNgayTaoDon()
-                                : LocalDate.now()
-                )
+                .ngayTaoDon(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")))
                 .tongTien(BigDecimal.ZERO)
                 .trangThai("Mới tạo")
                 .ghiChu(request.getGhiChu())

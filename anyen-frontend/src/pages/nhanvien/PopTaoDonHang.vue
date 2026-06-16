@@ -89,7 +89,7 @@
 
             <div class="form-group">
               <label>Ngày tạo đơn</label>
-              <input v-model="form.ngayTaoDon" type="date" />
+              <input v-model="form.ngayTaoDon" type="date" readonly disabled />
             </div>
           </div>
 
@@ -224,6 +224,8 @@
 
         <div class="product-popup-toolbar product-toolbar-new">
           <select v-model="selectedProductPartnerId">
+            <option value="ALL">Tất cả đối tác</option>
+
             <option
                 v-for="dt in partners"
                 :key="dt.maDoiTac"
@@ -245,7 +247,15 @@
           <div class="product-list-panel">
             <div class="panel-title">Danh sách sản phẩm</div>
 
-            <div v-if="filteredPartnerProducts.length === 0" class="empty-box">
+            <div v-if="productLoading" class="empty-box">
+              Đang tải sản phẩm...
+            </div>
+
+            <div v-else-if="productError" class="empty-box">
+              {{ productError }}
+            </div>
+
+            <div v-else-if="filteredPartnerProducts.length === 0" class="empty-box">
               Không có sản phẩm phù hợp.
             </div>
 
@@ -353,7 +363,8 @@
 
 <script setup>
 
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
+import { getSanPhamTaoDonHang } from "../../services/donHangService.js";
 const userStr = localStorage.getItem("user");
 const userDangNhap = userStr ? JSON.parse(userStr) : null;
 
@@ -367,93 +378,29 @@ const showCustomerSuggestions = ref(false);
 
 const emit = defineEmits(["close", "submit", "save-draft"]);
 
-const partners = ref([
-  { maDoiTac: 1, tenDoiTac: "Công ty Thiên Phúc" },
-  { maDoiTac: 2, tenDoiTac: "Cơ sở An Lạc" },
-  { maDoiTac: 3, tenDoiTac: "Hoa viên Vĩnh Hằng" },
-]);
+const partners = ref([]);
+const allProducts = ref([]);
 
-const allCustomers = ref([
-  {
-    maKhachHang: 1,
-    tenKhachHang: "Nguyễn Văn An",
-    soDienThoai: "0901234567",
-    cccd: "079203001234",
-    email: "an.nguyen@gmail.com",
-    diaChi: "Quận 1, TP.HCM",
-  },
-  {
-    maKhachHang: 2,
-    tenKhachHang: "Nguyễn Văn Bình",
-    soDienThoai: "0908888888",
-    cccd: "079203009999",
-    email: "binh.nguyen@gmail.com",
-    diaChi: "Bình Dương",
-  },
-  {
-    maKhachHang: 3,
-    tenKhachHang: "Nguyễn Văn Cường",
-    soDienThoai: "0911222333",
-    cccd: "079205001111",
-    email: "cuong.nguyen@gmail.com",
-    diaChi: "Đồng Nai",
-  },
-]);
+const productLoading = ref(false);
+const productError = ref("");
 
-const allProducts = ref([
-  {
-    maSanPham: 1,
-    tenSanPham: "Quan tài gỗ thông tiêu chuẩn",
-    loai: "Quan tài",
-    giaTien: 8500000,
-    tonKho: 10,
-    maDoiTac: 1,
-    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3659/3659898.png",
-  },
-  {
-    maSanPham: 3,
-    tenSanPham: "Bình tro cốt sứ trắng",
-    loai: "Bình tro cốt",
-    giaTien: 2500000,
-    tonKho: 20,
-    maDoiTac: 1,
-    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3534/3534012.png",
-  },
-  {
-    maSanPham: 6,
-    tenSanPham: "Bàn thờ tang lễ",
-    loai: "Vật phẩm tang lễ",
-    giaTien: 3200000,
-    tonKho: 12,
-    maDoiTac: 1,
-    hinhAnh: "https://cdn-icons-png.flaticon.com/512/1046/1046874.png",
-  },
-  {
-    maSanPham: 2,
-    tenSanPham: "Quan tài gỗ căm xe cao cấp",
-    loai: "Quan tài",
-    giaTien: 18000000,
-    tonKho: 5,
-    maDoiTac: 2,
-    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3659/3659898.png",
-  },
-  {
-    maSanPham: 4,
-    tenSanPham: "Vòng hoa chia buồn",
-    loai: "Hoa tang lễ",
-    giaTien: 1500000,
-    tonKho: 30,
-    maDoiTac: 3,
-    hinhAnh: "https://cdn-icons-png.flaticon.com/512/3468/3468379.png",
-  },
-]);
 
-const today = new Date().toISOString().split("T")[0];
+function getTodayLocalDate() {
+  const d = new Date();
+
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+const today = getTodayLocalDate();
 
 const customerKeyword = ref("");
 const showProductModal = ref(false);
 const productKeyword = ref("");
-const selectedProductPartnerId = ref(1);
+const selectedProductPartnerId = ref("ALL");
 
 const form = ref({
   maKhachHang: null,
@@ -470,7 +417,82 @@ const form = ref({
 });
 
 const tempItems = ref([]);
+function buildImageUrl(path) {
+  if (!path) {
+    return "https://cdn-icons-png.flaticon.com/512/679/679720.png";
+  }
 
+  if (path.startsWith("http") || path.startsWith("data:")) {
+    return path;
+  }
+
+  if (path.startsWith("/uploads/")) {
+    return `http://localhost:8080${path}`;
+  }
+
+  if (path.startsWith("/images/")) {
+    return path;
+  }
+
+  if (path.startsWith("/")) {
+    return path;
+  }
+
+  return `http://localhost:8080/uploads/${path}`;
+}
+
+function normalizeProduct(sp) {
+  return {
+    maSanPham: sp.maSanPham,
+    tenSanPham: sp.tenSanPham,
+    loai: sp.loai || "Chưa phân loại",
+    giaTien: Number(sp.giaTien || 0),
+    tonKho: Number(sp.tonKho || 0),
+    maDoiTac: sp.maDoiTac,
+    tenDoiTac: sp.tenDoiTac || "Không rõ đối tác",
+    hinhAnh: buildImageUrl(sp.hinhAnh),
+    trangThai: sp.trangThai,
+  };
+}
+
+function rebuildPartners() {
+  const map = new Map();
+
+  allProducts.value.forEach((sp) => {
+    if (!sp.maDoiTac) return;
+
+    map.set(Number(sp.maDoiTac), {
+      maDoiTac: Number(sp.maDoiTac),
+      tenDoiTac: sp.tenDoiTac || "Không rõ đối tác",
+    });
+  });
+
+  partners.value = Array.from(map.values());
+}
+
+async function loadProductsFromDatabase() {
+  productLoading.value = true;
+  productError.value = "";
+
+  try {
+    const data = await getSanPhamTaoDonHang();
+
+    allProducts.value = (data || []).map(normalizeProduct);
+
+    rebuildPartners();
+  } catch (error) {
+    console.error("Lỗi tải danh sách sản phẩm:", error);
+    productError.value = "Không tải được danh sách sản phẩm.";
+    allProducts.value = [];
+    partners.value = [];
+  } finally {
+    productLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  loadProductsFromDatabase();
+});
 const customerSuggestions = computed(() => {
   const keyword = customerKeyword.value.trim().toLowerCase();
   if (!keyword) return [];
@@ -492,9 +514,15 @@ const filteredPartnerProducts = computed(() => {
   const keyword = productKeyword.value.trim().toLowerCase();
 
   return allProducts.value.filter((sp) => {
-    const matchPartner = sp.maDoiTac === Number(selectedProductPartnerId.value);
+    const matchPartner =
+        selectedProductPartnerId.value === "ALL" ||
+        sp.maDoiTac === Number(selectedProductPartnerId.value);
+
     const matchKeyword =
-        !keyword || sp.tenSanPham.toLowerCase().includes(keyword);
+        !keyword ||
+        sp.tenSanPham.toLowerCase().includes(keyword) ||
+        sp.loai.toLowerCase().includes(keyword) ||
+        sp.tenDoiTac.toLowerCase().includes(keyword);
 
     return matchPartner && matchKeyword;
   });
@@ -533,6 +561,10 @@ const tempSubtotal = computed(() => {
 });
 
 function getPartnerName(maDoiTac) {
+  if (maDoiTac === "ALL") {
+    return "Tất cả đối tác";
+  }
+
   const found = partners.value.find(
       (p) => p.maDoiTac === Number(maDoiTac)
   );
@@ -567,17 +599,15 @@ function cloneItems(items) {
   return JSON.parse(JSON.stringify(items));
 }
 
-function openProductModal() {
+async function openProductModal() {
   tempItems.value = cloneItems(form.value.items);
 
-  if (tempItems.value.length > 0) {
-    selectedProductPartnerId.value = tempItems.value[0].maDoiTac;
-  } else {
-    selectedProductPartnerId.value = partners.value[0]?.maDoiTac || "";
-  }
-
+  selectedProductPartnerId.value = "ALL";
   productKeyword.value = "";
+
   showProductModal.value = true;
+
+  await loadProductsFromDatabase();
 }
 
 function closeProductModal() {

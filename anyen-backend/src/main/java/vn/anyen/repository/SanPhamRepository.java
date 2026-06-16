@@ -3,11 +3,24 @@ package vn.anyen.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.SanPham;
 
 import java.util.List;
 
-public interface SanPhamRepository extends JpaRepository<SanPham, Integer>, JpaSpecificationExecutor<SanPham> {
+public interface SanPhamRepository
+        extends JpaRepository<SanPham, Integer>, JpaSpecificationExecutor<SanPham> {
+
+    @Query("""
+            SELECT sp
+            FROM SanPham sp
+            WHERE sp.trangThai IS NULL
+               OR LOWER(sp.trangThai) <> LOWER(:trangThaiAn)
+            ORDER BY sp.maSanPham DESC
+            """)
+    List<SanPham> findAllVisibleForTaoDonHang(
+            @Param("trangThaiAn") String trangThaiAn
+    );
 
     @Query("""
             SELECT sp.loai, COUNT(sp)

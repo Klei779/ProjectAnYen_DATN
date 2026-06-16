@@ -124,7 +124,7 @@ const formatDate = (date) => {
           </div>
         </div>
         <div class="meta-right">
-          Hà Nội, ngày.... tháng.... năm 2026
+          Hồ Chí Minh, ngày.... tháng.... năm 2026
         </div>
       </div>
 

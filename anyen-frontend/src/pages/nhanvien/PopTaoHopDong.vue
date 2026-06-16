@@ -557,7 +557,7 @@ selectedMaDonHang.value = "";
             <el-icon><Document /></el-icon>
             <span>1. THÔNG TIN HỢP ĐỒNG</span>
           </div>
-          
+
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Đơn hàng" required>
@@ -588,7 +588,7 @@ selectedMaDonHang.value = "";
               </el-form-item>
             </el-col>
           </el-row>
-          
+
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Ngày lập hợp đồng" required>

@@ -239,11 +239,11 @@
     border-color: var(--el-color-primary);
 }
 
-.el-message {
+:global(.el-message) {
     z-index: 99999 !important;
 }
 
-.el-message-box {
+:global(.el-message-box) {
     z-index: 99999 !important;
 }
 
@@ -267,6 +267,14 @@
 :deep(.is-invalid .el-date-editor.el-input__wrapper) {
     border: 1px solid #f56c6c !important;
     box-shadow: 0 0 0 1px #f56c6c inset !important;
+}
+
+.field-wrapper {
+    width: 100%;
+}
+
+.is-invalid {
+    width: 100%;
 }
 /* =========================
    MOBILE

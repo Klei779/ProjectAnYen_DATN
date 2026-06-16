@@ -26,7 +26,6 @@ import {
 
 const visible = defineModel();
 
-
 const contract = ref({
   orderCode: "",
   contractCode: "",
@@ -50,7 +49,38 @@ const contract = ref({
   burialDatetime: ""
 });
 
+const resetContractForm = () => {
+  contract.value = {
+    orderCode: "",
+    contractCode: "",
+    contractDate: "",
+    employee: user?.hoTen || user?.tenNhanVien || "",
+
+    customerName: "",
+    citizenId: "",
+    address: "",
+    phone: "",
+    relationship: "",
+
+    deceasedName: "",
+    deathDate: "",
+    age: "",
+    gender: "",
+
+    facility: "",
+    cemeteryArea: "",
+    graveNumber: "",
+    burialDatetime: ""
+  };
+
+  orderProducts.value = [];
+  selectedDonHangDetail.value = null;
+  clearErrors();
+};
+
+
 const services = ref([]);
+
 
 const addService = () => {
   services.value.push({ name: '', price: 0 });
@@ -191,9 +221,155 @@ const emit = defineEmits(["success"]);
 const selectedMaDonHang = ref(null);
 const donHangOptions = ref([]);
 const loadingOrders = ref(false);
+watch(selectedMaDonHang, (value) => {
+  if (!value) {
+    resetContractForm();
+  }
+});
 const loadingDetail = ref(false);
 const saving = ref(false);
+const errors = ref({
+  customerName: "",
+  citizenId: "",
+  address: "",
+  phone: "",
+  relationship: "",
 
+  deceasedName: "",
+  deathDate: "",
+  age: "",
+  gender: "",
+
+  facility: "",
+  cemeteryArea: "",
+  graveNumber: "",
+  burialDatetime: ""
+});
+const clearErrors = () => {
+  Object.keys(errors.value).forEach(key => {
+    errors.value[key] = "";
+  });
+};
+const validateForm = () => {
+  clearErrors();
+
+  let isValid = true;
+
+  const now = new Date();
+
+  // Tang chủ
+  if (!contract.value.customerName?.trim()) {
+    errors.value.customerName = "Vui lòng nhập họ tên tang chủ";
+    isValid = false;
+  } else if (contract.value.customerName.trim().length < 2) {
+    errors.value.customerName = "Họ tên quá ngắn";
+    isValid = false;
+  }
+
+  // CCCD
+  if (!contract.value.citizenId?.trim()) {
+    errors.value.citizenId = "Vui lòng nhập CCCD";
+    isValid = false;
+  } else if (!/^[0-9]{12}$/.test(contract.value.citizenId.trim())) {
+    errors.value.citizenId = "CCCD phải gồm 12 chữ số";
+    isValid = false;
+  }
+
+  // Địa chỉ
+  if (!contract.value.address?.trim()) {
+    errors.value.address = "Vui lòng nhập địa chỉ";
+    isValid = false;
+  }
+
+  // SĐT
+  if (!contract.value.phone?.trim()) {
+    errors.value.phone = "Vui lòng nhập số điện thoại";
+    isValid = false;
+  } else if (
+      !/^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(
+          contract.value.phone.trim()
+      )
+  ) {
+    errors.value.phone = "Số điện thoại không hợp lệ";
+    isValid = false;
+  }
+
+  // Quan hệ
+  if (!contract.value.relationship) {
+    errors.value.relationship = "Vui lòng chọn quan hệ";
+    isValid = false;
+  }
+
+  // Người mất
+  if (!contract.value.deceasedName?.trim()) {
+    errors.value.deceasedName = "Vui lòng nhập tên người mất";
+    isValid = false;
+  }
+
+  if (!contract.value.deathDate) {
+    errors.value.deathDate = "Vui lòng chọn ngày mất";
+    isValid = false;
+  } else {
+    const deathDate = new Date(contract.value.deathDate);
+
+    if (deathDate > now) {
+      errors.value.deathDate = "Ngày mất không được lớn hơn hiện tại";
+      isValid = false;
+    }
+  }
+
+  // Tuổi
+  if (!contract.value.age) {
+    errors.value.age = "Vui lòng nhập tuổi";
+    isValid = false;
+  } else {
+    const age = Number(contract.value.age);
+
+    if (isNaN(age)) {
+      errors.value.age = "Tuổi không hợp lệ";
+      isValid = false;
+    } else if (age < 0) {
+      errors.value.age = "Tuổi không được âm";
+      isValid = false;
+    } else if (age > 150) {
+      errors.value.age = "Tuổi không hợp lệ";
+      isValid = false;
+    }
+  }
+
+  // Giới tính
+  if (!contract.value.gender) {
+    errors.value.gender = "Vui lòng chọn giới tính";
+    isValid = false;
+  }
+
+  // Ngày an táng
+  if (!contract.value.burialDatetime) {
+    errors.value.burialDatetime = "Vui lòng chọn ngày giờ an táng";
+    isValid = false;
+  } else if (contract.value.deathDate) {
+    const deathDate = new Date(contract.value.deathDate);
+    const burialDate = new Date(contract.value.burialDatetime);
+
+    if (burialDate < deathDate) {
+      errors.value.burialDatetime =
+          "Ngày an táng phải sau ngày mất";
+      isValid = false;
+    }
+  }
+
+  // Dịch vụ phụ thu
+  services.value.forEach((item) => {
+    if (
+        item.name?.trim() &&
+        (!item.price || Number(item.price) <= 0)
+    ) {
+      isValid = false;
+    }
+  });
+
+  return isValid;
+};
 const orderProducts = ref([]);
 const selectedDonHangDetail = ref(null);
 
@@ -247,13 +423,25 @@ const onSelectDonHang = async (maDonHang) => {
     };
 
     contract.value.contractCode = generateCode();
-    contract.value.contractDate = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+
+    contract.value.contractDate =
+        now.toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
     contract.value.employee = data.tenNhanVien || "";
 
     contract.value.customerName = data.tenKhachHang || "";
     contract.value.citizenId = data.cccd || "";
     contract.value.address = data.diaChi || "";
     contract.value.phone = data.soDienThoai || "";
+    contract.value.facility = "Không";
+    contract.value.cemeteryArea = "Không";
+    contract.value.graveNumber = "Không";
 
     orderProducts.value = (data.sanPhams || []).map((item) => ({
       name: item.tenSanPham || "---",
@@ -280,50 +468,15 @@ const onSelectDonHang = async (maDonHang) => {
 };
 const saveContract = async () => {
   console.log("Đã bấm nút lưu hợp đồng");
-  if (!selectedMaDonHang.value || !selectedDonHangDetail.value) {
-    ElMessage.error("Vui lòng chọn và load đơn hàng trước khi lưu hợp đồng");
-    return;
-  }
-  if (!contract.value.customerName?.trim()) {
-    ElMessage.error("Vui lòng nhập họ tên tang chủ");
-    return;
-  }
 
-  if (!contract.value.citizenId?.trim()) {
-    ElMessage.error("Vui lòng nhập CCCD");
-    return;
-  }
+  const valid = validateForm();
 
-  if (!contract.value.address?.trim()) {
-    ElMessage.error("Vui lòng nhập địa chỉ");
-    return;
-  }
+  console.log(errors.value);
 
-  if (!contract.value.phone?.trim()) {
-    ElMessage.error("Vui lòng nhập số điện thoại");
+  if (!valid) {
+    ElMessage.error("Form đang có lỗi");
     return;
   }
-  const phoneRegex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
-  if (!phoneRegex.test(contract.value.phone.trim())) {
-    ElMessage.error("Số điện thoại không hợp lệ");
-    return;
-  }
-
-  if (!contract.value.deceasedName?.trim()) {
-    ElMessage.error("Vui lòng nhập tên người mất");
-    return;
-  }
-
-  if (!contract.value.deathDate) {
-    ElMessage.error("Vui lòng chọn ngày mất");
-    return;
-  }
-
-  if (!contract.value.facility) {
-    ElMessage.error("Vui lòng chọn cơ sở mai táng");
-    return;
-  }
-
 
   try {
     saving.value = true;
@@ -386,7 +539,7 @@ selectedMaDonHang.value = "";
       top="2vh"
       class="custom-contract-dialog"
       :show-close="true"
-      :z-index="10050"
+      :z-index="10000"
   >
     <template #header>
       <div class="dialog-header">
@@ -408,28 +561,25 @@ selectedMaDonHang.value = "";
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Đơn hàng" required>
-
-                <select
+                <el-select
                     v-model="selectedMaDonHang"
-                    @change="onSelectDonHang(selectedMaDonHang)"
-                    class="native-select"
+                    :teleported="false"
+                    placeholder="Chọn mã đơn hàng"
+                    filterable
+                    clearable
+                    @clear="resetContractForm"
+                    @change="onSelectDonHang"
+                    style="width: 100%"
+                    :loading="loadingOrders"
                 >
-                  <option disabled value="">
-                    Chọn mã đơn hàng
-                  </option>
-                  <option
+                  <el-option
                       v-for="item in donHangOptions"
                       :key="item.maDonHang"
+                      :label="`${item.maDonHangText}${item.tenKhachHang ? ' - ' + item.tenKhachHang : ''}${item.daCoHopDong ? ' - Đã có hợp đồng' : ''}`"
                       :value="item.maDonHang"
                       :disabled="item.daCoHopDong"
-                  >
-                    {{ item.daCoHopDong ? '' : '' }}
-                    {{ item.maDonHangText }}
-                    {{ item.tenKhachHang ? ' - ' + item.tenKhachHang : '' }}
-                    {{ item.daCoHopDong ? ' - Đã có hợp đồng' : '' }}
-                  </option>
-                </select>
-
+                  />
+                </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -442,15 +592,10 @@ selectedMaDonHang.value = "";
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Ngày lập hợp đồng" required>
-                <el-date-picker
+                <el-input
                     v-model="contract.contractDate"
-                    type="datetime"
-                    placeholder="Chọn Ngày lập hợp đồng"
-                    format="DD/MM/YYYY HH:mm"
-                    value-format="YYYY-MM-DD HH:mm:ss"
-                    style="width: 100%;"
-                    :teleported="false"
-                    placement="top-start"
+                    disabled
+                    placeholder="Ngày lập hợp đồng"
                 />
               </el-form-item>
             </el-col>
@@ -473,35 +618,120 @@ selectedMaDonHang.value = "";
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Họ và tên" required>
-                <el-input v-model="contract.customerName" placeholder="Nhập họ và tên tang chủ" />
+
+                <div :class="{ 'is-invalid': errors.customerName }">
+                  <el-input
+                      v-model="contract.customerName"
+                      placeholder="Nhập họ và tên tang chủ"
+                      @input="errors.customerName = ''"
+                  />
+                </div>
+
+                <div
+                    v-if="errors.customerName"
+                    class="error-text"
+                >
+                  {{ errors.customerName }}
+                </div>
+
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Số CCCD/CMND" required>
-                <el-input v-model="contract.citizenId" placeholder="Nhập số CCCD/CMND" />
+
+                <div :class="{ 'is-invalid': errors.citizenId }">
+                  <el-input
+                      v-model="contract.citizenId"
+                      placeholder="Nhập số CCCD/CMND"
+                      @input="errors.citizenId = ''"
+                  />
+                </div>
+
+                <div
+                    v-if="errors.citizenId"
+                    class="error-text"
+                >
+                  {{ errors.citizenId }}
+                </div>
+
               </el-form-item>
             </el-col>
           </el-row>
 
           <el-form-item label="Địa chỉ" required>
-            <el-input v-model="contract.address" placeholder="Nhập địa chỉ tang chủ" />
+
+            <div class="field-wrapper">
+
+              <div :class="{ 'is-invalid': errors.address }">
+                <el-input
+                    v-model="contract.address"
+                    placeholder="Nhập địa chỉ tang chủ"
+                    @input="errors.address = ''"
+                />
+              </div>
+
+              <div
+                  v-if="errors.address"
+                  class="error-text"
+              >
+                {{ errors.address }}
+              </div>
+
+            </div>
+
           </el-form-item>
 
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Số điện thoại" required>
-                <el-input v-model="contract.phone" placeholder="Nhập số điện thoại tang chủ" />
+
+                <div :class="{ 'is-invalid': errors.phone }">
+                  <el-input
+                      v-model="contract.phone"
+                      placeholder="Nhập số điện thoại tang chủ"
+                      @input="errors.phone = ''"
+                  />
+                </div>
+
+                <div
+                    v-if="errors.phone"
+                    class="error-text"
+                >
+                  {{ errors.phone }}
+                </div>
+
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Quan hệ với người mất" required>
-                <el-select v-model="contract.relationship" placeholder="Chọn quan hệ" style="width: 100%">
-                  <el-option label="Con trai" value="Con trai" />
-                  <el-option label="Con gái" value="Con gái" />
-                  <el-option label="Chồng" value="Chồng" />
-                  <el-option label="Vợ" value="Vợ" />
-                  <el-option label="Khác" value="Khác" />
-                </el-select>
+
+                <div class="field-wrapper">
+
+                  <div :class="{ 'is-invalid': errors.relationship }">
+                    <el-select
+                        v-model="contract.relationship"
+                        :teleported="false"
+                        placeholder="Chọn quan hệ"
+                        style="width: 100%"
+                        @change="errors.relationship = ''"
+                    >
+                      <el-option label="Con trai" value="Con trai" />
+                      <el-option label="Con gái" value="Con gái" />
+                      <el-option label="Chồng" value="Chồng" />
+                      <el-option label="Vợ" value="Vợ" />
+                      <el-option label="Khác" value="Khác" />
+                    </el-select>
+                  </div>
+
+                  <div
+                      v-if="errors.relationship"
+                      class="error-text"
+                  >
+                    {{ errors.relationship }}
+                  </div>
+
+                </div>
+
               </el-form-item>
             </el-col>
           </el-row>
@@ -570,21 +800,56 @@ selectedMaDonHang.value = "";
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Họ và tên" required>
-                <el-input v-model="contract.deceasedName" placeholder="Nhập họ tên người mất" />
+
+                <div class="field-wrapper">
+
+                  <div :class="{ 'is-invalid': errors.deceasedName }">
+                    <el-input
+                        v-model="contract.deceasedName"
+                        placeholder="Nhập họ tên người mất"
+                        @input="errors.deceasedName = ''"
+                    />
+                  </div>
+
+                  <div
+                      v-if="errors.deceasedName"
+                      class="error-text"
+                  >
+                    {{ errors.deceasedName }}
+                  </div>
+
+                </div>
+
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Ngày mất" required>
-                <el-date-picker
-                    v-model="contract.deathDate"
-                    type="datetime"
-                    placeholder="nhập ngày mất"
-                    format="DD/MM/YYYY HH:mm"
-                    value-format="YYYY-MM-DD HH:mm:ss"
-                    style="width: 100%;"
-                    :teleported="false"
-                    placement="top-start"
-                />
+
+                <div class="field-wrapper">
+
+                  <div :class="{ 'is-invalid': errors.deathDate }">
+                    <el-date-picker
+                        v-model="contract.deathDate"
+                        type="datetime"
+                        placeholder="Nhập ngày mất"
+                        format="DD/MM/YYYY HH:mm"
+                        value-format="YYYY-MM-DD HH:mm:ss"
+                        style="width: 100%"
+                        :teleported="false"
+                        placement="top-start"
+                        @change="errors.deathDate = ''"
+                    />
+                  </div>
+
+                  <div
+                      v-if="errors.deathDate"
+                      class="error-text"
+                  >
+                    {{ errors.deathDate }}
+                  </div>
+
+                </div>
+
               </el-form-item>
             </el-col>
           </el-row>
@@ -592,15 +857,55 @@ selectedMaDonHang.value = "";
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Tuổi">
-                <el-input v-model="contract.age" placeholder="Nhập tuổi" />
+
+                <div class="field-wrapper">
+
+                  <div :class="{ 'is-invalid': errors.age }">
+                    <el-input
+                        v-model="contract.age"
+                        placeholder="Nhập tuổi"
+                        @input="errors.age = ''"
+                    />
+                  </div>
+
+                  <div
+                      v-if="errors.age"
+                      class="error-text"
+                  >
+                    {{ errors.age }}
+                  </div>
+
+                </div>
+
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="Giới tính">
-                <el-select v-model="contract.gender" placeholder="Chọn giới tính" style="width: 100%">
-                  <el-option label="Nữ" value="Nữ" />
-                  <el-option label="Nam" value="Nam" />
-                </el-select>
+
+                <div class="field-wrapper">
+
+                  <div :class="{ 'is-invalid': errors.gender }">
+                    <el-select
+                        v-model="contract.gender"
+                        :teleported="false"
+                        placeholder="Chọn giới tính"
+                        style="width: 100%"
+                        @change="errors.gender = ''"
+                    >
+                      <el-option label="Nữ" value="Nữ" />
+                      <el-option label="Nam" value="Nam" />
+                    </el-select>
+                  </div>
+
+                  <div
+                      v-if="errors.gender"
+                      class="error-text"
+                  >
+                    {{ errors.gender }}
+                  </div>
+
+                </div>
+
               </el-form-item>
             </el-col>
           </el-row>
@@ -613,18 +918,19 @@ selectedMaDonHang.value = "";
           <el-row :gutter="16">
             <el-col :span="12">
               <el-form-item label="Cơ sở mai táng" required>
-                <el-select v-model="contract.facility" placeholder="Chọn cơ sở" style="width: 100%">
-                  <el-option label="Công viên nghĩa trang An Yên" value="Công viên nghĩa trang An Yên" />
-                </el-select>
+                <el-input
+                    v-model="contract.facility"
+                    placeholder="Nhập cơ sở mai táng"
+                />
               </el-form-item>
             </el-col>
+
             <el-col :span="12">
               <el-form-item label="Khu mộ" required>
-                <el-select v-model="contract.cemeteryArea" placeholder="Chọn khu mộ" style="width: 100%">
-                  <el-option label="Khu A" value="Khu A" />
-                  <el-option label="Khu B" value="Khu B" />
-                  <el-option label="Khu C" value="Khu C" />
-                </el-select>
+                <el-input
+                    v-model="contract.cemeteryArea"
+                    placeholder="Nhập khu mộ"
+                />
               </el-form-item>
             </el-col>
           </el-row>
@@ -720,10 +1026,7 @@ selectedMaDonHang.value = "";
 
     <template #footer>
       <div class="dialog-footer">
-        <el-button class="btn-left">
-          <el-icon style="margin-right: 6px;"><View /></el-icon>
-          Xem trước
-        </el-button>
+
         <div class="btn-right">
           <el-button @click="visible = false" class="cancel-btn">Hủy</el-button>
           <el-button

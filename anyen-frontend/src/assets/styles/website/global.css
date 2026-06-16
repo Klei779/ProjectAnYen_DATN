@@ -9,3 +9,11 @@
 body{
     font-family:'Noto Sans',sans-serif;
 }
+
+:global(.el-message) {
+    z-index: 99999 !important;
+}
+
+:global(.el-message-box) {
+    z-index: 99999 !important;
+}

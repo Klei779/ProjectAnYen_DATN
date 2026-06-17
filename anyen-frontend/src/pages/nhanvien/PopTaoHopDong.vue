@@ -25,12 +25,24 @@ import {
 } from '@element-plus/icons-vue';
 
 const visible = defineModel();
+const getTodayDate = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
 
+  return `${year}-${month}-${day}`;
+};
 const contract = ref({
   orderCode: "",
   contractCode: "",
   contractDate: "",
   employee: "",
+
+  deathCertificateNo: "",
+  deathCertificateIssuePlace: "",
+  contractStartDate: getTodayDate(),
+  contractEndDate: "",
 
   customerName: "",
   citizenId: "",
@@ -55,6 +67,11 @@ const resetContractForm = () => {
     contractCode: "",
     contractDate: "",
     employee: user?.hoTen || user?.tenNhanVien || "",
+
+    deathCertificateNo: "",
+    deathCertificateIssuePlace: "",
+    contractStartDate: getTodayDate(),
+    contractEndDate: "",
 
     customerName: "",
     citizenId: "",
@@ -235,6 +252,11 @@ const errors = ref({
   phone: "",
   relationship: "",
 
+  deathCertificateNo: "",
+  deathCertificateIssuePlace: "",
+  contractStartDate: "",
+  contractEndDate: "",
+
   deceasedName: "",
   deathDate: "",
   age: "",
@@ -357,7 +379,36 @@ const validateForm = () => {
       isValid = false;
     }
   }
+  if (!contract.value.deathCertificateNo?.trim()) {
+    errors.value.deathCertificateNo = "Vui lòng nhập số giấy báo tử";
+    isValid = false;
+  } else if (contract.value.deathCertificateNo.trim().length < 3) {
+    errors.value.deathCertificateNo = "Số giấy báo tử phải từ 3 ký tự";
+    isValid = false;
+  }
 
+  if (!contract.value.deathCertificateIssuePlace?.trim()) {
+    errors.value.deathCertificateIssuePlace = "Vui lòng nhập nơi cấp giấy báo tử";
+    isValid = false;
+  }
+
+  if (!contract.value.contractStartDate) {
+    errors.value.contractStartDate = "Không lấy được ngày bắt đầu";
+    isValid = false;
+  }
+
+  if (!contract.value.contractEndDate) {
+    errors.value.contractEndDate = "Vui lòng chọn ngày kết thúc hợp đồng";
+    isValid = false;
+  } else {
+    const startDate = new Date(contract.value.contractStartDate);
+    const endDate = new Date(contract.value.contractEndDate);
+
+    if (endDate < startDate) {
+      errors.value.contractEndDate = "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu";
+      isValid = false;
+    }
+  }
   // Dịch vụ phụ thu
   services.value.forEach((item) => {
     if (
@@ -410,7 +461,8 @@ const onSelectDonHang = async (maDonHang) => {
 
     const generateCode = () => {
       const now = new Date();
-
+      contract.value.contractStartDate = getTodayDate();
+      contract.value.contractEndDate = "";
       return (
           "HD" +
           now.getFullYear() +
@@ -909,7 +961,97 @@ selectedMaDonHang.value = "";
               </el-form-item>
             </el-col>
           </el-row>
+          <div class="section-title mt-4">
+            <el-icon><Calendar /></el-icon>
+            <span>2. THÔNG TIN GIẤY BÁO TỬ VÀ THỜI GIAN HỢP ĐỒNG</span>
+          </div>
 
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="Số giấy báo tử" required>
+                <div class="field-wrapper">
+                  <div :class="{ 'is-invalid': errors.deathCertificateNo }">
+                    <el-input
+                        v-model="contract.deathCertificateNo"
+                        placeholder="Nhập số giấy báo tử"
+                        @input="errors.deathCertificateNo = ''"
+                    />
+                  </div>
+
+                  <div
+                      v-if="errors.deathCertificateNo"
+                      class="error-text"
+                  >
+                    {{ errors.deathCertificateNo }}
+                  </div>
+                </div>
+              </el-form-item>
+            </el-col>
+
+            <el-col :span="12">
+              <el-form-item label="Nơi cấp giấy báo tử" required>
+                <div class="field-wrapper">
+                  <div :class="{ 'is-invalid': errors.deathCertificateIssuePlace }">
+                    <el-input
+                        v-model="contract.deathCertificateIssuePlace"
+                        placeholder="Nhập nơi cấp giấy báo tử"
+                        @input="errors.deathCertificateIssuePlace = ''"
+                    />
+                  </div>
+
+                  <div
+                      v-if="errors.deathCertificateIssuePlace"
+                      class="error-text"
+                  >
+                    {{ errors.deathCertificateIssuePlace }}
+                  </div>
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-row :gutter="16">
+            <el-col :span="12">
+              <el-form-item label="Ngày bắt đầu hợp đồng" required>
+                <el-date-picker
+                    v-model="contract.contractStartDate"
+                    type="date"
+                    format="DD/MM/YYYY"
+                    value-format="YYYY-MM-DD"
+                    style="width: 100%"
+                    disabled
+                    :teleported="false"
+                />
+              </el-form-item>
+            </el-col>
+
+            <el-col :span="12">
+              <el-form-item label="Ngày kết thúc hợp đồng" required>
+                <div class="field-wrapper">
+                  <div :class="{ 'is-invalid': errors.contractEndDate }">
+                    <el-date-picker
+                        v-model="contract.contractEndDate"
+                        type="date"
+                        placeholder="Chọn ngày kết thúc"
+                        format="DD/MM/YYYY"
+                        value-format="YYYY-MM-DD"
+                        style="width: 100%"
+                        :teleported="false"
+                        placement="top-start"
+                        @change="errors.contractEndDate = ''"
+                    />
+                  </div>
+
+                  <div
+                      v-if="errors.contractEndDate"
+                      class="error-text"
+                  >
+                    {{ errors.contractEndDate }}
+                  </div>
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
           <div class="section-title mt-4">
             <el-icon><HomeFilled /></el-icon>
             <span>5. THÔNG TIN NƠI AN TÁNG</span>

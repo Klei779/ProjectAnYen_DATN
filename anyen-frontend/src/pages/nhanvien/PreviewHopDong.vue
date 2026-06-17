@@ -93,6 +93,11 @@ const formatDate = (date) => {
   if (!date) return "";
   return new Date(date).toLocaleDateString("vi-VN");
 };
+const today = new Date();
+
+const currentDay = String(today.getDate()).padStart(2, "0");
+const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+const currentYear = today.getFullYear();
 </script>
 
 <template>
@@ -124,7 +129,7 @@ const formatDate = (date) => {
           </div>
         </div>
         <div class="meta-right">
-          Hồ Chí Minh, ngày.... tháng.... năm 2026
+          Hồ Chí Minh, ngày {{ currentDay }} tháng {{ currentMonth }} năm {{ currentYear }}
         </div>
       </div>
 
@@ -173,10 +178,10 @@ const formatDate = (date) => {
         </div>
 
         <div class="flex-row mt-1">
-          Giấy báo tử, trích lục khai tử số:
-          <span class="dotted-input flex-grow">{{ contract.deathCertificateNo }}</span>
-          Nơi cấp:
-          <span class="dotted-input w-25">{{ contract.issuedPlace }}</span>
+          Số giấy báo tử:
+          <span class="dotted-input flex-grow">{{ contract.deathCertificateNo  }}</span>
+          Nơi cấp giấy báo tử:
+          <span class="dotted-input flex-grow">{{ contract.deathCertificateIssuePlace }}</span>
         </div>
 
         <div class="flex-row mt-1">
@@ -188,7 +193,7 @@ const formatDate = (date) => {
 
         <div class="flex-row mt-1">
           Thời gian thực hiện hợp đồng:
-          <span class="dotted-input flex-grow">{{ formatDate(contract.executionDate) }}</span>
+          từ ngày <span class="dotted-input flex-grow">{{ formatDate(contract.contractStartDate) }}</span> đến ngày <span class="dotted-input flex-grow">{{ formatDate(contract.contractEndDate) }}</span>
         </div>
 
         <div class="font-bold mt-2">

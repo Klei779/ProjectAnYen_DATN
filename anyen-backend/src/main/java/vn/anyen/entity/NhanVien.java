@@ -29,4 +29,13 @@ public class NhanVien {
 
     @Column(name = "TrangThai")
     private String trangThai;
+
+    @Column(name = "Email")
+    private String email;
+
+    @Column(name = "DiaChi")
+    private String diaChi;
+
+    @Column(name = "SoDienThoai")
+    private String soDienThoai;
 }

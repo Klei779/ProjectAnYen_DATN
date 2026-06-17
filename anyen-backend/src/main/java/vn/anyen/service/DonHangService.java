@@ -48,6 +48,7 @@ public class DonHangService {
     // Thứ tự trạng thái đơn hàng theo quy trình
     private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
             "Mới tạo",
+            "Chờ đối tác xác nhận",
             "Đã xác nhận",
             "Đang xử lý",
             "Chờ thanh toán",
@@ -86,7 +87,7 @@ public class DonHangService {
                 .nhanVien(nhanVien)
                 .ngayTaoDon(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")))
                 .tongTien(BigDecimal.ZERO)
-                .trangThai("Mới tạo")
+                .trangThai("Chờ đối tác xác nhận")
                 .ghiChu(request.getGhiChu())
                 .phuongThucThanhToan(
                         request.getPhuongThucThanhToan() != null
@@ -299,6 +300,7 @@ public class DonHangService {
             String color;
             switch (step) {
                 case "Mới tạo": color = "yellow"; break;
+                case "Chờ đối tác xác nhận": color = "pink"; break;
                 case "Đã xác nhận": color = "blue"; break;
                 case "Đang xử lý": color = "orange"; break;
                 case "Chờ thanh toán": color = "purple"; break;
@@ -359,6 +361,7 @@ public class DonHangService {
 
         List<String> trangThaiHopLe = Arrays.asList(
                 "Mới tạo",
+                "Chờ đối tác xác nhận",
                 "Đã xác nhận",
                 "Đang xử lý",
                 "Chờ thanh toán",

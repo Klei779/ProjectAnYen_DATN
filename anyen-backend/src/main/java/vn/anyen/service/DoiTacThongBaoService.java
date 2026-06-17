@@ -75,12 +75,11 @@ public class DoiTacThongBaoService {
 
         DonHang donHang = thongBao.getDonHang();
 
-        if (donHang != null) {
-            donHang.setTrangThai("Đối tác đã chấp nhận");
-            donHangRepository.save(donHang);
-        }
-
         thongBaoRepository.save(thongBao);
+
+        if (donHang != null) {
+            capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(donHang);
+        }
 
         return XuLyThongBaoResponse.builder()
                 .success(true)
@@ -535,5 +534,30 @@ public class DoiTacThongBaoService {
                 DateTimeFormatter.ofPattern("dd/MM/yyyy")
         );
     }
+    private void capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(DonHang donHang) {
+        List<ThongBaoDoiTac> thongBaos =
+                thongBaoRepository.findByDonHang_MaDonHangAndLoai(
+                        donHang.getMaDonHang(),
+                        LOAI_DON_HANG
+                );
 
+        if (thongBaos == null || thongBaos.isEmpty()) {
+            return;
+        }
+
+        boolean tatCaDoiTacDaChapNhan = thongBaos.stream()
+                .allMatch(tb -> DA_CHAP_NHAN.equals(tb.getTrangThaiThongBao()));
+
+        if (!tatCaDoiTacDaChapNhan) {
+            return;
+        }
+
+        if ("Chờ đối tác xác nhận".equals(donHang.getTrangThai())
+                || "Mới tạo".equals(donHang.getTrangThai())
+                || "Đối tác đã chấp nhận".equals(donHang.getTrangThai())) {
+
+            donHang.setTrangThai("Đã xác nhận");
+            donHangRepository.save(donHang);
+        }
+    }
 }

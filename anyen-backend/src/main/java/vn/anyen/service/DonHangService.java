@@ -32,6 +32,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import vn.anyen.dto.request.HuyDonHangRequest;
+
 @Service
 @RequiredArgsConstructor
 public class DonHangService {
@@ -272,6 +274,7 @@ public class DonHangService {
                 .giaTien(ct.getGiaTien())
                 .SoLuong(ct.getSoLuong())
                 .thanhTien(ct.getGiaTien().multiply(BigDecimal.valueOf(ct.getSoLuong())))
+
                 .build()
         ).collect(Collectors.toList());
 
@@ -374,6 +377,32 @@ public class DonHangService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
 
         donHang.setTrangThai(trangThaiMoi);
+
+        DonHang saved = donHangRepository.save(donHang);
+
+        return mapToDonHangResponse(saved);
+    }
+    @Transactional
+    public DonHangResponse huyDonHang(Integer maDonHang, HuyDonHangRequest request) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+
+        String lyDo = request.getLyDoHuy() == null ? "" : request.getLyDoHuy().trim();
+
+        if (lyDo.length() <= 3) {
+            throw new RuntimeException("Lý do hủy phải trên 3 ký tự");
+        }
+
+        if ("Đã hủy".equalsIgnoreCase(donHang.getTrangThai())) {
+            throw new RuntimeException("Đơn hàng này đã bị hủy trước đó");
+        }
+
+        if ("Hoàn thành".equalsIgnoreCase(donHang.getTrangThai())) {
+            throw new RuntimeException("Không thể hủy đơn hàng đã hoàn thành");
+        }
+
+        donHang.setTrangThai("Đã hủy");
+        donHang.setLyDoHuy(lyDo);
 
         DonHang saved = donHangRepository.save(donHang);
 

@@ -39,7 +39,7 @@ public class DonHangResponse {
     private Integer maHoaDon;
     private Boolean daCoHoaDon;
     private String trangThaiHoaDon;
-    
+    private String lyDoHuy;
     private List<ChiTietDonHangResponse> sanPhams;
     private List<LichSuDonHangResponse> lichSu;
 

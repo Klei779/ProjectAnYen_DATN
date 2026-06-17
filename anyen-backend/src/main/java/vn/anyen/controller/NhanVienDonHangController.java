@@ -11,7 +11,8 @@ import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.service.DonHangService;
 import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
 import vn.anyen.service.SanPhamService;
-
+import jakarta.validation.Valid;
+import vn.anyen.dto.request.HuyDonHangRequest;
 
 import java.util.List;
 
@@ -48,6 +49,13 @@ public class NhanVienDonHangController {
         );
 
         return ResponseEntity.ok(response);
+    }
+    @PutMapping("/{maDonHang}/huy")
+    public DonHangResponse huyDonHang(
+            @PathVariable Integer maDonHang,
+            @Valid @RequestBody HuyDonHangRequest request
+    ) {
+        return donHangService.huyDonHang(maDonHang, request);
     }
     @GetMapping("/san-pham-options")
     public ResponseEntity<List<SanPhamTaoDonHangResponse>> getSanPhamTaoDonHangOptions() {

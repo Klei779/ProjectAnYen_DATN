@@ -45,4 +45,7 @@ public class DonHang {
 
     @Column(name = "TrangThaiThanhToan")
     private String trangThaiThanhToan;
+
+    @Column(name = "LyDoHuy")
+    private String lyDoHuy;
 }

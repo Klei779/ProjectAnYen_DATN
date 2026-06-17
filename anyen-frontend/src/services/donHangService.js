@@ -1,5 +1,14 @@
 import api from "../api/api.js";
 
+const API_URL = "/api/nhan-vien/don-hang";
+
+export async function huyDonHang(maDonHang, lyDoHuy) {
+  const response = await api.put(`${API_URL}/${maDonHang}/huy`, {
+    lyDoHuy: lyDoHuy.trim(),
+  });
+
+  return response.data;
+}
 export async function getDonHangs(params = {}) {
   const response = await api.get("/api/don-hang", { params });
 
@@ -29,11 +38,6 @@ export async function capNhatTrangThai(maDonHang, trangThai) {
     trangThai,
   });
 
-  return response.data;
-}
-
-export async function huyDonHang(maDonHang) {
-  const response = await api.put(`/api/don-hang/${maDonHang}/huy`);
   return response.data;
 }
 

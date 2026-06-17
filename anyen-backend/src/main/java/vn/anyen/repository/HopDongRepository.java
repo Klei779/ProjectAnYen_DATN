@@ -14,34 +14,63 @@ public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
 
     boolean existsByDonHang_MaDonHang(Integer maDonHang);
 
-    @Query("""
-        SELECT hd
-        FROM HopDong hd
-        LEFT JOIN hd.donHang dh
-        LEFT JOIN dh.khachHang kh
-        WHERE
-            (
-                :keyword IS NULL
-                OR :keyword = ''
-                OR LOWER(kh.tenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                OR kh.soDienThoai LIKE CONCAT('%', :keyword, '%')
-                OR CAST(hd.maHopDong AS string) LIKE CONCAT('%', :keyword, '%')
-                OR CAST(dh.maDonHang AS string) LIKE CONCAT('%', :keyword, '%')
-            )
-        AND
-            (
-                :trangThai IS NULL
-                OR :trangThai = ''
-                OR :trangThai = 'Tất cả'
-                OR hd.trangThai = :trangThai
-            )
-        """)
+    boolean existsByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
+
+    List<HopDong> findByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
+
+    @Query("SELECT COALESCE(MAX(hd.maHopDong), 0) FROM HopDong hd")
+    Integer getMaxMaHopDong();
+
+    @Query(
+            value = """
+                SELECT hd.*
+                FROM hopdong hd
+                LEFT JOIN donhang dh ON dh.MaDonHang = hd.MaDonHang
+                LEFT JOIN khachhang kh ON kh.MaKhachHang = dh.MaKhachHang
+                WHERE
+                    (
+                        :keyword IS NULL
+                        OR :keyword = ''
+                        OR LOWER(kh.TenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                        OR kh.SoDienThoai LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(hd.MaHopDong AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(dh.MaDonHang AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                    )
+                AND
+                    (
+                        :trangThai IS NULL
+                        OR :trangThai = ''
+                        OR :trangThai = 'Tất cả'
+                        OR hd.TrangThai = :trangThai
+                    )
+                """,
+            countQuery = """
+                SELECT COUNT(*)
+                FROM hopdong hd
+                LEFT JOIN donhang dh ON dh.MaDonHang = hd.MaDonHang
+                LEFT JOIN khachhang kh ON kh.MaKhachHang = dh.MaKhachHang
+                WHERE
+                    (
+                        :keyword IS NULL
+                        OR :keyword = ''
+                        OR LOWER(kh.TenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                        OR kh.SoDienThoai LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(hd.MaHopDong AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(dh.MaDonHang AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                    )
+                AND
+                    (
+                        :trangThai IS NULL
+                        OR :trangThai = ''
+                        OR :trangThai = 'Tất cả'
+                        OR hd.TrangThai = :trangThai
+                    )
+                """,
+            nativeQuery = true
+    )
     Page<HopDong> searchHopDong(
             @Param("keyword") String keyword,
             @Param("trangThai") String trangThai,
             Pageable pageable
     );
-    boolean existsByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
-
-    List<HopDong> findByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
 }

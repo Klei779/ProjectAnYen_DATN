@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { computed } from "vue";
 
 const props = defineProps({
   contract: {
@@ -19,91 +19,162 @@ const props = defineProps({
   }
 });
 
+const today = new Date();
+
+const currentDay = String(today.getDate()).padStart(2, "0");
+const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
+const currentYear = today.getFullYear();
+
+const safeNumber = (value) => Number(value || 0);
+
 const productsTotal = computed(() => {
-  return props.orderProducts.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  return props.orderProducts.reduce((sum, item) => {
+    const price = safeNumber(item.price);
+    const quantity = safeNumber(item.quantity);
+    const thanhTien = safeNumber(item.thanhTien);
+
+    return sum + (thanhTien > 0 ? thanhTien : price * quantity);
+  }, 0);
 });
 
 const extraServicesTotal = computed(() => {
-  return props.extraServices.reduce((sum, item) => sum + (Number(item.price) || 0), 0);
+  return props.extraServices.reduce((sum, item) => {
+    return sum + safeNumber(item.price);
+  }, 0);
 });
 
 const grandTotal = computed(() => {
   return productsTotal.value + extraServicesTotal.value;
 });
 
-const readVietnameseNumber = (num) => {
-  if (num === 0) return 'Không đồng';
-  const units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
-  const ones = ["không", "một", "hai", "ba", "bốn", "năm", "sáu", "bảy", "tám", "chín"];
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat("vi-VN").format(safeNumber(value));
+};
 
-  function readBlock(n, full) {
-    let str = "";
-    let hundred = Math.floor(n / 100);
-    let n100 = n % 100;
+const formatDate = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleDateString("vi-VN");
+};
+
+const formatDateTime = (value) => {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
+  });
+};
+const previewContractStartDate = computed(() => {
+  return (
+      props.contract.contractStartDate ||
+      props.contract.ngayKyHD ||
+      props.contract.ngayViet ||
+      props.contract.executionDate ||
+      ""
+  );
+});
+
+const previewContractEndDate = computed(() => {
+  return (
+      props.contract.contractEndDate ||
+      props.contract.thoiHanKetThuc ||
+      props.contract.ngayKetThuc ||
+      props.contract.ngayHetHan ||
+      ""
+  );
+});
+
+const readVietnameseNumber = (number) => {
+  let num = Math.round(safeNumber(number));
+
+  if (num === 0) return "Không đồng";
+
+  const units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+  const ones = [
+    "không",
+    "một",
+    "hai",
+    "ba",
+    "bốn",
+    "năm",
+    "sáu",
+    "bảy",
+    "tám",
+    "chín"
+  ];
+
+  const readBlock = (n, full) => {
+    let result = "";
+
+    const hundred = Math.floor(n / 100);
+    const remainder = n % 100;
+    const ten = Math.floor(remainder / 10);
+    const one = remainder % 10;
+
     if (full || hundred > 0) {
-      str += ones[hundred] + " trăm ";
+      result += `${ones[hundred]} trăm `;
     }
-    let ten = Math.floor(n100 / 10);
-    let one = n100 % 10;
-    
+
     if (ten === 0 && one > 0) {
-      if (full || hundred > 0) {
-        str += "lẻ ";
-      }
+      if (full || hundred > 0) result += "lẻ ";
     } else if (ten === 1) {
-      str += "mười ";
+      result += "mười ";
     } else if (ten > 1) {
-      str += ones[ten] + " mươi ";
+      result += `${ones[ten]} mươi `;
     }
 
     if (ten > 1 && one === 1) {
-      str += "mốt ";
+      result += "mốt ";
     } else if (ten > 0 && one === 5) {
-      str += "lăm ";
+      result += "lăm ";
     } else if (one > 0) {
-      str += ones[one] + " ";
+      result += `${ones[one]} `;
     }
-    return str.trim();
+
+    return result.trim();
+  };
+
+  let result = "";
+  let index = 0;
+
+  while (num > 0) {
+    const block = num % 1000;
+
+    if (block > 0) {
+      const blockText = readBlock(block, index > 0 && num > 1000);
+      result = `${blockText} ${units[index]} ${result}`;
+    }
+
+    num = Math.floor(num / 1000);
+    index++;
   }
 
-  let str = "";
-  let i = 0;
-  while (num > 0) {
-    let block = num % 1000;
-    if (block > 0) {
-      let blockStr = readBlock(block, i > 0 && num > 1000);
-      str = blockStr + " " + units[i] + " " + str;
-    }
-    num = Math.floor(num / 1000);
-    i++;
-  }
-  str = str.trim().replace(/\s+/g, ' ');
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  result = result.trim().replace(/\s+/g, " ");
+
+  return result.charAt(0).toUpperCase() + result.slice(1) + " đồng";
 };
 
 const grandTotalInWords = computed(() => {
   return readVietnameseNumber(grandTotal.value);
 });
-
-const formatCurrency = (value) => {
-  return new Intl.NumberFormat('vi-VN').format(value);
-};
-
-const formatDate = (date) => {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("vi-VN");
-};
-const today = new Date();
-
-const currentDay = String(today.getDate()).padStart(2, "0");
-const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
-const currentYear = today.getFullYear();
 </script>
 
 <template>
   <div class="preview-wrapper">
     <div class="contract-paper">
-      
+
       <!-- Header -->
       <div class="header-row">
         <div class="header-left">
@@ -139,10 +210,10 @@ const currentYear = today.getFullYear();
         <div class="flex-row">
           <span class="font-bold">Bên A:&nbsp;</span>Đại diện tang chủ:
           <span class="dotted-input flex-grow">{{ contract.customerName }}</span>
-          CMND:
+          CCCD:
           <span class="dotted-input w-25">{{ contract.citizenId }}</span>
         </div>
-        
+
         <div class="flex-row mt-1">
           Địa chỉ:
           <span class="dotted-input flex-grow">{{ contract.address }}</span>
@@ -151,15 +222,15 @@ const currentYear = today.getFullYear();
         </div>
 
         <div class="mt-1">
-          <span class="font-bold">Bên B: Ban Phục vụ lễ tang Hà Nội.</span>
+          <span class="font-bold">Bên B: Ban Phục vụ lễ tang An Yên.</span>
         </div>
 
         <div class="mt-1 text-justify">
-          Địa chỉ: <strong>125 Phùng Hưng - Hoàn Kiếm - Hà Nội</strong> &nbsp;&nbsp;&nbsp;&nbsp;Điện thoại: <strong>024.39232323 - 024.38285688 - 024.38255728 - 0982.012.723.</strong>
+          Địa chỉ: <strong>1 Tô Ký - Quận 12 - Thành phố Hồ Chí Minh</strong> &nbsp;&nbsp;&nbsp;&nbsp;Điện thoại: <strong>0325.713.045 - 0813.524.916 - 0392.168.473.</strong>
         </div>
 
         <div class="mt-1 text-justify">
-          Số tài khoản: <strong>119000001724</strong> Tại Ngân hàng TMCP Công thương Việt Nam, chi nhánh TP Hà Nội.
+          Số tài khoản: <strong>2000211208</strong> Tại Ngân hàng TMCP Quân Đội, chi nhánh TP Hồ Chí Minh.
         </div>
 
         <div class="mt-1 text-justify">
@@ -171,10 +242,19 @@ const currentYear = today.getFullYear();
         </div>
 
         <div class="flex-row mt-1">
-          Tên người chết:
+          Tên người mất:
           <span class="dotted-input flex-grow">{{ contract.deceasedName }}</span>
-          ngày chết:
-          <span class="dotted-input w-30">{{ formatDate(contract.deathDate) }}</span>
+
+          Giới tính:
+          <span class="dotted-input flex-grow">{{ contract.gender }}</span>
+        </div>
+
+        <div class="flex-row mt-1">
+          Ngày sinh:
+          <span class="dotted-input flex-grow">{{ formatDate(contract.birthDate) }}</span>
+
+          Ngày mất:
+          <span class="dotted-input flex-grow">{{ formatDate(contract.deathDate) }}</span>
         </div>
 
         <div class="flex-row mt-1">
@@ -185,7 +265,14 @@ const currentYear = today.getFullYear();
         </div>
 
         <div class="flex-row mt-1">
-          Được mai táng vào Khu mộ:
+          Được mai táng tại:
+          <span class="dotted-input flex-grow">{{ contract.facility }}</span>
+          Ngày giờ mai táng:
+          <span class="dotted-input flex-grow">{{ formatDateTime(contract.burialDatetime) }}</span>
+        </div>
+
+        <div class="flex-row mt-1">
+          Khu mộ:
           <span class="dotted-input flex-grow">{{ contract.cemeteryArea }}</span>
           Số mộ:
           <span class="dotted-input w-30">{{ contract.graveNumber }}</span>
@@ -193,38 +280,45 @@ const currentYear = today.getFullYear();
 
         <div class="flex-row mt-1">
           Thời gian thực hiện hợp đồng:
-          từ ngày <span class="dotted-input flex-grow">{{ formatDate(contract.contractStartDate) }}</span> đến ngày <span class="dotted-input flex-grow">{{ formatDate(contract.contractEndDate) }}</span>
+          từ ngày
+          <span class="dotted-input flex-grow">
+    {{ formatDate(previewContractStartDate) }}
+  </span>
+          đến ngày
+          <span class="dotted-input flex-grow">
+    {{ formatDate(previewContractEndDate) }}
+  </span>
         </div>
 
         <div class="font-bold mt-2">
           Điều 2: Bên B cung cấp cho bên A các dịch vụ theo nội dung như sau:
         </div>
-        
+
         <div class="mt-1">
           1/ Mai táng:
         </div>
 
         <table class="service-table">
           <thead>
-            <tr>
-              <th class="w-stt">STT</th>
-              <th>Tên dịch vụ</th>
-              <th class="w-sl">Số lượng</th>
-              <th class="w-dg">Đơn giá</th>
-              <th class="w-tt">Thành tiền</th>
-            </tr>
+          <tr>
+            <th class="w-stt">STT</th>
+            <th>Tên dịch vụ</th>
+            <th class="w-sl">Số lượng</th>
+            <th class="w-dg">Đơn giá</th>
+            <th class="w-tt">Thành tiền</th>
+          </tr>
           </thead>
           <tbody>
-            <tr v-for="(item, index) in orderProducts" :key="index">
-              <td class="text-center">{{ index + 1 }}</td>
-              <td>{{ item.name }}</td>
-              <td class="text-center">{{ item.quantity }}</td>
-              <td class="text-right">{{ formatCurrency(item.price) }}</td>
-              <td class="text-right">{{ formatCurrency(item.quantity * item.price) }}</td>
-            </tr>
-            <tr v-if="orderProducts.length === 0">
-              <td colspan="5" class="text-center">Chưa có sản phẩm / dịch vụ</td>
-            </tr>
+          <tr v-for="(item, index) in orderProducts" :key="index">
+            <td class="text-center">{{ index + 1 }}</td>
+            <td>{{ item.name }}</td>
+            <td class="text-center">{{ item.quantity }}</td>
+            <td class="text-right">{{ formatCurrency(item.price) }}</td>
+            <td class="text-right">{{ formatCurrency(item.quantity * item.price) }}</td>
+          </tr>
+          <tr v-if="orderProducts.length === 0">
+            <td colspan="5" class="text-center">Chưa có sản phẩm / dịch vụ</td>
+          </tr>
           </tbody>
         </table>
 
@@ -239,7 +333,7 @@ const currentYear = today.getFullYear();
                 <span style="width: 100px; text-align: right; padding-right: 25px;">0</span>
               </div>
             </div>
-            
+
             <!-- Render each extra service -->
             <div v-for="(srv, i) in extraServices" :key="i" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
               <div>+ {{ srv.name || '........................................' }}</div>
@@ -250,7 +344,7 @@ const currentYear = today.getFullYear();
             </div>
           </div>
         </div>
-        
+
         <div style="display: flex; margin-top: 4px;">
           <div style="width: 100px;"></div>
           <div style="flex-grow: 1; display: flex; justify-content: space-between; font-weight: bold;">
@@ -269,7 +363,7 @@ const currentYear = today.getFullYear();
         <div class="flex-row mt-1">
           <span class="font-bold">Bằng chữ:</span>
           <span style="border-bottom: 2px dotted #000; flex-grow: 1; margin: 0 8px; font-style: italic; line-height: 24px; min-height: 24px; padding-left: 8px;">
-            {{ grandTotalInWords }} đồng
+            {{ grandTotalInWords }}
           </span>
         </div>
 
@@ -283,7 +377,7 @@ const currentYear = today.getFullYear();
         <div class="font-bold mt-2">
           Điều 4: Trách nhiệm của các bên:
         </div>
-        
+
         <div class="font-bold mt-1">
           4.1 Trách nhiệm Bên A:
         </div>

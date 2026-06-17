@@ -7,6 +7,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import vn.anyen.entity.HDongCT;
+import vn.anyen.repository.HDongCTRepository;
+import java.time.LocalDateTime;
 import vn.anyen.dto.request.HopDongCreateRequest;
 import vn.anyen.dto.response.DonHangHopDongDetailResponse;
 import vn.anyen.dto.response.DonHangHopDongOptionResponse;
@@ -22,6 +25,8 @@ import vn.anyen.repository.HopDongRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 @Service
@@ -31,6 +36,7 @@ public class HopDongService {
     private final HopDongRepository hopDongRepository;
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
+    private final HDongCTRepository hDongCTRepository;
 
     public HopDongPageResponse getHopDongs(
             String keyword,
@@ -44,8 +50,10 @@ public class HopDongService {
                 Sort.by(Sort.Direction.DESC, "maHopDong")
         );
 
+        String searchKeyword = normalizeSearchKeyword(keyword);
+
         Page<HopDong> hopDongPage =
-                hopDongRepository.searchHopDong(keyword, trangThai, pageable);
+                hopDongRepository.searchHopDong(searchKeyword, trangThai, pageable);
 
         return HopDongPageResponse.builder()
                 .items(
@@ -69,6 +77,7 @@ public class HopDongService {
 
         return toResponse(hopDong);
     }
+
     @Transactional
     public HopDongResponse huyHopDong(Integer id) {
         HopDong hopDong = hopDongRepository.findById(id)
@@ -92,6 +101,7 @@ public class HopDongService {
 
         return toResponse(saved);
     }
+
     public List<DonHangHopDongOptionResponse> getDonHangOptions() {
         return donHangRepository
                 .findAll(Sort.by(Sort.Direction.DESC, "maDonHang"))
@@ -142,18 +152,20 @@ public class HopDongService {
 
         LocalDate today = LocalDate.now();
 
+        LocalDate ngayKyHD = parseDateOrDefault(request.getNgayKyHD(), today);
+        LocalDate ngayViet = parseDateOrDefault(request.getNgayViet(), today);
+
+        LocalDate thoiHanKetThuc = parseDateOrNull(request.getThoiHanKetThuc());
+
+        if (thoiHanKetThuc == null) {
+            thoiHanKetThuc = parseDateOrNull(request.getNgayKetThuc());
+        }
+
         HopDong hopDong = HopDong.builder()
                 .donHang(donHang)
-                .ngayKyHD(
-                        request.getNgayKyHD() != null
-                                ? request.getNgayKyHD()
-                                : today
-                )
-                .ngayViet(
-                        request.getNgayViet() != null
-                                ? request.getNgayViet()
-                                : today
-                )
+                .ngayKyHD(ngayKyHD)
+                .ngayViet(ngayViet)
+                .thoiHanKetThuc(thoiHanKetThuc)
                 .trangThai(
                         request.getTrangThai() != null
                                 && !request.getTrangThai().isBlank()
@@ -162,7 +174,30 @@ public class HopDongService {
                 )
                 .build();
 
-        HopDong saved = hopDongRepository.save(hopDong);
+        /*
+         * MaHopDong là INT AUTO_INCREMENT trong database.
+         * Khi save, database tự tăng MaHopDong.
+         * Sau đó backend format MaHopDong thành HD0000001 để trả ra frontend.
+         */
+        HopDong saved = hopDongRepository.saveAndFlush(hopDong);
+
+        if (hasHopDongChiTiet(request)) {
+            HDongCT chiTiet = HDongCT.builder()
+                    .hopDong(saved)
+                    .hoTenNguoiMat(request.getHoTenNguoiMat())
+                    .ngayMat(parseDateOrNull(request.getNgayMat()))
+                    .ngaySinh(parseDateOrNull(request.getNgaySinh()))
+                    .gioiTinh(request.getGioiTinh())
+                    .soGiayBaoTu(request.getSoGiayBaoTu())
+                    .noiCapGiayBaoTu(request.getNoiCapGiayBaoTu())
+                    .coSoMaiTang(request.getCoSoMaiTang())
+                    .khuMo(request.getKhuMo())
+                    .soMo(request.getSoMo())
+                    .ngayGioAnTang(parseDateTimeOrNull(request.getNgayGioAnTang()))
+                    .build();
+
+            hDongCTRepository.save(chiTiet);
+        }
 
         return toResponse(saved);
     }
@@ -304,14 +339,22 @@ public class HopDongService {
 
     private HopDongResponse toResponse(HopDong hopDong) {
         DonHang donHang = hopDong.getDonHang();
+
         KhachHang khachHang =
                 donHang != null
                         ? donHang.getKhachHang()
                         : null;
 
-        return HopDongResponse.builder()
+        String maHopDongText = formatHopDongCode(hopDong.getMaHopDong());
+
+        HDongCT chiTiet = hDongCTRepository
+                .findFirstByHopDong_MaHopDong(hopDong.getMaHopDong())
+                .orElse(null);
+
+        HopDongResponse.HopDongResponseBuilder builder = HopDongResponse.builder()
                 .maHopDong(hopDong.getMaHopDong())
-                .maHopDongText(formatHopDongCode(hopDong.getMaHopDong()))
+                .soHopDong(maHopDongText)
+                .maHopDongText(maHopDongText)
 
                 .maDonHang(
                         donHang != null
@@ -347,17 +390,155 @@ public class HopDongService {
 
                 .ngayKyHD(hopDong.getNgayKyHD())
                 .ngayViet(hopDong.getNgayViet())
-                .trangThai(hopDong.getTrangThai())
-                .build();
+                .thoiHanKetThuc(hopDong.getThoiHanKetThuc())
+                .ngayKetThuc(hopDong.getThoiHanKetThuc())
+                .ngayHetHan(hopDong.getThoiHanKetThuc())
+                .trangThai(hopDong.getTrangThai());
+
+        if (chiTiet != null) {
+            builder
+                    .maHDongCT(chiTiet.getMaHDongCT())
+                    .hoTenNguoiMat(chiTiet.getHoTenNguoiMat())
+                    .ngayMat(chiTiet.getNgayMat())
+                    .ngaySinh(chiTiet.getNgaySinh())
+                    .gioiTinh(chiTiet.getGioiTinh())
+                    .soGiayBaoTu(chiTiet.getSoGiayBaoTu())
+                    .noiCapGiayBaoTu(chiTiet.getNoiCapGiayBaoTu())
+                    .coSoMaiTang(chiTiet.getCoSoMaiTang())
+                    .khuMo(chiTiet.getKhuMo())
+                    .soMo(chiTiet.getSoMo())
+                    .ngayGioAnTang(chiTiet.getNgayGioAnTang());
+        }
+
+        return builder.build();
     }
 
     private String formatHopDongCode(Integer id) {
         if (id == null) return "";
-        return String.format("HD%04d", id);
+        return String.format("HD%07d", id);
     }
 
     private String formatDonHangCode(Integer id) {
         if (id == null) return "";
         return String.format("DH%04d", id);
+    }
+
+    private String normalizeSearchKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return "";
+        }
+
+        String value = keyword.trim();
+        String upperValue = value.toUpperCase();
+
+        /*
+         * Nếu frontend search HD0000001 thì database chỉ có MaHopDong = 1.
+         * Nên đổi HD0000001 thành 1 để query tìm được.
+         */
+        if (upperValue.matches("^HD0*\\d+$")) {
+            return upperValue.replaceFirst("^HD0*", "");
+        }
+
+        if (upperValue.matches("^DH0*\\d+$")) {
+            return upperValue.replaceFirst("^DH0*", "");
+        }
+
+        return value;
+    }
+
+    private LocalDate parseDateOrDefault(String value, LocalDate defaultValue) {
+        LocalDate parsedDate = parseDateOrNull(value);
+        return parsedDate != null ? parsedDate : defaultValue;
+    }
+
+    private LocalDate parseDateOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String dateText = value.trim();
+
+        /*
+         * Nhận các kiểu:
+         * 2026-06-18
+         * 2026-06-18T10:30:00
+         * 18/06/2026
+         * 18/06/2026, 10:30
+         */
+        if (dateText.length() >= 10) {
+            dateText = dateText.substring(0, 10);
+        }
+
+        try {
+            return LocalDate.parse(dateText);
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return LocalDate.parse(
+                    dateText,
+                    DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            );
+        } catch (DateTimeParseException ignored) {
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Ngày không hợp lệ: " + value
+        );
+    }
+    public String getNextHopDongCode() {
+        Integer maxId = hopDongRepository.getMaxMaHopDong();
+
+        int nextId = maxId == null ? 1 : maxId + 1;
+
+        return formatHopDongCode(nextId);
+    }
+    private boolean hasHopDongChiTiet(HopDongCreateRequest request) {
+        return isNotBlank(request.getHoTenNguoiMat())
+                || isNotBlank(request.getNgayMat())
+                || isNotBlank(request.getNgaySinh())
+                || isNotBlank(request.getGioiTinh())
+                || isNotBlank(request.getSoGiayBaoTu())
+                || isNotBlank(request.getNoiCapGiayBaoTu())
+                || isNotBlank(request.getCoSoMaiTang())
+                || isNotBlank(request.getKhuMo())
+                || isNotBlank(request.getSoMo())
+                || isNotBlank(request.getNgayGioAnTang());
+    }
+
+    private boolean isNotBlank(String value) {
+        return value != null && !value.isBlank();
+    }
+
+    private LocalDateTime parseDateTimeOrNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String dateText = value.trim();
+
+        try {
+            return LocalDateTime.parse(dateText);
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return LocalDateTime.parse(
+                    dateText,
+                    DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            );
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return LocalDate.parse(dateText.substring(0, 10)).atStartOfDay();
+        } catch (Exception ignored) {
+        }
+
+        throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Ngày giờ không hợp lệ: " + value
+        );
     }
 }

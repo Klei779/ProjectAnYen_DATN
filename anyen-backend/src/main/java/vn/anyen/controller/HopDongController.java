@@ -10,6 +10,7 @@ import vn.anyen.dto.response.DonHangHopDongOptionResponse;
 import vn.anyen.dto.response.HopDongPageResponse;
 import vn.anyen.dto.response.HopDongResponse;
 import vn.anyen.service.HopDongService;
+import java.util.Map;
 
 import java.util.List;
 
@@ -47,7 +48,10 @@ public class HopDongController {
     ) {
         return hopDongService.getDonHangDetail(maDonHang);
     }
-
+    @GetMapping("/next-code")
+    public Map<String, String> getNextHopDongCode() {
+        return Map.of("soHopDong", hopDongService.getNextHopDongCode());
+    }
     @PostMapping
     public HopDongResponse taoHopDong(
             @Valid @RequestBody HopDongCreateRequest request
@@ -55,7 +59,7 @@ public class HopDongController {
         return hopDongService.taoHopDong(request);
     }
 
-   @GetMapping("/{id}")
+    @GetMapping("/{id}")
     public HopDongResponse getChiTiet(@PathVariable Integer id) {
         return hopDongService.getChiTiet(id);
     }

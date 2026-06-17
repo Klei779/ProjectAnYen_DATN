@@ -32,7 +32,7 @@ const donHangDetail = ref(null);
 const orderProducts = ref([]);
 const extraServices = ref([]);
 
-const contract = ref({
+const createEmptyContract = () => ({
   orderCode: "",
   contractCode: "",
   contractDate: "",
@@ -46,6 +46,7 @@ const contract = ref({
 
   deceasedName: "",
   deathDate: "",
+  birthDate: "",
   age: "",
   gender: "",
 
@@ -55,9 +56,15 @@ const contract = ref({
   burialDatetime: "",
 
   deathCertificateNo: "",
+  deathCertificateIssuePlace: "",
   issuedPlace: "",
+
+  contractStartDate: "",
+  contractEndDate: "",
   executionDate: "",
 });
+
+const contract = ref(createEmptyContract());
 
 const formatMoney = (value) => {
   return Number(value || 0).toLocaleString("vi-VN") + " đ";
@@ -77,6 +84,8 @@ const formatDate = (value) => {
 
 const displayStatus = (status) => {
   if (status === "Đã ký / Hiệu lực") return "Đang hiệu lực";
+  if (status === "Đã ký") return "Đang hiệu lực";
+  if (status === "Mới tạo") return "Chờ ký";
   if (!status) return "---";
   return status;
 };
@@ -85,7 +94,9 @@ const statusClass = (status) => {
   const value = displayStatus(status);
 
   if (value === "Đang hiệu lực") return "green";
+  if (value === "Đang thực hiện") return "green";
   if (value === "Chờ ký") return "yellow";
+  if (value === "Chờ thanh toán") return "yellow";
   if (value === "Sắp hết hạn") return "purple";
   if (value === "Đã hết hạn") return "red";
   if (value === "Đã hủy") return "gray";
@@ -96,18 +107,12 @@ const statusClass = (status) => {
 const getEndDate = (item) => {
   if (!item) return "---";
 
-  if (item.ngayHetHan) return formatDate(item.ngayHetHan);
-  if (item.ngayKetThuc) return formatDate(item.ngayKetThuc);
-
-  if (!item.ngayKyHD) return "---";
-
-  const date = new Date(item.ngayKyHD);
-
-  if (Number.isNaN(date.getTime())) return "---";
-
-  date.setMonth(date.getMonth() + 3);
-
-  return formatDate(date);
+  return formatDate(
+      item.thoiHanKetThuc ||
+      item.ngayKetThuc ||
+      item.ngayHetHan ||
+      ""
+  );
 };
 
 const resetData = () => {
@@ -115,46 +120,42 @@ const resetData = () => {
   donHangDetail.value = null;
   orderProducts.value = [];
   extraServices.value = [];
+  contract.value = createEmptyContract();
+};
 
-  contract.value = {
-    orderCode: "",
-    contractCode: "",
-    contractDate: "",
-    employee: "",
+const getContractStartDate = (hopDong) => {
+  return hopDong?.ngayKyHD || hopDong?.ngayViet || "";
+};
 
-    customerName: "",
-    citizenId: "",
-    address: "",
-    phone: "",
-    relationship: "",
-
-    deceasedName: "",
-    deathDate: "",
-    age: "",
-    gender: "",
-
-    facility: "",
-    cemeteryArea: "",
-    graveNumber: "",
-    burialDatetime: "",
-
-    deathCertificateNo: "",
-    issuedPlace: "",
-    executionDate: "",
-  };
+const getContractEndDate = (hopDong) => {
+  return (
+      hopDong?.thoiHanKetThuc ||
+      hopDong?.ngayKetThuc ||
+      hopDong?.ngayHetHan ||
+      ""
+  );
 };
 
 const fillContractFromData = (hopDong, donHang) => {
+  const startDate = getContractStartDate(hopDong);
+  const endDate = getContractEndDate(hopDong);
+
   contract.value.orderCode =
       hopDong.maDonHangText ||
       donHang?.maDonHangText ||
       (hopDong.maDonHang ? `DH${String(hopDong.maDonHang).padStart(4, "0")}` : "");
 
   contract.value.contractCode =
+      hopDong.soHopDong ||
       hopDong.maHopDongText ||
-      (hopDong.maHopDong ? `HD${String(hopDong.maHopDong).padStart(4, "0")}` : "");
+      (hopDong.maHopDong ? `HD${String(hopDong.maHopDong).padStart(7, "0")}` : "");
 
-  contract.value.contractDate = hopDong.ngayKyHD || hopDong.ngayViet || "";
+  contract.value.contractDate = startDate;
+  contract.value.contractStartDate = startDate;
+  contract.value.executionDate = startDate;
+
+  contract.value.contractEndDate = endDate;
+
   contract.value.employee = donHang?.tenNhanVien || "";
 
   contract.value.customerName =
@@ -164,13 +165,25 @@ const fillContractFromData = (hopDong, donHang) => {
 
   contract.value.citizenId = donHang?.cccd || "";
   contract.value.address = donHang?.diaChi || "";
-  contract.value.phone =
-      donHang?.soDienThoai ||
-      hopDong.soDienThoai ||
-      "";
+  contract.value.phone = donHang?.soDienThoai || hopDong.soDienThoai || "";
 
-  contract.value.facility = "Công viên nghĩa trang An Yên";
-  contract.value.executionDate = hopDong.ngayKyHD || hopDong.ngayViet || "";
+  contract.value.deceasedName = hopDong.hoTenNguoiMat || "";
+  contract.value.deathDate = hopDong.ngayMat || "";
+  contract.value.birthDate = hopDong.ngaySinh || "";
+  contract.value.gender = hopDong.gioiTinh || "";
+
+  contract.value.deathCertificateNo = hopDong.soGiayBaoTu || "";
+  contract.value.deathCertificateIssuePlace = hopDong.noiCapGiayBaoTu || "";
+  contract.value.issuedPlace = hopDong.noiCapGiayBaoTu || "";
+
+  contract.value.facility = hopDong.coSoMaiTang || "";
+  contract.value.cemeteryArea = hopDong.khuMo || "";
+  contract.value.graveNumber = hopDong.soMo || "";
+  contract.value.burialDatetime = hopDong.ngayGioAnTang || "";
+
+  console.log("HOP DONG DETAIL:", hopDong);
+  console.log("Ngày thực hiện:", contract.value.contractStartDate);
+  console.log("Ngày hết hạn:", contract.value.contractEndDate);
 };
 
 const loadDetail = async () => {
@@ -285,6 +298,11 @@ const handlePrint = () => {
 
   const printWindow = window.open("", "", "width=800,height=900");
 
+  if (!printWindow) {
+    ElMessage.error("Trình duyệt đã chặn cửa sổ in");
+    return;
+  }
+
   printWindow.document.write(`
     <html>
       <head>
@@ -292,11 +310,7 @@ const handlePrint = () => {
         ${styles}
         <style>
           @media print {
-            @page {
-              size: A4;
-              margin: 0;
-            }
-
+            @page { size: A4; margin: 0; }
             body {
               margin: 0;
               padding: 0;
@@ -304,14 +318,12 @@ const handlePrint = () => {
               -webkit-print-color-adjust: exact;
               print-color-adjust: exact;
             }
-
             .preview-wrapper {
               height: auto !important;
               overflow: visible !important;
               padding: 0 !important;
               background: transparent !important;
             }
-
             .contract-paper {
               box-shadow: none !important;
               margin: 0 !important;
@@ -319,7 +331,6 @@ const handlePrint = () => {
               width: 100% !important;
               min-height: auto !important;
             }
-
             input,
             .dotted-input {
               background: transparent !important;
@@ -327,10 +338,8 @@ const handlePrint = () => {
           }
         </style>
       </head>
-
       <body>
         <div>${content}</div>
-
         <script>
           window.onload = () => {
             setTimeout(() => {
@@ -370,6 +379,7 @@ const handleCancelContract = async () => {
     const updated = await cancelHopDong(hopDongDetail.value.maHopDong);
 
     hopDongDetail.value = updated;
+    fillContractFromData(updated, donHangDetail.value);
 
     ElMessage.success("Hủy hợp đồng thành công");
     emit("canceled", updated);
@@ -584,10 +594,10 @@ watch(
         <div class="preview-scroll">
           <div
               :style="{
-                transform: `scale(${zoomLevel / 100})`,
-                transformOrigin: 'top center',
-                transition: 'transform 0.2s'
-              }"
+              transform: `scale(${zoomLevel / 100})`,
+              transformOrigin: 'top center',
+              transition: 'transform 0.2s'
+            }"
           >
             <div ref="previewRef">
               <PreviewHopDong

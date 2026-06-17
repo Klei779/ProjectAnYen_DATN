@@ -20,7 +20,7 @@ public class HopDong {
     private Integer maHopDong;
 
     @OneToOne
-    @JoinColumn(name = "MaDonHang")
+    @JoinColumn(name = "MaDonHang", nullable = false)
     private DonHang donHang;
 
     @Column(name = "NgayKyHD")
@@ -29,6 +29,9 @@ public class HopDong {
     @Column(name = "NgayViet")
     private LocalDate ngayViet;
 
-    @Column(name = "trangThai")
+    @Column(name = "ThoiHanKetThuc")
+    private LocalDate thoiHanKetThuc;
+
+    @Column(name = "TrangThai")
     private String trangThai;
 }

@@ -63,7 +63,7 @@ public class SecurityConfig {
                         // API đối tác bắt buộc role DOITAC
                         .requestMatchers("/api/doi-tac/**")
                         .hasRole("DOITAC")
-
+                        .requestMatchers("/api/doi-tac/quan-ly-don-hang/**").hasRole("DOI_TAC")
                         // API nhân viên bắt buộc các role nhân sự
                         .requestMatchers("/api/nhan-vien/hop-dong/**")
                         .permitAll()

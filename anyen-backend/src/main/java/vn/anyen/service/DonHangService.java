@@ -1,8 +1,13 @@
 package vn.anyen.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.anyen.dto.response.DoiTacDonHangPageResponse;
+import vn.anyen.dto.response.DoiTacDonHangResponse;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DonHang;
@@ -410,6 +415,106 @@ public class DonHangService {
         DonHang saved = donHangRepository.save(donHang);
 
         return mapToDonHangResponse(saved);
+    }
+    private DoiTacDonHangResponse mapToDoiTacDonHangResponse(DonHang donHang, Integer maDoiTac) {
+        List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHangAndDoiTac(
+                donHang.getMaDonHang(),
+                maDoiTac
+        );
+
+        BigDecimal tongCong = chiTiets.stream()
+                .map(ct -> {
+                    BigDecimal giaTien = ct.getGiaTien() == null ? BigDecimal.ZERO : ct.getGiaTien();
+                    Integer soLuong = ct.getSoLuong() == null ? 0 : ct.getSoLuong();
+                    return giaTien.multiply(BigDecimal.valueOf(soLuong));
+                })
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        List<DoiTacDonHangResponse.SanPhamTrongDonResponse> sanPhams = new ArrayList<>();
+
+        for (int i = 0; i < chiTiets.size(); i++) {
+            ChiTietDonHang ct = chiTiets.get(i);
+            SanPham sp = ct.getSanPham();
+
+            BigDecimal giaTien = ct.getGiaTien() == null ? BigDecimal.ZERO : ct.getGiaTien();
+            Integer soLuong = ct.getSoLuong() == null ? 0 : ct.getSoLuong();
+
+            sanPhams.add(
+                    DoiTacDonHangResponse.SanPhamTrongDonResponse.builder()
+                            .stt(i + 1)
+                            .ten(sp != null ? sp.getTenSanPham() : "")
+                            .soLuong(soLuong)
+                            .donGia(giaTien)
+                            .thanhTien(giaTien.multiply(BigDecimal.valueOf(soLuong)))
+                            .build()
+            );
+        }
+
+        KhachHang khachHang = donHang.getKhachHang();
+        NhanVien nhanVien = donHang.getNhanVien();
+
+        return DoiTacDonHangResponse.builder()
+                .maDonHang(donHang.getMaDonHang())
+                .maCode(String.format("DH%04d", donHang.getMaDonHang()))
+
+                .tenKhachHang(khachHang != null ? khachHang.getTenKhachHang() : "")
+                .cccd(khachHang != null ? khachHang.getCccd() : "")
+                .soDienThoai(khachHang != null ? khachHang.getSoDienThoai() : "")
+                .email(khachHang != null ? khachHang.getEmail() : "")
+                .diaChi(khachHang != null ? khachHang.getDiaChi() : "")
+
+                .ngayDat(donHang.getNgayTaoDon() != null ? donHang.getNgayTaoDon().toString() : "")
+                .nhanVien(nhanVien != null ? nhanVien.getHoTen() : "")
+
+                .ghiChu(donHang.getGhiChu())
+                .trangThai(donHang.getTrangThai())
+                .tongCong(tongCong)
+
+                .sanPhams(sanPhams)
+                .build();
+    }
+    @Transactional(readOnly = true)
+    public DoiTacDonHangPageResponse getDoiTacDonHangs(
+            Integer maDoiTac,
+            String keyword,
+            String trangThai,
+            Integer page,
+            Integer pageSize
+    ) {
+        int pageIndex = page == null || page < 1 ? 0 : page - 1;
+        int size = pageSize == null || pageSize < 1 ? 10 : pageSize;
+
+        Pageable pageable = PageRequest.of(pageIndex, size);
+
+        Page<DonHang> donHangPage = donHangRepository.findDoiTacDonHangs(
+                maDoiTac,
+                keyword,
+                trangThai,
+                pageable
+        );
+
+        List<DoiTacDonHangResponse> items = donHangPage.getContent()
+                .stream()
+                .map(donHang -> mapToDoiTacDonHangResponse(donHang, maDoiTac))
+                .collect(Collectors.toList());
+
+        return DoiTacDonHangPageResponse.builder()
+                .items(items)
+                .total((int) donHangPage.getTotalElements())
+                .build();
+    }
+    @Transactional(readOnly = true)
+    public DoiTacDonHangResponse getDoiTacDonHangDetail(Integer maDonHang, Integer maDoiTac) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
+
+        DoiTacDonHangResponse response = mapToDoiTacDonHangResponse(donHang, maDoiTac);
+
+        if (response.getSanPhams() == null || response.getSanPhams().isEmpty()) {
+            throw new RuntimeException("Đơn hàng không thuộc đối tác này");
+        }
+
+        return response;
     }
 }
 

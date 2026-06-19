@@ -46,20 +46,28 @@ const normalizeDonHang = (dh) => {
 };
 
 const fetchDonHangs = async () => {
+  loading.value = true;
+
   try {
     const data = await getDonHangsDoiTac({
+      keyword: keyword.value,
+      trangThai: statusFilter.value || "Tất cả",
       page: 1,
       pageSize: 100
     });
 
-    donHangs.value = Array.isArray(data)
+    const items = Array.isArray(data)
         ? data
         : (data.items || []);
 
-    console.log("Đơn hàng đối tác:", donHangs.value);
+    donHangs.value = items.map(normalizeDonHang);
+
+    console.log("Đơn hàng đối tác sau khi lọc backend:", donHangs.value);
   } catch (error) {
     console.error("Lỗi khi fetch đơn hàng:", error);
     donHangs.value = [];
+  } finally {
+    loading.value = false;
   }
 };
 

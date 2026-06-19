@@ -22,4 +22,15 @@ public interface ChiTietDonHangRepository
     List<Integer> findMaDoiTacsByDonHang(
             @Param("maDonHang") Integer maDonHang
     );
+
+    @Query("""
+        SELECT ct
+        FROM ChiTietDonHang ct
+        WHERE ct.donHang.maDonHang = :maDonHang
+          AND ct.sanPham.maDoiTac = :maDoiTac
+        """)
+    List<ChiTietDonHang> findByDonHangAndDoiTac(
+            @Param("maDonHang") Integer maDonHang,
+            @Param("maDoiTac") Integer maDoiTac
+    );
 }

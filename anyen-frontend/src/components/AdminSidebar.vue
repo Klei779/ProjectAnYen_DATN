@@ -39,6 +39,10 @@
         <i class="fa-solid fa-handshake menu-icon"></i>
         <span class="sidebar-text">Quản lý đối tác</span>
       </RouterLink>
+      <RouterLink to="/admin/quan-ly-nhan-vien" class="menu-item" title="Quản lý nhân viên">
+        <i class="fa-solid fa-handshake menu-icon"></i>
+        <span class="sidebar-text">Quản lý nhân viên</span>
+      </RouterLink>
 
       <RouterLink to="/admin/thong-bao" class="menu-item" title="Thông báo">
         <i class="fa-solid fa-bell menu-icon"></i>

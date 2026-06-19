@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import api from "../../api/api.js";
+
 import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
 
 /*
@@ -12,7 +12,10 @@ import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
 */
 import PopXemHopDong from "./PopChiTietHopDong.vue";
 
-import { cancelHopDong } from "../../services/hopDongService.js";
+import {
+  getHopDongs,
+  cancelHopDong
+} from "../../services/hopDongService.js";
 
 const keyword = ref("");
 const trangThai = ref("Tất cả");
@@ -35,8 +38,9 @@ const statusOptions = [
   "Tất cả",
   "Đang hiệu lực",
   "Chờ ký",
-  "Sắp hết hạn",
-  "Đã hết hạn",
+  "Chờ thanh toán",
+  "Đang thực hiện",
+  "Đã hoàn tất",
   "Đã hủy",
 ];
 
@@ -46,26 +50,25 @@ const contractTypes = [
   "Hợp đồng dịch vụ",
 ];
 
-const mapStatusToBackend = (status) => {
-  if (status === "Đang hiệu lực") return "Đã ký / Hiệu lực";
-  return status;
-};
+
 
 const loadHopDongs = async () => {
   try {
     loading.value = true;
 
-    const response = await api.get("/api/nhan-vien/hop-dong", {
-      params: {
-        keyword: keyword.value || "",
-        trangThai: mapStatusToBackend(trangThai.value || "Tất cả"),
-        page: page.value || 1,
-        pageSize: pageSize.value || 10,
-      },
+    const data = await getHopDongs({
+      keyword: keyword.value || "",
+      // Luôn lấy tất cả từ backend.
+      // Frontend tự lọc trạng thái sau, vì DB đang dùng nhiều tên trạng thái khác nhau.
+      trangThai: "Tất cả",
+      page: page.value || 1,
+      pageSize: pageSize.value || 10,
     });
 
-    hopDongs.value = response.data.items || [];
-    total.value = response.data.total || 0;
+    hopDongs.value = data.items || [];
+    total.value = data.total || 0;
+
+    console.log("DANH SÁCH HỢP ĐỒNG:", hopDongs.value);
   } catch (error) {
     console.error("Lỗi tải hợp đồng:", error);
 
@@ -81,7 +84,6 @@ const loadHopDongs = async () => {
     loading.value = false;
   }
 };
-
 const openDetail = (id) => {
   selectedHopDongId.value = id;
   showDetailModal.value = true;
@@ -185,7 +187,11 @@ const formatDate = (value) => {
 };
 
 const getContractCode = (item) => {
-  return item.maHopDongText || `HD${String(item.maHopDong).padStart(6, "0")}`;
+  return (
+      item.soHopDong ||
+      item.maHopDongText ||
+      `HD${String(item.maHopDong).padStart(7, "0")}`
+  );
 };
 
 const getProjectName = (item) => {
@@ -215,8 +221,20 @@ const getEndDate = (item) => {
 };
 
 const displayStatus = (status) => {
-  if (status === "Đã ký / Hiệu lực") return "Đang hiệu lực";
   if (!status) return "---";
+
+  if (
+      status === "Đã ký" ||
+      status === "Đã ký / Hiệu lực" ||
+      status === "Đã hoàn tất"
+  ) {
+    return "Đang hiệu lực";
+  }
+
+  if (status === "Mới tạo") {
+    return "Chờ ký";
+  }
+
   return status;
 };
 
@@ -224,14 +242,15 @@ const statusClass = (status) => {
   const display = displayStatus(status);
 
   if (display === "Đang hiệu lực") return "green";
+  if (display === "Đang thực hiện") return "green";
   if (display === "Chờ ký") return "yellow";
+  if (display === "Chờ thanh toán") return "yellow";
   if (display === "Sắp hết hạn") return "purple";
   if (display === "Đã hết hạn") return "red";
   if (display === "Đã hủy") return "gray";
 
   return "gray";
 };
-
 const tableHopDongs = computed(() => {
   return hopDongs.value.filter((item) => {
     const sameType =
@@ -240,7 +259,8 @@ const tableHopDongs = computed(() => {
 
     const sameStatus =
         trangThai.value === "Tất cả" ||
-        displayStatus(item.trangThai) === trangThai.value;
+        displayStatus(item.trangThai) === trangThai.value ||
+        item.trangThai === trangThai.value;
 
     return sameType && sameStatus;
   });

@@ -1,146 +1,152 @@
 <template>
   <div class="account-page">
+    <div class="page-header">
+      <div>
+        <h2>Thông tin tài khoản</h2>
+        <p>Quản lý và cập nhật thông tin cá nhân của nhân viên</p>
+      </div>
+
+      <button class="btn-back" type="button" @click="closePage">
+        <i class="fa-solid fa-arrow-left"></i>
+        Quay lại
+      </button>
+    </div>
+
     <div v-if="loading" class="account-loading">
       <i class="fa-solid fa-spinner fa-spin"></i>
       Đang tải thông tin tài khoản...
     </div>
 
-    <section v-else class="account-popup">
-      <button class="close-x" type="button" @click="closePage">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-
-      <h3>Thông tin tài khoản</h3>
-
-      <div class="account-content">
-        <aside class="profile-left">
-          <div class="avatar-wrap">
-            <div class="avatar-main">
-              {{ initials }}
-            </div>
-
-            <button class="camera-btn" type="button" title="Ảnh đại diện">
-              <i class="fa-solid fa-camera"></i>
-            </button>
+    <div v-else class="account-container">
+      <aside class="profile-card">
+        <div class="avatar-wrap">
+          <div class="avatar-main">
+            {{ initials }}
           </div>
 
-          <h2>{{ account?.hoTen || "Nhân viên" }}</h2>
+          <button class="camera-btn" type="button" title="Ảnh đại diện">
+            <i class="fa-solid fa-camera"></i>
+          </button>
+        </div>
 
-          <span
-              class="status-badge"
-              :class="{ inactive: account?.trangThai !== 'Đang hoạt động' }"
+        <h3>{{ account?.hoTen || "Nhân viên" }}</h3>
+
+        <span
+            class="status-badge"
+            :class="{ inactive: account?.trangThai !== 'Đang hoạt động' }"
+        >
+          {{ account?.trangThai || "Đang hoạt động" }}
+        </span>
+
+        <div class="profile-summary">
+          <div>
+            <span>Mã nhân viên</span>
+            <strong>{{ maNhanVienDisplay }}</strong>
+          </div>
+
+          <div>
+            <span>Tên đăng nhập</span>
+            <strong>{{ account?.tenDangNhap || "---" }}</strong>
+          </div>
+
+          <div>
+            <span>Vai trò</span>
+            <strong>{{ account?.vaiTro || "---" }}</strong>
+          </div>
+        </div>
+      </aside>
+
+      <main class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Thông tin cá nhân</h3>
+            <p>Chỉ cập nhật các thông tin có trong bảng nhân viên</p>
+          </div>
+
+          <button
+              v-if="!editMode"
+              class="btn-edit"
+              type="button"
+              @click="startEdit"
           >
-            {{ account?.trangThai || "Đang hoạt động" }}
-          </span>
-        </aside>
+            <i class="fa-solid fa-pen"></i>
+            Chỉnh sửa
+          </button>
+        </div>
 
-        <main class="profile-right">
-          <div class="readonly-grid">
-            <label>Mã nhân viên</label>
-            <div class="readonly-box">{{ maNhanVienDisplay }}</div>
-
-            <label>Tên đăng nhập</label>
-            <div class="readonly-box">{{ account?.tenDangNhap || "---" }}</div>
-
-            <label>Vai trò</label>
-            <div class="readonly-box">{{ account?.vaiTro || "---" }}</div>
+        <form v-if="editMode" class="edit-form" @submit.prevent="submitUpdate">
+          <div class="form-row">
+            <label>Họ và tên</label>
+            <input
+                v-model.trim="form.hoTen"
+                type="text"
+                placeholder="Nhập họ và tên"
+            />
           </div>
 
-          <div class="section-title">
-            <h4>Thông tin cá nhân</h4>
+          <div class="form-row">
+            <label>Số điện thoại</label>
+            <input
+                v-model.trim="form.soDienThoai"
+                type="text"
+                placeholder="Nhập số điện thoại"
+            />
+          </div>
 
-            <button
-                v-if="!editMode"
-                class="btn-edit"
-                type="button"
-                @click="startEdit"
-            >
-              <i class="fa-solid fa-pen"></i>
-              Chỉnh sửa
+          <div class="form-row">
+            <label>Email</label>
+            <input
+                v-model.trim="form.email"
+                type="email"
+                placeholder="Nhập email"
+            />
+          </div>
+
+          <div class="form-row">
+            <label>Địa chỉ</label>
+            <textarea
+                v-model.trim="form.diaChi"
+                rows="4"
+                placeholder="Nhập địa chỉ"
+            ></textarea>
+          </div>
+
+          <div class="action-row">
+            <button class="btn-outline" type="button" @click="cancelEdit">
+              Hủy
+            </button>
+
+            <button class="btn-save" type="submit" :disabled="saving">
+              <i v-if="saving" class="fa-solid fa-spinner fa-spin"></i>
+              <i v-else class="fa-solid fa-floppy-disk"></i>
+              Lưu thay đổi
             </button>
           </div>
+        </form>
 
-          <form v-if="editMode" class="edit-form" @submit.prevent="submitUpdate">
-            <div class="form-row">
-              <label>Họ và tên</label>
-              <input
-                  v-model.trim="form.hoTen"
-                  type="text"
-                  placeholder="Nhập họ và tên"
-              />
-            </div>
-
-            <div class="form-row">
-              <label>Số điện thoại</label>
-              <input
-                  v-model.trim="form.soDienThoai"
-                  type="text"
-                  placeholder="Nhập số điện thoại"
-              />
-            </div>
-
-            <div class="form-row">
-              <label>Email</label>
-              <input
-                  v-model.trim="form.email"
-                  type="email"
-                  placeholder="Nhập email"
-              />
-            </div>
-
-            <div class="form-row">
-              <label>Địa chỉ</label>
-              <textarea
-                  v-model.trim="form.diaChi"
-                  rows="3"
-                  placeholder="Nhập địa chỉ"
-              ></textarea>
-            </div>
-
-            <div class="action-row">
-              <button class="btn-outline" type="button" @click="cancelEdit">
-                Hủy
-              </button>
-
-              <button class="btn-save" type="submit" :disabled="saving">
-                <i v-if="saving" class="fa-solid fa-spinner fa-spin"></i>
-                <i v-else class="fa-solid fa-floppy-disk"></i>
-                Lưu thay đổi
-              </button>
-            </div>
-          </form>
-
-          <div v-else class="info-list">
-            <div class="info-row">
-              <span>Họ và tên</span>
-              <strong>{{ account?.hoTen || "Chưa cập nhật" }}</strong>
-            </div>
-
-            <div class="info-row">
-              <span>Số điện thoại</span>
-              <strong>{{ account?.soDienThoai || "Chưa cập nhật" }}</strong>
-            </div>
-
-            <div class="info-row">
-              <span>Email</span>
-              <strong>{{ account?.email || "Chưa cập nhật" }}</strong>
-            </div>
-
-            <div class="info-row">
-              <span>Địa chỉ</span>
-              <strong>{{ account?.diaChi || "Chưa cập nhật" }}</strong>
-            </div>
+        <div v-else class="info-list">
+          <div class="info-row">
+            <span>Họ và tên</span>
+            <strong>{{ account?.hoTen || "Chưa cập nhật" }}</strong>
           </div>
 
-          <div class="bottom-actions">
-            <button class="btn-close" type="button" @click="closePage">
-              <i class="fa-solid fa-xmark"></i>
-              Đóng
-            </button>
+          <div class="info-row">
+            <span>Số điện thoại</span>
+            <strong>{{ account?.soDienThoai || "Chưa cập nhật" }}</strong>
           </div>
-        </main>
-      </div>
-    </section>
+
+          <div class="info-row">
+            <span>Email</span>
+            <strong>{{ account?.email || "Chưa cập nhật" }}</strong>
+          </div>
+
+          <div class="info-row">
+            <span>Địa chỉ</span>
+            <strong>{{ account?.diaChi || "Chưa cập nhật" }}</strong>
+          </div>
+        </div>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -307,69 +313,88 @@ function getErrorMessage(error, fallback) {
 <style scoped>
 .account-page {
   min-height: calc(100vh - 80px);
-  padding: 32px;
-  background: #f8fafc;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  padding: 28px;
+  background: #f5f7fb;
   font-family: "Inter", Arial, sans-serif;
 }
 
+.page-header {
+  max-width: 1100px;
+  margin: 0 auto 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+
+.page-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.page-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.btn-back {
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: #fff;
+  color: #0f274f;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+}
+
 .account-loading {
-  margin-top: 80px;
+  max-width: 1100px;
+  margin: 40px auto 0;
   padding: 18px 24px;
   background: #fff;
   border-radius: 14px;
   color: #0f172a;
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.account-popup {
-  width: 860px;
-  max-width: 100%;
-  position: relative;
-  background: #fff;
-  border-radius: 20px;
-  padding: 34px;
-  box-shadow: 0 18px 60px rgba(15, 23, 42, 0.12);
-}
-
-.close-x {
-  position: absolute;
-  top: 24px;
-  right: 26px;
-  border: 0;
-  background: transparent;
-  color: #10264f;
-  font-size: 21px;
-  cursor: pointer;
-}
-
-.account-popup h3 {
-  margin: 0 0 28px;
-  color: #111827;
-  font-size: 22px;
-  font-weight: 800;
-}
-
-.account-content {
+.account-container {
+  max-width: 1100px;
+  margin: 0 auto;
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 34px;
+  grid-template-columns: 320px 1fr;
+  gap: 24px;
+  align-items: start;
 }
 
-.profile-left {
-  padding-top: 28px;
+.profile-card,
+.info-card {
+  background: #fff;
+  border-radius: 18px;
+  border: 1px solid #eef2f7;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.07);
+}
+
+.profile-card {
+  padding: 30px 24px;
   text-align: center;
 }
 
 .avatar-wrap {
   width: 140px;
   height: 140px;
-  margin: 0 auto 20px;
+  margin: 0 auto 18px;
   position: relative;
 }
 
@@ -381,17 +406,17 @@ function getErrorMessage(error, fallback) {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #111;
+  color: #111827;
   font-size: 42px;
   font-weight: 800;
 }
 
 .camera-btn {
   position: absolute;
-  right: 10px;
+  right: 8px;
   bottom: 12px;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 2px solid #fff;
   background: #fff;
@@ -400,7 +425,7 @@ function getErrorMessage(error, fallback) {
   cursor: default;
 }
 
-.profile-left h2 {
+.profile-card h3 {
   margin: 0 0 14px;
   color: #111827;
   font-size: 21px;
@@ -410,7 +435,7 @@ function getErrorMessage(error, fallback) {
 .status-badge {
   display: inline-flex;
   padding: 7px 14px;
-  border-radius: 7px;
+  border-radius: 8px;
   background: #dcfce7;
   color: #16803a;
   font-size: 13px;
@@ -422,77 +447,98 @@ function getErrorMessage(error, fallback) {
   color: #dc2626;
 }
 
-.profile-right {
-  min-width: 0;
-}
-
-.readonly-grid {
-  display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 14px 18px;
-  align-items: center;
-  margin-bottom: 28px;
-}
-
-.readonly-grid label {
-  color: #17335c;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.readonly-box {
-  min-height: 40px;
-  padding: 10px 14px;
-  border-radius: 8px;
-  background: #f1f5f9;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.section-title {
+.profile-summary {
+  margin-top: 26px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 18px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 18px;
+  flex-direction: column;
+  gap: 14px;
+  text-align: left;
 }
 
-.section-title h4 {
+.profile-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profile-summary span {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-summary strong {
+  color: #0f274f;
+  font-size: 15px;
+  font-weight: 800;
+  word-break: break-word;
+}
+
+.info-card {
+  padding: 28px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.card-header h3 {
   margin: 0;
   color: #111827;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
 }
 
+.card-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
 .btn-edit {
-  height: 34px;
-  padding: 0 14px;
+  height: 38px;
+  padding: 0 15px;
   border: 1px solid #ff5b6b;
-  border-radius: 7px;
+  border-radius: 9px;
   background: #fff;
   color: #ff3045;
   font-weight: 800;
   font-size: 13px;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 16px;
 }
 
 .info-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
+  grid-template-columns: 170px 1fr;
   gap: 18px;
+  min-height: 44px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f8fafc;
 }
 
 .info-row span {
   color: #17335c;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .info-row strong {
@@ -503,36 +549,37 @@ function getErrorMessage(error, fallback) {
 }
 
 .edit-form {
-  padding: 18px;
+  padding: 20px;
   border-radius: 14px;
-  background: #fff;
+  background: #f8fafc;
   border: 1px solid #eef2f7;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 
 .form-row {
   display: grid;
-  grid-template-columns: 150px 1fr;
-  gap: 14px;
+  grid-template-columns: 160px 1fr;
+  gap: 16px;
   align-items: center;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .form-row label {
   color: #17335c;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .form-row input,
 .form-row textarea {
   width: 100%;
   border: 1px solid #dbe3ef;
-  border-radius: 8px;
-  padding: 10px 12px;
+  border-radius: 10px;
+  padding: 11px 13px;
   color: #0f172a;
   outline: none;
   font-size: 14px;
+  background: #fff;
+  box-sizing: border-box;
 }
 
 .form-row textarea {
@@ -545,25 +592,19 @@ function getErrorMessage(error, fallback) {
   box-shadow: 0 0 0 3px rgba(255, 91, 107, 0.12);
 }
 
-.bottom-actions,
 .action-row {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  margin-top: 30px;
+  margin-top: 22px;
   flex-wrap: wrap;
 }
 
-.action-row {
-  margin-top: 20px;
-}
-
 .btn-outline,
-.btn-save,
-.btn-close {
+.btn-save {
   height: 42px;
   padding: 0 20px;
-  border-radius: 7px;
+  border-radius: 9px;
   font-size: 14px;
   font-weight: 800;
   cursor: pointer;
@@ -584,15 +625,19 @@ function getErrorMessage(error, fallback) {
   color: #fff;
 }
 
-.btn-close {
-  border: 1px solid #ef0000;
-  background: #ef0000;
-  color: #fff;
-}
-
 .btn-save:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  .account-container {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-summary {
+    text-align: center;
+  }
 }
 
 @media (max-width: 768px) {
@@ -600,34 +645,42 @@ function getErrorMessage(error, fallback) {
     padding: 18px;
   }
 
-  .account-popup {
-    padding: 24px 18px;
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .account-content {
-    grid-template-columns: 1fr;
-    gap: 20px;
+  .btn-back {
+    width: 100%;
+    justify-content: center;
   }
 
-  .profile-left {
-    padding-top: 0;
+  .info-card,
+  .profile-card {
+    padding: 22px 18px;
   }
 
-  .readonly-grid,
+  .card-header {
+    flex-direction: column;
+  }
+
+  .btn-edit {
+    width: 100%;
+    justify-content: center;
+  }
+
   .info-row,
   .form-row {
     grid-template-columns: 1fr;
     gap: 8px;
   }
 
-  .bottom-actions,
   .action-row {
     justify-content: stretch;
   }
 
   .btn-outline,
-  .btn-save,
-  .btn-close {
+  .btn-save {
     width: 100%;
     justify-content: center;
   }

@@ -14,7 +14,10 @@ export async function getHopDongs(params = {}) {
 
     return response.data;
 }
-
+export async function getNextHopDongCode() {
+    const response = await api.get(`${API_URL}/next-code`);
+    return response.data;
+}
 export async function getChiTietHopDong(id) {
     const response = await api.get(`${API_URL}/${id}`);
     return response.data;

@@ -12,7 +12,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: intellijjava6@gmail.com
-    password: eysi edpk tpat wopl # Đã chuẩn cấu trúc
+    password: eysi edpk tpat wopl
     properties:
       mail:
         smtp:

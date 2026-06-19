@@ -9,6 +9,7 @@ export async function huyDonHang(maDonHang, lyDoHuy) {
 
   return response.data;
 }
+
 export async function getDonHangs(params = {}) {
   const response = await api.get("/api/don-hang", { params });
 
@@ -25,7 +26,14 @@ export async function taoDonHang(payload) {
 
 export async function getSanPhamTaoDonHang() {
   const response = await api.get("/api/nhan-vien/don-hang/san-pham-options");
-  return response.data || [];
+
+  return response.data?.items || response.data || [];
+}
+
+export async function getKhachHangTaoDonHang() {
+  const response = await api.get("/api/nhan-vien/khach-hang");
+
+  return response.data?.items || response.data || [];
 }
 
 export async function getDonHangById(maDonHang) {

@@ -98,17 +98,122 @@ const errors = ref({
   deathDate: "",
   birthDate: "",
   gender: "",
-
   facility: "",
   cemeteryArea: "",
   graveNumber: "",
   burialDatetime: ""
 });
 
+const MAX_LENGTHS = {
+  customerName: 30,
+  citizenId: 12,
+  address: 40,
+  phone: 10,
+  relationship: 30,
+  deceasedName: 30,
+  deathCertificateNo: 10,
+  deathCertificateIssuePlace: 30,
+  facility: 30,
+  cemeteryArea: 30,
+  graveNumber: 20,
+  serviceName: 15
+};
+
 const clearErrors = () => {
   Object.keys(errors.value).forEach((key) => {
     errors.value[key] = "";
   });
+};
+
+const clearFieldError = (fieldName) => {
+  errors.value[fieldName] = "";
+};
+
+const trimContractTextFields = () => {
+  Object.keys(contract.value).forEach((key) => {
+    if (typeof contract.value[key] === "string") {
+      contract.value[key] = contract.value[key].trim();
+    }
+  });
+
+  services.value.forEach((item) => {
+    if (typeof item.name === "string") {
+      item.name = item.name.trim();
+    }
+  });
+};
+
+const parseDateValue = (value) => {
+  if (!value) return null;
+
+  const date = new Date(String(value).replace(" ", "T"));
+
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const checkMaxLength = (field, label, maxLength) => {
+  const value = contract.value[field] || "";
+
+  if (value.length > maxLength) {
+    errors.value[field] = `${label} tối đa ${maxLength} ký tự`;
+    return false;
+  }
+
+  return true;
+};
+
+const onlyDigits = (value = "") => {
+  return String(value).replace(/\D/g, "");
+};
+
+const normalizeVietnamPhone = (value = "") => {
+  let phone = String(value).trim().replace(/\s+/g, "");
+
+  if (phone.startsWith("+84")) {
+    phone = "0" + phone.slice(3);
+  }
+
+  phone = phone.replace(/\D/g, "");
+
+  if (phone.startsWith("84") && phone.length === 11) {
+    phone = "0" + phone.slice(2);
+  }
+
+  return phone;
+};
+
+const isValidCCCD = (value = "") => {
+  return /^[0-9]{12}$/.test(String(value).trim());
+};
+
+const isValidVietnamPhone = (value = "") => {
+  const phone = normalizeVietnamPhone(value);
+
+  return /^0(3|5|7|8|9)[0-9]{8}$/.test(phone);
+};
+
+const isValidDeathCertificateNo = (value = "") => {
+  return /^[0-9]{10}$/.test(String(value).trim());
+};
+
+const limitCCCDInput = (fieldName = "citizenId") => {
+  contract.value[fieldName] = onlyDigits(contract.value[fieldName]).slice(
+      0,
+      MAX_LENGTHS.citizenId
+  );
+};
+
+const limitPhoneInput = (fieldName = "phone") => {
+  contract.value[fieldName] = normalizeVietnamPhone(contract.value[fieldName]).slice(
+      0,
+      MAX_LENGTHS.phone
+  );
+};
+
+const limitDeathCertificateNoInput = () => {
+  contract.value.deathCertificateNo = onlyDigits(
+      contract.value.deathCertificateNo
+  ).slice(0, MAX_LENGTHS.deathCertificateNo);
 };
 
 const resetContractForm = () => {
@@ -178,47 +283,74 @@ const formatMoney = (value) => {
 
 const validateForm = () => {
   clearErrors();
+  trimContractTextFields();
 
   let isValid = true;
   const now = new Date();
 
-  if (!contract.value.customerName?.trim()) {
-    errors.value.customerName = "Vui lòng nhập họ tên tang chủ";
-    isValid = false;
-  } else if (contract.value.customerName.trim().length < 2) {
-    errors.value.customerName = "Họ tên quá ngắn";
-    isValid = false;
+  const required = (field, message) => {
+    if (!contract.value[field]) {
+      errors.value[field] = message;
+      isValid = false;
+      return false;
+    }
+
+    return true;
+  };
+
+  const max = (field, label, maxLength) => {
+    const ok = checkMaxLength(field, label, maxLength);
+
+    if (!ok) {
+      isValid = false;
+    }
+
+    return ok;
+  };
+
+  if (required("customerName", "Vui lòng nhập họ tên tang chủ")) {
+    if (contract.value.customerName.length < 2) {
+      errors.value.customerName = "Họ tên quá ngắn";
+      isValid = false;
+    } else {
+      max("customerName", "Họ tên tang chủ", MAX_LENGTHS.customerName);
+    }
   }
 
-  if (!contract.value.citizenId?.trim()) {
-    errors.value.citizenId = "Vui lòng nhập CCCD";
-    isValid = false;
-  } else if (!/^[0-9]{12}$/.test(contract.value.citizenId.trim())) {
-    errors.value.citizenId = "CCCD phải gồm 12 chữ số";
-    isValid = false;
+  contract.value.citizenId = onlyDigits(contract.value.citizenId).slice(
+      0,
+      MAX_LENGTHS.citizenId
+  );
+
+  if (required("citizenId", "Vui lòng nhập CCCD")) {
+    if (!isValidCCCD(contract.value.citizenId)) {
+      errors.value.citizenId = "CCCD phải gồm đúng 12 chữ số";
+      isValid = false;
+    }
   }
 
-  if (!contract.value.address?.trim()) {
-    errors.value.address = "Vui lòng nhập địa chỉ";
-    isValid = false;
+  if (required("address", "Vui lòng nhập địa chỉ")) {
+    max("address", "Địa chỉ", MAX_LENGTHS.address);
   }
 
-  if (!contract.value.phone?.trim()) {
-    errors.value.phone = "Vui lòng nhập số điện thoại";
-    isValid = false;
-  } else if (!/^(0|\+84)[35789][0-9]{8}$/.test(contract.value.phone.trim())) {
-    errors.value.phone = "Số điện thoại không hợp lệ";
-    isValid = false;
+  contract.value.phone = normalizeVietnamPhone(contract.value.phone).slice(
+      0,
+      MAX_LENGTHS.phone
+  );
+
+  if (required("phone", "Vui lòng nhập số điện thoại")) {
+    if (!isValidVietnamPhone(contract.value.phone)) {
+      errors.value.phone = "Số điện thoại Việt Nam không hợp lệ. Ví dụ: 0901234567";
+      isValid = false;
+    }
   }
 
-  if (!contract.value.relationship) {
-    errors.value.relationship = "Vui lòng chọn quan hệ";
-    isValid = false;
+  if (required("relationship", "Vui lòng chọn quan hệ")) {
+    max("relationship", "Quan hệ", MAX_LENGTHS.relationship);
   }
 
-  if (!contract.value.deceasedName?.trim()) {
-    errors.value.deceasedName = "Vui lòng nhập tên người mất";
-    isValid = false;
+  if (required("deceasedName", "Vui lòng nhập tên người mất")) {
+    max("deceasedName", "Tên người mất", MAX_LENGTHS.deceasedName);
   }
 
   let deathDateValue = null;
@@ -227,9 +359,12 @@ const validateForm = () => {
     errors.value.deathDate = "Vui lòng chọn ngày mất";
     isValid = false;
   } else {
-    deathDateValue = new Date(contract.value.deathDate);
+    deathDateValue = parseDateValue(contract.value.deathDate);
 
-    if (deathDateValue > now) {
+    if (!deathDateValue) {
+      errors.value.deathDate = "Ngày mất không hợp lệ";
+      isValid = false;
+    } else if (deathDateValue > now) {
       errors.value.deathDate = "Ngày mất không được lớn hơn hiện tại";
       isValid = false;
     }
@@ -239,35 +374,39 @@ const validateForm = () => {
     errors.value.birthDate = "Vui lòng chọn ngày sinh";
     isValid = false;
   } else {
-    const birthDateValue = new Date(contract.value.birthDate);
+    const birthDateValue = parseDateValue(contract.value.birthDate);
 
-    if (birthDateValue > now) {
+    if (!birthDateValue) {
+      errors.value.birthDate = "Ngày sinh không hợp lệ";
+      isValid = false;
+    } else if (birthDateValue > now) {
       errors.value.birthDate = "Ngày sinh không được lớn hơn hiện tại";
       isValid = false;
-    }
-
-    if (deathDateValue && birthDateValue > deathDateValue) {
+    } else if (deathDateValue && birthDateValue > deathDateValue) {
       errors.value.birthDate = "Ngày sinh không được lớn hơn ngày mất";
       isValid = false;
     }
   }
 
-  if (!contract.value.gender) {
-    errors.value.gender = "Vui lòng chọn giới tính";
-    isValid = false;
+  required("gender", "Vui lòng chọn giới tính");
+
+  contract.value.deathCertificateNo = onlyDigits(
+      contract.value.deathCertificateNo
+  ).slice(0, MAX_LENGTHS.deathCertificateNo);
+
+  if (required("deathCertificateNo", "Vui lòng nhập số giấy báo tử")) {
+    if (!isValidDeathCertificateNo(contract.value.deathCertificateNo)) {
+      errors.value.deathCertificateNo = "Số giấy báo tử phải gồm đúng 10 số";
+      isValid = false;
+    }
   }
 
-  if (!contract.value.deathCertificateNo?.trim()) {
-    errors.value.deathCertificateNo = "Vui lòng nhập số giấy báo tử";
-    isValid = false;
-  } else if (contract.value.deathCertificateNo.trim().length < 3) {
-    errors.value.deathCertificateNo = "Số giấy báo tử phải từ 3 ký tự";
-    isValid = false;
-  }
-
-  if (!contract.value.deathCertificateIssuePlace?.trim()) {
-    errors.value.deathCertificateIssuePlace = "Vui lòng nhập nơi cấp giấy báo tử";
-    isValid = false;
+  if (required("deathCertificateIssuePlace", "Vui lòng nhập nơi cấp giấy báo tử")) {
+    max(
+        "deathCertificateIssuePlace",
+        "Nơi cấp giấy báo tử",
+        MAX_LENGTHS.deathCertificateIssuePlace
+    );
   }
 
   if (!contract.value.contractStartDate) {
@@ -279,44 +418,57 @@ const validateForm = () => {
     errors.value.contractEndDate = "Vui lòng chọn ngày kết thúc hợp đồng";
     isValid = false;
   } else {
-    const startDate = new Date(contract.value.contractStartDate);
-    const endDate = new Date(contract.value.contractEndDate);
+    const startDate = parseDateValue(contract.value.contractStartDate);
+    const endDate = parseDateValue(contract.value.contractEndDate);
 
-    if (endDate < startDate) {
+    if (!endDate) {
+      errors.value.contractEndDate = "Ngày kết thúc không hợp lệ";
+      isValid = false;
+    } else if (startDate && endDate < startDate) {
       errors.value.contractEndDate = "Ngày kết thúc phải sau hoặc bằng ngày bắt đầu";
       isValid = false;
     }
   }
 
-  if (!contract.value.facility?.trim()) {
-    errors.value.facility = "Vui lòng nhập cơ sở mai táng";
-    isValid = false;
+  if (required("facility", "Vui lòng nhập cơ sở mai táng")) {
+    max("facility", "Cơ sở mai táng", MAX_LENGTHS.facility);
   }
 
-  if (!contract.value.cemeteryArea?.trim()) {
-    errors.value.cemeteryArea = "Vui lòng nhập khu mộ";
-    isValid = false;
+  if (required("cemeteryArea", "Vui lòng nhập khu mộ")) {
+    max("cemeteryArea", "Khu mộ", MAX_LENGTHS.cemeteryArea);
   }
 
-  if (!contract.value.graveNumber?.trim()) {
-    errors.value.graveNumber = "Vui lòng nhập số mộ";
-    isValid = false;
+  if (required("graveNumber", "Vui lòng nhập số mộ")) {
+    max("graveNumber", "Số mộ", MAX_LENGTHS.graveNumber);
   }
 
   if (!contract.value.burialDatetime) {
     errors.value.burialDatetime = "Vui lòng chọn ngày giờ an táng";
     isValid = false;
-  } else if (deathDateValue) {
-    const burialDate = new Date(contract.value.burialDatetime);
+  } else {
+    const burialDate = parseDateValue(contract.value.burialDatetime);
 
-    if (burialDate < deathDateValue) {
+    if (!burialDate) {
+      errors.value.burialDatetime = "Ngày giờ an táng không hợp lệ";
+      isValid = false;
+    } else if (deathDateValue && burialDate < deathDateValue) {
       errors.value.burialDatetime = "Ngày an táng phải sau ngày mất";
       isValid = false;
     }
   }
 
-  services.value.forEach((item) => {
-    if (item.name?.trim() && (!item.price || Number(item.price) <= 0)) {
+  services.value.forEach((item, index) => {
+    const serviceName = item.name || "";
+
+    if (serviceName && serviceName.length > MAX_LENGTHS.serviceName) {
+      ElMessage.warning(
+          `Tên dịch vụ phụ thu dòng ${index + 1} tối đa ${MAX_LENGTHS.serviceName} ký tự`
+      );
+      isValid = false;
+    }
+
+    if (serviceName && (!item.price || Number(item.price) <= 0)) {
+      ElMessage.warning(`Giá dịch vụ phụ thu dòng ${index + 1} phải lớn hơn 0`);
       isValid = false;
     }
   });
@@ -370,9 +522,15 @@ const onSelectDonHang = async (maDonHang) => {
 
     contract.value.employee = data.tenNhanVien || user?.hoTen || user?.tenNhanVien || "";
     contract.value.customerName = data.tenKhachHang || "";
-    contract.value.citizenId = data.cccd || "";
+    contract.value.citizenId = onlyDigits(data.cccd || "").slice(
+        0,
+        MAX_LENGTHS.citizenId
+    );
     contract.value.address = data.diaChi || "";
-    contract.value.phone = data.soDienThoai || "";
+    contract.value.phone = normalizeVietnamPhone(data.soDienThoai || "").slice(
+        0,
+        MAX_LENGTHS.phone
+    );
     contract.value.facility = "Không";
     contract.value.cemeteryArea = "Không";
     contract.value.graveNumber = "Không";
@@ -400,8 +558,6 @@ const onSelectDonHang = async (maDonHang) => {
 };
 
 const saveContract = async () => {
-  console.log("Đã bấm nút lưu hợp đồng");
-
   if (!selectedMaDonHang.value) {
     ElMessage.error("Vui lòng chọn đơn hàng");
     return;
@@ -409,10 +565,8 @@ const saveContract = async () => {
 
   const valid = validateForm();
 
-  console.log(errors.value);
-
   if (!valid) {
-    ElMessage.error("Form đang có lỗi");
+    ElMessage.error("Vui lòng kiểm tra lại thông tin hợp đồng");
     return;
   }
 
@@ -431,7 +585,6 @@ const saveContract = async () => {
 
       trangThai: "Chờ ký",
 
-      // Lưu xuống bảng hdongct
       hoTenNguoiMat: contract.value.deceasedName || null,
       ngayMat: contract.value.deathDate || null,
       ngaySinh: contract.value.birthDate || null,
@@ -444,7 +597,7 @@ const saveContract = async () => {
       khuMo: contract.value.cemeteryArea || null,
       soMo: contract.value.graveNumber || null,
 
-      ngayGioAnTang: contract.value.burialDatetime || null,
+      ngayGioAnTang: contract.value.burialDatetime || null
     });
 
     contract.value.contractCode =
@@ -615,6 +768,7 @@ watch(
       immediate: true
     }
 );
+
 const loadNextHopDongCode = async () => {
   try {
     const data = await getNextHopDongCode();
@@ -729,8 +883,10 @@ const loadNextHopDongCode = async () => {
                 <div :class="{ 'is-invalid': errors.customerName }">
                   <el-input
                       v-model="contract.customerName"
+                      :maxlength="MAX_LENGTHS.customerName"
+                      show-word-limit
                       placeholder="Nhập họ và tên tang chủ"
-                      @input="errors.customerName = ''"
+                      @input="clearFieldError('customerName')"
                   />
                 </div>
 
@@ -745,8 +901,10 @@ const loadNextHopDongCode = async () => {
                 <div :class="{ 'is-invalid': errors.citizenId }">
                   <el-input
                       v-model="contract.citizenId"
-                      placeholder="Nhập số CCCD/CMND"
-                      @input="errors.citizenId = ''"
+                      :maxlength="MAX_LENGTHS.citizenId"
+                      inputmode="numeric"
+                      placeholder="Nhập CCCD 12 số"
+                      @input="() => { limitCCCDInput('citizenId'); clearFieldError('citizenId'); }"
                   />
                 </div>
 
@@ -762,8 +920,10 @@ const loadNextHopDongCode = async () => {
               <div :class="{ 'is-invalid': errors.address }">
                 <el-input
                     v-model="contract.address"
+                    :maxlength="MAX_LENGTHS.address"
+                    show-word-limit
                     placeholder="Nhập địa chỉ tang chủ"
-                    @input="errors.address = ''"
+                    @input="clearFieldError('address')"
                 />
               </div>
 
@@ -779,8 +939,10 @@ const loadNextHopDongCode = async () => {
                 <div :class="{ 'is-invalid': errors.phone }">
                   <el-input
                       v-model="contract.phone"
-                      placeholder="Nhập số điện thoại tang chủ"
-                      @input="errors.phone = ''"
+                      :maxlength="MAX_LENGTHS.phone"
+                      inputmode="tel"
+                      placeholder="VD: 0901234567"
+                      @input="() => { limitPhoneInput('phone'); clearFieldError('phone'); }"
                   />
                 </div>
 
@@ -867,8 +1029,10 @@ const loadNextHopDongCode = async () => {
                   <div :class="{ 'is-invalid': errors.deceasedName }">
                     <el-input
                         v-model="contract.deceasedName"
+                        :maxlength="MAX_LENGTHS.deceasedName"
+                        show-word-limit
                         placeholder="Nhập họ tên người mất"
-                        @input="errors.deceasedName = ''"
+                        @input="clearFieldError('deceasedName')"
                     />
                   </div>
 
@@ -967,8 +1131,10 @@ const loadNextHopDongCode = async () => {
                   <div :class="{ 'is-invalid': errors.deathCertificateNo }">
                     <el-input
                         v-model="contract.deathCertificateNo"
-                        placeholder="Nhập số giấy báo tử"
-                        @input="errors.deathCertificateNo = ''"
+                        :maxlength="MAX_LENGTHS.deathCertificateNo"
+                        inputmode="numeric"
+                        placeholder="Nhập số giấy báo tử 10 số"
+                        @input="() => { limitDeathCertificateNoInput(); clearFieldError('deathCertificateNo'); }"
                     />
                   </div>
 
@@ -985,8 +1151,10 @@ const loadNextHopDongCode = async () => {
                   <div :class="{ 'is-invalid': errors.deathCertificateIssuePlace }">
                     <el-input
                         v-model="contract.deathCertificateIssuePlace"
+                        :maxlength="MAX_LENGTHS.deathCertificateIssuePlace"
+                        show-word-limit
                         placeholder="Nhập nơi cấp giấy báo tử"
-                        @input="errors.deathCertificateIssuePlace = ''"
+                        @input="clearFieldError('deathCertificateIssuePlace')"
                     />
                   </div>
 
@@ -1052,8 +1220,10 @@ const loadNextHopDongCode = async () => {
                   <div :class="{ 'is-invalid': errors.facility }">
                     <el-input
                         v-model="contract.facility"
+                        :maxlength="MAX_LENGTHS.facility"
+                        show-word-limit
                         placeholder="Nhập cơ sở mai táng"
-                        @input="errors.facility = ''"
+                        @input="clearFieldError('facility')"
                     />
                   </div>
 
@@ -1070,8 +1240,10 @@ const loadNextHopDongCode = async () => {
                   <div :class="{ 'is-invalid': errors.cemeteryArea }">
                     <el-input
                         v-model="contract.cemeteryArea"
+                        :maxlength="MAX_LENGTHS.cemeteryArea"
+                        show-word-limit
                         placeholder="Nhập khu mộ"
-                        @input="errors.cemeteryArea = ''"
+                        @input="clearFieldError('cemeteryArea')"
                     />
                   </div>
 
@@ -1090,8 +1262,10 @@ const loadNextHopDongCode = async () => {
                   <div :class="{ 'is-invalid': errors.graveNumber }">
                     <el-input
                         v-model="contract.graveNumber"
+                        :maxlength="MAX_LENGTHS.graveNumber"
+                        show-word-limit
                         placeholder="Nhập số mộ"
-                        @input="errors.graveNumber = ''"
+                        @input="clearFieldError('graveNumber')"
                     />
                   </div>
 
@@ -1146,6 +1320,8 @@ const loadNextHopDongCode = async () => {
               <el-col :span="13">
                 <el-input
                     v-model="service.name"
+                    :maxlength="MAX_LENGTHS.serviceName"
+                    show-word-limit
                     placeholder="Tên dịch vụ/phụ thu"
                 />
               </el-col>

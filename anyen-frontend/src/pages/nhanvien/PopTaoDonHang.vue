@@ -48,30 +48,58 @@
           <div class="form-row-2">
             <div class="form-group">
               <label>Tên khách hàng <span>*</span></label>
-              <input v-model="form.tenKhachHang" type="text" />
+              <input
+                  v-model="form.tenKhachHang"
+                  type="text"
+                  maxlength="30"
+                  placeholder="Tối đa 30 ký tự"
+              />
             </div>
 
             <div class="form-group">
               <label>Số điện thoại <span>*</span></label>
-              <input v-model="form.soDienThoai" type="text" />
+              <input
+                  v-model="form.soDienThoai"
+                  type="text"
+                  maxlength="10"
+                  inputmode="tel"
+                  placeholder="VD: 0901234567"
+                  @input="limitOrderPhoneInput"
+              />
             </div>
           </div>
 
           <div class="form-row-2">
             <div class="form-group">
               <label>CCCD</label>
-              <input v-model="form.cccd" type="text" />
+              <input
+                  v-model="form.cccd"
+                  type="text"
+                  maxlength="12"
+                  inputmode="numeric"
+                  placeholder="Nhập CCCD 12 số"
+                  @input="limitOrderCCCDInput"
+              />
             </div>
 
             <div class="form-group">
               <label>Email</label>
-              <input v-model="form.email" type="text" />
+              <input
+                  v-model="form.email"
+                  type="text"
+                  placeholder="Nhập email"
+              />
             </div>
           </div>
 
           <div class="form-group">
             <label>Địa chỉ</label>
-            <input v-model="form.diaChi" type="text" />
+            <input
+                v-model="form.diaChi"
+                type="text"
+                maxlength="40"
+                placeholder="Tối đa 40 ký tự"
+            />
           </div>
         </div>
 
@@ -243,7 +271,6 @@
         </div>
 
         <div class="product-popup-content">
-          <!-- LEFT: DANH SÁCH SẢN PHẨM -->
           <div class="product-list-panel">
             <div class="panel-title">Danh sách sản phẩm</div>
 
@@ -267,7 +294,7 @@
               >
                 <div class="product-card-left">
                   <div class="product-image square-product-image">
-                    <img :src="sp.hinhAnh" alt=""/>
+                    <img :src="sp.hinhAnh" alt="" />
                   </div>
 
                   <div class="product-card-info">
@@ -302,7 +329,6 @@
             </div>
           </div>
 
-          <!-- RIGHT: NOTE SẢN PHẨM ĐÃ CHỌN -->
           <div class="selected-panel">
             <div class="panel-title">Đã thêm vào giỏ</div>
 
@@ -351,6 +377,7 @@
             <button class="btn-secondary" @click="clearTempItems">
               Xóa hết
             </button>
+
             <button class="btn-primary" @click="saveProductsToOrder">
               Lưu sản phẩm
             </button>
@@ -362,9 +389,12 @@
 </template>
 
 <script setup>
+import { computed, nextTick, onMounted, ref } from "vue";
+import {
+  getKhachHangTaoDonHang,
+  getSanPhamTaoDonHang
+} from "../../services/donHangService.js";
 
-import { computed, onMounted, ref } from "vue";
-import { getSanPhamTaoDonHang } from "../../services/donHangService.js";
 const userStr = localStorage.getItem("user");
 const userDangNhap = userStr ? JSON.parse(userStr) : null;
 
@@ -374,16 +404,23 @@ const tenNhanVienDangNhap =
     userDangNhap?.tenDangNhap ||
     "";
 
-const showCustomerSuggestions = ref(false);
-
 const emit = defineEmits(["close", "submit", "save-draft"]);
 
 const partners = ref([]);
 const allProducts = ref([]);
+const allCustomers = ref([]);
 
 const productLoading = ref(false);
 const productError = ref("");
 
+const customerKeyword = ref("");
+const showCustomerSuggestions = ref(false);
+
+const showProductModal = ref(false);
+const productKeyword = ref("");
+const selectedProductPartnerId = ref("ALL");
+
+const tempItems = ref([]);
 
 function getTodayLocalDate() {
   const d = new Date();
@@ -396,11 +433,6 @@ function getTodayLocalDate() {
 }
 
 const today = getTodayLocalDate();
-
-const customerKeyword = ref("");
-const showProductModal = ref(false);
-const productKeyword = ref("");
-const selectedProductPartnerId = ref("ALL");
 
 const form = ref({
   maKhachHang: null,
@@ -416,7 +448,44 @@ const form = ref({
   items: [],
 });
 
-const tempItems = ref([]);
+function onlyDigits(value = "") {
+  return String(value).replace(/\D/g, "");
+}
+
+function normalizeVietnamPhone(value = "") {
+  let phone = String(value).trim().replace(/\s+/g, "");
+
+  if (phone.startsWith("+84")) {
+    phone = "0" + phone.slice(3);
+  }
+
+  phone = phone.replace(/\D/g, "");
+
+  if (phone.startsWith("84") && phone.length === 11) {
+    phone = "0" + phone.slice(2);
+  }
+
+  return phone;
+}
+
+function isValidCCCD(value = "") {
+  return /^[0-9]{12}$/.test(String(value).trim());
+}
+
+function isValidVietnamPhone(value = "") {
+  const phone = normalizeVietnamPhone(value);
+
+  return /^0(3|5|7|8|9)[0-9]{8}$/.test(phone);
+}
+
+function limitOrderCCCDInput() {
+  form.value.cccd = onlyDigits(form.value.cccd).slice(0, 12);
+}
+
+function limitOrderPhoneInput() {
+  form.value.soDienThoai = normalizeVietnamPhone(form.value.soDienThoai).slice(0, 10);
+}
+
 function buildImageUrl(path) {
   if (!path) {
     return "https://cdn-icons-png.flaticon.com/512/679/679720.png";
@@ -447,11 +516,22 @@ function normalizeProduct(sp) {
     tenSanPham: sp.tenSanPham,
     loai: sp.loai || "Chưa phân loại",
     giaTien: Number(sp.giaTien || 0),
-    tonKho: Number(sp.tonKho || 0),
+    tonKho: Number(sp.tonKho || sp.soLuong || 0),
     maDoiTac: sp.maDoiTac,
     tenDoiTac: sp.tenDoiTac || "Không rõ đối tác",
     hinhAnh: buildImageUrl(sp.hinhAnh),
     trangThai: sp.trangThai,
+  };
+}
+
+function normalizeCustomer(kh) {
+  return {
+    maKhachHang: kh.maKhachHang ?? kh.MaKhachHang ?? null,
+    tenKhachHang: kh.tenKhachHang ?? kh.TenKhachHang ?? "",
+    soDienThoai: normalizeVietnamPhone(kh.soDienThoai ?? kh.SoDienThoai ?? "").slice(0, 10),
+    cccd: onlyDigits(kh.cccd ?? kh.CCCD ?? "").slice(0, 12),
+    email: kh.email ?? kh.Email ?? "",
+    diaChi: kh.diaChi ?? kh.DiaChi ?? "",
   };
 }
 
@@ -482,6 +562,7 @@ async function loadProductsFromDatabase() {
     rebuildPartners();
   } catch (error) {
     console.error("Lỗi tải danh sách sản phẩm:", error);
+
     productError.value = "Không tải được danh sách sản phẩm.";
     allProducts.value = [];
     partners.value = [];
@@ -490,24 +571,37 @@ async function loadProductsFromDatabase() {
   }
 }
 
+async function loadCustomersFromDatabase() {
+  try {
+    const data = await getKhachHangTaoDonHang();
+
+    allCustomers.value = (data || []).map(normalizeCustomer);
+  } catch (error) {
+    console.error("Lỗi tải danh sách khách hàng:", error);
+
+    allCustomers.value = [];
+  }
+}
+
 onMounted(() => {
   loadProductsFromDatabase();
+  loadCustomersFromDatabase();
 });
+
 const customerSuggestions = computed(() => {
   const keyword = customerKeyword.value.trim().toLowerCase();
+
   if (!keyword) return [];
 
   return allCustomers.value
-      .filter(
-          (kh) =>
-              kh.tenKhachHang.toLowerCase().includes(keyword) ||
-              kh.soDienThoai.includes(keyword)
-      )
-      .slice(0, 5);
-});
+      .filter((kh) => {
+        const ten = String(kh.tenKhachHang || "").toLowerCase();
+        const sdt = String(kh.soDienThoai || "");
+        const cccd = String(kh.cccd || "");
 
-const selectedPartnerName = computed(() => {
-  return getPartnerName(selectedProductPartnerId.value);
+        return ten.includes(keyword) || sdt.includes(keyword) || cccd.includes(keyword);
+      })
+      .slice(0, 5);
 });
 
 const filteredPartnerProducts = computed(() => {
@@ -520,9 +614,9 @@ const filteredPartnerProducts = computed(() => {
 
     const matchKeyword =
         !keyword ||
-        sp.tenSanPham.toLowerCase().includes(keyword) ||
-        sp.loai.toLowerCase().includes(keyword) ||
-        sp.tenDoiTac.toLowerCase().includes(keyword);
+        String(sp.tenSanPham || "").toLowerCase().includes(keyword) ||
+        String(sp.loai || "").toLowerCase().includes(keyword) ||
+        String(sp.tenDoiTac || "").toLowerCase().includes(keyword);
 
     return matchPartner && matchKeyword;
   });
@@ -585,13 +679,13 @@ function handleCustomerKeywordInput() {
 
 function selectCustomer(kh) {
   form.value.maKhachHang = kh.maKhachHang;
-  form.value.tenKhachHang = kh.tenKhachHang;
-  form.value.soDienThoai = kh.soDienThoai;
-  form.value.cccd = kh.cccd;
-  form.value.email = kh.email;
-  form.value.diaChi = kh.diaChi;
+  form.value.tenKhachHang = kh.tenKhachHang || "";
+  form.value.soDienThoai = normalizeVietnamPhone(kh.soDienThoai || "").slice(0, 10);
+  form.value.cccd = onlyDigits(kh.cccd || "").slice(0, 12);
+  form.value.email = kh.email || "";
+  form.value.diaChi = kh.diaChi || "";
 
-  customerKeyword.value = kh.tenKhachHang;
+  customerKeyword.value = kh.tenKhachHang || "";
   showCustomerSuggestions.value = false;
 }
 
@@ -600,14 +694,20 @@ function cloneItems(items) {
 }
 
 async function openProductModal() {
+  showCustomerSuggestions.value = false;
   tempItems.value = cloneItems(form.value.items);
 
   selectedProductPartnerId.value = "ALL";
   productKeyword.value = "";
 
   showProductModal.value = true;
+  await nextTick();
 
-  await loadProductsFromDatabase();
+  if (allProducts.value.length === 0) {
+    await loadProductsFromDatabase();
+  } else {
+    loadProductsFromDatabase();
+  }
 }
 
 function closeProductModal() {
@@ -620,13 +720,24 @@ function getTempItem(maSanPham) {
 
 function getTempQty(maSanPham) {
   const item = getTempItem(maSanPham);
+
   return item ? item.soLuong : 0;
 }
 
 function addTempProduct(sp) {
+  if (Number(sp.tonKho || 0) <= 0) {
+    alert("Sản phẩm này đã hết hàng");
+    return;
+  }
+
   const existing = getTempItem(sp.maSanPham);
 
   if (existing) {
+    if (existing.soLuong >= Number(sp.tonKho || 0)) {
+      alert(`Sản phẩm '${sp.tenSanPham}' chỉ còn ${sp.tonKho}`);
+      return;
+    }
+
     existing.soLuong += 1;
     return;
   }
@@ -652,11 +763,17 @@ function increaseTempQty(sp) {
     return;
   }
 
+  if (existing.soLuong >= Number(sp.tonKho || 0)) {
+    alert(`Sản phẩm '${sp.tenSanPham}' chỉ còn ${sp.tonKho}`);
+    return;
+  }
+
   existing.soLuong += 1;
 }
 
 function decreaseTempQty(maSanPham) {
   const existing = getTempItem(maSanPham);
+
   if (!existing) return;
 
   if (existing.soLuong <= 1) {
@@ -683,6 +800,11 @@ function saveProductsToOrder() {
 }
 
 function increaseQty(item) {
+  if (item.soLuong >= Number(item.tonKho || 0)) {
+    alert(`Sản phẩm '${item.tenSanPham}' chỉ còn ${item.tonKho}`);
+    return;
+  }
+
   item.soLuong += 1;
 }
 
@@ -702,13 +824,40 @@ function removeItem(maSanPham) {
 }
 
 function submitOrder() {
-  if (!form.value.tenKhachHang.trim()) {
+  form.value.tenKhachHang = String(form.value.tenKhachHang || "").trim();
+  form.value.soDienThoai = normalizeVietnamPhone(form.value.soDienThoai).slice(0, 10);
+  form.value.cccd = onlyDigits(form.value.cccd).slice(0, 12);
+  form.value.email = String(form.value.email || "").trim();
+  form.value.diaChi = String(form.value.diaChi || "").trim();
+  form.value.ghiChu = String(form.value.ghiChu || "").trim();
+
+  if (!form.value.tenKhachHang) {
     alert("Vui lòng nhập tên khách hàng");
     return;
   }
 
-  if (!form.value.soDienThoai.trim()) {
+  if (form.value.tenKhachHang.length > 30) {
+    alert("Tên khách hàng tối đa 30 ký tự");
+    return;
+  }
+
+  if (!form.value.soDienThoai) {
     alert("Vui lòng nhập số điện thoại");
+    return;
+  }
+
+  if (!isValidVietnamPhone(form.value.soDienThoai)) {
+    alert("Số điện thoại Việt Nam không hợp lệ. Ví dụ: 0901234567");
+    return;
+  }
+
+  if (form.value.cccd && !isValidCCCD(form.value.cccd)) {
+    alert("CCCD phải gồm đúng 12 chữ số");
+    return;
+  }
+
+  if (form.value.diaChi && form.value.diaChi.length > 40) {
+    alert("Địa chỉ tối đa 40 ký tự");
     return;
   }
 

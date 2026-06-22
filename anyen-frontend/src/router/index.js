@@ -6,7 +6,8 @@ import DoiTacLayout from "../layouts/DoiTacLayout.vue";
 import NhanVienLayout from "../layouts/NhanVienLayout.vue";
 import AdminLayout from "../layouts/AdminLayout.vue";
 import HotlineLayout from "../layouts/HotlineLayout.vue";
-
+import TrangThongKeDoanhThuDT from "../pages/doitac/TrangThongKeDoanhThuDT.vue";
+import TrangThongKeDoanhThuNV from "../pages/nhanvien/TrangThongKeDoanhThuNV.vue";
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
 import TrangSanPham from "../pages/website/TrangSanPham.vue";
@@ -34,6 +35,7 @@ import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
 import TrangQLNhanVien from "../pages/nhanvien/TrangQLNhanVien.vue";
 import TrangDuyetSanPham from "../pages/nhanvien/TrangDuyetSanPham.vue";
+import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
@@ -106,6 +108,10 @@ const routes = [
                 component: TrangThongBao,
             },
             {
+                path: "thong-ke-doanh-thu",
+                component: TrangThongKeDoanhThuDT,
+            },
+            {
                 path: "thong-tin-tai-khoan",
                 component: TrangThongTinTK,
             },
@@ -152,7 +158,15 @@ const routes = [
             {
                 path: "quan-ly-hop-dong",
                 component:TrangQLHopDong,
-            }
+            },
+            {
+                path: "thong-ke-doanh-thu",
+                component: TrangThongKeDoanhThuNV,
+            },
+            {
+                path: "hoa-don-cua-toi",
+                component: TrangHoaDonCuaToi,
+            },
         ],
     },
 
@@ -188,7 +202,23 @@ const routes = [
             {
                 path: "duyet-san-pham",
                 component: TrangDuyetSanPham,
-            }
+            },
+            {
+                path: "thong-ke-doanh-thu",
+                component: TrangThongKeDoanhThuNV,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinNV,
+            },
+            {
+                path: "doi-mat-khau",
+                component: TrangDoiMatKhau,
+            },
+            {
+                path: "quan-ly-hoa-don",
+                component: TrangHoaDonCuaToi,
+            },
         ],
     },
 

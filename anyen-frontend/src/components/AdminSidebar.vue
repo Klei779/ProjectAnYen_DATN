@@ -48,7 +48,22 @@
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>
       </RouterLink>
-
+      <RouterLink to="/admin/thong-ke-doanh-thu" class="menu-item" title="Thống kê doanh thu">
+        <i class="fa-solid fa-chart-line menu-icon"></i>
+        <span class="sidebar-text">Thống kê doanh thu</span>
+      </RouterLink>
+      <RouterLink
+          to="/admin/quan-ly-hoa-don"
+          class="menu-item"
+          title="Quản lý hóa đơn"
+      >
+        <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
+        <span class="sidebar-text">Quản lý hóa đơn</span>
+      </RouterLink>
+      <RouterLink to="/admin/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
+        <i class="fa-solid fa-user menu-icon"></i>
+        <span class="sidebar-text">Thông tin tài khoản</span>
+      </RouterLink>
       <div class="logout-btn-container mt-3">
         <button
             class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold logout-btn"

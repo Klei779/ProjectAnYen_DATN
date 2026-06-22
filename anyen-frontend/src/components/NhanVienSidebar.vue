@@ -61,7 +61,18 @@
         <i class="fa-solid fa-file-contract menu-icon"></i>
         <span class="sidebar-text">Quản lý hợp đồng</span>
       </RouterLink>
-
+      <RouterLink to="/nhan-vien/thong-ke-doanh-thu" class="menu-item" title="Thống kê doanh thu">
+        <i class="fa-solid fa-chart-line menu-icon"></i>
+        <span class="sidebar-text">Thống kê doanh thu</span>
+      </RouterLink>
+      <RouterLink
+          to="/nhan-vien/hoa-don-cua-toi"
+          class="menu-item"
+          title="Hóa đơn của tôi"
+      >
+        <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
+        <span class="sidebar-text">Hóa đơn của tôi</span>
+      </RouterLink>
       <div class="logout-btn-container mt-3">
         <button
             class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold logout-btn"

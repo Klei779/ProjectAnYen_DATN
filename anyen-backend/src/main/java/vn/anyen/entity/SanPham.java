@@ -75,4 +75,7 @@ public class SanPham {
 
     @Column(name = "CNSX")
     private String cnsx;
+
+    @Column(name = "HienThi")
+    private Boolean hienThi;
 }

@@ -40,6 +40,11 @@
         <span class="sidebar-text">Quản lý sản phẩm</span>
       </RouterLink>
 
+      <RouterLink to="/doi-tac/tao-san-pham" class="menu-item" title="Tạo sản phẩm">
+        <i class="fa-solid fa-circle-plus menu-icon"></i>
+        <span class="sidebar-text">Tạo sản phẩm</span>
+      </RouterLink>
+
       <RouterLink to="/doi-tac/quan-ly-don-hang" class="menu-item" title="Quản lý đơn hàng">
         <i class="fa-solid fa-cart-shopping menu-icon"></i>
         <span class="sidebar-text">Quản lý đơn hàng</span>

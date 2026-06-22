@@ -60,4 +60,17 @@ public class SanPhamController {
     public SanPhamResponse anSanPham(@PathVariable Integer id) {
         return sanPhamService.anSanPham(id);
     }
+
+    @GetMapping("/cho-duyet")
+    public SanPhamPageResponse getSanPhamChoDuyet(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "16") Integer pageSize
+    ) {
+        return sanPhamService.getSanPhamChoDuyet(page, pageSize);
+    }
+
+    @PatchMapping("/{id}/duyet")
+    public SanPhamResponse duyetSanPham(@PathVariable Integer id) {
+        return sanPhamService.duyetSanPham(id);
+    }
 }

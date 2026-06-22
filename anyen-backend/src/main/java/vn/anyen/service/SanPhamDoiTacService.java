@@ -19,6 +19,8 @@ import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.SanPham;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamDoiTacRepository;
+import vn.anyen.repository.NhanVienRepository;
+import vn.anyen.repository.ThongBaoRepository;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -35,6 +37,8 @@ public class SanPhamDoiTacService {
 
     private final SanPhamDoiTacRepository sanPhamDoiTacRepository;
     private final DoiTacRepository doiTacRepository;
+    private final NhanVienRepository nhanVienRepository;
+    private final ThongBaoRepository thongBaoRepository;
 
     @Transactional(readOnly = true)
     public SanPhamDoiTacPageResponse getSanPhamDoiTac(
@@ -83,6 +87,7 @@ public class SanPhamDoiTacService {
         SanPham sanPham = new SanPham();
         applyRequest(sanPham, request);
         sanPham.setMaDoiTac(maDoiTac);
+        sanPham.setHienThi(false);
 
         if (isBlank(sanPham.getTrangThai())) {
             sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
@@ -91,7 +96,22 @@ public class SanPhamDoiTacService {
             sanPham.setSoLuong(0);
         }
 
-        return toResponse(sanPhamDoiTacRepository.save(sanPham));
+        SanPham savedSanPham = sanPhamDoiTacRepository.save(sanPham);
+
+        // Tạo thông báo cho Admin
+        List<vn.anyen.entity.NhanVien> admins = nhanVienRepository.findByVaiTro("Admin");
+        for (vn.anyen.entity.NhanVien admin : admins) {
+            vn.anyen.entity.ThongBao thongBao = vn.anyen.entity.ThongBao.builder()
+                    .tieuDe("Sản phẩm đối tác mới cần duyệt")
+                    .noiDung("Đối tác vừa tạo sản phẩm: " + savedSanPham.getTenSanPham() + ". Vui lòng kiểm tra và duyệt.")
+                    .loaiThongBao("HE_THONG")
+                    .nguoiNhanId(admin.getMaNhanVien())
+                    .trangThai("CHUA_DOC")
+                    .build();
+            thongBaoRepository.save(thongBao);
+        }
+
+        return toResponse(savedSanPham);
     }
 
     public SanPhamDoiTacResponse updateSanPham(Authentication authentication, Integer id, SanPhamDoiTacRequest request) {

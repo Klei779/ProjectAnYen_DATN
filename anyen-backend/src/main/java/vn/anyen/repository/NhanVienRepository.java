@@ -16,4 +16,6 @@ public interface NhanVienRepository
     boolean existsByEmail(String email);
 
     boolean existsBySoDienThoai(String soDienThoai);
+
+    java.util.List<NhanVien> findByVaiTro(String vaiTro);
 }

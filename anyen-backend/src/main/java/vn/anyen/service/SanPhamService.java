@@ -58,6 +58,11 @@ public class SanPhamService {
                     cb.notEqual(root.get("trangThai"), TRANG_THAI_AN)
             ));
 
+            predicates.add(cb.or(
+                    cb.isNull(root.get("hienThi")),
+                    cb.equal(root.get("hienThi"), true)
+            ));
+
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";
 
@@ -171,6 +176,35 @@ public class SanPhamService {
 
         SanPham saved = sanPhamRepository.save(sp);
 
+        return mapToResponse(saved);
+    }
+
+    public SanPhamPageResponse getSanPhamChoDuyet(Integer page, Integer pageSize) {
+        int pageIndex = page == null || page < 1 ? 0 : page - 1;
+        int size = pageSize == null || pageSize < 1 ? 16 : pageSize;
+        Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "maSanPham"));
+
+        Specification<SanPham> spec = (root, query, cb) -> cb.equal(root.get("hienThi"), false);
+
+        Page<SanPham> result = sanPhamRepository.findAll(spec, pageable);
+
+        List<SanPhamResponse> items = result.getContent()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+
+        return SanPhamPageResponse.builder()
+                .items(items)
+                .total(result.getTotalElements())
+                .build();
+    }
+
+    public SanPhamResponse duyetSanPham(Integer id) {
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        sp.setHienThi(true);
+        SanPham saved = sanPhamRepository.save(sp);
         return mapToResponse(saved);
     }
 

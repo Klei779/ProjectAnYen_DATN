@@ -10,6 +10,13 @@ const showAdvanced = ref(true);
 const isSubmitting = ref(false);
 const isDragOver = ref(false);
 const colorInputRef = ref(null);
+const errors = ref({});
+
+const clearError = (field) => {
+  if (errors.value[field]) {
+    delete errors.value[field];
+  }
+};
 
 const product = ref({
   maSanPham: "",
@@ -48,7 +55,7 @@ const defaultSwatches = [
 const customSwatches = ref([]);
 
 const detailBlocks = ref([
-  { id: 1, tieuDe: "", noiDung: "" },
+  { id: Date.now(), type: 'title', content: '' }
 ]);
 
 const loaiOptions = [
@@ -112,16 +119,13 @@ const openColorPicker = () => {
   colorInputRef.value?.click();
 };
 
-const handleCustomColor = (event) => {
-  const hex = event.target.value;
-  const label = `Màu ${hex.toUpperCase()}`;
-  const exists = allSwatches.value.some((s) => s.value === hex);
-
-  if (!exists) {
-    customSwatches.value.push({ label, value: hex });
+const handleCustomColor = (e) => {
+  const val = e.target.value;
+  if (!allSwatches.value.find((s) => s.value === val)) {
+    customSwatches.value.push({ label: val, value: val });
   }
-
-  product.value.mauSac = label;
+  product.value.mauSac = val;
+  clearError('mauSac');
 };
 
 const handleImageUpload = (event) => {
@@ -140,6 +144,10 @@ const addImageFiles = (files) => {
     imageFiles.value.push(file);
     imagePreviews.value.push(URL.createObjectURL(file));
   });
+  
+  if (toAdd.length > 0) {
+    clearError('hinhAnh');
+  }
 };
 
 const handleDrop = (event) => {
@@ -153,52 +161,86 @@ const removeImage = (index) => {
   imagePreviews.value.splice(index, 1);
 };
 
-const addDetailBlock = () => {
+const addDetailBlock = (type = 'title') => {
   detailBlocks.value.push({
     id: Date.now(),
-    tieuDe: "",
-    noiDung: "",
+    type: type,
+    content: "",
+    file: null,
+    previewUrl: "",
   });
 };
 
 const removeDetailBlock = (index) => {
-  if (detailBlocks.value.length === 1) {
-    detailBlocks.value[0] = { id: Date.now(), tieuDe: "", noiDung: "" };
-    return;
+  if (detailBlocks.value[index].type === 'image' && detailBlocks.value[index].previewUrl) {
+    URL.revokeObjectURL(detailBlocks.value[index].previewUrl);
   }
   detailBlocks.value.splice(index, 1);
+  if (detailBlocks.value.length === 0) {
+    addDetailBlock('title');
+  }
+};
+
+const handleDetailImageUpload = (index, event) => {
+  const file = event.target.files[0];
+  if (file && file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024) {
+    if (detailBlocks.value[index].previewUrl) {
+      URL.revokeObjectURL(detailBlocks.value[index].previewUrl);
+    }
+    detailBlocks.value[index].file = file;
+    detailBlocks.value[index].previewUrl = URL.createObjectURL(file);
+  }
+  event.target.value = "";
 };
 
 const applyFormat = (blockIndex, command) => {
   document.execCommand(command, false, null);
   const el = document.getElementById(`editor-${blockIndex}`);
   if (el) {
-    detailBlocks.value[blockIndex].noiDung = el.innerHTML;
+    detailBlocks.value[blockIndex].content = el.innerHTML;
   }
 };
 
 const syncEditorContent = (blockIndex, event) => {
-  detailBlocks.value[blockIndex].noiDung = event.target.innerHTML;
+  detailBlocks.value[blockIndex].content = event.target.innerHTML;
 };
 
 const getEditorCharCount = (html) => {
+  if (!html) return 0;
   const text = html.replace(/<[^>]*>/g, "").trim();
   return text.length;
 };
 
+const uploadDetailImages = async () => {
+  for (const block of detailBlocks.value) {
+    if (block.type === 'image' && block.file) {
+      const formData = new FormData();
+      formData.append("file", block.file);
+      const res = await api.post("/api/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      block.content = res.data;
+      block.file = null; // Mark as uploaded
+    }
+  }
+};
+
 const serializeDetailBlocks = () => {
-  const blocks = detailBlocks.value
-    .filter((b) => b.tieuDe.trim() || b.noiDung.replace(/<[^>]*>/g, "").trim())
-    .map((b) => ({
-      tieuDe: b.tieuDe.trim(),
-      noiDung: b.noiDung.trim(),
-    }));
+  const blocksText = detailBlocks.value
+    .filter(b => {
+      if (b.type === 'title') return b.content.trim() !== '';
+      if (b.type === 'text') return b.content.replace(/<[^>]*>/g, "").trim() !== '';
+      if (b.type === 'image') return !!b.content;
+      return false;
+    })
+    .map(b => {
+      if (b.type === 'title') return `### ${b.content.trim()}`;
+      if (b.type === 'text') return b.content.replace(/<[^>]*>/g, " ").trim();
+      if (b.type === 'image') return `[HÌNH ẢNH: ${b.content}]`;
+      return '';
+    });
 
-  if (!blocks.length) return "";
-
-  return blocks
-    .map((b) => `${b.tieuDe}\n${b.noiDung.replace(/<[^>]*>/g, " ").trim()}`)
-    .join("\n\n");
+  return blocksText.join("\n\n");
 };
 
 const buildGhiChu = () => {
@@ -231,46 +273,102 @@ const uploadImages = async () => {
   return urls[0] || "";
 };
 
-const buildPayload = async () => ({
-  tenSanPham: product.value.tenSanPham.trim(),
-  loai: product.value.loai,
-  noiThat: product.value.noiThat,
-  quyCach: product.value.quyCach,
-  tonGiao: product.value.tonGiao,
-  giaTien: Number(product.value.giaTien || 0),
-  soLuong: Number(product.value.soLuong || 0),
-  thietKe: product.value.thietKe,
-  xuatXu: product.value.xuatXu,
-  ghiChu: buildGhiChu(),
-  khuyenMai:
-    product.value.khuyenMai === "" ? null : Number(product.value.khuyenMai),
-  mauSac: product.value.mauSac,
-  hinhAnh: await uploadImages(),
-  vatLieu: product.value.vatLieu,
-  trangThai: product.value.trangThai === "Còn bán" ? "Đang bán" : "Ẩn",
-  kichThuoc: product.value.kichThuoc,
-  trongLuong: product.value.trongLuong,
-  cnsx: product.value.cnsx,
-});
+const buildPayload = async () => {
+  const hinhAnhUrl = await uploadImages();
+  await uploadDetailImages();
+
+  return {
+    tenSanPham: product.value.tenSanPham.trim(),
+    loai: product.value.loai,
+    noiThat: product.value.noiThat,
+    quyCach: product.value.quyCach,
+    tonGiao: product.value.tonGiao,
+    giaTien: Number(product.value.giaTien || 0),
+    soLuong: Number(product.value.soLuong || 0),
+    thietKe: product.value.thietKe,
+    xuatXu: product.value.xuatXu,
+    ghiChu: buildGhiChu(),
+    khuyenMai:
+      product.value.khuyenMai === "" ? null : Number(product.value.khuyenMai),
+    mauSac: product.value.mauSac,
+    hinhAnh: hinhAnhUrl,
+    vatLieu: product.value.vatLieu,
+    trangThai: product.value.trangThai === "Còn bán" ? "Đang bán" : "Ẩn",
+    kichThuoc: product.value.kichThuoc,
+    trongLuong: product.value.trongLuong,
+    cnsx: product.value.cnsx,
+  };
+};
 
 const validateProduct = () => {
-  if (!product.value.tenSanPham.trim()) {
-    alert("Vui lòng nhập tên sản phẩm!");
-    return false;
+  errors.value = {}; // Reset errors
+
+  if (!product.value.tenSanPham || !product.value.tenSanPham.trim()) {
+    errors.value.tenSanPham = "Vui lòng nhập tên sản phẩm!";
   }
   if (!product.value.loai) {
-    alert("Vui lòng chọn loại sản phẩm!");
-    return false;
+    errors.value.loai = "Vui lòng chọn loại sản phẩm!";
   }
-  if (!product.value.giaTien || Number(product.value.giaTien) <= 0) {
-    alert("Vui lòng nhập giá bán hợp lệ!");
-    return false;
+  
+  const giaTien = Number(product.value.giaTien);
+  if (product.value.giaTien === "" || product.value.giaTien === null || isNaN(giaTien) || giaTien <= 0) {
+    errors.value.giaTien = "Vui lòng nhập giá bán là một số lớn hơn 0!";
   }
-  if (!product.value.soLuong || Number(product.value.soLuong) <= 0) {
-    alert("Vui lòng nhập số lượng hợp lệ!");
-    return false;
+  
+  const soLuong = Number(product.value.soLuong);
+  if (product.value.soLuong === "" || product.value.soLuong === null || isNaN(soLuong) || soLuong < 0 || !Number.isInteger(soLuong)) {
+    errors.value.soLuong = "Vui lòng nhập số lượng là một số nguyên không âm hợp lệ!";
   }
-  return true;
+
+  if (product.value.khuyenMai !== "" && product.value.khuyenMai !== null) {
+    const km = Number(product.value.khuyenMai);
+    if (isNaN(km) || km < 0) {
+      errors.value.khuyenMai = "Khuyến mãi phải là một số lớn hơn hoặc bằng 0!";
+    } else if (product.value.khuyenMaiLoai === "PHAN_TRAM" && km > 100) {
+      errors.value.khuyenMai = "Khuyến mãi theo phần trăm không được vượt quá 100%!";
+    } else if (product.value.khuyenMaiLoai === "SO_TIEN" && km >= giaTien) {
+      errors.value.khuyenMai = "Khuyến mãi giảm giá số tiền phải nhỏ hơn giá bán!";
+    }
+  }
+
+  if (!product.value.tonGiao) {
+    errors.value.tonGiao = "Vui lòng chọn tôn giáo!";
+  }
+  if (!product.value.quyCach || !product.value.quyCach.trim()) {
+    errors.value.quyCach = "Vui lòng nhập quy cách!";
+  }
+  if (!product.value.noiThat || !product.value.noiThat.trim()) {
+    errors.value.noiThat = "Vui lòng nhập nội thất!";
+  }
+  if (!product.value.thietKe || !product.value.thietKe.trim()) {
+    errors.value.thietKe = "Vui lòng nhập thiết kế!";
+  }
+  if (!product.value.xuatXu || !product.value.xuatXu.trim()) {
+    errors.value.xuatXu = "Vui lòng nhập xuất xứ!";
+  }
+  if (!product.value.mauSac) {
+    errors.value.mauSac = "Vui lòng chọn màu sắc!";
+  }
+  if (!product.value.vatLieu) {
+    errors.value.vatLieu = "Vui lòng chọn vật liệu!";
+  }
+  if (!product.value.kichThuoc || !product.value.kichThuoc.trim()) {
+    errors.value.kichThuoc = "Vui lòng nhập kích thước!";
+  }
+  if (!product.value.cnsx || !product.value.cnsx.trim()) {
+    errors.value.cnsx = "Vui lòng nhập công nghệ sản xuất!";
+  }
+
+  const tl = Number(product.value.trongLuong);
+  if (product.value.trongLuong === "" || product.value.trongLuong === null || isNaN(tl) || tl <= 0) {
+    errors.value.trongLuong = "Trọng lượng phải là một số lớn hơn 0!";
+  }
+
+  if (imageFiles.value.length === 0) {
+    errors.value.hinhAnh = "Vui lòng tải lên ít nhất 1 hình ảnh sản phẩm!";
+  }
+
+  return Object.keys(errors.value).length === 0;
 };
 
 const saveDraft = async () => {
@@ -347,56 +445,69 @@ const cancelCreate = () => {
           <input
             v-model="product.tenSanPham"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.tenSanPham }"
             placeholder="Nhập tên sản phẩm"
             maxlength="120"
+            @input="clearError('tenSanPham')"
           />
-          <span class="tao-sp-char-count">{{ tenSanPhamCount }}/120</span>
+          <span class="tao-sp-error-text" v-if="errors.tenSanPham">{{ errors.tenSanPham }}</span>
+          <span class="tao-sp-char-count" v-else>{{ tenSanPhamCount }}/120</span>
         </div>
 
         <div class="tao-sp-field">
           <label>Loại <span class="req">*</span></label>
-          <select v-model="product.loai" class="tao-sp-select">
+          <select 
+            v-model="product.loai" 
+            class="tao-sp-select"
+            :class="{ 'has-error': errors.loai }"
+            @change="clearError('loai')"
+          >
             <option value="">Chọn loại sản phẩm</option>
             <option v-for="opt in loaiOptions" :key="opt" :value="opt">
               {{ opt }}
             </option>
           </select>
+          <span class="tao-sp-error-text" v-if="errors.loai">{{ errors.loai }}</span>
         </div>
 
         <div class="tao-sp-field">
           <label>Giá bán <span class="req">*</span></label>
-          <div class="tao-sp-input-wrap">
+          <div class="tao-sp-input-wrap" :class="{ 'has-error': errors.giaTien }">
             <input
               v-model="product.giaTien"
               type="number"
               class="tao-sp-input"
               placeholder="Nhập giá bán"
               min="0"
+              @input="clearError('giaTien')"
             />
             <span class="tao-sp-suffix">VND</span>
           </div>
+          <span class="tao-sp-error-text" v-if="errors.giaTien">{{ errors.giaTien }}</span>
         </div>
 
         <div class="tao-sp-field">
           <label>Khuyến mãi</label>
           <div class="tao-sp-promo-row">
-            <select v-model="product.khuyenMaiLoai" class="tao-sp-select">
+            <select v-model="product.khuyenMaiLoai" class="tao-sp-select" @change="clearError('khuyenMai')">
               <option value="PHAN_TRAM">Phần trăm</option>
               <option value="SO_TIEN">Số tiền</option>
             </select>
-            <div class="tao-sp-input-wrap">
+            <div class="tao-sp-input-wrap" :class="{ 'has-error': errors.khuyenMai }">
               <input
                 v-model="product.khuyenMai"
                 type="number"
                 class="tao-sp-input"
                 placeholder="0"
                 min="0"
+                @input="clearError('khuyenMai')"
               />
               <span class="tao-sp-suffix">
                 {{ product.khuyenMaiLoai === "PHAN_TRAM" ? "%" : "VND" }}
               </span>
             </div>
           </div>
+          <span class="tao-sp-error-text" v-if="errors.khuyenMai">{{ errors.khuyenMai }}</span>
         </div>
 
         <div class="tao-sp-field">
@@ -405,28 +516,35 @@ const cancelCreate = () => {
             v-model="product.soLuong"
             type="number"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.soLuong }"
             placeholder="Nhập số lượng"
             min="0"
+            @input="clearError('soLuong')"
           />
+          <span class="tao-sp-error-text" v-if="errors.soLuong">{{ errors.soLuong }}</span>
         </div>
 
         <div class="tao-sp-field">
-          <label>Tôn giáo</label>
-          <select v-model="product.tonGiao" class="tao-sp-select">
+          <label>Tôn giáo <span class="req">*</span></label>
+          <select v-model="product.tonGiao" class="tao-sp-select" :class="{ 'has-error': errors.tonGiao }" @change="clearError('tonGiao')">
             <option value="">Chọn tôn giáo</option>
             <option v-for="opt in tonGiaoOptions" :key="opt" :value="opt">
               {{ opt }}
             </option>
           </select>
+          <span class="tao-sp-error-text" v-if="errors.tonGiao">{{ errors.tonGiao }}</span>
         </div>
 
         <div class="tao-sp-field">
-          <label>Quy cách</label>
+          <label>Quy cách <span class="req">*</span></label>
           <input
             v-model="product.quyCach"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.quyCach }"
             placeholder="Nhập quy cách"
+            @input="clearError('quyCach')"
           />
+          <span class="tao-sp-error-text" v-if="errors.quyCach">{{ errors.quyCach }}</span>
         </div>
       </div>
     </section>
@@ -446,12 +564,15 @@ const cancelCreate = () => {
 
       <div v-show="showAdvanced" class="tao-sp-grid">
         <div class="tao-sp-field">
-          <label>Nội thất</label>
+          <label>Nội thất <span class="req">*</span></label>
           <input
             v-model="product.noiThat"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.noiThat }"
             placeholder="Nhập nội thất"
+            @input="clearError('noiThat')"
           />
+          <span class="tao-sp-error-text" v-if="errors.noiThat">{{ errors.noiThat }}</span>
         </div>
 
         <div class="tao-sp-field">
@@ -464,26 +585,32 @@ const cancelCreate = () => {
         </div>
 
         <div class="tao-sp-field">
-          <label>Thiết kế</label>
+          <label>Thiết kế <span class="req">*</span></label>
           <input
             v-model="product.thietKe"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.thietKe }"
             placeholder="Nhập thiết kế"
+            @input="clearError('thietKe')"
           />
+          <span class="tao-sp-error-text" v-if="errors.thietKe">{{ errors.thietKe }}</span>
         </div>
 
         <div class="tao-sp-field">
-          <label>Xuất xứ</label>
+          <label>Xuất xứ <span class="req">*</span></label>
           <input
             v-model="product.xuatXu"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.xuatXu }"
             placeholder="Nhập xuất xứ"
+            @input="clearError('xuatXu')"
           />
+          <span class="tao-sp-error-text" v-if="errors.xuatXu">{{ errors.xuatXu }}</span>
         </div>
 
         <div class="tao-sp-field span-2">
-          <label>Màu sắc</label>
-          <div class="tao-sp-color-row">
+          <label>Màu sắc <span class="req">*</span></label>
+          <div class="tao-sp-color-row" :class="{ 'has-error': errors.mauSac }">
             <button
               v-for="swatch in allSwatches"
               :key="swatch.value"
@@ -492,7 +619,7 @@ const cancelCreate = () => {
               :class="{ active: isColorActive(swatch) }"
               :style="{ background: swatch.value }"
               :title="swatch.label"
-              @click="selectColor(swatch)"
+              @click="selectColor(swatch); clearError('mauSac')"
             ></button>
             <button
               type="button"
@@ -509,16 +636,18 @@ const cancelCreate = () => {
               @input="handleCustomColor"
             />
           </div>
+          <span class="tao-sp-error-text" v-if="errors.mauSac">{{ errors.mauSac }}</span>
         </div>
 
         <div class="tao-sp-field">
-          <label>Vật liệu</label>
-          <select v-model="product.vatLieu" class="tao-sp-select">
+          <label>Vật liệu <span class="req">*</span></label>
+          <select v-model="product.vatLieu" class="tao-sp-select" :class="{ 'has-error': errors.vatLieu }" @change="clearError('vatLieu')">
             <option value="">Chọn vật liệu</option>
             <option v-for="opt in vatLieuOptions" :key="opt" :value="opt">
               {{ opt }}
             </option>
           </select>
+          <span class="tao-sp-error-text" v-if="errors.vatLieu">{{ errors.vatLieu }}</span>
         </div>
 
         <div class="tao-sp-field">
@@ -530,38 +659,56 @@ const cancelCreate = () => {
         </div>
 
         <div class="tao-sp-field">
-          <label>Kích thước</label>
+          <label>Kích thước <span class="req">*</span></label>
           <input
             v-model="product.kichThuoc"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.kichThuoc }"
             placeholder="VD: 120x60x80cm"
+            @input="clearError('kichThuoc')"
           />
+          <span class="tao-sp-error-text" v-if="errors.kichThuoc">{{ errors.kichThuoc }}</span>
         </div>
 
         <div class="tao-sp-field">
-          <label>Trọng lượng</label>
-          <div class="tao-sp-input-wrap">
+          <label>Trọng lượng <span class="req">*</span></label>
+          <div class="tao-sp-input-wrap" :class="{ 'has-error': errors.trongLuong }">
             <input
               v-model="product.trongLuong"
               type="number"
               class="tao-sp-input"
               placeholder="Nhập trọng lượng"
               min="0"
+              @input="clearError('trongLuong')"
             />
             <span class="tao-sp-suffix">kg</span>
           </div>
+          <span class="tao-sp-error-text" v-if="errors.trongLuong">{{ errors.trongLuong }}</span>
         </div>
 
         <div class="tao-sp-field">
-          <label>Công nghệ sản xuất</label>
+          <label>Công nghệ sản xuất <span class="req">*</span></label>
           <input
             v-model="product.cnsx"
             class="tao-sp-input"
+            :class="{ 'has-error': errors.cnsx }"
             placeholder="Nhập CNSX"
+            @input="clearError('cnsx')"
+          />
+          <span class="tao-sp-error-text" v-if="errors.cnsx">{{ errors.cnsx }}</span>
+        </div>
+        
+        <div class="tao-sp-field">
+          <label>Ngày tạo</label>
+          <input
+              :value="product.ngayTao"
+              class="tao-sp-input"
+              type="datetime-local"
+              disabled
           />
         </div>
 
-        <div class="tao-sp-field span-3">
+        <div class="tao-sp-field span-full">
           <label>Ghi chú</label>
           <textarea
             v-model="product.ghiChu"
@@ -573,15 +720,7 @@ const cancelCreate = () => {
           <span class="tao-sp-char-count">{{ ghiChuCount }}/300</span>
         </div>
 
-        <div class="tao-sp-field">
-          <label>Ngày tạo</label>
-          <input
-            :value="product.ngayTao"
-            class="tao-sp-input"
-            type="datetime-local"
-            disabled
-          />
-        </div>
+
       </div>
     </section>
       </div>
@@ -594,7 +733,7 @@ const cancelCreate = () => {
 
       <label
         class="tao-sp-upload-zone"
-        :class="{ 'drag-over': isDragOver }"
+        :class="{ 'drag-over': isDragOver, 'has-error': errors.hinhAnh }"
         for="product-image-upload"
         @dragover.prevent="isDragOver = true"
         @dragleave.prevent="isDragOver = false"
@@ -605,6 +744,7 @@ const cancelCreate = () => {
         <span class="tao-sp-upload-hint">Kéo thả hoặc click để chọn ảnh</span>
         <span class="tao-sp-upload-format">Định dạng: JPG, PNG (Tối đa 5MB)</span>
       </label>
+      <span class="tao-sp-error-text" style="margin-bottom: 12px; margin-top: -10px;" v-if="errors.hinhAnh">{{ errors.hinhAnh }}</span>
       <input
         id="product-image-upload"
         type="file"
@@ -661,15 +801,15 @@ const cancelCreate = () => {
       </p>
 
       <div class="tao-sp-detail-toolbar">
-        <button type="button" class="primary-outline" @click="addDetailBlock">
+        <button type="button" class="primary-outline" @click="addDetailBlock('title')">
           <i class="fa-solid fa-plus"></i>
           Thêm tiêu đề
         </button>
-        <button type="button">
+        <button type="button" @click="addDetailBlock('text')">
           <i class="fa-solid fa-align-left"></i>
           Thêm nội dung
         </button>
-        <button type="button">
+        <button type="button" @click="addDetailBlock('image')">
           <i class="fa-solid fa-image"></i>
           Thêm ảnh
         </button>
@@ -681,81 +821,112 @@ const cancelCreate = () => {
         class="tao-sp-detail-block"
       >
         <div class="tao-sp-detail-block-head">
-          <label>Tiêu đề {{ index + 1 }}</label>
+          <label v-if="block.type === 'title'">Tiêu đề</label>
+          <label v-else-if="block.type === 'text'">Nội dung văn bản</label>
+          <label v-else-if="block.type === 'image'">Hình ảnh chi tiết</label>
           <button
             type="button"
             class="tao-sp-detail-delete"
-            title="Xóa khối nội dung"
+            title="Xóa khối"
             @click="removeDetailBlock(index)"
           >
             <i class="fa-regular fa-trash-can"></i>
           </button>
         </div>
 
-        <input
-          v-model="block.tieuDe"
-          class="tao-sp-input"
-          placeholder="Nhập tiêu đề"
-          maxlength="100"
-        />
-        <span class="tao-sp-char-count">{{ block.tieuDe.length }}/100</span>
+        <template v-if="block.type === 'title'">
+          <input
+            v-model="block.content"
+            class="tao-sp-input"
+            placeholder="Nhập tiêu đề..."
+            maxlength="100"
+            style="font-weight: bold; font-size: 14px;"
+          />
+          <span class="tao-sp-char-count">{{ block.content.length }}/100</span>
+        </template>
 
-        <label style="margin-top: 12px; display: block; font-size: 13px; font-weight: 600; color: #374151;">
-          Nội dung
-        </label>
+        <template v-else-if="block.type === 'text'">
+          <div class="tao-sp-editor-toolbar">
+            <button type="button" title="In đậm" @click="applyFormat(index, 'bold')">
+              <b>B</b>
+            </button>
+            <button type="button" title="In nghiêng" @click="applyFormat(index, 'italic')">
+              <i>I</i>
+            </button>
+            <button type="button" title="Gạch chân" @click="applyFormat(index, 'underline')">
+              <u>U</u>
+            </button>
+            <span class="sep"></span>
+            <button type="button" title="Danh sách" @click="applyFormat(index, 'insertUnorderedList')">
+              <i class="fa-solid fa-list-ul"></i>
+            </button>
+            <button type="button" title="Căn trái" @click="applyFormat(index, 'justifyLeft')">
+              <i class="fa-solid fa-align-left"></i>
+            </button>
+            <button type="button" title="Căn giữa" @click="applyFormat(index, 'justifyCenter')">
+              <i class="fa-solid fa-align-center"></i>
+            </button>
+            <button type="button" title="Liên kết" @click="applyFormat(index, 'createLink')">
+              <i class="fa-solid fa-link"></i>
+            </button>
+            <span class="spacer"></span>
+            <button
+              type="button"
+              title="Xóa nội dung"
+              @click="block.content = ''; document.getElementById(`editor-${index}`).innerHTML = ''"
+            >
+              <i class="fa-regular fa-trash-can"></i>
+            </button>
+          </div>
 
-        <div class="tao-sp-editor-toolbar">
-          <button type="button" title="In đậm" @click="applyFormat(index, 'bold')">
-            <b>B</b>
-          </button>
-          <button type="button" title="In nghiêng" @click="applyFormat(index, 'italic')">
-            <i>I</i>
-          </button>
-          <button type="button" title="Gạch chân" @click="applyFormat(index, 'underline')">
-            <u>U</u>
-          </button>
-          <span class="sep"></span>
-          <button type="button" title="Danh sách" @click="applyFormat(index, 'insertUnorderedList')">
-            <i class="fa-solid fa-list-ul"></i>
-          </button>
-          <button type="button" title="Căn trái" @click="applyFormat(index, 'justifyLeft')">
-            <i class="fa-solid fa-align-left"></i>
-          </button>
-          <button type="button" title="Căn giữa" @click="applyFormat(index, 'justifyCenter')">
-            <i class="fa-solid fa-align-center"></i>
-          </button>
-          <button type="button" title="Liên kết" @click="applyFormat(index, 'createLink')">
-            <i class="fa-solid fa-link"></i>
-          </button>
-          <button type="button" title="Ảnh" @click="applyFormat(index, 'insertImage')">
-            <i class="fa-regular fa-image"></i>
-          </button>
-          <span class="spacer"></span>
-          <button
-            type="button"
-            title="Xóa nội dung"
-            @click="block.noiDung = ''"
-          >
-            <i class="fa-regular fa-trash-can"></i>
-          </button>
-        </div>
+          <div
+            :id="`editor-${index}`"
+            class="tao-sp-editor-area"
+            contenteditable="true"
+            data-placeholder="Nhập nội dung chi tiết..."
+            @input="syncEditorContent(index, $event)"
+          ></div>
+          <div class="tao-sp-editor-footer">
+            {{ getEditorCharCount(block.content) }} ký tự
+          </div>
+        </template>
 
-        <div
-          :id="`editor-${index}`"
-          class="tao-sp-editor-area"
-          contenteditable="true"
-          data-placeholder="Nhập nội dung chi tiết..."
-          @input="syncEditorContent(index, $event)"
-        ></div>
-        <div class="tao-sp-editor-footer">
-          {{ getEditorCharCount(block.noiDung) }} ký tự
-        </div>
+        <template v-else-if="block.type === 'image'">
+          <label v-if="!block.previewUrl" class="tao-sp-upload-zone" style="min-height: 120px; padding: 30px;" :for="`detail-img-${index}`">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span class="tao-sp-upload-title">Chọn ảnh</span>
+            <span class="tao-sp-upload-format">Định dạng: JPG, PNG (Tối đa 5MB)</span>
+          </label>
+          <input
+            :id="`detail-img-${index}`"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            @change="handleDetailImageUpload(index, $event)"
+          />
+          <div v-if="block.previewUrl" class="tao-sp-detail-img-preview" style="position: relative; display: inline-block; border-radius: 8px; overflow: hidden; border: 1px solid #e5e7eb;">
+            <img :src="block.previewUrl" style="max-height: 200px; max-width: 100%; display: block; object-fit: contain;" />
+            <label :for="`detail-img-${index}`" class="tao-sp-detail-img-change" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+              Thay ảnh
+            </label>
+          </div>
+        </template>
       </div>
 
-      <button type="button" class="tao-sp-add-block-btn" @click="addDetailBlock">
-        <i class="fa-solid fa-plus"></i>
-        Thêm tiêu đề mới
-      </button>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="tao-sp-add-block-btn" @click="addDetailBlock('title')" style="flex: 1;">
+          <i class="fa-solid fa-plus"></i>
+          Thêm tiêu đề
+        </button>
+        <button type="button" class="tao-sp-add-block-btn" @click="addDetailBlock('text')" style="flex: 1;">
+          <i class="fa-solid fa-align-left"></i>
+          Thêm nội dung
+        </button>
+        <button type="button" class="tao-sp-add-block-btn" @click="addDetailBlock('image')" style="flex: 1;">
+          <i class="fa-solid fa-image"></i>
+          Thêm ảnh
+        </button>
+      </div>
     </section>
       </div>
 

@@ -39,6 +39,8 @@ public class SanPhamDoiTacService {
     private final DoiTacRepository doiTacRepository;
     private final NhanVienRepository nhanVienRepository;
     private final ThongBaoRepository thongBaoRepository;
+    private final vn.anyen.repository.SanPhamChiTietRepository sanPhamChiTietRepository;
+    private final vn.anyen.repository.SanPhamHinhAnhRepository sanPhamHinhAnhRepository;
 
     @Transactional(readOnly = true)
     public SanPhamDoiTacPageResponse getSanPhamDoiTac(
@@ -98,6 +100,8 @@ public class SanPhamDoiTacService {
 
         SanPham savedSanPham = sanPhamDoiTacRepository.save(sanPham);
 
+        saveChiTietVaHinhAnh(savedSanPham.getMaSanPham(), request);
+
         // Tạo thông báo cho Admin
         List<vn.anyen.entity.NhanVien> admins = nhanVienRepository.findByVaiTro("Admin");
         for (vn.anyen.entity.NhanVien admin : admins) {
@@ -119,7 +123,13 @@ public class SanPhamDoiTacService {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
         applyRequest(sanPham, request);
-        return toResponse(sanPhamDoiTacRepository.save(sanPham));
+        SanPham savedSanPham = sanPhamDoiTacRepository.save(sanPham);
+        
+        sanPhamChiTietRepository.deleteByMaSanPham(id);
+        sanPhamHinhAnhRepository.deleteByMaSanPham(id);
+        saveChiTietVaHinhAnh(id, request);
+
+        return toResponse(savedSanPham);
     }
 
     public SanPhamDoiTacResponse updateTonKho(Authentication authentication, Integer id, Integer soLuong) {
@@ -295,6 +305,32 @@ public class SanPhamDoiTacService {
         sanPham.setKichThuoc(request.getKichThuoc());
         sanPham.setTrongLuong(request.getTrongLuong());
         sanPham.setCnsx(request.getCnsx());
+    }
+
+    private void saveChiTietVaHinhAnh(Integer maSanPham, SanPhamDoiTacRequest request) {
+        if (request.getChiTietList() != null && !request.getChiTietList().isEmpty()) {
+            for (var c : request.getChiTietList()) {
+                vn.anyen.entity.SanPhamChiTiet ct = vn.anyen.entity.SanPhamChiTiet.builder()
+                        .maSanPham(maSanPham)
+                        .loaiKhoi(c.getLoaiKhoi())
+                        .noiDung(c.getNoiDung())
+                        .thuTu(c.getThuTu())
+                        .build();
+                sanPhamChiTietRepository.save(ct);
+            }
+        }
+
+        if (request.getHinhAnhList() != null && !request.getHinhAnhList().isEmpty()) {
+            for (var h : request.getHinhAnhList()) {
+                vn.anyen.entity.SanPhamHinhAnh ha = vn.anyen.entity.SanPhamHinhAnh.builder()
+                        .maSanPham(maSanPham)
+                        .loaiHinhAnh(h.getLoaiHinhAnh())
+                        .urlHinhAnh(h.getUrlHinhAnh())
+                        .thuTu(h.getThuTu())
+                        .build();
+                sanPhamHinhAnhRepository.save(ha);
+            }
+        }
     }
 
     private SanPhamDoiTacResponse toResponse(SanPham sanPham) {

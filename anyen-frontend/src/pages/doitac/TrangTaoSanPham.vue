@@ -244,21 +244,11 @@ const serializeDetailBlocks = () => {
 };
 
 const buildGhiChu = () => {
-  const parts = [];
-  if (product.value.ghiChu.trim()) {
-    parts.push(product.value.ghiChu.trim());
-  }
-
-  const detailText = serializeDetailBlocks();
-  if (detailText) {
-    parts.push(`[THÔNG TIN CHI TIẾT]\n${detailText}`);
-  }
-
-  return parts.join("\n\n") || null;
+  return product.value.ghiChu.trim() || null;
 };
 
 const uploadImages = async () => {
-  if (!imageFiles.value.length) return "";
+  if (!imageFiles.value.length) return [];
 
   const urls = [];
   for (const file of imageFiles.value) {
@@ -270,12 +260,47 @@ const uploadImages = async () => {
     urls.push(res.data);
   }
 
-  return urls[0] || "";
+  return urls;
 };
 
 const buildPayload = async () => {
-  const hinhAnhUrl = await uploadImages();
+  const galleryUrls = await uploadImages();
+  const mainImageUrl = galleryUrls.length > 0 ? galleryUrls[0] : "";
   await uploadDetailImages();
+  
+  const chiTietList = [];
+  const hinhAnhList = [];
+  
+  let thuTuHinhAnh = 0;
+  // Gallery images
+  for (const url of galleryUrls) {
+    hinhAnhList.push({
+      loaiHinhAnh: 'GALLERY',
+      urlHinhAnh: url,
+      thuTu: thuTuHinhAnh++
+    });
+  }
+  
+  // Detail blocks
+  let thuTuChiTiet = 0;
+  
+  for (const block of detailBlocks.value) {
+    if (block.type === 'title') {
+      const content = block.content.trim();
+      if (content) {
+        chiTietList.push({ loaiKhoi: 'TITLE', noiDung: content, thuTu: thuTuChiTiet++ });
+      }
+    } else if (block.type === 'text') {
+      const content = block.content.replace(/<[^>]*>/g, " ").trim();
+      if (content) {
+        chiTietList.push({ loaiKhoi: 'TEXT', noiDung: content, thuTu: thuTuChiTiet++ });
+      }
+    } else if (block.type === 'image') {
+      if (block.content) {
+        hinhAnhList.push({ loaiHinhAnh: 'DETAIL_BLOCK', urlHinhAnh: block.content, thuTu: thuTuHinhAnh++ });
+      }
+    }
+  }
 
   return {
     tenSanPham: product.value.tenSanPham.trim(),
@@ -291,12 +316,14 @@ const buildPayload = async () => {
     khuyenMai:
       product.value.khuyenMai === "" ? null : Number(product.value.khuyenMai),
     mauSac: product.value.mauSac,
-    hinhAnh: hinhAnhUrl,
+    hinhAnh: mainImageUrl,
     vatLieu: product.value.vatLieu,
     trangThai: product.value.trangThai === "Còn bán" ? "Đang bán" : "Ẩn",
     kichThuoc: product.value.kichThuoc,
     trongLuong: product.value.trongLuong,
     cnsx: product.value.cnsx,
+    chiTietList,
+    hinhAnhList
   };
 };
 
@@ -390,11 +417,28 @@ const saveDraft = async () => {
 };
 
 const publishProduct = async () => {
-  if (!validateProduct() || isSubmitting.value) return;
+  if (isSubmitting.value) return;
+
+  const isValid = validateProduct();
+  console.log("Validation result:", isValid, "Errors:", JSON.parse(JSON.stringify(errors.value)));
+
+  if (!isValid) {
+    // Cuộn đến ô lỗi đầu tiên
+    const firstErrorField = Object.keys(errors.value)[0];
+    if (firstErrorField) {
+      const el = document.querySelector('.has-error');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+    return;
+  }
+
   isSubmitting.value = true;
 
   try {
-    await api.post(API_URL, await buildPayload());
+    const payload = await buildPayload();
+    await api.post(API_URL, payload);
     alert("Đã đăng sản phẩm thành công!");
     router.push("/doi-tac/quan-ly-san-pham");
   } catch (error) {
@@ -947,7 +991,8 @@ const cancelCreate = () => {
         :disabled="isSubmitting"
         @click="saveDraft"
       >
-        Lưu nháp
+        <i v-if="isSubmitting" class="fa-solid fa-circle-notch fa-spin" style="margin-right: 6px;"></i>
+        {{ isSubmitting ? 'Đang lưu...' : 'Lưu nháp' }}
       </button>
       <button
         type="button"
@@ -955,8 +1000,9 @@ const cancelCreate = () => {
         :disabled="isSubmitting"
         @click="publishProduct"
       >
-        <i class="fa-solid fa-paper-plane"></i>
-        Đăng sản phẩm
+        <i v-if="!isSubmitting" class="fa-solid fa-paper-plane"></i>
+        <i v-else class="fa-solid fa-circle-notch fa-spin"></i>
+        {{ isSubmitting ? 'Đang đăng...' : 'Đăng sản phẩm' }}
       </button>
     </div>
   </div>

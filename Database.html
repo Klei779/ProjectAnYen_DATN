@@ -103,6 +103,38 @@ FOREIGN KEY (MaDoiTac) REFERENCES doitac(MaDoiTac)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
+-- 4.1. SAN PHAM CHI TIET
+-- =========================================================
+CREATE TABLE sanphamchitiet (
+MaChiTiet INT AUTO_INCREMENT PRIMARY KEY,
+MaSanPham INT,
+LoaiKhoi VARCHAR(50), -- 'TITLE' hoac 'TEXT'
+NoiDung TEXT,
+ThuTu INT DEFAULT 0,
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+UpdatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+CONSTRAINT fk_spct_sanpham
+FOREIGN KEY (MaSanPham) REFERENCES sanpham(MaSanPham) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 4.2. SAN PHAM HINH ANH
+-- =========================================================
+CREATE TABLE sanphamhinhanh (
+MaHinhAnh INT AUTO_INCREMENT PRIMARY KEY,
+MaSanPham INT,
+MaChiTiet INT NULL, -- NULL neu la anh gallery, co gia tri neu la anh trong chi tiet
+LoaiHinhAnh VARCHAR(50), -- 'GALLERY' hoac 'DETAIL_BLOCK'
+UrlHinhAnh VARCHAR(255) NOT NULL,
+ThuTu INT DEFAULT 0,
+CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+CONSTRAINT fk_spha_sanpham
+FOREIGN KEY (MaSanPham) REFERENCES sanpham(MaSanPham) ON DELETE CASCADE,
+CONSTRAINT fk_spha_chitiet
+FOREIGN KEY (MaChiTiet) REFERENCES sanphamchitiet(MaChiTiet) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
 -- 5. DON HANG
 -- =========================================================
 CREATE TABLE donhang (

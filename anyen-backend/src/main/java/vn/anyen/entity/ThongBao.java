@@ -30,6 +30,7 @@ public class ThongBao {
      * CONG_VIEC  - Thông báo công việc (có nút Chấp nhận / Từ chối)
      * HE_THONG   - Thông báo hệ thống (chỉ đọc)
      * TU_CHOI    - Phản hồi từ chối gửi về hotline
+     * DUYET_SAN_PHAM - Thông báo duyệt sản phẩm mới từ đối tác
      */
     @Column(name = "LoaiThongBao")
     private String loaiThongBao;
@@ -46,9 +47,14 @@ public class ThongBao {
     @Column(name = "MaKhachHang")
     private Integer maKhachHang;
 
+    /** Liên kết sản phẩm (cho loại DUYET_SAN_PHAM) */
+    @Column(name = "MaSanPham")
+    private Integer maSanPham;
+
     /**
      * Trạng thái:
      * CHUA_DOC, DA_DOC, DA_CHAP_NHAN, DA_TU_CHOI
+     * CHO_XAC_NHAN - Chờ nhân viên duyệt sản phẩm
      */
     @Column(name = "TrangThai")
     private String trangThai;

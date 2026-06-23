@@ -17,9 +17,9 @@ import vn.anyen.dto.SanPhamDoiTacResponse;
 import vn.anyen.dto.request.SanPhamDoiTacRequest;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.SanPham;
+import vn.anyen.entity.ThongBao;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamDoiTacRepository;
-import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.repository.ThongBaoRepository;
 
 import java.math.BigDecimal;
@@ -34,10 +34,10 @@ public class SanPhamDoiTacService {
 
     private static final String TRANG_THAI_DANG_BAN = "Đang bán";
     private static final String TRANG_THAI_AN = "Ẩn";
+    private static final String TRANG_THAI_CHO_XAC_NHAN = "Chờ xác nhận";
 
     private final SanPhamDoiTacRepository sanPhamDoiTacRepository;
     private final DoiTacRepository doiTacRepository;
-    private final NhanVienRepository nhanVienRepository;
     private final ThongBaoRepository thongBaoRepository;
     private final vn.anyen.repository.SanPhamChiTietRepository sanPhamChiTietRepository;
     private final vn.anyen.repository.SanPhamHinhAnhRepository sanPhamHinhAnhRepository;
@@ -86,14 +86,23 @@ public class SanPhamDoiTacService {
         Integer maDoiTac = getMaDoiTac(authentication);
         validateRequest(request, true);
 
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy đối tác"
+                ));
+
         SanPham sanPham = new SanPham();
         applyRequest(sanPham, request);
+
         sanPham.setMaDoiTac(maDoiTac);
+
+        // QUAN TRỌNG:
+        // Đối tác tạo sản phẩm thì KHÔNG được bán ngay.
+        // Phải chờ nhân viên duyệt.
+        sanPham.setTrangThai("Chờ xác nhận");
         sanPham.setHienThi(false);
 
-        if (isBlank(sanPham.getTrangThai())) {
-            sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
-        }
         if (sanPham.getSoLuong() == null) {
             sanPham.setSoLuong(0);
         }
@@ -102,29 +111,37 @@ public class SanPhamDoiTacService {
 
         saveChiTietVaHinhAnh(savedSanPham.getMaSanPham(), request);
 
-        // Tạo thông báo cho Admin
-        List<vn.anyen.entity.NhanVien> admins = nhanVienRepository.findByVaiTro("Admin");
-        for (vn.anyen.entity.NhanVien admin : admins) {
-            vn.anyen.entity.ThongBao thongBao = vn.anyen.entity.ThongBao.builder()
-                    .tieuDe("Sản phẩm đối tác mới cần duyệt")
-                    .noiDung("Đối tác vừa tạo sản phẩm: " + savedSanPham.getTenSanPham() + ". Vui lòng kiểm tra và duyệt.")
-                    .loaiThongBao("HE_THONG")
-                    .nguoiNhanId(admin.getMaNhanVien())
-                    .trangThai("CHUA_DOC")
-                    .build();
-            thongBaoRepository.save(thongBao);
-        }
+        // Tạo thông báo cho nhân viên duyệt sản phẩm.
+        // NguoiNhanId = null nghĩa là tất cả nhân viên đều thấy.
+        ThongBao thongBao = ThongBao.builder()
+                .tieuDe("Duyệt sản phẩm mới")
+                .noiDung(
+                        "Đối tác " + doiTac.getTenDoiTac()
+                                + " vừa thêm sản phẩm mới: "
+                                + savedSanPham.getTenSanPham()
+                                + ". Vui lòng xác nhận hoặc từ chối để quyết định sản phẩm có được bày bán hay không."
+                )
+                .loaiThongBao("DUYET_SAN_PHAM")
+                .nguoiGuiId(null)
+                .nguoiNhanId(null)
+                .maKhachHang(null)
+                .maSanPham(savedSanPham.getMaSanPham())
+                .trangThai("CHO_XAC_NHAN")
+                .lyDoTuChoi(null)
+                .build();
+
+        thongBaoRepository.save(thongBao);
 
         return toResponse(savedSanPham);
     }
-
     public SanPhamDoiTacResponse updateSanPham(Authentication authentication, Integer id, SanPhamDoiTacRequest request) {
         validateRequest(request, false);
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
         applyRequest(sanPham, request);
+
         SanPham savedSanPham = sanPhamDoiTacRepository.save(sanPham);
-        
+
         sanPhamChiTietRepository.deleteByMaSanPham(id);
         sanPhamHinhAnhRepository.deleteByMaSanPham(id);
         saveChiTietVaHinhAnh(id, request);
@@ -139,18 +156,32 @@ public class SanPhamDoiTacService {
 
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
         sanPham.setSoLuong(soLuong);
+
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
     public SanPhamDoiTacResponse anSanPham(Authentication authentication, Integer id) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+
         sanPham.setTrangThai(TRANG_THAI_AN);
+        sanPham.setHienThi(false);
+
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
     public SanPhamDoiTacResponse hienSanPham(Authentication authentication, Integer id) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+
+        if ("Chờ xác nhận".equalsIgnoreCase(sanPham.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Sản phẩm đang chờ nhân viên duyệt, không thể tự chuyển sang đang bán"
+            );
+        }
+
         sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
+        sanPham.setHienThi(true);
+
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
@@ -175,7 +206,10 @@ public class SanPhamDoiTacService {
         String tenDangNhap = authentication.getName();
 
         DoiTac doiTac = doiTacRepository.findByTenDangNhap(tenDangNhap)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Tài khoản hiện tại không phải đối tác"));
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Tài khoản hiện tại không phải đối tác"
+                ));
 
         return doiTac.getMaDoiTac();
     }
@@ -238,13 +272,19 @@ public class SanPhamDoiTacService {
         };
     }
 
-    private Predicate buildMultiLikePredicate(jakarta.persistence.criteria.Path<String> path, String rawValue, jakarta.persistence.criteria.CriteriaBuilder cb) {
+    private Predicate buildMultiLikePredicate(
+            jakarta.persistence.criteria.Path<String> path,
+            String rawValue,
+            jakarta.persistence.criteria.CriteriaBuilder cb
+    ) {
         List<Predicate> parts = new ArrayList<>();
+
         for (String item : rawValue.split(",")) {
             if (!isBlank(item)) {
                 parts.add(cb.like(cb.lower(path), like(item)));
             }
         }
+
         return cb.or(parts.toArray(new Predicate[0]));
     }
 
@@ -252,15 +292,19 @@ public class SanPhamDoiTacService {
         if ("priceAsc".equalsIgnoreCase(sortBy)) {
             return Sort.by(Sort.Direction.ASC, "giaTien");
         }
+
         if ("priceDesc".equalsIgnoreCase(sortBy)) {
             return Sort.by(Sort.Direction.DESC, "giaTien");
         }
+
         if ("stockAsc".equalsIgnoreCase(sortBy)) {
             return Sort.by(Sort.Direction.ASC, "soLuong");
         }
+
         if ("stockDesc".equalsIgnoreCase(sortBy)) {
             return Sort.by(Sort.Direction.DESC, "soLuong");
         }
+
         return Sort.by(Sort.Direction.DESC, "maSanPham");
     }
 
@@ -301,7 +345,7 @@ public class SanPhamDoiTacService {
         sanPham.setMauSac(request.getMauSac());
         sanPham.setHinhAnh(request.getHinhAnh());
         sanPham.setVatLieu(request.getVatLieu());
-        sanPham.setTrangThai(isBlank(request.getTrangThai()) ? TRANG_THAI_DANG_BAN : request.getTrangThai());
+        sanPham.setTrangThai(request.getTrangThai());
         sanPham.setKichThuoc(request.getKichThuoc());
         sanPham.setTrongLuong(request.getTrongLuong());
         sanPham.setCnsx(request.getCnsx());
@@ -316,6 +360,7 @@ public class SanPhamDoiTacService {
                         .noiDung(c.getNoiDung())
                         .thuTu(c.getThuTu())
                         .build();
+
                 sanPhamChiTietRepository.save(ct);
             }
         }
@@ -328,6 +373,7 @@ public class SanPhamDoiTacService {
                         .urlHinhAnh(h.getUrlHinhAnh())
                         .thuTu(h.getThuTu())
                         .build();
+
                 sanPhamHinhAnhRepository.save(ha);
             }
         }

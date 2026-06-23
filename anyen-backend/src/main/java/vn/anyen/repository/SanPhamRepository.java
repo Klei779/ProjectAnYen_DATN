@@ -15,7 +15,10 @@ public interface SanPhamRepository
             SELECT sp
             FROM SanPham sp
             WHERE sp.trangThai IS NULL
-               OR LOWER(sp.trangThai) <> LOWER(:trangThaiAn)
+               OR (
+                    LOWER(sp.trangThai) <> LOWER(:trangThaiAn)
+                    AND LOWER(sp.trangThai) <> LOWER('Chờ xác nhận')
+               )
             ORDER BY sp.maSanPham DESC
             """)
     List<SanPham> findAllVisibleForTaoDonHang(
@@ -27,7 +30,13 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.loai IS NOT NULL
               AND sp.loai <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (
+                    sp.trangThai IS NULL
+                    OR (
+                        LOWER(sp.trangThai) <> LOWER('Ẩn')
+                        AND LOWER(sp.trangThai) <> LOWER('Chờ xác nhận')
+                    )
+              )
             GROUP BY sp.loai
             ORDER BY sp.loai
             """)
@@ -38,7 +47,13 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.vatLieu IS NOT NULL
               AND sp.vatLieu <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (
+                    sp.trangThai IS NULL
+                    OR (
+                        LOWER(sp.trangThai) <> LOWER('Ẩn')
+                        AND LOWER(sp.trangThai) <> LOWER('Chờ xác nhận')
+                    )
+              )
             GROUP BY sp.vatLieu
             ORDER BY sp.vatLieu
             """)
@@ -49,7 +64,13 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.tonGiao IS NOT NULL
               AND sp.tonGiao <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (
+                    sp.trangThai IS NULL
+                    OR (
+                        LOWER(sp.trangThai) <> LOWER('Ẩn')
+                        AND LOWER(sp.trangThai) <> LOWER('Chờ xác nhận')
+                    )
+              )
             GROUP BY sp.tonGiao
             ORDER BY sp.tonGiao
             """)
@@ -60,9 +81,22 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.mauSac IS NOT NULL
               AND sp.mauSac <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (
+                    sp.trangThai IS NULL
+                    OR (
+                        LOWER(sp.trangThai) <> LOWER('Ẩn')
+                        AND LOWER(sp.trangThai) <> LOWER('Chờ xác nhận')
+                    )
+              )
             GROUP BY sp.mauSac
             ORDER BY sp.mauSac
             """)
     List<Object[]> countVisibleByMauSac();
+
+    /**
+     * Lấy sản phẩm theo trạng thái.
+     * Dùng cho chức năng nhân viên duyệt sản phẩm.
+     * Entity SanPham không có createdAt nên sắp xếp theo maSanPham DESC.
+     */
+    List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(String trangThai);
 }

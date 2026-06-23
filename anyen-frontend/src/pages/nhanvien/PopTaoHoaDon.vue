@@ -8,7 +8,10 @@ import {
   Calendar,
   Document,
   Money,
+  Printer,
+  Download,
 } from "@element-plus/icons-vue";
+import logoAnYen from "../../assets/images/icon/logoAnYen.png";
 
 const props = defineProps({
   modelValue: {
@@ -247,6 +250,202 @@ const badgeThanhToanClass = computed(() => {
   if (trangThaiThanhToan.value === "Đã đặt cọc") return "badge-blue";
   return "badge-orange";
 });
+
+// ===== In hóa đơn (Print) =====
+const buildInvoiceHtml = () => {
+  return `
+    <!DOCTYPE html>
+    <html lang="vi">
+    <head>
+      <meta charset="UTF-8" />
+      <title>Hóa đơn - ${maCode.value}</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+          font-family: 'Inter', Arial, sans-serif;
+          color: #1e293b;
+          padding: 32px 40px;
+          font-size: 15px;
+          line-height: 1.6;
+        }
+        .print-header {
+          text-align: center;
+          margin-bottom: 28px;
+          padding-bottom: 20px;
+          border-bottom: 2px solid #e2e8f0;
+        }
+        .print-header h1 {
+          font-size: 32px;
+          font-weight: 900;
+          color: #0f172a;
+          margin-bottom: 4px;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .print-header p { color: #64748b; font-size: 14px; }
+        .section-title {
+          font-size: 18px;
+          font-weight: 800;
+          color: #142d4d;
+          margin: 20px 0 10px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #e2e8f0;
+          text-transform: uppercase;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 200px 1fr;
+          gap: 8px 16px;
+          margin-bottom: 12px;
+        }
+        .info-grid .lbl { color: #64748b; font-size: 15px; }
+        .info-grid .val { color: #0f172a; font-weight: 600; font-size: 16px; }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 12px 0 20px;
+          font-size: 15px;
+        }
+        th {
+          background: #f1f5f9;
+          color: #0f172a;
+          font-weight: 700;
+          padding: 8px 6px;
+          border: 1px solid #e2e8f0;
+          text-align: center;
+        }
+        td {
+          padding: 8px 6px;
+          border: 1px solid #e2e8f0;
+          text-align: center;
+          vertical-align: middle;
+        }
+        td.left { text-align: left; }
+        .summary {
+          margin-top: 14px;
+          border-top: 2px solid #e2e8f0;
+          padding-top: 12px;
+        }
+        .summary-row {
+          display: flex;
+          justify-content: space-between;
+          padding: 6px 0;
+          font-size: 16px;
+        }
+        .summary-total {
+          display: flex;
+          justify-content: space-between;
+          padding: 12px 0 0;
+          font-size: 24px;
+          font-weight: 900;
+          color: #14843f;
+          border-top: 1px dashed #cbd5e1;
+          margin-top: 8px;
+        }
+        @media print {
+          body { padding: 16px 24px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="print-header">
+        <img src="${logoAnYen.startsWith('http') ? logoAnYen : window.location.origin + logoAnYen}" alt="An Yên Logo" style="height: 60px; margin-bottom: 10px;" onerror="this.style.display='none'"/>
+        <h1>Hóa đơn</h1>
+        <p>Mã hóa đơn: ${maHoaDonPreview.value} &nbsp;|&nbsp; Ngày in: ${form.value.ngayIn ? new Date(form.value.ngayIn).toLocaleDateString("vi-VN") : new Date().toLocaleDateString("vi-VN")}</p>
+      </div>
+
+      <div class="section-title">Thông tin đơn hàng</div>
+      <div class="info-grid">
+        <span class="lbl">Mã đơn hàng</span><span class="val">${maCode.value}</span>
+        <span class="lbl">Mã khách hàng</span><span class="val">${maKhachHang.value}</span>
+        <span class="lbl">Khách hàng</span><span class="val">${tenKhachHang.value}</span>
+        <span class="lbl">Số điện thoại</span><span class="val">${soDienThoai.value}</span>
+        <span class="lbl">Nhân viên phụ trách</span><span class="val">${tenNhanVien.value}</span>
+        <span class="lbl">Ngày tạo đơn</span><span class="val">${formatDateView(ngayTaoDon.value)}</span>
+        <span class="lbl">Trạng thái đơn hàng</span><span class="val">${trangThaiDonHang.value}</span>
+        <span class="lbl">Ghi chú</span><span class="val">${ghiChuDonHang.value}</span>
+      </div>
+
+      <div class="section-title">Thông tin hóa đơn</div>
+      <div class="info-grid">
+        <span class="lbl">Mã hóa đơn</span><span class="val">${maHoaDonPreview.value}</span>
+        <span class="lbl">Ngày in hóa đơn</span><span class="val">${form.value.ngayIn ? new Date(form.value.ngayIn).toLocaleDateString("vi-VN") : ""}</span>
+        <span class="lbl">Phương thức thanh toán</span><span class="val">${form.value.phuongThucThanhToan}</span>
+        <span class="lbl">Trạng thái thanh toán</span><span class="val">${trangThaiThanhToan.value}</span>
+        <span class="lbl">Trạng thái hóa đơn</span><span class="val">${form.value.trangThai}</span>
+      </div>
+
+      <div class="section-title">Sản phẩm / Dịch vụ</div>
+      <table>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Mã SP</th>
+            <th>Tên sản phẩm / dịch vụ</th>
+            <th>SL</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rawChiTiet.value.map((item, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${getMaSanPham(item)}</td>
+              <td class="left">${getTenSanPham(item)}<br/><small style="color:#64748b">${getLoaiSanPham(item)}</small></td>
+              <td>${getSoLuong(item)}</td>
+              <td>${formatCurrency(getThanhTien(item))}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="summary-row"><span>Tạm tính</span><b>${formatCurrency(tamTinh.value)}</b></div>
+        <div class="summary-row"><span>Giảm giá</span><b>${formatCurrency(giamGia.value)}</b></div>
+        <div class="summary-total"><span>TỔNG THANH TOÁN</span><span>${formatCurrency(tongThanhToan.value)}</span></div>
+      </div>
+
+      <div style="text-align: center; margin-top: 50px; color: #475569; font-size: 16px; font-style: italic;">
+        <p>Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của An Yên.</p>
+        <p>Kính chúc quý gia đình bình an và nhiều sức khỏe!</p>
+      </div>
+    </body>
+    </html>
+  `;
+};
+
+const printInvoice = () => {
+  const printWindow = window.open("", "_blank", "width=800,height=900");
+  if (!printWindow) {
+    ElMessage.warning("Trình duyệt đã chặn cửa sổ in. Vui lòng cho phép popup.");
+    return;
+  }
+  printWindow.document.write(buildInvoiceHtml());
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.focus();
+    printWindow.print();
+  };
+};
+
+// ===== Tải file PDF =====
+const downloadPDF = () => {
+  const printWindow = window.open("", "_blank", "width=800,height=900");
+  if (!printWindow) {
+    ElMessage.warning("Trình duyệt đã chặn cửa sổ. Vui lòng cho phép popup.");
+    return;
+  }
+  const htmlContent = buildInvoiceHtml();
+  printWindow.document.write(htmlContent);
+  printWindow.document.close();
+  printWindow.onload = () => {
+    printWindow.focus();
+    // Trigger print dialog — user can choose "Save as PDF" in the print dialog
+    printWindow.print();
+    ElMessage.info('Chọn "Save as PDF" / "Lưu dưới dạng PDF" trong hộp thoại in để tải file PDF.');
+  };
+};
 
 const submitHoaDon = async () => {
   if (!props.donHang) {
@@ -519,26 +718,35 @@ const submitHoaDon = async () => {
 
         <!-- Footer -->
         <div class="popup-footer">
-          <button
-              v-if="isViewMode"
-              class="btn-submit"
-              @click="closePopup"
-          >
-            Đóng
-          </button>
+          <div class="footer-left">
+            <button class="btn-action btn-print-invoice" @click="printInvoice">
+              <el-icon><Printer /></el-icon>
+              In hóa đơn
+            </button>
+          </div>
 
-          <button
-              v-else
-              class="btn-submit"
-              :class="{ disabled: !canCreateInvoice || loading }"
-              :disabled="!canCreateInvoice || loading"
-              @click="submitHoaDon"
-          >
-            <el-icon>
-              <Money />
-            </el-icon>
-            {{ loading ? "Đang tạo..." : "Tạo hóa đơn" }}
-          </button>
+          <div class="footer-right">
+            <button
+                v-if="isViewMode"
+                class="btn-submit"
+                @click="closePopup"
+            >
+              Đóng
+            </button>
+
+            <button
+                v-else
+                class="btn-submit"
+                :class="{ disabled: !canCreateInvoice || loading }"
+                :disabled="!canCreateInvoice || loading"
+                @click="submitHoaDon"
+            >
+              <el-icon>
+                <Money />
+              </el-icon>
+              {{ loading ? "Đang tạo..." : "Tạo hóa đơn" }}
+            </button>
+          </div>
         </div>
     </div>
     </div>

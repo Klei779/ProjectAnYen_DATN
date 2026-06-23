@@ -12,7 +12,6 @@ import java.util.Optional;
 public interface DoiTacRepository
         extends JpaRepository<DoiTac,Integer> {
     Optional<DoiTac> findByTenDangNhap(String tenDangNhap);
-
     DoiTac findByTenDangNhapAndMatKhau(
             String tenDangNhap,
             String matKhau

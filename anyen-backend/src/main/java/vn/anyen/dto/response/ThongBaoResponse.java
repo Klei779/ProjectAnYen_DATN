@@ -18,7 +18,7 @@ public class ThongBaoResponse {
     // Thông tin người gửi
     private Integer nguoiGuiId;
     private String tenNguoiGui;
-
+    private Integer maSanPham;
     // Thông tin khách hàng (nếu có)
     private Integer maKhachHang;
     private String tenKhachHang;
@@ -30,4 +30,5 @@ public class ThongBaoResponse {
     private String nguonDangKy;
     private String nhuCauHoTro;
     private String ghiChu;
+
 }

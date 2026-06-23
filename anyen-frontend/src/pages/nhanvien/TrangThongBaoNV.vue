@@ -63,14 +63,36 @@
             <!-- Action Buttons Right (Inline) -->
             <div class="card-actions-wrapper">
               <span class="time-ago" v-if="item.trangThai === 'CHUA_DOC'">Vừa xong</span>
-              
-              <div class="card-buttons" v-if="item.loaiThongBao === 'CONG_VIEC' && (item.trangThai === 'CHUA_DOC' || item.trangThai === 'DA_DOC')">
-                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">Từ chối</button>
+
+              <div
+                  class="card-buttons"
+                  v-if="item.loaiThongBao === 'CONG_VIEC' && (item.trangThai === 'CHUA_DOC' || item.trangThai === 'DA_DOC')"
+              >
+                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
+                  Từ chối
+                </button>
                 <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading">
-                   <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i> Nhận công việc
+                  <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
+                  Nhận công việc
                 </button>
               </div>
-              <div class="card-buttons processed" v-else-if="item.loaiThongBao === 'CONG_VIEC'">
+
+              <div
+                  class="card-buttons"
+                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && item.trangThai === 'CHO_XAC_NHAN'"
+              >
+                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
+                  Từ chối
+                </button>
+                <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading">
+                  <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
+                  Đồng ý
+                </button>
+              </div>
+              <div
+                  class="card-buttons processed"
+                  v-else-if="item.loaiThongBao === 'CONG_VIEC' || item.loaiThongBao === 'DUYET_SAN_PHAM'"
+              >
                 <span class="text-success fw-bold" v-if="item.trangThai === 'DA_CHAP_NHAN'"><i class="fa-solid fa-check"></i> Đã nhận</span>
                 <span class="text-danger fw-bold" v-if="item.trangThai === 'DA_TU_CHOI'"><i class="fa-solid fa-xmark"></i> Đã từ chối</span>
               </div>
@@ -268,9 +290,10 @@ const userHoTen = ref("Nhân viên");
 // Tabs matching the design
 const tabs = [
   { key: "all", label: "Tất cả" },
-  { key: "CHUA_DOC", label: "Chờ nhận" },
+  { key: "CHUA_DOC", label: "Chờ nhận việc" },
+  { key: "CHO_XAC_NHAN", label: "Chờ duyệt sản phẩm" },
   { key: "DA_TU_CHOI", label: "Đã từ chối" },
-  { key: "DA_CHAP_NHAN", label: "Đã nhận" }
+  { key: "DA_CHAP_NHAN", label: "Đã nhận / Đã duyệt" }
 ];
 
 const notifications = ref([]);
@@ -405,13 +428,21 @@ const markAllAsRead = async () => {
 
 const acceptCustomer = async (item) => {
   actionLoading.value = true;
+
   try {
     await api.put(`${API_URL}/${item.maThongBao}/chap-nhan`);
+
     item.trangThai = "DA_CHAP_NHAN";
-    showToast("Nhận công việc thành công!", "success");
-    selectedNotification.value = null; // Close modal if open
+
+    if (item.loaiThongBao === "DUYET_SAN_PHAM") {
+      showToast("Đã duyệt sản phẩm. Sản phẩm đã được bày bán!", "success");
+    } else {
+      showToast("Nhận công việc thành công!", "success");
+    }
+
+    selectedNotification.value = null;
   } catch (error) {
-    showToast(error.response?.data?.message || "Lỗi khi nhận việc", "error");
+    showToast(error.response?.data?.message || "Lỗi khi xử lý thông báo", "error");
   } finally {
     actionLoading.value = false;
   }
@@ -435,17 +466,30 @@ const confirmReject = async () => {
     return;
   }
 
+  if (rejectReason.value.trim().length < 3) {
+    rejectError.value = "Lý do từ chối phải từ 3 ký tự trở lên";
+    return;
+  }
+
   actionLoading.value = true;
+
   try {
     await api.put(
         `${API_URL}/${itemToReject.value.maThongBao}/tu-choi`,
         { lyDoTuChoi: rejectReason.value.trim() }
     );
+
     itemToReject.value.trangThai = "DA_TU_CHOI";
     itemToReject.value.lyDoTuChoi = rejectReason.value.trim();
-    showToast("Đã từ chối công việc!", "success");
+
+    if (itemToReject.value.loaiThongBao === "DUYET_SAN_PHAM") {
+      showToast("Đã từ chối và xóa sản phẩm khỏi database!", "success");
+    } else {
+      showToast("Đã từ chối công việc!", "success");
+    }
+
     closeRejectPopup();
-    selectedNotification.value = null; // Close modal if open
+    selectedNotification.value = null;
   } catch (error) {
     showToast(error.response?.data?.message || "Lỗi khi từ chối", "error");
   } finally {

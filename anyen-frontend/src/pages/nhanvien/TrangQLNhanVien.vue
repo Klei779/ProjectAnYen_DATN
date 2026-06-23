@@ -37,8 +37,8 @@
               <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1.5">{{ nv.vaiTro }}</span>
             </td>
             <td>
-                <span :class="['badge px-2.5 py-1.5 rounded-pill', nv.trangThai === 'HOAT_DONG' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger']">
-                  {{ nv.trangThai === 'HOAT_DONG' ? 'Đang làm việc' : 'Đã nghỉ việc' }}
+                <span :class="['badge px-2.5 py-1.5 rounded-pill', nv.trangThai === 'HOAT_DONG'|| nv.trangThai === 'Đang làm việc' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger']">
+                  {{ nv.trangThai === 'HOAT_DONG' || nv.trangThai === 'Đang làm việc' ? 'Đang làm việc' : 'Đã nghỉ việc' }}
                 </span>
             </td>
             <td class="text-end pe-4">
@@ -236,7 +236,7 @@ async function confirmNghiViec(nhanVien) {
     alert("Đã cập nhật trạng thái nghỉ việc thành công.");
 
     // 5. CHỈNH SỬA: Cập nhật trực tiếp trạng thái trên UI local để tối ưu trải nghiệm người dùng
-    nhanVien.trangThai = "NGHI_VIEC";
+
   } catch (error) {
     alert(error.response?.data?.message || "Hệ thống gặp sự cố khi xử lý dữ liệu.");
   } finally {

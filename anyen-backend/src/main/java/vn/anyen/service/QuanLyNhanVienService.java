@@ -47,7 +47,7 @@ public class QuanLyNhanVienService {
                 .soDienThoai(request.getSoDienThoai().trim())
                 .diaChi(request.getDiaChi())
                 .vaiTro(request.getVaiTro())
-                .trangThai("HOAT_DONG")
+                .trangThai("Đang làm việc")
                 .build();
 
         nhanVienRepository.save(nhanVien);

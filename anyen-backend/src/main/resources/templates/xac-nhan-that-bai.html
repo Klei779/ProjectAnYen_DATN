@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Xác Nhận Thất Bại — An Yên</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 50%, #fefce8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .card {
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            overflow: hidden;
+        }
+        .card-header {
+            background: linear-gradient(135deg, #991b1b 0%, #dc2626 50%, #991b1b 100%);
+            padding: 40px 32px 32px;
+        }
+        .icon-circle {
+            width: 80px; height: 80px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .icon-circle span { font-size: 40px; }
+        .card-header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .card-header p {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+        }
+        .card-body {
+            padding: 32px;
+        }
+        .error-message {
+            display: inline-block;
+            padding: 12px 20px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            color: #991b1b;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+        .message {
+            font-size: 15px;
+            color: #475569;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+        .card-footer {
+            padding: 20px 32px 28px;
+            border-top: 1px solid #f1f5f9;
+        }
+        .card-footer p {
+            font-size: 13px;
+            color: #94a3b8;
+            line-height: 1.5;
+        }
+        .brand {
+            font-weight: 600;
+            color: #1a5632;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="card-header">
+        <div class="icon-circle">
+            <span>❌</span>
+        </div>
+        <h1>Xác Nhận Thất Bại</h1>
+        <p>Không thể xử lý yêu cầu xác nhận</p>
+    </div>
+
+    <div class="card-body">
+        <div class="error-message" th:text="${errorMessage}">Lỗi không xác định</div>
+
+        <p class="message">
+            Rất tiếc, liên kết xác nhận hợp tác không hợp lệ hoặc đã được sử dụng trước đó.
+            Vui lòng liên hệ với bộ phận quản lý của <strong class="brand">An Yên</strong>
+            để được hỗ trợ thêm.
+        </p>
+    </div>
+
+    <div class="card-footer">
+        <p>
+            <span class="brand">An Yên</span> — Dịch Vụ Mai Táng<br/>
+            Đồng hành cùng gia đình trong những giờ phút khó khăn nhất<br/>
+            © 2026 An Yên. Mọi quyền được bảo lưu.
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

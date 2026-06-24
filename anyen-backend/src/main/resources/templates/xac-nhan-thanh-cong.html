@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Xác Nhận Hợp Tác — An Yên</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container-box {
+            background: #ffffff;
+            width: 100%;
+            max-width: 500px;
+            min-height: 600px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+            padding: 40px 30px;
+            position: relative;
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-family: 'Times New Roman', serif;
+            font-style: italic;
+            color: #1e3a8a;
+            font-size: 36px;
+            margin-bottom: 5px;
+        }
+        
+        /* Views */
+        .view-section { display: none; text-align: center; }
+        .view-section.active { display: block; animation: fadeIn 0.4s ease; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .icon-circle {
+            width: 70px; height: 70px;
+            background-color: #1e3a8a;
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .title { font-size: 22px; font-weight: bold; color: #1e3a8a; margin-bottom: 10px; }
+        .subtitle { font-size: 14px; color: #64748b; line-height: 1.5; margin-bottom: 25px; }
+        
+        /* Step 2 specific */
+        .steps-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+        .steps-box h3 { font-size: 16px; color: #1e3a8a; text-align: center; margin-bottom: 15px; }
+        .step-item { display: flex; align-items: center; margin-bottom: 12px; font-size: 14px; color: #475569; }
+        .step-number {
+            width: 24px; height: 24px;
+            background-color: #1e3a8a; color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 12px; font-weight: bold; margin-right: 12px; flex-shrink: 0;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            display: none; align-items: center; justify-content: center;
+            z-index: 10;
+        }
+        .modal-overlay.active { display: flex; animation: fadeIn 0.3s; }
+        .modal-content {
+            background: white; width: 90%; max-height: 90%;
+            border-radius: 8px; display: flex; flex-direction: column;
+            overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .modal-header {
+            padding: 15px 20px; border-bottom: 1px solid #e2e8f0; text-align: center;
+        }
+        .modal-header h2 { font-size: 18px; color: #b91c1c; text-transform: uppercase; margin-bottom: 5px; }
+        .modal-header p { font-size: 13px; color: #64748b; }
+        
+        .modal-body {
+            padding: 20px; overflow-y: auto; flex: 1;
+            font-size: 13px; color: #334155; line-height: 1.6;
+        }
+        .contract-text {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px;
+            padding: 15px; height: 150px; overflow-y: auto; margin-bottom: 20px;
+        }
+        
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; margin-bottom: 5px; color: #475569;}
+        .form-control {
+            width: 100%; padding: 10px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font-size: 14px; outline: none;
+        }
+        .form-control:focus { border-color: #1e3a8a; }
+        
+        .checkbox-group {
+            display: flex; align-items: flex-start; margin-bottom: 20px; text-align: left;
+        }
+        .checkbox-group input { margin-top: 3px; margin-right: 10px; cursor: pointer; }
+        .checkbox-group label { font-size: 13px; cursor: pointer; color: #1e293b; font-weight: 500;}
+        
+        .btn {
+            display: block; width: 100%; padding: 14px;
+            background-color: #1e3a8a; color: white;
+            border: none; border-radius: 6px;
+            font-size: 15px; font-weight: bold; cursor: pointer;
+            text-transform: uppercase; transition: background 0.2s;
+            text-decoration: none; text-align: center;
+        }
+        .btn:hover { background-color: #172554; }
+        .btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+        /* Step 4 specific */
+        .code-box {
+            display: inline-block; padding: 12px 30px;
+            border: 2px dashed #cbd5e1; border-radius: 8px;
+            font-size: 18px; font-weight: bold; color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+        .error-msg {
+            color: #dc2626; font-size: 13px; text-align: left; margin-bottom: 15px; display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-box">
+    <div class="header">
+        <h1>An Yên</h1>
+    </div>
+
+    <!-- VIEW 1: XÁC NHẬN THÀNH CÔNG -->
+    <div id="view-step2" class="view-section active">
+        <div class="icon-circle">✓</div>
+        <div class="title">Xác nhận hợp tác thành công!</div>
+        <div class="subtitle">
+            Cảm ơn Quý Đối tác <strong th:text="${tenDoiTac}"></strong> đã đồng ý hợp tác cùng An Yên.<br>
+            Thông tin lời mời đã được ghi nhận.
+        </div>
+
+        <div class="steps-box">
+            <h3>Các bước tiếp theo</h3>
+            <div class="step-item"><div class="step-number">1</div> Xem và xác nhận hợp đồng hợp tác</div>
+            <div class="step-item"><div class="step-number">2</div> Hoàn thiện thông tin doanh nghiệp</div>
+            <div class="step-item"><div class="step-number">3</div> Chờ An Yên phê duyệt tài khoản</div>
+            <div class="step-item"><div class="step-number">4</div> Bắt đầu đăng sản phẩm và nhận đơn hàng</div>
+        </div>
+
+        <button class="btn" onclick="openModal()">Xem hợp đồng</button>
+    </div>
+
+    <!-- VIEW 2: HOÀN TẤT KÝ KẾT -->
+    <div id="view-step4" class="view-section">
+        <div class="icon-circle" style="background-color: #1e3a8a;">📄</div>
+        <div class="title">Chúc mừng!</div>
+        <div class="subtitle">
+            Quý Đối tác đã hoàn tất thủ tục hợp tác với An Yên.
+        </div>
+
+        <div class="code-box">Mã đối tác: <span th:text="${maDoiTac}">AY00015</span></div>
+
+        <div class="subtitle">
+            Tài khoản của Quý Đối tác đang được xem xét.<br>
+            Thời gian phê duyệt dự kiến: <strong>24 giờ</strong>.
+        </div>
+
+        <a href="http://localhost:5173/" class="btn">Đăng nhập hệ thống</a>
+        
+        <div style="margin-top: 15px; font-size: 12px; color: #64748b;">
+            Chưa có tài khoản? Liên hệ An Yên để được hỗ trợ.
+        </div>
+    </div>
+
+    <!-- MODAL HỢP ĐỒNG -->
+    <div id="contract-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Hợp đồng hợp tác</h2>
+                <p>GIỮA AN YÊN VÀ ĐỐI TÁC</p>
+            </div>
+            <div class="modal-body">
+                <div class="contract-text">
+                    <strong>Căn cứ pháp lý:</strong><br>
+                    - Bộ luật Dân sự 2015;<br>
+                    - Luật Thương mại 2005;<br>
+                    - Các văn bản pháp luật có liên quan.<br><br>
+                    <strong>Điều 1. Nội dung hợp tác</strong><br>
+                    1. An Yên và Đối tác thống nhất hợp tác trên nguyên tắc bình đẳng, cùng có lợi và tuân thủ quy định pháp luật.<br>
+                    2. Đối tác cung cấp sản phẩm, dịch vụ trong lĩnh vực tang lễ thông qua nền tảng An Yên.<br>
+                    3. An Yên hỗ trợ quảng bá, kết nối khách hàng và hệ thống.<br><br>
+                    <strong>Điều 2. Quyền và nghĩa vụ</strong><br>
+                    - Cung cấp nền tảng công nghệ.<br>
+                    - Hỗ trợ quảng bá tiếp cận khách hàng.
+                </div>
+
+                <div style="font-weight: bold; margin-bottom: 10px; color: #1e3a8a;">Tạo tài khoản đăng nhập hệ thống:</div>
+                <div id="error-text" class="error-msg"></div>
+
+                <div class="form-group">
+                    <label>Tên đăng nhập <span style="color:red">*</span></label>
+                    <input type="text" id="username" class="form-control" placeholder="Nhập tên đăng nhập">
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu <span style="color:red">*</span></label>
+                    <input type="password" id="password" class="form-control" placeholder="Nhập mật khẩu (từ 6 ký tự)">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="agree-checkbox" onchange="toggleSubmitBtn()">
+                    <label for="agree-checkbox">Tôi đã đọc và đồng ý với các điều khoản hợp tác</label>
+                </div>
+
+                <button id="submit-btn" class="btn" disabled onclick="submitContract()">XÁC NHẬN KÝ KẾT</button>
+                <button class="btn" style="background:transparent; color:#64748b; margin-top:10px;" onclick="closeModal()">Đóng lại</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Hidden inputs for token and URLs -->
+<input type="hidden" id="token-val" th:value="${token}">
+
+<script>
+    const modal = document.getElementById('contract-modal');
+    const viewStep2 = document.getElementById('view-step2');
+    const viewStep4 = document.getElementById('view-step4');
+    const agreeCheckbox = document.getElementById('agree-checkbox');
+    const submitBtn = document.getElementById('submit-btn');
+    const errorText = document.getElementById('error-text');
+    const token = document.getElementById('token-val').value;
+
+    function openModal() {
+        modal.classList.add('active');
+    }
+
+    function closeModal() {
+        modal.classList.remove('active');
+        errorText.style.display = 'none';
+    }
+
+    function toggleSubmitBtn() {
+        submitBtn.disabled = !agreeCheckbox.checked;
+    }
+
+    async function submitContract() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value.trim();
+
+        if (!username || username.length < 4) {
+            showError("Tên đăng nhập phải từ 4 ký tự.");
+            return;
+        }
+        if (!password || password.length < 6) {
+            showError("Mật khẩu phải từ 6 ký tự.");
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.innerText = "ĐANG XỬ LÝ...";
+        errorText.style.display = 'none';
+
+        try {
+            const response = await fetch('/api/auth/doi-tac/ky-hop-dong', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: token, tenDangNhap: username, matKhau: password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                // Success
+                closeModal();
+                viewStep2.classList.remove('active');
+                viewStep4.classList.add('active');
+            } else {
+                // Backend validation or duplicate error
+                let msg = "Có lỗi xảy ra.";
+                if (data.message) msg = data.message;
+                else if (data.tenDangNhap) msg = data.tenDangNhap;
+                else if (data.matKhau) msg = data.matKhau;
+                showError(msg);
+                submitBtn.disabled = false;
+                submitBtn.innerText = "XÁC NHẬN KÝ KẾT";
+            }
+        } catch (e) {
+            showError("Lỗi kết nối máy chủ. Vui lòng thử lại sau.");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "XÁC NHẬN KÝ KẾT";
+        }
+    }
+
+    function showError(msg) {
+        errorText.innerText = msg;
+        errorText.style.display = 'block';
+    }
+</script>
+
+</body>
+</html>

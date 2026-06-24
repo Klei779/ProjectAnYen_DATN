@@ -1,3 +1,4 @@
+
 <template>
   <div class="container py-4">
     <!-- TIÊU ĐỀ -->
@@ -91,7 +92,7 @@
             <button type="button" class="btn btn-outline-secondary px-4 fw-bold" @click="closeModal">Hủy</button>
             <button type="button" class="btn btn-primary px-4 fw-bold shadow-sm" :disabled="isSubmitting" @click="submitCreateDoiTac">
               <span v-if="isSubmitting" class="spinner-border spinner-border-sm me-2"></span>
-              <span v-else>✅</span> Gửi lời mời hợp tác
+              <span v-else></span> Gửi lời mời hợp tác
             </button>
           </div>
         </div>

@@ -33,8 +33,8 @@ public class DoiTacThongBaoService {
     private final DoiTacRepository doiTacRepository;
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
+    private final ThongBaoService thongBaoService;
     private static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
-
     private static final String LOAI_DON_HANG = "DON_HANG";
     private static final String CHO_XAC_NHAN = "CHO_XAC_NHAN";
     private static final String DA_CHAP_NHAN = "DA_CHAP_NHAN";
@@ -81,7 +81,8 @@ public class DoiTacThongBaoService {
         if (donHang != null) {
             capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(donHang);
         }
-
+        thongBaoService.taoThongBaoChapNhanDonHang(donHang.getMaDonHang());
+        thongBaoService.taoThongBaoChapNhanDonHangChoAdmin(donHang.getMaDonHang());
         return XuLyThongBaoResponse.builder()
                 .success(true)
                 .message("Đã chấp nhận đơn hàng")

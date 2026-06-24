@@ -11,7 +11,6 @@ import java.time.LocalDate;
 
 @RestController
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class ThongKeDoanhThuController {
 
     private final ThongKeDoanhThuService thongKeDoanhThuService;

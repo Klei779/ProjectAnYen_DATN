@@ -19,7 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/nhan-vien/don-hang")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class NhanVienDonHangController {
 
     private final DonHangService donHangService;

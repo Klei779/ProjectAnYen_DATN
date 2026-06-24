@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.anyen.entity.NhanVien;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,5 +18,7 @@ public interface NhanVienRepository
 
     boolean existsBySoDienThoai(String soDienThoai);
 
-    java.util.List<NhanVien> findByVaiTro(String vaiTro);
+    List<NhanVien> findByVaiTro(String vaiTro);
+    List<NhanVien> findByVaiTroIgnoreCase(String vaiTro);
+
 }

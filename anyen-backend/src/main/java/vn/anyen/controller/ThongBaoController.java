@@ -15,7 +15,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/nhan-vien/thong-bao")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class ThongBaoController {
 
     private final ThongBaoService thongBaoService;

@@ -12,7 +12,6 @@ import vn.anyen.service.DonHangService;
 @RestController
 @RequestMapping("/api/doi-tac/quan-ly-don-hang")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class DoiTacDonHangController {
 
     private final DonHangService donHangService;

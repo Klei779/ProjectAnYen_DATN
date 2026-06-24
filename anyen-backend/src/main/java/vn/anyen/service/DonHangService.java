@@ -51,7 +51,7 @@ public class DonHangService {
     private final NhanVienRepository nhanVienRepository;
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacThongBaoService doiTacThongBaoService;
-
+private final ThongBaoService thongBaoService;
     // Thứ tự trạng thái đơn hàng theo quy trình
     private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
             "Mới tạo",
@@ -252,7 +252,12 @@ public class DonHangService {
                         "Hiện tại: '" + trangThaiHienTai + "', yêu cầu: '" + trangThaiMoi + "'.");
             }
         }
+if ("Đang xử lý".equals(trangThaiMoi)){
+    thongBaoService.taoThongBaoDonHangDangXuLy(donHang.getMaDonHang());
+}else if("Hoàn thành".equals(trangThaiMoi)){
+    thongBaoService.taoThongBaoDonHangThanhToan(donHang.getMaDonHang());
 
+}
         donHang.setTrangThai(trangThaiMoi);
         donHangRepository.save(donHang);
 

@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/nhan-vien/quanlynhanvien")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173") // Cho phép gọi API từ cổng mặc định của Vite Vue 3
+@CrossOrigin(origins = "http://localhost:5173")
 public class QuanLyNhanVienController {
 
     private final QuanLyNhanVienService quanLyNhanVienService;

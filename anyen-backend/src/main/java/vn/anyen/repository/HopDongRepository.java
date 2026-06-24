@@ -9,10 +9,13 @@ import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.HopDong;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
 
     boolean existsByDonHang_MaDonHang(Integer maDonHang);
+
+    Optional<HopDong> findByDonHang_MaDonHang(Integer maDonHang);
 
     boolean existsByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
 

@@ -9,6 +9,10 @@ import java.util.Optional;
 public interface ThongBaoDoiTacRepository
         extends JpaRepository<ThongBaoDoiTac, Integer> {
 
+    List<ThongBaoDoiTac> findByDoiTac_MaDoiTacOrderByThoiGianTaoDesc(
+            Integer maDoiTac
+    );
+
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
             Integer maDoiTac,
@@ -39,6 +43,9 @@ public interface ThongBaoDoiTacRepository
             Integer donHang,
             String loai
     );
-    List<ThongBaoDoiTac> findByDonHang_MaDonHangAndLoai(Integer donHang, String loai);
 
+    List<ThongBaoDoiTac> findByDonHang_MaDonHangAndLoai(
+            Integer donHang,
+            String loai
+    );
 }

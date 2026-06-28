@@ -203,6 +203,22 @@ const getLoaiSanPham = (item) => {
   );
 };
 
+const getTenDoiTac = (item) => {
+  return (
+      item.tenDoiTac ||
+      item.TenDoiTac ||
+      item.tenDoiTacCungCap ||
+      item.TenDoiTacCungCap ||
+      item.doiTac?.tenDoiTac ||
+      item.doiTac?.TenDoiTac ||
+      item.sanPham?.tenDoiTac ||
+      item.sanPham?.TenDoiTac ||
+      item.sanPham?.doiTac?.tenDoiTac ||
+      item.sanPham?.doiTac?.TenDoiTac ||
+      "Chưa có đối tác"
+  );
+};
+
 const getSoLuong = (item) => {
   return Number(item.soLuong || item.SoLuong || 1);
 };
@@ -251,30 +267,92 @@ const badgeThanhToanClass = computed(() => {
   return "badge-orange";
 });
 
-// ===== In hóa đơn (Print) =====
-const buildInvoiceHtml = () => {
+const escapeHtml = (value) => {
+  return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+};
+
+const buildInvoiceHtml = (hideHeader = false) => {
+  const logoSrc = logoAnYen.startsWith("http")
+      ? logoAnYen
+      : window.location.origin + logoAnYen;
+
+  const ngayInText = form.value.ngayIn
+      ? new Date(form.value.ngayIn).toLocaleDateString("vi-VN")
+      : new Date().toLocaleDateString("vi-VN");
+
+  const productRows = rawChiTiet.value.length
+      ? rawChiTiet.value.map((item, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHtml(getMaSanPham(item))}</td>
+            <td class="left">
+              <b>${escapeHtml(getTenSanPham(item))}</b>
+              <br />
+              <small>Loại: ${escapeHtml(getLoaiSanPham(item))}</small>
+              <br />
+              <small>Đối tác: ${escapeHtml(getTenDoiTac(item))}</small>
+            </td>
+            <td>${getSoLuong(item)}</td>
+            <td>${formatCurrency(getGiaTien(item))}</td>
+            <td>${formatCurrency(getThanhTien(item))}</td>
+          </tr>
+        `).join("")
+      : `
+          <tr>
+            <td colspan="6" class="empty-row">
+              Chưa có chi tiết sản phẩm / dịch vụ trong dữ liệu đơn hàng.
+            </td>
+          </tr>
+        `;
+
   return `
     <!DOCTYPE html>
     <html lang="vi">
     <head>
       <meta charset="UTF-8" />
-      <title>Hóa đơn - ${maCode.value}</title>
+      <title>Hóa đơn - ${escapeHtml(maCode.value)}</title>
+
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-          font-family: 'Inter', Arial, sans-serif;
-          color: #1e293b;
-          padding: 32px 40px;
-          font-size: 15px;
-          line-height: 1.6;
+
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
         }
+
+        body {
+  font-family: 'Inter', Arial, sans-serif;
+  color: #1e293b;
+  background: #ffffff;
+  padding: ${hideHeader ? "14px 40px 32px" : "32px 40px"};
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+        .print-page {
+          max-width: 900px;
+          margin: 0 auto;
+          background: #ffffff;
+        }
+
         .print-header {
           text-align: center;
           margin-bottom: 28px;
           padding-bottom: 20px;
           border-bottom: 2px solid #e2e8f0;
         }
+
+        .print-header img {
+          height: 60px;
+          margin-bottom: 10px;
+        }
+
         .print-header h1 {
           font-size: 32px;
           font-weight: 900;
@@ -283,7 +361,12 @@ const buildInvoiceHtml = () => {
           text-transform: uppercase;
           letter-spacing: 1px;
         }
-        .print-header p { color: #64748b; font-size: 14px; }
+
+        .print-header p {
+          color: #64748b;
+          font-size: 14px;
+        }
+
         .section-title {
           font-size: 18px;
           font-weight: 800;
@@ -293,20 +376,32 @@ const buildInvoiceHtml = () => {
           border-bottom: 1px solid #e2e8f0;
           text-transform: uppercase;
         }
+
         .info-grid {
           display: grid;
           grid-template-columns: 200px 1fr;
           gap: 8px 16px;
           margin-bottom: 12px;
         }
-        .info-grid .lbl { color: #64748b; font-size: 15px; }
-        .info-grid .val { color: #0f172a; font-weight: 600; font-size: 16px; }
+
+        .info-grid .lbl {
+          color: #64748b;
+          font-size: 15px;
+        }
+
+        .info-grid .val {
+          color: #0f172a;
+          font-weight: 600;
+          font-size: 16px;
+        }
+
         table {
           width: 100%;
           border-collapse: collapse;
           margin: 12px 0 20px;
           font-size: 15px;
         }
+
         th {
           background: #f1f5f9;
           color: #0f172a;
@@ -315,24 +410,43 @@ const buildInvoiceHtml = () => {
           border: 1px solid #e2e8f0;
           text-align: center;
         }
+
         td {
           padding: 8px 6px;
           border: 1px solid #e2e8f0;
           text-align: center;
           vertical-align: middle;
         }
-        td.left { text-align: left; }
+
+        td.left {
+          text-align: left;
+        }
+
+        td small {
+          color: #64748b;
+          font-size: 13px;
+        }
+
+        .empty-row {
+          color: #64748b;
+          font-style: italic;
+          text-align: center;
+          padding: 18px;
+        }
+
         .summary {
           margin-top: 14px;
           border-top: 2px solid #e2e8f0;
           padding-top: 12px;
         }
+
         .summary-row {
           display: flex;
           justify-content: space-between;
           padding: 6px 0;
           font-size: 16px;
         }
+
         .summary-total {
           display: flex;
           justify-content: space-between;
@@ -343,105 +457,168 @@ const buildInvoiceHtml = () => {
           border-top: 1px dashed #cbd5e1;
           margin-top: 8px;
         }
+
+        .thanks {
+          text-align: center;
+          margin-top: 50px;
+          color: #475569;
+          font-size: 16px;
+          font-style: italic;
+        }
+
         @media print {
-          body { padding: 16px 24px; }
+          body {
+            padding: 16px 24px;
+          }
+
+          .print-page {
+            max-width: none;
+          }
         }
       </style>
     </head>
+
     <body>
-      <div class="print-header">
-        <img src="${logoAnYen.startsWith('http') ? logoAnYen : window.location.origin + logoAnYen}" alt="An Yên Logo" style="height: 60px; margin-bottom: 10px;" onerror="this.style.display='none'"/>
-        <h1>Hóa đơn</h1>
-        <p>Mã hóa đơn: ${maHoaDonPreview.value} &nbsp;|&nbsp; Ngày in: ${form.value.ngayIn ? new Date(form.value.ngayIn).toLocaleDateString("vi-VN") : new Date().toLocaleDateString("vi-VN")}</p>
-      </div>
+      <div class="print-page">
+        ${hideHeader ? "" : `
+  <div class="print-header">
+    <img
+      src="${logoSrc}"
+      alt="An Yên Logo"
+      onerror="this.style.display='none'"
+    />
 
-      <div class="section-title">Thông tin đơn hàng</div>
-      <div class="info-grid">
-        <span class="lbl">Mã đơn hàng</span><span class="val">${maCode.value}</span>
-        <span class="lbl">Mã khách hàng</span><span class="val">${maKhachHang.value}</span>
-        <span class="lbl">Khách hàng</span><span class="val">${tenKhachHang.value}</span>
-        <span class="lbl">Số điện thoại</span><span class="val">${soDienThoai.value}</span>
-        <span class="lbl">Nhân viên phụ trách</span><span class="val">${tenNhanVien.value}</span>
-        <span class="lbl">Ngày tạo đơn</span><span class="val">${formatDateView(ngayTaoDon.value)}</span>
-        <span class="lbl">Trạng thái đơn hàng</span><span class="val">${trangThaiDonHang.value}</span>
-        <span class="lbl">Ghi chú</span><span class="val">${ghiChuDonHang.value}</span>
-      </div>
+    <h1>Hóa đơn</h1>
 
-      <div class="section-title">Thông tin hóa đơn</div>
-      <div class="info-grid">
-        <span class="lbl">Mã hóa đơn</span><span class="val">${maHoaDonPreview.value}</span>
-        <span class="lbl">Ngày in hóa đơn</span><span class="val">${form.value.ngayIn ? new Date(form.value.ngayIn).toLocaleDateString("vi-VN") : ""}</span>
-        <span class="lbl">Phương thức thanh toán</span><span class="val">${form.value.phuongThucThanhToan}</span>
-        <span class="lbl">Trạng thái thanh toán</span><span class="val">${trangThaiThanhToan.value}</span>
-        <span class="lbl">Trạng thái hóa đơn</span><span class="val">${form.value.trangThai}</span>
-      </div>
+    <p>
+      Mã hóa đơn: ${escapeHtml(maHoaDonPreview.value)}
+      &nbsp;|&nbsp;
+      Ngày in: ${escapeHtml(ngayInText)}
+    </p>
+  </div>
+`}
 
-      <div class="section-title">Sản phẩm / Dịch vụ</div>
-      <table>
-        <thead>
-          <tr>
-            <th>STT</th>
-            <th>Mã SP</th>
-            <th>Tên sản phẩm / dịch vụ</th>
-            <th>SL</th>
-            <th>Thành tiền</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rawChiTiet.value.map((item, i) => `
+        <div class="section-title">Thông tin đơn hàng</div>
+
+        <div class="info-grid">
+          <span class="lbl">Mã đơn hàng</span>
+          <span class="val">${escapeHtml(maCode.value)}</span>
+
+          <span class="lbl">Mã khách hàng</span>
+          <span class="val">${escapeHtml(maKhachHang.value)}</span>
+
+          <span class="lbl">Khách hàng</span>
+          <span class="val">${escapeHtml(tenKhachHang.value)}</span>
+
+          <span class="lbl">Số điện thoại</span>
+          <span class="val">${escapeHtml(soDienThoai.value)}</span>
+
+          <span class="lbl">Nhân viên phụ trách</span>
+          <span class="val">${escapeHtml(tenNhanVien.value)}</span>
+
+          <span class="lbl">Ngày tạo đơn</span>
+          <span class="val">${escapeHtml(formatDateView(ngayTaoDon.value))}</span>
+
+          <span class="lbl">Trạng thái đơn hàng</span>
+          <span class="val">${escapeHtml(trangThaiDonHang.value)}</span>
+
+          <span class="lbl">Ghi chú</span>
+          <span class="val">${escapeHtml(ghiChuDonHang.value)}</span>
+        </div>
+
+        <div class="section-title">Thông tin hóa đơn</div>
+
+        <div class="info-grid">
+          <span class="lbl">Mã hóa đơn</span>
+          <span class="val">${escapeHtml(maHoaDonPreview.value)}</span>
+
+          <span class="lbl">Ngày in hóa đơn</span>
+          <span class="val">${escapeHtml(ngayInText)}</span>
+
+          <span class="lbl">Phương thức thanh toán</span>
+          <span class="val">${escapeHtml(form.value.phuongThucThanhToan)}</span>
+        </div>
+
+        <div class="section-title">Sản phẩm / Dịch vụ</div>
+
+        <table>
+          <thead>
             <tr>
-              <td>${i + 1}</td>
-              <td>${getMaSanPham(item)}</td>
-              <td class="left">${getTenSanPham(item)}<br/><small style="color:#64748b">${getLoaiSanPham(item)}</small></td>
-              <td>${getSoLuong(item)}</td>
-              <td>${formatCurrency(getThanhTien(item))}</td>
+              <th>STT</th>
+              <th>Mã SP</th>
+              <th>Tên sản phẩm / dịch vụ</th>
+              <th>SL</th>
+              <th>Đơn giá</th>
+              <th>Thành tiền</th>
             </tr>
-          `).join("")}
-        </tbody>
-      </table>
+          </thead>
 
-      <div class="summary">
-        <div class="summary-row"><span>Tạm tính</span><b>${formatCurrency(tamTinh.value)}</b></div>
-        <div class="summary-row"><span>Giảm giá</span><b>${formatCurrency(giamGia.value)}</b></div>
-        <div class="summary-total"><span>TỔNG THANH TOÁN</span><span>${formatCurrency(tongThanhToan.value)}</span></div>
-      </div>
+          <tbody>
+            ${productRows}
+          </tbody>
+        </table>
 
-      <div style="text-align: center; margin-top: 50px; color: #475569; font-size: 16px; font-style: italic;">
-        <p>Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của An Yên.</p>
-        <p>Kính chúc quý gia đình bình an và nhiều sức khỏe!</p>
+        <div class="summary">
+          <div class="summary-row">
+            <span>Tạm tính</span>
+            <b>${formatCurrency(tamTinh.value)}</b>
+          </div>
+
+          <div class="summary-row">
+            <span>Giảm giá</span>
+            <b>${formatCurrency(giamGia.value)}</b>
+          </div>
+
+          <div class="summary-total">
+            <span>TỔNG THANH TOÁN</span>
+            <span>${formatCurrency(tongThanhToan.value)}</span>
+          </div>
+        </div>
+
+        ${hideHeader ? "" : `
+  <div class="thanks">
+    <p>Cảm ơn quý khách đã tin tưởng và sử dụng dịch vụ của An Yên.</p>
+    <p>Kính chúc quý gia đình bình an và nhiều sức khỏe!</p>
+  </div>
+`}
       </div>
     </body>
     </html>
   `;
 };
 
+const invoicePreviewHtml = computed(() => buildInvoiceHtml(true));
+
 const printInvoice = () => {
-  const printWindow = window.open("", "_blank", "width=800,height=900");
+  const printWindow = window.open("", "_blank", "width=900,height=900");
+
   if (!printWindow) {
     ElMessage.warning("Trình duyệt đã chặn cửa sổ in. Vui lòng cho phép popup.");
     return;
   }
+
   printWindow.document.write(buildInvoiceHtml());
   printWindow.document.close();
+
   printWindow.onload = () => {
     printWindow.focus();
     printWindow.print();
   };
 };
 
-// ===== Tải file PDF =====
 const downloadPDF = () => {
-  const printWindow = window.open("", "_blank", "width=800,height=900");
+  const printWindow = window.open("", "_blank", "width=900,height=900");
+
   if (!printWindow) {
     ElMessage.warning("Trình duyệt đã chặn cửa sổ. Vui lòng cho phép popup.");
     return;
   }
-  const htmlContent = buildInvoiceHtml();
-  printWindow.document.write(htmlContent);
+
+  printWindow.document.write(buildInvoiceHtml());
   printWindow.document.close();
+
   printWindow.onload = () => {
     printWindow.focus();
-    // Trigger print dialog — user can choose "Save as PDF" in the print dialog
     printWindow.print();
     ElMessage.info('Chọn "Save as PDF" / "Lưu dưới dạng PDF" trong hộp thoại in để tải file PDF.');
   };
@@ -501,8 +678,42 @@ const submitHoaDon = async () => {
 <template>
   <Teleport to="body">
     <div v-if="modelValue" class="invoice-overlay">
-      <div class="invoice-popup">
-        <!-- Header -->
+
+      <div v-if="isViewMode" class="invoice-preview-popup">
+        <div class="invoice-preview-header">
+          <div>
+            <h2>Xem hóa đơn</h2>
+            <p>Thông tin hóa đơn của đơn hàng</p>
+          </div>
+
+          <button class="btn-preview-close" @click="closePopup">
+            <el-icon>
+              <Close />
+            </el-icon>
+          </button>
+        </div>
+
+        <iframe
+            class="invoice-preview-frame"
+            :srcdoc="invoicePreviewHtml"
+        ></iframe>
+
+        <div class="invoice-preview-footer">
+          <button class="btn-preview-print" @click="printInvoice">
+            <el-icon>
+              <Printer />
+            </el-icon>
+            In hóa đơn
+          </button>
+
+          <button class="btn-preview-cancel" @click="closePopup">
+            Đóng
+          </button>
+        </div>
+      </div>
+
+      <!-- TẠO HÓA ĐƠN: vẫn giữ form tạo, nhưng bỏ trạng thái thanh toán + trạng thái hóa đơn -->
+      <div v-else class="invoice-popup">
         <div class="popup-header">
           <div class="title-wrap">
             <div class="title-icon">
@@ -512,10 +723,8 @@ const submitHoaDon = async () => {
             </div>
 
             <div>
-              <h2>{{ isViewMode ? "Xem hóa đơn" : "Tạo hóa đơn" }}</h2>
-              <p>
-                {{ isViewMode ? "Thông tin hóa đơn của đơn hàng" : "Xác nhận thông tin và tạo hóa đơn cho đơn hàng" }}
-              </p>
+              <h2>Tạo hóa đơn</h2>
+              <p>Xác nhận thông tin và tạo hóa đơn cho đơn hàng</p>
             </div>
           </div>
 
@@ -526,9 +735,7 @@ const submitHoaDon = async () => {
           </button>
         </div>
 
-        <!-- Body 3 cột -->
         <div class="popup-body">
-          <!-- Cột 1 -->
           <section class="panel order-info-panel">
             <h3>
               <span></span>
@@ -580,15 +787,6 @@ const submitHoaDon = async () => {
                 <b>{{ form.phuongThucThanhToan }}</b>
               </div>
 
-              <div class="info-row">
-                <label>Trạng thái thanh toán</label>
-                <b>
-                  <span class="badge" :class="badgeThanhToanClass">
-                    {{ trangThaiThanhToan }}
-                  </span>
-                </b>
-              </div>
-
               <div class="info-row note-row">
                 <label>Ghi chú đơn hàng</label>
                 <b>{{ ghiChuDonHang }}</b>
@@ -596,7 +794,6 @@ const submitHoaDon = async () => {
             </div>
           </section>
 
-          <!-- Cột 2 -->
           <section class="panel invoice-form-panel">
             <h3>
               <span></span>
@@ -612,7 +809,7 @@ const submitHoaDon = async () => {
               <div class="form-group">
                 <label>Ngày in hóa đơn <em>*</em></label>
                 <div class="input-icon">
-                  <input v-model="form.ngayIn" type="date" :disabled="isViewMode" />
+                  <input v-model="form.ngayIn" type="date" />
                   <el-icon>
                     <Calendar />
                   </el-icon>
@@ -621,18 +818,9 @@ const submitHoaDon = async () => {
 
               <div class="form-group">
                 <label>Phương thức thanh toán <em>*</em></label>
-                <select v-model="form.phuongThucThanhToan" :disabled="isViewMode">
+                <select v-model="form.phuongThucThanhToan">
                   <option>Tiền mặt</option>
                   <option>Chuyển khoản</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Trạng thái hóa đơn <em>*</em></label>
-                <select v-model="form.trangThai" :disabled="isViewMode">
-                  <option>Chưa thanh toán</option>
-                  <option>Đã thanh toán</option>
-                  <option>Đã in</option>
                 </select>
               </div>
 
@@ -643,7 +831,6 @@ const submitHoaDon = async () => {
             </div>
           </section>
 
-          <!-- Cột 3 -->
           <section class="panel product-panel">
             <div class="product-header">
               <h3>
@@ -675,10 +862,13 @@ const submitHoaDon = async () => {
                 <tr v-for="(item, index) in chiTietHienThi" :key="index">
                   <td>{{ index + 1 }}</td>
                   <td>{{ getMaSanPham(item) }}</td>
+
                   <td>
                     <b>{{ getTenSanPham(item) }}</b>
                     <small>{{ getLoaiSanPham(item) }}</small>
+                    <small>Đối tác: {{ getTenDoiTac(item) }}</small>
                   </td>
+
                   <td>{{ getSoLuong(item) }}</td>
                   <td>{{ formatCurrency(getThanhTien(item)) }}</td>
                 </tr>
@@ -716,26 +906,18 @@ const submitHoaDon = async () => {
           <b>Chờ thanh toán</b> hoặc <b>Hoàn thành</b>.
         </div>
 
-        <!-- Footer -->
         <div class="popup-footer">
           <div class="footer-left">
             <button class="btn-action btn-print-invoice" @click="printInvoice">
-              <el-icon><Printer /></el-icon>
+              <el-icon>
+                <Printer />
+              </el-icon>
               In hóa đơn
             </button>
           </div>
 
           <div class="footer-right">
             <button
-                v-if="isViewMode"
-                class="btn-submit"
-                @click="closePopup"
-            >
-              Đóng
-            </button>
-
-            <button
-                v-else
                 class="btn-submit"
                 :class="{ disabled: !canCreateInvoice || loading }"
                 :disabled="!canCreateInvoice || loading"
@@ -748,7 +930,8 @@ const submitHoaDon = async () => {
             </button>
           </div>
         </div>
-    </div>
+      </div>
+
     </div>
   </Teleport>
 </template>

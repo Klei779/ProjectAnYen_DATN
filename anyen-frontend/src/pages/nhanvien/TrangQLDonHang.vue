@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 import PopTaoDonHang from "./PopTaoDonHang.vue";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
@@ -9,8 +9,10 @@ import PopTaoHoaDon from "./PopTaoHoaDon.vue";
 import {
   getDonHangs,
   taoDonHang,
+  capNhatDonHang,
   capNhatTrangThai,
   huyDonHang as huyDonHangAPI,
+  kiemTraDonHangCoHopDong,
   formatDate,
 } from "../../services/donHangService.js";
 
@@ -76,6 +78,11 @@ onMounted(() => {
   loadDonHangs();
 });
 
+// ── Helper mã đơn hàng ─────────────────────────────
+const getMaDonHang = (dh) => {
+  return dh?.maDonHang || dh?.MaDonHang || dh?.id;
+};
+
 // ── Hủy đơn hàng ─────────────────────────────
 const showCancelDialog = ref(false);
 const selectedCancelOrder = ref(null);
@@ -114,10 +121,7 @@ const confirmCancelOrder = async () => {
   }
 
   try {
-    const maDonHang =
-        selectedCancelOrder.value.maDonHang ||
-        selectedCancelOrder.value.MaDonHang ||
-        selectedCancelOrder.value.id;
+    const maDonHang = getMaDonHang(selectedCancelOrder.value);
 
     await huyDonHangAPI(maDonHang, cancelReason.value.trim());
 
@@ -129,6 +133,7 @@ const confirmCancelOrder = async () => {
     await loadDonHangs();
   } catch (error) {
     console.error("Lỗi khi hủy đơn hàng:", error);
+
     ElMessage.error(
         error.response?.data?.message ||
         error.response?.data ||
@@ -196,10 +201,120 @@ const apDungBoLoc = () => {
   ElMessage.success("Đã áp dụng bộ lọc");
 };
 
-// ── Chi tiết đơn hàng ─────────────────────────────
-const xemChiTiet = (dh) => {
-  selectedDonHang.value = dh;
-  showChiTiet.value = true;
+// ── Chi tiết / sửa đơn hàng ─────────────────────────────
+const hienThongBaoDonDaCoHopDong = async (dh) => {
+  await ElMessageBox.alert(
+      `Đơn hàng ${dh?.maCode ? "#" + dh.maCode : "này"} đã ký hợp đồng, không thể chỉnh sửa.\n\nNếu có sai sót thông tin vui lòng hủy đơn hàng và hủy hợp đồng.`,
+      "Không thể chỉnh sửa đơn hàng",
+      {
+        confirmButtonText: "Đã hiểu",
+        type: "warning",
+      }
+  );
+};
+
+const xemChiTiet = async (dh) => {
+  try {
+    const maDonHang = getMaDonHang(dh);
+
+    if (!maDonHang) {
+      ElMessage.error("Không tìm thấy mã đơn hàng");
+      return;
+    }
+
+    if (dh.daCoHopDong === true) {
+      await hienThongBaoDonDaCoHopDong(dh);
+      return;
+    }
+
+    const daCoHopDong = await kiemTraDonHangCoHopDong(maDonHang);
+
+    if (daCoHopDong) {
+      dh.daCoHopDong = true;
+      await hienThongBaoDonDaCoHopDong(dh);
+      return;
+    }
+
+    selectedDonHang.value = JSON.parse(JSON.stringify(dh));
+    showChiTiet.value = true;
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra hợp đồng của đơn hàng:", error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Không kiểm tra được hợp đồng của đơn hàng"
+    );
+  }
+};
+
+const buildUpdateOrderPayload = (order) => {
+  const sanPhams = order?.sanPhams || [];
+
+  return {
+    maKhachHang: order?.MaKhachHang || order?.maKhachHang || null,
+    tenKhachHang: order?.tenKhachHang || "",
+    soDienThoai: order?.soDienThoaiKH || order?.soDienThoai || "",
+    cccd: order?.cccd || order?.CCCD || "",
+    email: order?.emailKH || order?.email || "",
+    diaChi: order?.diaChiKH || order?.diaChi || "",
+    ghiChu: order?.GhiChu || order?.ghiChuNoiBo || order?.ghiChu || "",
+    phuongThucThanhToan: order?.phuongThucThanhToan || "Chưa chọn",
+    trangThaiThanhToan: order?.trangThaiThanhToan || "Chưa thanh toán",
+    items: sanPhams.map((sp) => ({
+      maSanPham: sp.MaSanPham || sp.maSanPham,
+      soLuong: Number(sp.SoLuong || sp.soLuong || 1),
+    })),
+  };
+};
+
+const handleUpdateOrder = async (order) => {
+  try {
+    const maDonHang = getMaDonHang(order);
+
+    if (!maDonHang) {
+      ElMessage.error("Không tìm thấy mã đơn hàng");
+      return;
+    }
+
+    const payload = buildUpdateOrderPayload(order);
+
+    if (!payload.items || payload.items.length === 0) {
+      ElMessage.error("Đơn hàng phải có ít nhất 1 sản phẩm");
+      return;
+    }
+
+    await capNhatDonHang(maDonHang, payload);
+
+    ElMessage.success("Cập nhật đơn hàng thành công");
+
+    showChiTiet.value = false;
+    selectedDonHang.value = null;
+
+    await loadDonHangs();
+  } catch (error) {
+    console.error("Lỗi khi cập nhật đơn hàng:", error);
+
+    const message =
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Cập nhật đơn hàng thất bại";
+
+    if (error.response?.status === 409) {
+      await ElMessageBox.alert(message, "Không thể chỉnh sửa đơn hàng", {
+        confirmButtonText: "Đã hiểu",
+        type: "warning",
+      });
+
+      showChiTiet.value = false;
+      selectedDonHang.value = null;
+
+      await loadDonHangs();
+      return;
+    }
+
+    ElMessage.error(message);
+  }
 };
 
 // ── Hóa đơn ─────────────────────────────
@@ -229,6 +344,7 @@ const xemHoaDon = (dh) => {
 // ── Stepper trạng thái ─────────────────────────────
 const STEPS = [
   "Mới tạo",
+  "Chờ đối tác xác nhận",
   "Đã xác nhận",
   "Đang xử lý",
   "Chờ thanh toán",
@@ -245,7 +361,7 @@ const isStepCompleted = (dh, stepName) => {
   const currentIdx = getStepIndex(dh.trangThai);
   const targetIdx = getStepIndex(stepName);
 
-  return targetIdx < currentIdx;
+  return currentIdx >= 0 && targetIdx < currentIdx;
 };
 
 const isStepActive = (dh, stepName) => {
@@ -272,9 +388,10 @@ const nextStatus = (dh) => {
 
 // ── Badge class ─────────────────────────────
 const trangThaiBadgeClass = (tt) => {
+  if (tt === "Mới tạo") return "badge-yellow";
+  if (tt === "Chờ đối tác xác nhận") return "badge-pink";
   if (tt === "Đã xác nhận") return "badge-blue";
   if (tt === "Đang xử lý") return "badge-orange";
-  if (tt === "Mới tạo") return "badge-yellow";
   if (tt === "Chờ thanh toán") return "badge-purple";
   if (tt === "Hoàn thành") return "badge-green";
   if (tt === "Đã hủy") return "badge-red";
@@ -309,15 +426,18 @@ const handleCreateOrder = async (payload) => {
 // ── Cập nhật trạng thái ─────────────────────────────
 const doUpdateStatus = async (dh, next) => {
   try {
-    await capNhatTrangThai(dh.maDonHang || dh.MaDonHang, next);
+    await capNhatTrangThai(getMaDonHang(dh), next);
 
     ElMessage.success(`Đã cập nhật trạng thái: ${next}`);
 
     await loadDonHangs();
   } catch (error) {
     console.error("Lỗi khi cập nhật trạng thái:", error);
+
     ElMessage.error(
-        error.response?.data?.message || "Cập nhật trạng thái thất bại"
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Cập nhật trạng thái thất bại"
     );
   }
 };
@@ -382,9 +502,13 @@ const confirmCashPayment = async () => {
       <div class="filter-item">
         <span class="filter-label">Trạng thái:</span>
 
-        <select v-model="trangThaiFilter" class="select-filter">
+        <select
+            v-model="trangThaiFilter"
+            class="select-filter"
+        >
           <option>Tất cả</option>
           <option>Mới tạo</option>
+          <option>Chờ đối tác xác nhận</option>
           <option>Đã xác nhận</option>
           <option>Đang xử lý</option>
           <option>Chờ thanh toán</option>
@@ -396,7 +520,10 @@ const confirmCashPayment = async () => {
       <div class="filter-item">
         <span class="filter-label">Phương thức thanh toán:</span>
 
-        <select v-model="ptThanhToanFilter" class="select-filter">
+        <select
+            v-model="ptThanhToanFilter"
+            class="select-filter"
+        >
           <option>Tất cả</option>
           <option>Chuyển khoản</option>
           <option>Tiền mặt</option>
@@ -418,14 +545,20 @@ const confirmCashPayment = async () => {
         />
       </div>
 
-      <button class="btn-create-order" @click="apDungBoLoc">
+      <button
+          class="btn-create-order"
+          @click="apDungBoLoc"
+      >
         <el-icon>
           <Filter />
         </el-icon>
         Bộ lọc
       </button>
 
-      <button class="btn-create-order btn-tao" @click="showCreateOrder = true">
+      <button
+          class="btn-create-order btn-tao"
+          @click="showCreateOrder = true"
+      >
         <el-icon>
           <Plus />
         </el-icon>
@@ -435,11 +568,17 @@ const confirmCashPayment = async () => {
 
     <!-- ── Grid đơn hàng ── -->
     <div class="order-grid">
-      <div v-if="loading" class="empty-state">
+      <div
+          v-if="loading"
+          class="empty-state"
+      >
         Đang tải đơn hàng...
       </div>
 
-      <div v-else-if="pagedList.length === 0" class="empty-state">
+      <div
+          v-else-if="pagedList.length === 0"
+          class="empty-state"
+      >
         Không có đơn hàng nào.
       </div>
 
@@ -452,7 +591,10 @@ const confirmCashPayment = async () => {
         <div class="card-header">
           <h3 class="order-code">#{{ dh.maCode }}</h3>
 
-          <span class="badge" :class="trangThaiBadgeClass(dh.trangThai)">
+          <span
+              class="badge"
+              :class="trangThaiBadgeClass(dh.trangThai)"
+          >
             {{ dh.trangThai }}
           </span>
         </div>
@@ -460,7 +602,10 @@ const confirmCashPayment = async () => {
         <!-- Stepper ngang -->
         <div class="card-stepper">
           <div class="stepper-track">
-            <template v-for="(step, idx) in STEPS" :key="step">
+            <template
+                v-for="(step, idx) in STEPS"
+                :key="step"
+            >
               <div
                   class="step-item"
                   :class="{
@@ -473,10 +618,15 @@ const confirmCashPayment = async () => {
                     <Check />
                   </el-icon>
 
-                  <div v-else class="inner-dot"></div>
+                  <div
+                      v-else
+                      class="inner-dot"
+                  ></div>
                 </div>
 
-                <div class="step-label">{{ step }}</div>
+                <div class="step-label">
+                  {{ step }}
+                </div>
               </div>
 
               <div
@@ -523,13 +673,18 @@ const confirmCashPayment = async () => {
             </el-icon>
 
             <span>Ngày tạo:</span>
-            <strong>{{ formatDate(dh.ngayTaoDon || dh.NgayTaoDon) }}</strong>
+            <strong>
+              {{ formatDate(dh.ngayTaoDon || dh.NgayTaoDon) }}
+            </strong>
           </div>
         </div>
 
         <!-- Actions -->
         <div class="card-actions">
-          <button class="btn-outline-green" @click="xemChiTiet(dh)">
+          <button
+              class="btn-outline-green"
+              @click="xemChiTiet(dh)"
+          >
             <el-icon>
               <EditPen />
             </el-icon>
@@ -577,7 +732,10 @@ const confirmCashPayment = async () => {
             {{ dh.trangThai === "Chờ thanh toán" ? "Thanh toán" : "Cập nhật" }}
           </button>
 
-          <button v-else class="btn-disabled">
+          <button
+              v-else
+              class="btn-disabled"
+          >
             Hoàn tất
           </button>
         </div>
@@ -618,11 +776,13 @@ const confirmCashPayment = async () => {
         @created="loadDonHangs"
     />
 
-    <!-- ── Popup chi tiết đơn hàng ── -->
+    <!-- ── Popup chi tiết / sửa đơn hàng ── -->
     <PopChiTietDonHang
         v-model="showChiTiet"
         :don-hang="selectedDonHang"
         @huy-don="huyDon"
+        @dong="showChiTiet = false"
+        @luu="handleUpdateOrder"
         @cap-nhat="loadDonHangs"
     />
 
@@ -684,7 +844,7 @@ const confirmCashPayment = async () => {
         :append-to-body="true"
         :z-index="10060"
     >
-      <div style="text-align: center;">
+      <div style="text-align: center">
         <p>
           Vui lòng quét mã QR bên dưới để thanh toán cho đơn hàng
           <strong>#{{ selectedOrderForPayment?.maCode }}</strong>
@@ -694,7 +854,7 @@ const confirmCashPayment = async () => {
             v-if="selectedOrderForPayment"
             :src="`https://img.vietqr.io/image/MB-140213032008-compact.png?addInfo=${selectedOrderForPayment.maCode}`"
             alt="QR Code Thanh Toán"
-            style="max-width: 100%; border-radius: 8px; margin: 20px 0;"
+            style="max-width: 100%; border-radius: 8px; margin: 20px 0"
         />
       </div>
 
@@ -704,7 +864,10 @@ const confirmCashPayment = async () => {
             Hủy
           </el-button>
 
-          <el-button type="primary" @click="confirmPayment">
+          <el-button
+              type="primary"
+              @click="confirmPayment"
+          >
             Xác nhận đã thanh toán
           </el-button>
         </span>
@@ -720,8 +883,8 @@ const confirmCashPayment = async () => {
         :append-to-body="true"
         :z-index="10060"
     >
-      <div style="text-align: center; padding: 20px 0;">
-        <p style="font-size: 16px;">
+      <div style="text-align: center; padding: 20px 0">
+        <p style="font-size: 16px">
           Bạn có chắc chắn khách đã thanh toán đủ?
         </p>
       </div>
@@ -732,7 +895,10 @@ const confirmCashPayment = async () => {
             Hủy
           </el-button>
 
-          <el-button type="primary" @click="confirmCashPayment">
+          <el-button
+              type="primary"
+              @click="confirmCashPayment"
+          >
             Xác nhận
           </el-button>
         </span>

@@ -20,19 +20,27 @@ export async function getDonHangs(params = {}) {
 }
 
 export async function taoDonHang(payload) {
-  const response = await api.post("/api/nhan-vien/don-hang", payload);
+  const response = await api.post(API_URL, payload);
   return response.data;
 }
 
-export async function getSanPhamTaoDonHang() {
-  const response = await api.get("/api/nhan-vien/don-hang/san-pham-options");
+export async function capNhatDonHang(maDonHang, payload) {
+  const response = await api.put(`${API_URL}/${maDonHang}`, payload);
+  return response.data;
+}
 
+export async function kiemTraDonHangCoHopDong(maDonHang) {
+  const response = await api.get(`${API_URL}/${maDonHang}/co-hop-dong`);
+  return Boolean(response.data?.daCoHopDong);
+}
+
+export async function getSanPhamTaoDonHang() {
+  const response = await api.get(`${API_URL}/san-pham-options`);
   return response.data?.items || response.data || [];
 }
 
 export async function getKhachHangTaoDonHang() {
   const response = await api.get("/api/nhan-vien/khach-hang");
-
   return response.data?.items || response.data || [];
 }
 

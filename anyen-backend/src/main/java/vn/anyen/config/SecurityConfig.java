@@ -1,5 +1,5 @@
 package vn.anyen.config;
-
+import org.springframework.http.HttpMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -40,34 +40,55 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
 
-                        // API đăng nhập cho phép không cần token
+                        // CỰC QUAN TRỌNG: cho phép preflight OPTIONS
+                        .requestMatchers(HttpMethod.OPTIONS, "/**")
+                        .permitAll()
+
+                        // Đăng nhập, xác nhận tài khoản
                         .requestMatchers("/api/auth/**")
                         .permitAll()
 
-                        // API public cho khách hàng xem
+                        // Public website
                         .requestMatchers(
-                                "/api/gioi-thieu/**",
                                 "/api/gioi-thieu",
+                                "/api/gioi-thieu/**",
                                 "/api/san-pham",
                                 "/api/san-pham/**",
-                                "/api/dich-vu/**",
-                                "/api/lien-he/**",
                                 "/api/dich-vu",
+                                "/api/dich-vu/**",
+                                "/api/lien-he",
+                                "/api/lien-he/**",
                                 "/api/khach-hang",
-                                "/api/khach-hang/**",
-                                "/api/lien-he"
-
+                                "/api/khach-hang/**"
                         )
                         .permitAll()
 
-                        // API đối tác bắt buộc role DOITAC
-                        .requestMatchers("/api/doi-tac/**")
-                        .hasRole("DOITAC")
-                        // API nhân viên bắt buộc các role nhân sự
-                        .requestMatchers("/api/nhan-vien/**")
-                        .hasAnyRole("ADMIN", "HOTLINE", "NHANVIEN")
+                        // ADMIN quản lý đối tác
+                        .requestMatchers(
+                                "/api/nhan-vien/quanlydoitac",
+                                "/api/nhan-vien/quanlydoitac/**"
+                        )
+                        .hasAuthority("ROLE_ADMIN")
 
-                        // Còn lại phải đăng nhập
+                        // ADMIN quản lý nhân viên
+                        .requestMatchers(
+                                "/api/nhan-vien/quanlynhanvien",
+                                "/api/nhan-vien/quanlynhanvien/**"
+                        )
+                        .hasAuthority("ROLE_ADMIN")
+
+                        // API đối tác
+                        .requestMatchers("/api/doi-tac/**")
+                        .hasAuthority("ROLE_DOITAC")
+
+                        // API nhân viên còn lại
+                        .requestMatchers("/api/nhan-vien/**")
+                        .hasAnyAuthority(
+                                "ROLE_ADMIN",
+                                "ROLE_HOTLINE",
+                                "ROLE_NHANVIEN"
+                        )
+
                         .anyRequest()
                         .authenticated()
                 )

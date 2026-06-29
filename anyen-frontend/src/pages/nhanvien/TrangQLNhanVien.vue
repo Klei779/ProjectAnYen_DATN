@@ -40,19 +40,19 @@
               <div class="small text-muted">{{ nv.soDienThoai }}</div>
             </td>
             <td>
-              <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1.5">{{ nv.vaiTro }}</span>
+              <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1.5">{{nhanvienhienthi(nv.vaiTro)}}</span>
             </td>
             <td>
                 <span
-                    :class="['badge px-2.5 py-1.5 rounded-pill', nv.trangThai === 'HOAT_DONG'|| nv.trangThai === 'Đang làm việc' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger']">
+                    :class="['badge px-2.5 py-1.5 rounded-pill', nv.trangThai == '1' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger']">
                   {{
-                    nv.trangThai === 'HOAT_DONG' || nv.trangThai === 'Đang làm việc' ? 'Đang làm việc' : 'Đã nghỉ việc'
+                    nv.trangThai == '1'  ? 'Đang làm việc' : 'Đã nghỉ việc'
                   }}
                 </span>
             </td>
             <td class="text-end pe-4">
               <button
-                  v-if="nv.trangThai === 'HOAT_DONG'||  nv.trangThai === 'Đang làm việc' "
+                  v-if="nv.trangThai == '1' "
                   class="btn btn-sm btn-outline-danger px-3 rounded-2"
                   @click="confirmNghiViec(nv)"
                   :disabled="loadingStates[nv.maNhanVien]"
@@ -198,7 +198,14 @@ async function fetchDanhSachNhanVien() {
   }
 }
 
-
+const nhanvienhienthi = (vaiTro) => {
+  const role= {
+    1:"Quản lý",
+    2:"Nhân viên",
+    3:"Hotline",
+  };
+  return role[Number(vaiTro)] ||"không xác định";
+};
 // 3. CHỈNH SỬA: Gọi hàm fetch khi component vừa được render
 onMounted(() => {
   fetchDanhSachNhanVien();

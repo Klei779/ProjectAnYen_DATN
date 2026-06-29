@@ -27,10 +27,10 @@ public class NhanVien {
     private String matKhau;
 
     @Column(name = "VaiTro")
-    private String vaiTro;
+    private Integer vaiTro;
 
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     @Column(name = "Email")
     private String email;

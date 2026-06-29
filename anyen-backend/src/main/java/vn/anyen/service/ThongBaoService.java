@@ -444,7 +444,7 @@ public class ThongBaoService {
                         "Không tìm thấy đơn hàng"
                 ));
 
-        List<NhanVien> admins = nhanVienRepository.findByVaiTroIgnoreCase("Admin");
+        List<NhanVien> admins = nhanVienRepository.findByVaiTro(1);
 
         if (admins == null || admins.isEmpty()) {
             return;
@@ -497,7 +497,7 @@ public class ThongBaoService {
                         "Không tìm thấy đơn hàng"
                 ));
 
-        List<NhanVien> admins = nhanVienRepository.findByVaiTroIgnoreCase("Admin");
+        List<NhanVien> admins = nhanVienRepository.findByVaiTro(1);
 
         if (admins == null || admins.isEmpty()) {
             return;
@@ -550,7 +550,7 @@ public class ThongBaoService {
                         "Không tìm thấy đơn hàng"
                 ));
 
-        List<NhanVien> admins = nhanVienRepository.findByVaiTroIgnoreCase("Admin");
+        List<NhanVien> admins = nhanVienRepository.findByVaiTro(1);
 
         if (admins == null || admins.isEmpty()) {
             return;

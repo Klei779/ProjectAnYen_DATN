@@ -18,7 +18,6 @@ public interface NhanVienRepository
 
     boolean existsBySoDienThoai(String soDienThoai);
 
-    List<NhanVien> findByVaiTro(String vaiTro);
-    List<NhanVien> findByVaiTroIgnoreCase(String vaiTro);
+    List<NhanVien> findByVaiTro(Integer vaiTro);
 
 }

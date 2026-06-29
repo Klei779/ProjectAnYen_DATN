@@ -41,5 +41,5 @@ public class QuanLyNhanVienRequest {
     private String diaChi;
 
     @NotBlank(message = "Vai trò không được để trống")
-    private String vaiTro;
+    private Integer vaiTro;
 }

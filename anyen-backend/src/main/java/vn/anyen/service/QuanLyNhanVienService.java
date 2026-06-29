@@ -47,7 +47,7 @@ public class QuanLyNhanVienService {
                 .soDienThoai(request.getSoDienThoai().trim())
                 .diaChi(request.getDiaChi())
                 .vaiTro(request.getVaiTro())
-                .trangThai("Đang làm việc")
+                .trangThai(1)
                 .build();
 
         nhanVienRepository.save(nhanVien);
@@ -65,12 +65,12 @@ public class QuanLyNhanVienService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với mã: " + maNhanVien));
 
         // Kiểm tra nếu trạng thái đã là nghỉ việc từ trước
-        if ("NGHI_VIEC".equalsIgnoreCase(nhanVien.getTrangThai())) {
+        if (nhanVien.getTrangThai() == 0) {
             throw new RuntimeException("Nhân viên này đã nghỉ việc từ trước");
         }
 
         // Cập nhật trạng thái mới và lưu lại
-        nhanVien.setTrangThai("NGHI_VIEC");
+        nhanVien.setTrangThai(0);
         nhanVienRepository.save(nhanVien);
 
         return mapToResponse(nhanVien);

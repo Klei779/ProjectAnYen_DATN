@@ -120,12 +120,9 @@ public class ThongKeDoanhThuService {
             return false;
         }
 
-        String vaiTro = nhanVien.getVaiTro().trim();
+        int vaiTro = nhanVien.getVaiTro();
 
-        return vaiTro.equalsIgnoreCase("Admin")
-                || vaiTro.equalsIgnoreCase("ADMIN")
-                || vaiTro.equalsIgnoreCase("Quản trị viên")
-                || vaiTro.toLowerCase().contains("admin");
+        return vaiTro == 1;
     }
 
     private KhoangNgay chuanHoaKhoangNgay(LocalDate tuNgay, LocalDate denNgay) {

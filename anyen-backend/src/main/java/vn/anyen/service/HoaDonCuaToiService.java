@@ -101,11 +101,8 @@ public class HoaDonCuaToiService {
             return false;
         }
 
-        String vaiTro = nhanVien.getVaiTro().trim();
+        int vaiTro = nhanVien.getVaiTro();
 
-        return vaiTro.equalsIgnoreCase("Admin")
-                || vaiTro.equalsIgnoreCase("ADMIN")
-                || vaiTro.equalsIgnoreCase("Quản trị viên")
-                || vaiTro.toLowerCase().contains("admin");
+        return vaiTro ==1;
     }
 }

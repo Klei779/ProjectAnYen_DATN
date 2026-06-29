@@ -1,5 +1,5 @@
 <script setup>
-
+import DoiMatKhau from "../../components/DoiMatKhau.vue";
 </script>
 
 <template>

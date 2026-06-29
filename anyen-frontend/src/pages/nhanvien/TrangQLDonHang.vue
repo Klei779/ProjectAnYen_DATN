@@ -336,8 +336,16 @@ const taoHoaDon = (dh) => {
 };
 
 const xemHoaDon = (dh) => {
+  if (!dh) {
+    ElMessage.warning("Không tìm thấy dữ liệu đơn hàng");
+    return;
+  }
+
   hoaDonMode.value = "view";
-  selectedDonHangHoaDon.value = dh;
+  selectedDonHangHoaDon.value = {
+    ...dh,
+    trangThaiHoaDon: dh.trangThaiHoaDon || dh.trangThaiHoaDon || "Đã in",
+  };
   showTaoHoaDon.value = true;
 };
 
@@ -467,19 +475,35 @@ const updateNextStatus = async (dh) => {
 const confirmPayment = async () => {
   if (!selectedOrderForPayment.value) return;
 
-  await doUpdateStatus(selectedOrderForPayment.value, "Hoàn thành");
+  const order = selectedOrderForPayment.value;
+
+  await doUpdateStatus(order, "Hoàn thành");
 
   showPaymentDialog.value = false;
   selectedOrderForPayment.value = null;
+
+  xemHoaDon({
+    ...order,
+    trangThai: "Hoàn thành",
+    phuongThucThanhToan: "Chuyển khoản",
+  });
 };
 
 const confirmCashPayment = async () => {
   if (!selectedOrderForPayment.value) return;
 
-  await doUpdateStatus(selectedOrderForPayment.value, "Hoàn thành");
+  const order = selectedOrderForPayment.value;
+
+  await doUpdateStatus(order, "Hoàn thành");
 
   showCashConfirmDialog.value = false;
   selectedOrderForPayment.value = null;
+
+  xemHoaDon({
+    ...order,
+    trangThai: "Hoàn thành",
+    phuongThucThanhToan: "Tiền mặt",
+  });
 };
 </script>
 
@@ -703,20 +727,8 @@ const confirmCashPayment = async () => {
           </button>
 
           <button
-              v-if="canTaoHoaDon(dh)"
-              class="btn-invoice"
-              @click="taoHoaDon(dh)"
-          >
-            <el-icon>
-              <Tickets />
-            </el-icon>
-            Tạo hóa đơn
-          </button>
-
-          <button
-              v-else-if="daCoHoaDon(dh)"
               class="btn-invoice-created"
-              @click="xemHoaDon(dh)"
+              @click.stop="xemHoaDon(dh)"
           >
             <el-icon>
               <View />

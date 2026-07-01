@@ -737,7 +737,7 @@ const confirmCashPayment = async () => {
           </button>
 
           <button
-              v-if="nextStatus(dh)"
+              v-if="nextStatus(dh) && dh.trangThai !== 'Chờ đối tác xác nhận'"
               class="btn-filled-green"
               @click="updateNextStatus(dh)"
           >
@@ -745,8 +745,17 @@ const confirmCashPayment = async () => {
           </button>
 
           <button
+              v-else-if="dh.trangThai === 'Chờ đối tác xác nhận'"
+              class="btn-disabled"
+              disabled
+          >
+            Chờ đối tác
+          </button>
+
+          <button
               v-else
               class="btn-disabled"
+              disabled
           >
             Hoàn tất
           </button>

@@ -1,4 +1,4 @@
-package vn.anyen.service;
+ package vn.anyen.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -106,9 +106,13 @@ public class DonHangService {
 
         DonHang savedDonHang = donHangRepository.save(donHang);
 
-        BigDecimal tongTien = taoChiTietDonHangVaTruTonKho(savedDonHang, request.getItems());
+        BigDecimal tongTien = taoChiTietDonHangVaTruTonKho(
+                savedDonHang,
+                request.getItems()
+        );
 
         savedDonHang.setTongTien(tongTien);
+
         DonHang donHangDaLuu = donHangRepository.save(savedDonHang);
 
         doiTacThongBaoService.taoThongBaoChoDonHang(
@@ -131,7 +135,10 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHangResponse capNhatDonHang(Integer maDonHang, TaoDonHangRequest request) {
+    public DonHangResponse capNhatDonHang(
+            Integer maDonHang,
+            TaoDonHangRequest request
+    ) {
         if (hopDongRepository.existsByDonHang_MaDonHang(maDonHang)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
@@ -161,15 +168,20 @@ public class DonHangService {
             );
         }
 
-        KhachHang khachHang = layHoacCapNhatKhachHangKhiSuaDon(request, donHang);
-        donHang.setKhachHang(khachHang);
+        KhachHang khachHang = layHoacCapNhatKhachHangKhiSuaDon(
+                request,
+                donHang
+        );
 
+        donHang.setKhachHang(khachHang);
         donHang.setGhiChu(request.getGhiChu());
+
         donHang.setPhuongThucThanhToan(
                 request.getPhuongThucThanhToan() != null
                         ? request.getPhuongThucThanhToan()
                         : "Chưa chọn"
         );
+
         donHang.setTrangThaiThanhToan(
                 request.getTrangThaiThanhToan() != null
                         ? request.getTrangThaiThanhToan()
@@ -178,7 +190,11 @@ public class DonHangService {
 
         hoanTonKhoVaXoaChiTietCu(donHang);
 
-        BigDecimal tongTienMoi = taoChiTietDonHangVaTruTonKho(donHang, request.getItems());
+        BigDecimal tongTienMoi = taoChiTietDonHangVaTruTonKho(
+                donHang,
+                request.getItems()
+        );
+
         donHang.setTongTien(tongTienMoi);
 
         DonHang saved = donHangRepository.save(donHang);
@@ -249,6 +265,7 @@ public class DonHangService {
                     ));
 
             capNhatThongTinKhachHang(khachHang, request);
+
             return khachHangRepository.save(khachHang);
         }
 
@@ -268,6 +285,7 @@ public class DonHangService {
         }
 
         capNhatThongTinKhachHang(khachHang, request);
+
         return khachHangRepository.save(khachHang);
     }
 
@@ -291,8 +309,10 @@ public class DonHangService {
     }
 
     private void hoanTonKhoVaXoaChiTietCu(DonHang donHang) {
-        List<ChiTietDonHang> chiTietsCu = chiTietDonHangRepository
-                .findByDonHang_MaDonHang(donHang.getMaDonHang());
+        List<ChiTietDonHang> chiTietsCu =
+                chiTietDonHangRepository.findByDonHang_MaDonHang(
+                        donHang.getMaDonHang()
+                );
 
         for (ChiTietDonHang ct : chiTietsCu) {
             SanPham sanPham = ct.getSanPham();
@@ -376,6 +396,7 @@ public class DonHangService {
 
     public List<DonHangResponse> getAllDonHang() {
         List<DonHang> donHangs = donHangRepository.findAll();
+
         return donHangs.stream()
                 .map(this::mapToDonHangResponse)
                 .collect(Collectors.toList());
@@ -391,17 +412,47 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHangResponse capNhatTrangThai(Integer maDonHang, String trangThaiMoi) {
+    public DonHangResponse capNhatTrangThai(
+            Integer maDonHang,
+            String trangThaiMoi
+    ) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException(
                         "Không tìm thấy đơn hàng #" + maDonHang
                 ));
+
+        if (trangThaiMoi == null || trangThaiMoi.trim().isEmpty()) {
+            throw new RuntimeException("Trạng thái không được để trống.");
+        }
+
+        trangThaiMoi = trangThaiMoi.trim();
 
         String trangThaiHienTai = donHang.getTrangThai();
 
         if ("Đã hủy".equals(trangThaiHienTai)) {
             throw new RuntimeException(
                     "Đơn hàng đã bị hủy, không thể cập nhật trạng thái."
+            );
+        }
+
+        if ("Hoàn thành".equals(trangThaiHienTai)) {
+            throw new RuntimeException(
+                    "Đơn hàng đã hoàn thành, không thể cập nhật tiếp."
+            );
+        }
+
+        if ("Đối tác đã từ chối".equals(trangThaiHienTai)) {
+            throw new RuntimeException(
+                    "Đơn hàng đã bị đối tác từ chối, không thể cập nhật tiếp."
+            );
+        }
+
+        if (coDoiTacTuChoi(maDonHang)) {
+            donHang.setTrangThai("Đối tác đã từ chối");
+            donHangRepository.save(donHang);
+
+            throw new RuntimeException(
+                    "Có đối tác đã từ chối đơn hàng, không thể cập nhật tiếp."
             );
         }
 
@@ -412,9 +463,34 @@ public class DonHangService {
             );
         }
 
+        /*
+         * Chặn chính:
+         * Nếu đơn đang chờ đối tác xác nhận,
+         * chỉ cho chuyển sang "Đã xác nhận" khi tất cả đối tác đã xác nhận.
+         */
+        if ("Chờ đối tác xác nhận".equals(trangThaiHienTai)) {
+            if (!"Đã xác nhận".equals(trangThaiMoi)) {
+                throw new RuntimeException(
+                        "Đơn hàng đang chờ đối tác xác nhận, chưa thể cập nhật trạng thái khác."
+                );
+            }
+
+            if (!tatCaDoiTacDaChapNhan(maDonHang)) {
+                throw new RuntimeException(
+                        "Chưa thể chuyển sang Đã xác nhận vì chưa đủ đối tác xác nhận."
+                );
+            }
+        }
+
         if (!"Đã hủy".equals(trangThaiMoi)) {
             int currentIdx = TRANG_THAI_ORDER.indexOf(trangThaiHienTai);
             int nextIdx = TRANG_THAI_ORDER.indexOf(trangThaiMoi);
+
+            if (currentIdx == -1) {
+                throw new RuntimeException(
+                        "Trạng thái hiện tại '" + trangThaiHienTai + "' không hợp lệ."
+                );
+            }
 
             if (nextIdx != currentIdx + 1) {
                 throw new RuntimeException(
@@ -426,9 +502,13 @@ public class DonHangService {
         }
 
         if ("Đang xử lý".equals(trangThaiMoi)) {
-            thongBaoService.taoThongBaoDonHangDangXuLy(donHang.getMaDonHang());
+            thongBaoService.taoThongBaoDonHangDangXuLy(
+                    donHang.getMaDonHang()
+            );
         } else if ("Hoàn thành".equals(trangThaiMoi)) {
-            thongBaoService.taoThongBaoDonHangThanhToan(donHang.getMaDonHang());
+            thongBaoService.taoThongBaoDonHangThanhToan(
+                    donHang.getMaDonHang()
+            );
         }
 
         donHang.setTrangThai(trangThaiMoi);
@@ -443,8 +523,10 @@ public class DonHangService {
     }
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {
-        List<ChiTietDonHang> chiTiets = chiTietDonHangRepository
-                .findByDonHang_MaDonHang(donHang.getMaDonHang());
+        List<ChiTietDonHang> chiTiets =
+                chiTietDonHangRepository.findByDonHang_MaDonHang(
+                        donHang.getMaDonHang()
+                );
 
         HoaDon hoaDon = hoaDonRepository
                 .findByDonHang_MaDonHang(donHang.getMaDonHang())
@@ -454,29 +536,33 @@ public class DonHangService {
                 .findByDonHang_MaDonHang(donHang.getMaDonHang())
                 .orElse(null);
 
-        List<DonHangResponse.ChiTietDonHangResponse> sanPhams = chiTiets
-                .stream()
-                .map(ct -> DonHangResponse.ChiTietDonHangResponse.builder()
-                        .MaSanPham(ct.getSanPham().getMaSanPham())
-                        .tenSanPham(ct.getSanPham().getTenSanPham())
-                        .maSKU("SP" + String.format("%03d", ct.getSanPham().getMaSanPham()))
-                        .phanLoai(ct.getSanPham().getLoai())
-                        .HinhAnh(ct.getSanPham().getHinhAnh())
-                        .giaTien(ct.getGiaTien())
-                        .SoLuong(ct.getSoLuong())
-                        .thanhTien(
-                                ct.getGiaTien().multiply(
-                                        BigDecimal.valueOf(ct.getSoLuong())
+        List<DonHangResponse.ChiTietDonHangResponse> sanPhams =
+                chiTiets.stream()
+                        .map(ct -> DonHangResponse.ChiTietDonHangResponse.builder()
+                                .MaSanPham(ct.getSanPham().getMaSanPham())
+                                .tenSanPham(ct.getSanPham().getTenSanPham())
+                                .maSKU("SP" + String.format(
+                                        "%03d",
+                                        ct.getSanPham().getMaSanPham()
+                                ))
+                                .phanLoai(ct.getSanPham().getLoai())
+                                .HinhAnh(ct.getSanPham().getHinhAnh())
+                                .giaTien(ct.getGiaTien())
+                                .SoLuong(ct.getSoLuong())
+                                .thanhTien(
+                                        ct.getGiaTien().multiply(
+                                                BigDecimal.valueOf(ct.getSoLuong())
+                                        )
                                 )
-                        )
-                        .build())
-                .collect(Collectors.toList());
+                                .build())
+                        .collect(Collectors.toList());
 
         String currentTrangThai = donHang.getTrangThai();
         int currentIdx = TRANG_THAI_ORDER.indexOf(currentTrangThai);
         boolean isDaHuy = "Đã hủy".equals(currentTrangThai);
 
-        List<DonHangResponse.LichSuDonHangResponse> lichSu = new ArrayList<>();
+        List<DonHangResponse.LichSuDonHangResponse> lichSu =
+                new ArrayList<>();
 
         for (int i = 0; i < TRANG_THAI_ORDER.size(); i++) {
             String step = TRANG_THAI_ORDER.get(i);
@@ -494,6 +580,7 @@ public class DonHangService {
             }
 
             String color;
+
             switch (step) {
                 case "Mới tạo":
                     color = "yellow";
@@ -607,38 +694,7 @@ public class DonHangService {
             Integer maDonHang,
             String trangThaiMoi
     ) {
-        if (trangThaiMoi == null || trangThaiMoi.trim().isEmpty()) {
-            throw new RuntimeException("Trạng thái đơn hàng không được để trống.");
-        }
-
-        trangThaiMoi = trangThaiMoi.trim();
-
-        List<String> trangThaiHopLe = Arrays.asList(
-                "Mới tạo",
-                "Chờ đối tác xác nhận",
-                "Đã xác nhận",
-                "Đang xử lý",
-                "Chờ thanh toán",
-                "Hoàn thành",
-                "Đã hủy"
-        );
-
-        if (!trangThaiHopLe.contains(trangThaiMoi)) {
-            throw new RuntimeException(
-                    "Trạng thái '" + trangThaiMoi + "' không hợp lệ."
-            );
-        }
-
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException(
-                        "Không tìm thấy đơn hàng #" + maDonHang
-                ));
-
-        donHang.setTrangThai(trangThaiMoi);
-
-        DonHang saved = donHangRepository.save(donHang);
-
-        return mapToDonHangResponse(saved);
+        return capNhatTrangThai(maDonHang, trangThaiMoi);
     }
 
     @Transactional
@@ -647,7 +703,9 @@ public class DonHangService {
             HuyDonHangRequest request
     ) {
         DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy đơn hàng"
+                ));
 
         String lyDo = request.getLyDoHuy() == null
                 ? ""
@@ -677,8 +735,8 @@ public class DonHangService {
             DonHang donHang,
             Integer maDoiTac
     ) {
-        List<ChiTietDonHang> chiTiets = chiTietDonHangRepository
-                .findByDonHangAndDoiTac(
+        List<ChiTietDonHang> chiTiets =
+                chiTietDonHangRepository.findByDonHangAndDoiTac(
                         donHang.getMaDonHang(),
                         maDoiTac
                 );
@@ -697,7 +755,8 @@ public class DonHangService {
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        List<DoiTacDonHangResponse.SanPhamTrongDonResponse> sanPhams = new ArrayList<>();
+        List<DoiTacDonHangResponse.SanPhamTrongDonResponse> sanPhams =
+                new ArrayList<>();
 
         for (int i = 0; i < chiTiets.size(); i++) {
             ChiTietDonHang ct = chiTiets.get(i);
@@ -718,7 +777,9 @@ public class DonHangService {
                             .soLuong(soLuong)
                             .donGia(giaTien)
                             .thanhTien(
-                                    giaTien.multiply(BigDecimal.valueOf(soLuong))
+                                    giaTien.multiply(
+                                            BigDecimal.valueOf(soLuong)
+                                    )
                             )
                             .build()
             );
@@ -798,7 +859,10 @@ public class DonHangService {
 
         List<DoiTacDonHangResponse> items = donHangPage.getContent()
                 .stream()
-                .map(donHang -> mapToDoiTacDonHangResponse(donHang, maDoiTac))
+                .map(donHang -> mapToDoiTacDonHangResponse(
+                        donHang,
+                        maDoiTac
+                ))
                 .collect(Collectors.toList());
 
         return DoiTacDonHangPageResponse.builder()
@@ -828,5 +892,19 @@ public class DonHangService {
         }
 
         return response;
+    }
+
+    private boolean tatCaDoiTacDaChapNhan(Integer maDonHang) {
+        long tongDoiTac =
+                donHangRepository.countDoiTacTrongDonHang(maDonHang);
+
+        long soDoiTacDaChapNhan =
+                donHangRepository.countDoiTacDaChapNhan(maDonHang);
+
+        return tongDoiTac > 0 && tongDoiTac == soDoiTacDaChapNhan;
+    }
+
+    private boolean coDoiTacTuChoi(Integer maDonHang) {
+        return donHangRepository.countDoiTacTuChoi(maDonHang) > 0;
     }
 }

@@ -15,6 +15,7 @@ import vn.anyen.repository.HoaDonRepository;
 import vn.anyen.repository.HopDongRepository;
 import vn.anyen.repository.KhachHangRepository;
 import vn.anyen.repository.ThongBaoRepository;
+import vn.anyen.constants.AppLabels;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +37,10 @@ public class KhachHangService {
 
     private static final String STATUS_PREFIX = "[[TRANG_THAI_LAM_VIEC=";
     private static final String STATUS_SUFFIX = "]]";
+    private static final Integer TB_CHUA_DOC = 0;
+    private static final Integer TB_DA_DOC = 1;
+    private static final Integer TB_DA_CHAP_NHAN = 2;
+    private static final Integer TB_DA_TU_CHOI = 3;
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm");
@@ -130,6 +135,7 @@ public class KhachHangService {
                     "Đã ghi nhận"
             ));
         }
+
 
         thongBaoRepository.findByMaKhachHangOrderByNgayTaoDesc(maKhachHang).forEach(tb -> {
             if (tb.getNgayTao() != null) {
@@ -243,7 +249,7 @@ public class KhachHangService {
             daTiepNhan = thongBaoRepository.existsByMaKhachHangAndNguoiNhanIdAndTrangThai(
                     maKhachHang,
                     maNhanVien,
-                    "DA_CHAP_NHAN"
+                    TB_DA_CHAP_NHAN
             );
         }
 
@@ -352,11 +358,11 @@ public class KhachHangService {
         return defaultText(tb.getTieuDe(), "Thông báo công việc");
     }
 
-    private String readableThongBaoStatus(String status) {
-        if ("DA_CHAP_NHAN".equals(status)) return "Đã chấp nhận";
-        if ("DA_TU_CHOI".equals(status)) return "Đã từ chối";
-        if ("DA_DOC".equals(status)) return "Đã đọc";
-        if ("CHUA_DOC".equals(status)) return "Chưa đọc";
+    private String readableThongBaoStatus(Integer status) {
+        if (TB_DA_CHAP_NHAN.equals(status)) return "Đã chấp nhận";
+        if (TB_DA_TU_CHOI.equals(status)) return "Đã từ chối";
+        if (TB_DA_DOC.equals(status)) return "Đã đọc";
+        if (TB_CHUA_DOC.equals(status)) return "Chưa đọc";
 
         return defaultText(status, "Chưa cập nhật");
     }
@@ -369,8 +375,14 @@ public class KhachHangService {
         return dateTime == null ? "" : dateTime.format(DATE_TIME_FORMATTER);
     }
 
-    private String defaultText(String value, String fallback) {
-        return value == null || value.isBlank() ? fallback : value;
+    private String defaultText(Object value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+
+        String text = String.valueOf(value);
+
+        return text.isBlank() ? fallback : text;
     }
 
     private String trim(String value) {

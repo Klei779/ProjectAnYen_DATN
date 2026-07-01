@@ -17,14 +17,14 @@ public interface ThongBaoDoiTacRepository
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
             Integer maDoiTac,
             String loai,
-            String trangThaiThongBao
+            Integer trangThaiThongBao
     );
 
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianXuLyDesc(
             Integer maDoiTac,
             String loai,
-            String trangThaiThongBao
+            Integer trangThaiThongBao
     );
 
     Optional<ThongBaoDoiTac> findByMaThongBaoAndDoiTac_MaDoiTac(

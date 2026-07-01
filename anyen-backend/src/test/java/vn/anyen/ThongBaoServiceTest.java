@@ -50,7 +50,7 @@ class ThongBaoServiceTest {
         thongBaoCongViec.setTieuDe("Thông báo công việc mới");
         thongBaoCongViec.setNoiDung("Bạn được phân công tiếp nhận khách hàng mới");
         thongBaoCongViec.setLoaiThongBao("CONG_VIEC");
-        thongBaoCongViec.setTrangThai("CHUA_DOC");
+        thongBaoCongViec.setTrangThai(0);
         thongBaoCongViec.setNguoiGuiId(100);
         thongBaoCongViec.setNguoiNhanId(200);
         thongBaoCongViec.setMaKhachHang(10);
@@ -162,7 +162,7 @@ class ThongBaoServiceTest {
 
     @Test
     void chapNhan_thongBaoDaXuLy_thiBaoLoi() {
-        thongBaoCongViec.setTrangThai("DA_CHAP_NHAN");
+        thongBaoCongViec.setTrangThai(3);
 
         when(thongBaoRepository.findById(1))
                 .thenReturn(Optional.of(thongBaoCongViec));
@@ -246,7 +246,7 @@ class ThongBaoServiceTest {
 
     @Test
     void tuChoi_thongBaoDaXuLy_thiBaoLoi() {
-        thongBaoCongViec.setTrangThai("DA_TU_CHOI");
+        thongBaoCongViec.setTrangThai(4);
 
         when(thongBaoRepository.findById(1))
                 .thenReturn(Optional.of(thongBaoCongViec));

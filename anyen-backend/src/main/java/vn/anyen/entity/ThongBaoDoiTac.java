@@ -41,7 +41,7 @@ public class ThongBaoDoiTac {
     private String noiDung;
 
     @Column(name = "TrangThaiThongBao")
-    private String trangThaiThongBao;
+    private Integer trangThaiThongBao;
 
     @Column(name = "LyDoTuChoi", columnDefinition = "TEXT")
     private String lyDoTuChoi;
@@ -58,7 +58,7 @@ public class ThongBaoDoiTac {
     @PrePersist
     public void prePersist() {
         if (loai == null) loai = "DON_HANG";
-        if (trangThaiThongBao == null) trangThaiThongBao = "CHO_XAC_NHAN";
+        if (trangThaiThongBao == null) trangThaiThongBao = 0;
         if (daDoc == null) daDoc = false;
         if (thoiGianTao == null) thoiGianTao = LocalDateTime.now();
     }

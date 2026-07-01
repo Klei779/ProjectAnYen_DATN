@@ -24,17 +24,17 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
      * Đếm thông báo chưa đọc
      */
     //test
-    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 'CHUA_DOC'")
+    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
     long countChuaDoc(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     @Modifying
-    @Query("UPDATE ThongBao t SET t.trangThai = 'DA_DOC' WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 'CHUA_DOC'")
+    @Query("UPDATE ThongBao t SET t.trangThai = 1 WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
     void markAllAsRead(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     boolean existsByMaKhachHangAndNguoiNhanIdAndTrangThai(
             Integer maKhachHang,
             Integer nguoiNhanId,
-            String trangThai
+            Integer trangThai
     );
 
     List<ThongBao> findByMaKhachHangOrderByNgayTaoDesc(Integer maKhachHang);
@@ -44,7 +44,7 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
      */
     List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
             String loaiThongBao,
-            String trangThai
+            Integer trangThai
     );
 
     /**

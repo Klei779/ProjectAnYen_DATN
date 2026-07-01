@@ -16,7 +16,7 @@ import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
-
+import vn.anyen.constants.AppLabels;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,9 +36,9 @@ public class DoiTacThongBaoService {
     private final ThongBaoService thongBaoService;
     private static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
     private static final String LOAI_DON_HANG = "DON_HANG";
-    private static final String CHO_XAC_NHAN = "CHO_XAC_NHAN";
-    private static final String DA_CHAP_NHAN = "DA_CHAP_NHAN";
-    private static final String DA_TU_CHOI = "DA_TU_CHOI";
+    private static final Integer CHO_XAC_NHAN = 0;
+    private static final Integer DA_CHAP_NHAN = 1;
+    private static final Integer DA_TU_CHOI = 2;
 
     @Transactional(readOnly = true)
     public List<DoiTacThongBaoResponse> getThongBao(Authentication authentication) {
@@ -65,6 +65,7 @@ public class DoiTacThongBaoService {
             Authentication authentication
     ) {
         DoiTac doiTac = getDoiTacDangNhap(authentication);
+
         ThongBaoDoiTac thongBao =
                 getThongBaoCuaDoiTac(maThongBao, doiTac.getMaDoiTac());
 
@@ -80,13 +81,15 @@ public class DoiTacThongBaoService {
 
         if (donHang != null) {
             capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(donHang);
+
+            thongBaoService.taoThongBaoChapNhanDonHang(donHang.getMaDonHang());
+            thongBaoService.taoThongBaoChapNhanDonHangChoAdmin(donHang.getMaDonHang());
         }
-        thongBaoService.taoThongBaoChapNhanDonHang(donHang.getMaDonHang());
-        thongBaoService.taoThongBaoChapNhanDonHangChoAdmin(donHang.getMaDonHang());
+
         return XuLyThongBaoResponse.builder()
                 .success(true)
-                .message("Đã chấp nhận đơn hàng")
-                .redirectUrl("/doi-tac/quan-ly-don-hang")
+                .message("Đã chấp nhận thông báo")
+                .redirectUrl(donHang != null ? "/doi-tac/quan-ly-don-hang" : null)
                 .maThongBao(thongBao.getMaThongBao())
                 .maDonHang(donHang != null ? donHang.getMaDonHang() : null)
                 .build();

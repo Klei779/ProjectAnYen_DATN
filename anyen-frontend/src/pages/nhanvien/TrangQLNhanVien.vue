@@ -44,9 +44,9 @@
             </td>
             <td>
                 <span
-                    :class="['badge px-2.5 py-1.5 rounded-pill', nv.trangThai == '1' ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger']">
+                    :class="['badge px-2.5 py-1.5 rounded-pill', nv.trangThai == '0' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success']">
                   {{
-                    nv.trangThai == '1'  ? 'Đang làm việc' : 'Đã nghỉ việc'
+                    nv.tenTrangThai
                   }}
                 </span>
             </td>
@@ -144,9 +144,9 @@
                 <label class="form-label small fw-bold text-secondary">Phân quyền Vai trò</label>
                 <select v-model="form.vaiTro" class="form-select" :class="{'is-invalid': errors.vaiTro}">
                   <option value="">-- Lựa chọn vai trò hệ thống --</option>
-                  <option value="NHAN_VIEN">Nhân viên văn phòng</option>
-                  <option value="QUAN_LY">Quản trị viên bộ phận</option>
-                  <option value="HOTLINE">Tổng đài viên</option>
+                  <option value="2">Nhân viên văn phòng</option>
+                  <option value="1">Quản trị viên bộ phận</option>
+                  <option value="3">Tổng đài viên</option>
                 </select>
                 <div class="invalid-feedback">{{ errors.vaiTro }}</div>
               </div>

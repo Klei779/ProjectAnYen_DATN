@@ -8,6 +8,7 @@ import vn.anyen.dto.request.QuanLyNhanVienRequest;
 import vn.anyen.dto.response.QuanLyNhanVienResponse;
 import vn.anyen.entity.NhanVien;
 import vn.anyen.repository.NhanVienRepository;
+import vn.anyen.constants.AppLabels;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,7 +38,6 @@ public class QuanLyNhanVienService {
             throw new RuntimeException("Số điện thoại đã tồn tại");
         }
 
-        // Tối ưu: Đã xóa đoạn check existsByTenDangNhap bị lặp lại ở đây
 
         NhanVien nhanVien = NhanVien.builder()
                 .hoTen(request.getHoTen().trim())
@@ -103,6 +103,7 @@ public class QuanLyNhanVienService {
                 .diaChi(nhanVien.getDiaChi())
                 .vaiTro(nhanVien.getVaiTro())
                 .trangThai(nhanVien.getTrangThai())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_NHAN_VIEN,nhanVien.getTrangThai()))
                 .build();
     }
 }

@@ -32,10 +32,10 @@ public class ThongBaoService {
     private static final String LOAI_CONG_VIEC = "CONG_VIEC";
     private static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
 
-    private static final String TRANG_THAI_CHUA_DOC = "CHUA_DOC";
-    private static final String TRANG_THAI_DA_DOC = "DA_DOC";
-    private static final String TRANG_THAI_DA_CHAP_NHAN = "DA_CHAP_NHAN";
-    private static final String TRANG_THAI_DA_TU_CHOI = "DA_TU_CHOI";
+    private static final Integer TRANG_THAI_CHUA_DOC = 0;
+    private static final Integer TRANG_THAI_DA_DOC = 1;
+    private static final Integer TRANG_THAI_DA_CHAP_NHAN = 2;
+    private static final Integer TRANG_THAI_DA_TU_CHOI = 3;
 
     private static final String SAN_PHAM_CHO_XAC_NHAN = "Chờ xác nhận";
     private static final String SAN_PHAM_DANG_BAN = "Đang bán";
@@ -429,7 +429,7 @@ public class ThongBaoService {
             thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
         }
 
-        thongBao.setTrangThai("CHUA_DOC");
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
         thongBao.setNgayTao(LocalDateTime.now());
         thongBao.setNgayCapNhat(LocalDateTime.now());
 
@@ -481,7 +481,7 @@ public class ThongBaoService {
             }
 
             thongBao.setMaSanPham(null);
-            thongBao.setTrangThai("CHUA_DOC");
+            thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
             thongBao.setLyDoTuChoi(null);
             thongBao.setNgayTao(LocalDateTime.now());
             thongBao.setNgayCapNhat(LocalDateTime.now());
@@ -534,7 +534,7 @@ public class ThongBaoService {
             }
 
             thongBao.setMaSanPham(null);
-            thongBao.setTrangThai("CHUA_DOC");
+            thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
             thongBao.setLyDoTuChoi(null);
             thongBao.setNgayTao(LocalDateTime.now());
             thongBao.setNgayCapNhat(LocalDateTime.now());
@@ -587,7 +587,7 @@ public class ThongBaoService {
             }
 
             thongBao.setMaSanPham(null);
-            thongBao.setTrangThai("CHUA_DOC");
+            thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
             thongBao.setLyDoTuChoi(null);
             thongBao.setNgayTao(LocalDateTime.now());
             thongBao.setNgayCapNhat(LocalDateTime.now());

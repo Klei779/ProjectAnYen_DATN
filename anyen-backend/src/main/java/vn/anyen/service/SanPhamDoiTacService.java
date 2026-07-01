@@ -34,7 +34,7 @@ public class SanPhamDoiTacService {
 
     private static final String TRANG_THAI_DANG_BAN = "Đang bán";
     private static final String TRANG_THAI_AN = "Ẩn";
-    private static final String TRANG_THAI_CHO_XAC_NHAN = "Chờ xác nhận";
+    private static final Integer TRANG_THAI_CHO_XAC_NHAN = 4;
 
     private final SanPhamDoiTacRepository sanPhamDoiTacRepository;
     private final DoiTacRepository doiTacRepository;
@@ -126,7 +126,7 @@ public class SanPhamDoiTacService {
                 .nguoiNhanId(null)
                 .maKhachHang(null)
                 .maSanPham(savedSanPham.getMaSanPham())
-                .trangThai("CHO_XAC_NHAN")
+                .trangThai(TRANG_THAI_CHO_XAC_NHAN)
                 .lyDoTuChoi(null)
                 .build();
 

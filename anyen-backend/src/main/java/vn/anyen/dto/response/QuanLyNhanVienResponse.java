@@ -15,6 +15,7 @@ public class QuanLyNhanVienResponse {
     private String matKhau;
     private Integer vaiTro;
     private Integer trangThai;
+    private String tenTrangThai;
     private String email;
     private String diaChi;
     private String soDienThoai;

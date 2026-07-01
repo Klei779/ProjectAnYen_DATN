@@ -57,7 +57,7 @@ public class ThongBao {
      * CHO_XAC_NHAN - Chờ nhân viên duyệt sản phẩm
      */
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     /** Lý do từ chối (khi từ chối) */
     @Column(name = "LyDoTuChoi", columnDefinition = "TEXT")
@@ -74,7 +74,7 @@ public class ThongBao {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         if (trangThai == null) {
-            trangThai = "CHUA_DOC";
+            trangThai = 0;
         }
     }
 

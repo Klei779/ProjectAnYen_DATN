@@ -11,7 +11,8 @@ public class ThongBaoResponse {
     private String tieuDe;
     private String noiDung;
     private String loaiThongBao;
-    private String trangThai;
+    private Integer trangThai;
+    private String tenTrangThai;
     private String lyDoTuChoi;
     private String ngayTao;
 

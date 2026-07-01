@@ -37,6 +37,7 @@ public class AuthService {
             }
         }
 
+
         LoginResponse response = new LoginResponse();
 
         // Đăng nhập nhân viên
@@ -46,10 +47,13 @@ public class AuthService {
                     nhanVienRepository.findByTenDangNhap(
                             request.getTenDangNhap());
 
+
             if (optionalNv.isPresent()) {
 
                 NhanVien nv = optionalNv.get();
-
+                if (Integer.valueOf(0).equals(nv.getTrangThai())) {
+                    return response;
+                }
                 if (passwordEncoder.matches(
                         request.getMatKhau(),
                         nv.getMatKhau())) {

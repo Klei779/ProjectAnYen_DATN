@@ -207,61 +207,9 @@
           <div class="modal-body p-4">
             <form @submit.prevent="submitCreateDoiTac">
               <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <label class="form-label small fw-bold text-secondary">
-                    Tên đối tác <span class="text-danger">*</span>
-                  </label>
-                  <input
-                      v-model="form.tenDoiTac"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.tenDoiTac}"
-                      placeholder="VD: Công ty An Phúc"
-                  />
-                  <div class="invalid-feedback">{{ errors.tenDoiTac }}</div>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">Tên doanh nghiệp</label>
-                  <input
-                      v-model="form.tenDoanhNghiep"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.tenDoanhNghiep}"
-                      placeholder="Tên pháp lý nếu có"
-                  />
-                  <div class="invalid-feedback">{{ errors.tenDoanhNghiep }}</div>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">Mã số thuế</label>
-                  <input
-                      v-model="form.maSoThue"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.maSoThue}"
-                      placeholder="Mã số thuế doanh nghiệp"
-                  />
-                  <div class="invalid-feedback">{{ errors.maSoThue }}</div>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">
-                    Số điện thoại <span class="text-danger">*</span>
-                  </label>
-                  <input
-                      v-model="form.soDienThoai"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.soDienThoai}"
-                      placeholder="SĐT liên hệ"
-                  />
-                  <div class="invalid-feedback">{{ errors.soDienThoai }}</div>
-                </div>
-
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">
-                    Email <span class="text-danger">*</span>
+                    Email đối tác <span class="text-danger">*</span>
                   </label>
                   <input
                       v-model="form.email"
@@ -271,43 +219,15 @@
                       placeholder="example@doitac.com"
                   />
                   <div class="invalid-feedback">{{ errors.email }}</div>
+                  <div class="form-text text-muted mt-2">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Đối tác sẽ nhận được email chứa đường dẫn để xác nhận và tự điền các thông tin doanh nghiệp, mã số thuế...
+                  </div>
                 </div>
 
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">Địa chỉ</label>
-                  <input
-                      v-model="form.diaChi"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.diaChi}"
-                      placeholder="Địa chỉ trụ sở"
-                  />
-                  <div class="invalid-feedback">{{ errors.diaChi }}</div>
-                </div>
 
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">Số tài khoản</label>
-                  <input
-                      v-model="form.soTaiKhoan"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.soTaiKhoan}"
-                      placeholder="Số tài khoản thanh toán"
-                  />
-                  <div class="invalid-feedback">{{ errors.soTaiKhoan }}</div>
-                </div>
 
-                <div class="col-md-6">
-                  <label class="form-label small fw-bold text-secondary">Ngân hàng</label>
-                  <input
-                      v-model="form.nganHang"
-                      type="text"
-                      class="form-control"
-                      :class="{'is-invalid': errors.nganHang}"
-                      placeholder="Tên ngân hàng"
-                  />
-                  <div class="invalid-feedback">{{ errors.nganHang }}</div>
-                </div>
+
               </div>
             </form>
           </div>
@@ -499,14 +419,7 @@ const currentPage = ref(1);
 const pageSize = ref(10);
 
 const form = reactive({
-  tenDoiTac: "",
-  tenDoanhNghiep: "",
-  maSoThue: "",
-  soTaiKhoan: "",
-  nganHang: "",
   email: "",
-  soDienThoai: "",
-  diaChi: "",
 });
 
 const editForm = reactive({
@@ -644,24 +557,11 @@ function validateCreateForm() {
 
   let isValid = true;
 
-  if (!form.tenDoiTac.trim()) {
-    errors.tenDoiTac = "Tên đối tác không được để trống";
-    isValid = false;
-  }
-
   if (!form.email.trim()) {
     errors.email = "Địa chỉ Email không được để trống";
     isValid = false;
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
     errors.email = "Định dạng Email không chính xác";
-    isValid = false;
-  }
-
-  if (!form.soDienThoai.trim()) {
-    errors.soDienThoai = "Số điện thoại không được trống";
-    isValid = false;
-  } else if (!/^0[35789][0-9]{8}$/.test(form.soDienThoai.trim())) {
-    errors.soDienThoai = "Số điện thoại không đúng định dạng nhà mạng Việt Nam";
     isValid = false;
   }
 

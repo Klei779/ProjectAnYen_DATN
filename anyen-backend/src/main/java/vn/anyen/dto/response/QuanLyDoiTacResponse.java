@@ -15,12 +15,10 @@ public class QuanLyDoiTacResponse {
     private String tenDoiTac;
     private String tenDoanhNghiep;
     private String maSoThue;
-    private String soTaiKhoan;
-    private String nganHang;
     private String tenDangNhap;
     private String email;
     private String soDienThoai;
     private String diaChi;
-    private String trangThai;
+    private Integer trangThai;
     private LocalDateTime createdAt;
 }

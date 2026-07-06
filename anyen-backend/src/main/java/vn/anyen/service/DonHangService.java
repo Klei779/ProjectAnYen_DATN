@@ -53,13 +53,13 @@ public class DonHangService {
     private final DoiTacThongBaoService doiTacThongBaoService;
     private final ThongBaoService thongBaoService;
 
-    private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
-            "Mới tạo",
-            "Chờ đối tác xác nhận",
-            "Đã xác nhận",
-            "Đang xử lý",
-            "Chờ thanh toán",
-            "Hoàn thành"
+    private static final List<Integer> TRANG_THAI_ORDER = Arrays.asList(
+            DonHang.TT_MOI_TAO,
+            DonHang.TT_CHO_DOI_TAC_XAC_NHAN,
+            DonHang.TT_DA_XAC_NHAN,
+            DonHang.TT_DANG_XU_LY,
+            DonHang.TT_CHO_THANH_TOAN,
+            DonHang.TT_HOAN_THANH
     );
 
     @Transactional
@@ -90,17 +90,17 @@ public class DonHangService {
                 .nhanVien(nhanVien)
                 .ngayTaoDon(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")))
                 .tongTien(BigDecimal.ZERO)
-                .trangThai("Chờ đối tác xác nhận")
+                .trangThai(DonHang.TT_CHO_DOI_TAC_XAC_NHAN)
                 .ghiChu(request.getGhiChu())
                 .phuongThucThanhToan(
                         request.getPhuongThucThanhToan() != null
                                 ? request.getPhuongThucThanhToan()
-                                : "Chưa chọn"
+                                : DonHang.PT_CHUA_CHON
                 )
                 .trangThaiThanhToan(
                         request.getTrangThaiThanhToan() != null
                                 ? request.getTrangThaiThanhToan()
-                                : "Chưa thanh toán"
+                                : DonHang.TTTT_CHUA_THANH_TOAN
                 )
                 .build();
 
@@ -154,14 +154,14 @@ public class DonHangService {
                         "Không tìm thấy đơn hàng #" + maDonHang
                 ));
 
-        if ("Đã hủy".equalsIgnoreCase(donHang.getTrangThai())) {
+        if (DonHang.TT_DA_HUY.equals(donHang.getTrangThai())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Đơn hàng đã hủy, không thể chỉnh sửa."
             );
         }
 
-        if ("Hoàn thành".equalsIgnoreCase(donHang.getTrangThai())) {
+        if (DonHang.TT_HOAN_THANH.equals(donHang.getTrangThai())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Đơn hàng đã hoàn thành, không thể chỉnh sửa."
@@ -179,13 +179,13 @@ public class DonHangService {
         donHang.setPhuongThucThanhToan(
                 request.getPhuongThucThanhToan() != null
                         ? request.getPhuongThucThanhToan()
-                        : "Chưa chọn"
+                        : DonHang.PT_CHUA_CHON
         );
 
         donHang.setTrangThaiThanhToan(
                 request.getTrangThaiThanhToan() != null
                         ? request.getTrangThaiThanhToan()
-                        : "Chưa thanh toán"
+                        : DonHang.TTTT_CHUA_THANH_TOAN
         );
 
         hoanTonKhoVaXoaChiTietCu(donHang);
@@ -394,6 +394,21 @@ public class DonHangService {
         return tongTien;
     }
 
+    private String getTrangThaiString(Integer tt) {
+        if(tt == null) return "Khong xac dinh";
+        switch(tt) {
+            case 1: return "Mới tạo";
+            case 2: return "Chờ đối tác xác nhận";
+            case 3: return "Đã xác nhận";
+            case 4: return "Đang xử lý";
+            case 5: return "Chờ thanh toán";
+            case 6: return "Hoàn thành";
+            case 7: return "Đã hủy";
+            case 8: return "Đối tác đã từ chối";
+            default: return "Khong xac dinh";
+        }
+    }
+
     public List<DonHangResponse> getAllDonHang() {
         List<DonHang> donHangs = donHangRepository.findAll();
 
@@ -414,41 +429,39 @@ public class DonHangService {
     @Transactional
     public DonHangResponse capNhatTrangThai(
             Integer maDonHang,
-            String trangThaiMoi
+            Integer trangThaiMoi
     ) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException(
                         "Không tìm thấy đơn hàng #" + maDonHang
                 ));
 
-        if (trangThaiMoi == null || trangThaiMoi.trim().isEmpty()) {
+        if (trangThaiMoi == null) {
             throw new RuntimeException("Trạng thái không được để trống.");
         }
 
-        trangThaiMoi = trangThaiMoi.trim();
+        Integer trangThaiHienTai = donHang.getTrangThai();
 
-        String trangThaiHienTai = donHang.getTrangThai();
-
-        if ("Đã hủy".equals(trangThaiHienTai)) {
+        if (DonHang.TT_DA_HUY.equals(trangThaiHienTai)) {
             throw new RuntimeException(
                     "Đơn hàng đã bị hủy, không thể cập nhật trạng thái."
             );
         }
 
-        if ("Hoàn thành".equals(trangThaiHienTai)) {
+        if (DonHang.TT_HOAN_THANH.equals(trangThaiHienTai)) {
             throw new RuntimeException(
                     "Đơn hàng đã hoàn thành, không thể cập nhật tiếp."
             );
         }
 
-        if ("Đối tác đã từ chối".equals(trangThaiHienTai)) {
+        if (DonHang.TT_DOI_TAC_TU_CHOI.equals(trangThaiHienTai)) {
             throw new RuntimeException(
                     "Đơn hàng đã bị đối tác từ chối, không thể cập nhật tiếp."
             );
         }
 
         if (coDoiTacTuChoi(maDonHang)) {
-            donHang.setTrangThai("Đối tác đã từ chối");
+            donHang.setTrangThai(DonHang.TT_DOI_TAC_TU_CHOI);
             donHangRepository.save(donHang);
 
             throw new RuntimeException(
@@ -456,7 +469,7 @@ public class DonHangService {
             );
         }
 
-        if (!"Đã hủy".equals(trangThaiMoi)
+        if (!DonHang.TT_DA_HUY.equals(trangThaiMoi)
                 && !TRANG_THAI_ORDER.contains(trangThaiMoi)) {
             throw new RuntimeException(
                     "Trạng thái '" + trangThaiMoi + "' không hợp lệ."
@@ -468,8 +481,8 @@ public class DonHangService {
          * Nếu đơn đang chờ đối tác xác nhận,
          * chỉ cho chuyển sang "Đã xác nhận" khi tất cả đối tác đã xác nhận.
          */
-        if ("Chờ đối tác xác nhận".equals(trangThaiHienTai)) {
-            if (!"Đã xác nhận".equals(trangThaiMoi)) {
+        if (DonHang.TT_CHO_DOI_TAC_XAC_NHAN.equals(trangThaiHienTai)) {
+            if (!DonHang.TT_DA_XAC_NHAN.equals(trangThaiMoi)) {
                 throw new RuntimeException(
                         "Đơn hàng đang chờ đối tác xác nhận, chưa thể cập nhật trạng thái khác."
                 );
@@ -482,7 +495,7 @@ public class DonHangService {
             }
         }
 
-        if (!"Đã hủy".equals(trangThaiMoi)) {
+        if (!DonHang.TT_DA_HUY.equals(trangThaiMoi)) {
             int currentIdx = TRANG_THAI_ORDER.indexOf(trangThaiHienTai);
             int nextIdx = TRANG_THAI_ORDER.indexOf(trangThaiMoi);
 
@@ -501,11 +514,11 @@ public class DonHangService {
             }
         }
 
-        if ("Đang xử lý".equals(trangThaiMoi)) {
+        if (DonHang.TT_DANG_XU_LY.equals(trangThaiMoi)) {
             thongBaoService.taoThongBaoDonHangDangXuLy(
                     donHang.getMaDonHang()
             );
-        } else if ("Hoàn thành".equals(trangThaiMoi)) {
+        } else if (DonHang.TT_HOAN_THANH.equals(trangThaiMoi)) {
             thongBaoService.taoThongBaoDonHangThanhToan(
                     donHang.getMaDonHang()
             );
@@ -519,7 +532,7 @@ public class DonHangService {
 
     @Transactional
     public DonHangResponse huyDonHang(Integer maDonHang) {
-        return capNhatTrangThai(maDonHang, "Đã hủy");
+        return capNhatTrangThai(maDonHang, DonHang.TT_DA_HUY);
     }
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {
@@ -557,15 +570,16 @@ public class DonHangService {
                                 .build())
                         .collect(Collectors.toList());
 
-        String currentTrangThai = donHang.getTrangThai();
+        Integer currentTrangThai = donHang.getTrangThai();
         int currentIdx = TRANG_THAI_ORDER.indexOf(currentTrangThai);
-        boolean isDaHuy = "Đã hủy".equals(currentTrangThai);
+        boolean isDaHuy = DonHang.TT_DA_HUY.equals(currentTrangThai);
 
         List<DonHangResponse.LichSuDonHangResponse> lichSu =
                 new ArrayList<>();
 
         for (int i = 0; i < TRANG_THAI_ORDER.size(); i++) {
-            String step = TRANG_THAI_ORDER.get(i);
+            Integer stepIdx = TRANG_THAI_ORDER.get(i);
+            String step = getTrangThaiString(stepIdx);
             boolean done = !isDaHuy && i <= currentIdx;
             String time = "";
             String moTa = "";
@@ -581,23 +595,23 @@ public class DonHangService {
 
             String color;
 
-            switch (step) {
-                case "Mới tạo":
+            switch (stepIdx) {
+                case 1:
                     color = "yellow";
                     break;
-                case "Chờ đối tác xác nhận":
+                case 2:
                     color = "pink";
                     break;
-                case "Đã xác nhận":
+                case 3:
                     color = "blue";
                     break;
-                case "Đang xử lý":
+                case 4:
                     color = "orange";
                     break;
-                case "Chờ thanh toán":
+                case 5:
                     color = "purple";
                     break;
-                case "Hoàn thành":
+                case 6:
                     color = "green";
                     break;
                 default:
@@ -674,7 +688,7 @@ public class DonHangService {
 
                 .maHoaDon(hoaDon != null ? hoaDon.getMaHoaDon() : null)
                 .daCoHoaDon(hoaDon != null)
-                .trangThaiHoaDon(hoaDon != null ? hoaDon.getTrangThai() : null)
+                .trangThaiHoaDon(hoaDon != null ? String.valueOf(hoaDon.getTrangThai()) : null)
 
                 .daCoHopDong(hopDong != null)
                 .maHopDong(hopDong != null ? hopDong.getMaHopDong() : null)
@@ -692,7 +706,7 @@ public class DonHangService {
     @Transactional
     public DonHangResponse capNhatTrangThaiNhanVien(
             Integer maDonHang,
-            String trangThaiMoi
+            Integer trangThaiMoi
     ) {
         return capNhatTrangThai(maDonHang, trangThaiMoi);
     }
@@ -715,15 +729,15 @@ public class DonHangService {
             throw new RuntimeException("Lý do hủy phải trên 3 ký tự");
         }
 
-        if ("Đã hủy".equalsIgnoreCase(donHang.getTrangThai())) {
+        if (DonHang.TT_DA_HUY.equals(donHang.getTrangThai())) {
             throw new RuntimeException("Đơn hàng này đã bị hủy trước đó");
         }
 
-        if ("Hoàn thành".equalsIgnoreCase(donHang.getTrangThai())) {
+        if (DonHang.TT_HOAN_THANH.equals(donHang.getTrangThai())) {
             throw new RuntimeException("Không thể hủy đơn hàng đã hoàn thành");
         }
 
-        donHang.setTrangThai("Đã hủy");
+        donHang.setTrangThai(DonHang.TT_DA_HUY);
         donHang.setLyDoHuy(lyDo);
 
         DonHang saved = donHangRepository.save(donHang);
@@ -830,7 +844,7 @@ public class DonHangService {
                 )
 
                 .ghiChu(donHang.getGhiChu())
-                .trangThai(donHang.getTrangThai())
+                .trangThai(getTrangThaiString(donHang.getTrangThai()))
                 .tongCong(tongCong)
 
                 .sanPhams(sanPhams)

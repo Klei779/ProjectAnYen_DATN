@@ -23,7 +23,7 @@ public class QuanLyDoiTacController {
     }
 
     @PostMapping("/create-doitac")
-    public QuanLyDoiTacResponse createDoiTac(@Valid @RequestBody QuanLyDoiTacRequest request) {
+    public QuanLyDoiTacResponse createDoiTac(@Valid @RequestBody vn.anyen.dto.request.ThemDoiTacRequest request) {
         return quanLyDoiTacService.createDoiTac(request);
     }
 
@@ -38,7 +38,7 @@ public class QuanLyDoiTacController {
     @PutMapping("/{maDoiTac}/trang-thai")
     public QuanLyDoiTacResponse updateTrangThai(
             @PathVariable Integer maDoiTac,
-            @RequestParam String trangThai
+            @RequestParam Integer trangThai
     ) {
         return quanLyDoiTacService.updateTrangThai(maDoiTac, trangThai);
     }

@@ -203,7 +203,7 @@ public class SanPhamService {
 
     public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
         List<SanPham> sanPhams =
-                sanPhamRepository.findAllVisibleForTaoDonHang(SanPham.TRANG_THAI_AN);
+                sanPhamRepository.findAllVisibleForTaoDonHang();
 
         Map<Integer, DoiTac> doiTacMap = doiTacRepository.findAll()
                 .stream()

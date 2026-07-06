@@ -35,7 +35,7 @@ public class QuanLyDoiTacService {
     public List<QuanLyDoiTacResponse> getAllDoiTac() {
         return doiTacRepository.findAllByOrderByMaDoiTacDesc()
                 .stream()
-                .filter(doiTac -> !"Đã xóa".equalsIgnoreCase(nullToEmpty(doiTac.getTrangThai())))
+                .filter(doiTac -> !DoiTac.TT_DA_XOA.equals(doiTac.getTrangThai()))
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -45,20 +45,10 @@ public class QuanLyDoiTacService {
      * Phần này giữ lại cho người khác làm tiếp.
      */
     @Transactional
-    public QuanLyDoiTacResponse createDoiTac(QuanLyDoiTacRequest request) {
+    public QuanLyDoiTacResponse createDoiTac(vn.anyen.dto.request.ThemDoiTacRequest request) {
 
         if (doiTacRepository.existsByEmail(trim(request.getEmail()))) {
             throw new RuntimeException("Email đã được sử dụng bởi đối tác khác");
-        }
-
-        if (doiTacRepository.existsBySoDienThoai(trim(request.getSoDienThoai()))) {
-            throw new RuntimeException("Số điện thoại đã được sử dụng bởi đối tác khác");
-        }
-
-        String maSoThue = trimNullable(request.getMaSoThue());
-
-        if (maSoThue != null && doiTacRepository.existsByMaSoThue(maSoThue)) {
-            throw new RuntimeException("Mã số thuế đã tồn tại trong hệ thống");
         }
 
         String confirmationToken = UUID.randomUUID().toString();
@@ -66,18 +56,15 @@ public class QuanLyDoiTacService {
         String tempUsername = "temp_" + UUID.randomUUID().toString().substring(0, 8);
         String tempPassword = passwordEncoder.encode(UUID.randomUUID().toString());
 
+        // Đặt tên tạm thời là phần trước @ của email
+        String emailPart = request.getEmail().split("@")[0];
+
         DoiTac doiTac = DoiTac.builder()
-                .tenDoiTac(trim(request.getTenDoiTac()))
-                .tenDoanhNghiep(trimNullable(request.getTenDoanhNghiep()))
-                .maSoThue(trimNullable(request.getMaSoThue()))
-                .soTaiKhoan(trimNullable(request.getSoTaiKhoan()))
-                .nganHang(trimNullable(request.getNganHang()))
+                .tenDoiTac("Đối tác " + emailPart)
                 .tenDangNhap(tempUsername)
                 .matKhau(tempPassword)
                 .email(trim(request.getEmail()))
-                .soDienThoai(trim(request.getSoDienThoai()))
-                .diaChi(trimNullable(request.getDiaChi()))
-                .trangThai("Chờ xác nhận")
+                .trangThai(DoiTac.TT_CHO_XAC_NHAN)
                 .confirmationToken(confirmationToken)
                 .build();
 
@@ -98,8 +85,6 @@ public class QuanLyDoiTacService {
         doiTac.setTenDoiTac(trim(request.getTenDoiTac()));
         doiTac.setTenDoanhNghiep(trimNullable(request.getTenDoanhNghiep()));
         doiTac.setMaSoThue(trimNullable(request.getMaSoThue()));
-        doiTac.setSoTaiKhoan(trimNullable(request.getSoTaiKhoan()));
-        doiTac.setNganHang(trimNullable(request.getNganHang()));
         doiTac.setEmail(trim(request.getEmail()));
         doiTac.setSoDienThoai(trim(request.getSoDienThoai()));
         doiTac.setDiaChi(trimNullable(request.getDiaChi()));
@@ -110,18 +95,16 @@ public class QuanLyDoiTacService {
     }
 
     @Transactional
-    public QuanLyDoiTacResponse updateTrangThai(Integer maDoiTac, String trangThai) {
+    public QuanLyDoiTacResponse updateTrangThai(Integer maDoiTac, Integer trangThai) {
         DoiTac doiTac = doiTacRepository.findById(maDoiTac)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác"));
 
-        String trangThaiMoi = trim(trangThai);
-
-        if (!"Đang hợp tác".equals(trangThaiMoi)
-                && !"Hết hợp tác".equals(trangThaiMoi)) {
-            throw new RuntimeException("Trạng thái chỉ được là Đang hợp tác hoặc Hết hợp tác");
+        if (!DoiTac.TT_DANG_HOAT_DONG.equals(trangThai)
+                && !DoiTac.TT_NGUNG_HOAT_DONG.equals(trangThai)) {
+            throw new RuntimeException("Trạng thái chỉ được là Đang hoạt động hoặc Ngừng hoạt động");
         }
 
-        doiTac.setTrangThai(trangThaiMoi);
+        doiTac.setTrangThai(trangThai);
 
         doiTacRepository.save(doiTac);
 
@@ -133,7 +116,7 @@ public class QuanLyDoiTacService {
         DoiTac doiTac = doiTacRepository.findById(maDoiTac)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác"));
 
-        doiTac.setTrangThai("Đã xóa");
+        doiTac.setTrangThai(DoiTac.TT_DA_XOA);
 
         doiTacRepository.save(doiTac);
     }
@@ -142,15 +125,18 @@ public class QuanLyDoiTacService {
     public DoiTac xacNhanDoiTac(String token) {
 
         DoiTac doiTac = doiTacRepository.findByConfirmationToken(token)
-                .orElseThrow(() -> new RuntimeException("Token xác nhận không hợp lệ hoặc đã hết hạn"));
+                .orElseThrow(() -> new RuntimeException("Token xác nhận không hợp lệ hoặc không tồn tại."));
 
-        if ("Đã xác nhận".equals(doiTac.getTrangThai())
-                || "Đã hợp tác".equals(doiTac.getTrangThai())
-                || "Đang hợp tác".equals(doiTac.getTrangThai())) {
+        if (DoiTac.TT_DA_XOA.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Lời mời hợp tác đã hết hạn do quá 24h.");
+        }
+
+        if (DoiTac.TT_DANG_HOAT_DONG.equals(doiTac.getTrangThai())) {
             return doiTac;
         }
 
-        doiTac.setTrangThai("Đã xác nhận");
+        // Tạm thời để trạng thái Chờ xác nhận trong lúc họ đang điền form
+        doiTac.setTrangThai(DoiTac.TT_CHO_XAC_NHAN);
         doiTacRepository.save(doiTac);
 
         return doiTac;
@@ -159,19 +145,37 @@ public class QuanLyDoiTacService {
     @Transactional
     public void kyHopDong(vn.anyen.dto.request.KyHopDongRequest request) {
         DoiTac doiTac = doiTacRepository.findByConfirmationToken(request.getToken())
-                .orElseThrow(() -> new RuntimeException("Token không hợp lệ. Vui lòng kiểm tra lại link trong email."));
+                .orElseThrow(() -> new RuntimeException("Token không hợp lệ hoặc không tồn tại. Vui lòng kiểm tra lại link trong email."));
+
+        if (DoiTac.TT_DA_XOA.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Lời mời hợp tác đã hết hạn do quá 24h. Vui lòng liên hệ với An Yên để được cấp lại lời mời.");
+        }
 
         if (doiTacRepository.existsByTenDangNhap(request.getTenDangNhap())
                 && !doiTac.getTenDangNhap().equals(request.getTenDangNhap())) {
             throw new RuntimeException("Tên đăng nhập đã tồn tại trong hệ thống. Vui lòng chọn tên khác.");
         }
 
+        if (doiTacRepository.existsBySoDienThoai(trim(request.getSoDienThoai()))) {
+            throw new RuntimeException("Số điện thoại đã được sử dụng bởi một tài khoản khác.");
+        }
+
+        String maSoThue = trimNullable(request.getMaSoThue());
+        if (maSoThue != null && doiTacRepository.existsByMaSoThue(maSoThue)) {
+            throw new RuntimeException("Mã số thuế đã tồn tại trong hệ thống.");
+        }
+
         doiTac.setTenDangNhap(trim(request.getTenDangNhap()));
         doiTac.setMatKhau(passwordEncoder.encode(request.getMatKhau()));
+        doiTac.setTenDoiTac(trim(request.getTenDoiTac()));
+        doiTac.setTenDoanhNghiep(trimNullable(request.getTenDoanhNghiep()));
+        doiTac.setMaSoThue(trimNullable(request.getMaSoThue()));
+        doiTac.setSoDienThoai(trim(request.getSoDienThoai()));
+        doiTac.setDiaChi(trimNullable(request.getDiaChi()));
 
         // Giữ tương thích với code cũ.
         // Nếu muốn đồng bộ trạng thái mới thì có thể đổi "Đã hợp tác" thành "Đang hợp tác".
-        doiTac.setTrangThai("Đã hợp tác");
+        doiTac.setTrangThai(DoiTac.TT_DANG_HOAT_DONG);
 
         doiTac.setConfirmationToken(null);
         doiTacRepository.save(doiTac);
@@ -197,7 +201,7 @@ public class QuanLyDoiTacService {
 
     private void guiEmailXacNhan(DoiTac doiTac, String token) {
         try {
-            String confirmUrl = "http://localhost:5173/xac-nhan-doi-tac?token=" + token;
+            String confirmUrl = "http://localhost:5173/doitac/register?token=" + token;
 
             Context context = new Context();
             context.setVariable("tenDoiTac", doiTac.getTenDoiTac());
@@ -230,8 +234,6 @@ public class QuanLyDoiTacService {
                 .tenDoiTac(doiTac.getTenDoiTac())
                 .tenDoanhNghiep(doiTac.getTenDoanhNghiep())
                 .maSoThue(doiTac.getMaSoThue())
-                .soTaiKhoan(doiTac.getSoTaiKhoan())
-                .nganHang(doiTac.getNganHang())
                 .tenDangNhap(doiTac.getTenDangNhap())
                 .email(doiTac.getEmail())
                 .soDienThoai(doiTac.getSoDienThoai())

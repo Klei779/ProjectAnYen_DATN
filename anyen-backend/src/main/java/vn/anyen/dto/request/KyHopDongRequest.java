@@ -18,4 +18,16 @@ public class KyHopDongRequest {
 
     @NotBlank(message = "Mật khẩu không được để trống")
     private String matKhau;
+
+    @NotBlank(message = "Tên đối tác không được để trống")
+    private String tenDoiTac;
+
+    private String tenDoanhNghiep;
+
+    private String maSoThue;
+
+    @NotBlank(message = "Số điện thoại không được để trống")
+    private String soDienThoai;
+
+    private String diaChi;
 }

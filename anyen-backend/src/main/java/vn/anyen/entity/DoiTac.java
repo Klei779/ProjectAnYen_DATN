@@ -28,11 +28,6 @@ public class DoiTac {
     @Column(name = "MaSoThue")
     private String maSoThue;
 
-    @Column(name = "SoTaiKhoan")
-    private String soTaiKhoan;
-
-    @Column(name = "NganHang")
-    private String nganHang;
 
     @Column(name = "TenDangNhap")
     private String tenDangNhap;
@@ -49,8 +44,18 @@ public class DoiTac {
     @Column(name = "DiaChi")
     private String diaChi;
 
+    // TrangThai constants (theo database mới)
+    // 0 = Ngừng hoạt động
+    // 1 = Đang hoạt động
+    // 2 = Chờ xác nhận (lời mời)
+    // 3 = Đã xóa
+    public static final Integer TT_NGUNG_HOAT_DONG = 0;
+    public static final Integer TT_DANG_HOAT_DONG = 1;
+    public static final Integer TT_CHO_XAC_NHAN = 2;
+    public static final Integer TT_DA_XOA = 3;
+
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     @Column(name = "ConfirmationToken")
     private String confirmationToken;

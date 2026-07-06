@@ -121,7 +121,7 @@
 </template>
 
 <script>
-import { verifyDoiTacToken, kyHopDongDoiTac } from '../services/QuanLyDoiTacService.js';
+import { verifyDoiTacToken, kyHopDongDoiTac } from '../../services/QuanLyDoiTacService.js';
 import { useRoute } from 'vue-router';
 
 export default {

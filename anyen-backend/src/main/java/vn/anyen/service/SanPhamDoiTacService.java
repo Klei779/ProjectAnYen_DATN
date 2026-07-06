@@ -32,9 +32,6 @@ import java.util.Locale;
 @Transactional
 public class SanPhamDoiTacService {
 
-    private static final String TRANG_THAI_DANG_BAN = "Đang bán";
-    private static final String TRANG_THAI_AN = "Ẩn";
-    private static final Integer TRANG_THAI_CHO_XAC_NHAN = 4;
 
     private final SanPhamDoiTacRepository sanPhamDoiTacRepository;
     private final DoiTacRepository doiTacRepository;
@@ -100,8 +97,7 @@ public class SanPhamDoiTacService {
         // QUAN TRỌNG:
         // Đối tác tạo sản phẩm thì KHÔNG được bán ngay.
         // Phải chờ nhân viên duyệt.
-        sanPham.setTrangThai("Chờ xác nhận");
-        sanPham.setHienThi(false);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
         if (sanPham.getSoLuong() == null) {
             sanPham.setSoLuong(0);
@@ -126,7 +122,7 @@ public class SanPhamDoiTacService {
                 .nguoiNhanId(null)
                 .maKhachHang(null)
                 .maSanPham(savedSanPham.getMaSanPham())
-                .trangThai(TRANG_THAI_CHO_XAC_NHAN)
+                .trangThai(0) // 0 là Chưa đọc
                 .lyDoTuChoi(null)
                 .build();
 
@@ -163,8 +159,7 @@ public class SanPhamDoiTacService {
     public SanPhamDoiTacResponse anSanPham(Authentication authentication, Integer id) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
-        sanPham.setTrangThai(TRANG_THAI_AN);
-        sanPham.setHienThi(false);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_AN);
 
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
@@ -172,15 +167,14 @@ public class SanPhamDoiTacService {
     public SanPhamDoiTacResponse hienSanPham(Authentication authentication, Integer id) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
-        if ("Chờ xác nhận".equalsIgnoreCase(sanPham.getTrangThai())) {
+        if (SanPham.TRANG_THAI_CHO_XAC_NHAN.equals(sanPham.getTrangThai())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Sản phẩm đang chờ nhân viên duyệt, không thể tự chuyển sang đang bán"
             );
         }
 
-        sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
-        sanPham.setHienThi(true);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
 
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }

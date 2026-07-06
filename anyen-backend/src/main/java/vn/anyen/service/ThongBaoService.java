@@ -37,8 +37,6 @@ public class ThongBaoService {
     private static final Integer TRANG_THAI_DA_CHAP_NHAN = 2;
     private static final Integer TRANG_THAI_DA_TU_CHOI = 3;
 
-    private static final String SAN_PHAM_CHO_XAC_NHAN = "Chờ xác nhận";
-    private static final String SAN_PHAM_DANG_BAN = "Đang bán";
 
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm");
@@ -106,13 +104,12 @@ public class ThongBaoService {
         SanPham sanPham = sanPhamRepository.findById(thongBao.getMaSanPham())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        if (!SAN_PHAM_CHO_XAC_NHAN.equalsIgnoreCase(sanPham.getTrangThai())) {
+        if (!SanPham.TRANG_THAI_CHO_XAC_NHAN.equals(sanPham.getTrangThai())) {
             throw new RuntimeException("Sản phẩm này không ở trạng thái chờ xác nhận");
         }
 
         // 1. Duyệt sản phẩm: cho bán và bật hiển thị.
-        sanPham.setTrangThai(SAN_PHAM_DANG_BAN);
-        sanPham.setHienThi(true);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
         sanPhamRepository.save(sanPham);
 
         // 2. Cập nhật thông báo bên nhân viên.
@@ -193,7 +190,7 @@ public class ThongBaoService {
         SanPham sanPham = sanPhamRepository.findById(thongBao.getMaSanPham())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        if (!SAN_PHAM_CHO_XAC_NHAN.equalsIgnoreCase(sanPham.getTrangThai())) {
+        if (!SanPham.TRANG_THAI_CHO_XAC_NHAN.equals(sanPham.getTrangThai())) {
             throw new RuntimeException("Sản phẩm này không ở trạng thái chờ xác nhận");
         }
 

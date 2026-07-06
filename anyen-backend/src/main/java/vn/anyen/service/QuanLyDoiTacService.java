@@ -197,7 +197,7 @@ public class QuanLyDoiTacService {
 
     private void guiEmailXacNhan(DoiTac doiTac, String token) {
         try {
-            String confirmUrl = "http://localhost:8080/api/auth/doi-tac/xac-nhan?token=" + token;
+            String confirmUrl = "http://localhost:5173/xac-nhan-doi-tac?token=" + token;
 
             Context context = new Context();
             context.setVariable("tenDoiTac", doiTac.getTenDoiTac());

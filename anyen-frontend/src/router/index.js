@@ -15,6 +15,7 @@ import TrangDichVu from "../pages/website/TrangDichVu.vue";
 import DichVuChiTiet from "../pages/website/TrangDichVuChiTiet.vue";
 import TrangGioiThieu from "../pages/website/TrangGioiThieu.vue";
 import TrangLienHe from "../pages/website/TrangLienHe.vue";
+import XacNhanDoiTac from "../pages/website/XacNhanDoiTac.vue";
 
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
@@ -70,6 +71,10 @@ const routes = [
             {
                 path: "lien-he",
                 component: TrangLienHe,
+            },
+            {
+                path: "xac-nhan-doi-tac",
+                component: XacNhanDoiTac,
             },
         ],
     },

@@ -12,6 +12,7 @@ import vn.anyen.service.QuanLyDoiTacService;
 @RestController
 @RequestMapping("/api/auth/doi-tac")
 @RequiredArgsConstructor
+@CrossOrigin(origins = "http://localhost:5173")
 public class DoiTacXacNhanController {
 
     private final QuanLyDoiTacService quanLyDoiTacService;
@@ -20,26 +21,21 @@ public class DoiTacXacNhanController {
     /**
      * API Public: Xác nhận hợp tác từ link email (Bước 1)
      */
-    @GetMapping(value = "/xac-nhan", produces = MediaType.TEXT_HTML_VALUE)
-    public ResponseEntity<String> xacNhanDoiTac(@RequestParam("token") String token) {
+    @GetMapping("/xac-nhan")
+    public ResponseEntity<?> xacNhanDoiTac(@RequestParam("token") String token) {
         try {
             DoiTac doiTac = quanLyDoiTacService.xacNhanDoiTac(token);
 
-            Context context = new Context();
-            context.setVariable("tenDoiTac", doiTac.getTenDoiTac());
-            context.setVariable("tenDoanhNghiep", doiTac.getTenDoanhNghiep());
-            context.setVariable("maDoiTac", "AY" + String.format("%05d", doiTac.getMaDoiTac()));
-            context.setVariable("token", token);
-            String html = templateEngine.process("xac-nhan-thanh-cong", context);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("tenDoiTac", doiTac.getTenDoiTac());
+            response.put("tenDoanhNghiep", doiTac.getTenDoanhNghiep());
+            response.put("maDoiTac", "AY" + String.format("%05d", doiTac.getMaDoiTac()));
+            response.put("token", token);
 
-            return ResponseEntity.ok(html);
+            return ResponseEntity.ok(response);
 
         } catch (Exception e) {
-            Context context = new Context();
-            context.setVariable("errorMessage", e.getMessage());
-            String html = templateEngine.process("xac-nhan-that-bai", context);
-
-            return ResponseEntity.ok(html);
+            return ResponseEntity.badRequest().body(java.util.Map.of("message", e.getMessage()));
         }
     }
 

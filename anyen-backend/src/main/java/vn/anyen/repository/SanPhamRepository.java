@@ -15,11 +15,11 @@ public interface SanPhamRepository
             SELECT sp
             FROM SanPham sp
             WHERE sp.trangThai IS NULL
-               OR LOWER(sp.trangThai) <> LOWER(:trangThaiAn)
+               OR sp.trangThai <> :trangThaiAn
             ORDER BY sp.maSanPham DESC
             """)
     List<SanPham> findAllVisibleForTaoDonHang(
-            @Param("trangThaiAn") String trangThaiAn
+            @Param("trangThaiAn") Integer trangThaiAn
     );
 
     @Query("""
@@ -27,7 +27,7 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.loai IS NOT NULL
               AND sp.loai <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (sp.trangThai IS NULL OR sp.trangThai <> 0)
             GROUP BY sp.loai
             ORDER BY sp.loai
             """)
@@ -38,7 +38,7 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.vatLieu IS NOT NULL
               AND sp.vatLieu <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (sp.trangThai IS NULL OR sp.trangThai <> 0)
             GROUP BY sp.vatLieu
             ORDER BY sp.vatLieu
             """)
@@ -49,7 +49,7 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.tonGiao IS NOT NULL
               AND sp.tonGiao <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (sp.trangThai IS NULL OR sp.trangThai <> 0)
             GROUP BY sp.tonGiao
             ORDER BY sp.tonGiao
             """)
@@ -60,7 +60,7 @@ public interface SanPhamRepository
             FROM SanPham sp
             WHERE sp.mauSac IS NOT NULL
               AND sp.mauSac <> ''
-              AND (sp.trangThai IS NULL OR sp.trangThai <> 'Ẩn')
+              AND (sp.trangThai IS NULL OR sp.trangThai <> 0)
             GROUP BY sp.mauSac
             ORDER BY sp.mauSac
             """)

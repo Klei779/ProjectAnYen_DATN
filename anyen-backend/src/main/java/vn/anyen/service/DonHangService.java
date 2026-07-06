@@ -53,13 +53,13 @@ public class DonHangService {
     private final DoiTacThongBaoService doiTacThongBaoService;
 
     // Thứ tự trạng thái đơn hàng theo quy trình
-    private static final List<String> TRANG_THAI_ORDER = Arrays.asList(
-            "Mới tạo",
-            "Chờ đối tác xác nhận",
-            "Đã xác nhận",
-            "Đang xử lý",
-            "Chờ thanh toán",
-            "Hoàn thành"
+    private static final List<Integer> TRANG_THAI_ORDER = Arrays.asList(
+            DonHang.TT_MOI_TAO,
+            DonHang.TT_CHO_DOI_TAC_XAC_NHAN,
+            DonHang.TT_DA_XAC_NHAN,
+            DonHang.TT_DANG_XU_LY,
+            DonHang.TT_CHO_THANH_TOAN,
+            DonHang.TT_HOAN_THANH
     );
     @Transactional
     public DonHangResponse taoDonHang(
@@ -94,17 +94,17 @@ public class DonHangService {
                 .nhanVien(nhanVien)
                 .ngayTaoDon(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")))
                 .tongTien(BigDecimal.ZERO)
-                .trangThai("Chờ đối tác xác nhận")
+                .trangThai(DonHang.TT_CHO_DOI_TAC_XAC_NHAN)
                 .ghiChu(request.getGhiChu())
                 .phuongThucThanhToan(
                         request.getPhuongThucThanhToan() != null
                                 ? request.getPhuongThucThanhToan()
-                                : "Chưa chọn"
+                                : DonHang.PT_CHUA_CHON
                 )
                 .trangThaiThanhToan(
                         request.getTrangThaiThanhToan() != null
                                 ? request.getTrangThaiThanhToan()
-                                : "Chưa thanh toán"
+                                : DonHang.TTTT_CHUA_THANH_TOAN
                 )
                 .build();
 
@@ -227,29 +227,28 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHangResponse capNhatTrangThai(Integer maDonHang, String trangThaiMoi) {
+    public DonHangResponse capNhatTrangThai(Integer maDonHang, Integer trangThaiMoi) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
 
-        String trangThaiHienTai = donHang.getTrangThai();
+        Integer trangThaiHienTai = donHang.getTrangThai();
 
         // Không cho cập nhật nếu đã hủy
-        if ("Đã hủy".equals(trangThaiHienTai)) {
+        if (DonHang.TT_DA_HUY.equals(trangThaiHienTai)) {
             throw new RuntimeException("Đơn hàng đã bị hủy, không thể cập nhật trạng thái.");
         }
 
         // Validate trạng thái mới phải hợp lệ
-        if (!"Đã hủy".equals(trangThaiMoi) && !TRANG_THAI_ORDER.contains(trangThaiMoi)) {
+        if (!DonHang.TT_DA_HUY.equals(trangThaiMoi) && !TRANG_THAI_ORDER.contains(trangThaiMoi)) {
             throw new RuntimeException("Trạng thái '" + trangThaiMoi + "' không hợp lệ.");
         }
 
         // Nếu chuyển tiếp, kiểm tra thứ tự (chỉ được chuyển đúng 1 bước tiếp theo, hoặc hủy)
-        if (!"Đã hủy".equals(trangThaiMoi)) {
+        if (!DonHang.TT_DA_HUY.equals(trangThaiMoi)) {
             int currentIdx = TRANG_THAI_ORDER.indexOf(trangThaiHienTai);
             int nextIdx = TRANG_THAI_ORDER.indexOf(trangThaiMoi);
             if (nextIdx != currentIdx + 1) {
-                throw new RuntimeException("Chỉ có thể chuyển sang trạng thái tiếp theo. " +
-                        "Hiện tại: '" + trangThaiHienTai + "', yêu cầu: '" + trangThaiMoi + "'.");
+                throw new RuntimeException("Chỉ có thể chuyển sang trạng thái tiếp theo.");
             }
         }
 
@@ -261,7 +260,7 @@ public class DonHangService {
 
     @Transactional
     public DonHangResponse huyDonHang(Integer maDonHang) {
-        return capNhatTrangThai(maDonHang, "Đã hủy");
+        return capNhatTrangThai(maDonHang, DonHang.TT_DA_HUY);
     }
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {
@@ -285,13 +284,13 @@ public class DonHangService {
         ).collect(Collectors.toList());
 
         // Build lịch sử theo đúng thứ tự trạng thái
-        String currentTrangThai = donHang.getTrangThai();
+        Integer currentTrangThai = donHang.getTrangThai();
         int currentIdx = TRANG_THAI_ORDER.indexOf(currentTrangThai);
-        boolean isDaHuy = "Đã hủy".equals(currentTrangThai);
+        boolean isDaHuy = DonHang.TT_DA_HUY.equals(currentTrangThai);
 
         List<DonHangResponse.LichSuDonHangResponse> lichSu = new ArrayList<>();
         for (int i = 0; i < TRANG_THAI_ORDER.size(); i++) {
-            String step = TRANG_THAI_ORDER.get(i);
+            Integer step = TRANG_THAI_ORDER.get(i);
             boolean done = !isDaHuy && i <= currentIdx;
             String time = "";
             String moTa = "";
@@ -306,18 +305,17 @@ public class DonHangService {
             }
 
             String color;
-            switch (step) {
-                case "Mới tạo": color = "yellow"; break;
-                case "Chờ đối tác xác nhận": color = "pink"; break;
-                case "Đã xác nhận": color = "blue"; break;
-                case "Đang xử lý": color = "orange"; break;
-                case "Chờ thanh toán": color = "purple"; break;
-                case "Hoàn thành": color = "green"; break;
-                default: color = "gray"; break;
-            }
+            String stepName;
+            if (step.equals(DonHang.TT_MOI_TAO)) { color = "yellow"; stepName = "Mới tạo"; }
+            else if (step.equals(DonHang.TT_CHO_DOI_TAC_XAC_NHAN)) { color = "pink"; stepName = "Chờ đối tác xác nhận"; }
+            else if (step.equals(DonHang.TT_DA_XAC_NHAN)) { color = "blue"; stepName = "Đã xác nhận"; }
+            else if (step.equals(DonHang.TT_DANG_XU_LY)) { color = "orange"; stepName = "Đang xử lý"; }
+            else if (step.equals(DonHang.TT_CHO_THANH_TOAN)) { color = "purple"; stepName = "Chờ thanh toán"; }
+            else if (step.equals(DonHang.TT_HOAN_THANH)) { color = "green"; stepName = "Hoàn thành"; }
+            else { color = "gray"; stepName = "Không xác định"; }
 
             lichSu.add(DonHangResponse.LichSuDonHangResponse.builder()
-                    .trangThai(step)
+                    .trangThai(stepName)
                     .thoiGian(time)
                     .moTa(moTa)
                     .color(color)
@@ -349,7 +347,7 @@ public class DonHangService {
 
                 .maHoaDon(hoaDon != null ? hoaDon.getMaHoaDon() : null)
                 .daCoHoaDon(hoaDon != null)
-                .trangThaiHoaDon(hoaDon != null ? hoaDon.getTrangThai() : null)
+                .trangThaiHoaDon(hoaDon != null ? readableHoaDonStatus(hoaDon.getTrangThai()) : null)
 
                 .phuongThucGiaoHang("Giao hàng tận nơi")
                 .phiVanChuyen(BigDecimal.ZERO)
@@ -359,26 +357,24 @@ public class DonHangService {
                 .build();
     }
     @Transactional
-    public DonHangResponse capNhatTrangThaiNhanVien(Integer maDonHang, String trangThaiMoi) {
+    public DonHangResponse capNhatTrangThaiNhanVien(Integer maDonHang, Integer trangThaiMoi) {
 
-        if (trangThaiMoi == null || trangThaiMoi.trim().isEmpty()) {
+        if (trangThaiMoi == null) {
             throw new RuntimeException("Trạng thái đơn hàng không được để trống.");
         }
 
-        trangThaiMoi = trangThaiMoi.trim();
-
-        List<String> trangThaiHopLe = Arrays.asList(
-                "Mới tạo",
-                "Chờ đối tác xác nhận",
-                "Đã xác nhận",
-                "Đang xử lý",
-                "Chờ thanh toán",
-                "Hoàn thành",
-                "Đã hủy"
+        List<Integer> trangThaiHopLe = Arrays.asList(
+                DonHang.TT_MOI_TAO,
+                DonHang.TT_CHO_DOI_TAC_XAC_NHAN,
+                DonHang.TT_DA_XAC_NHAN,
+                DonHang.TT_DANG_XU_LY,
+                DonHang.TT_CHO_THANH_TOAN,
+                DonHang.TT_HOAN_THANH,
+                DonHang.TT_DA_HUY
         );
 
         if (!trangThaiHopLe.contains(trangThaiMoi)) {
-            throw new RuntimeException("Trạng thái '" + trangThaiMoi + "' không hợp lệ.");
+            throw new RuntimeException("Trạng thái không hợp lệ.");
         }
 
         DonHang donHang = donHangRepository.findById(maDonHang)
@@ -401,15 +397,15 @@ public class DonHangService {
             throw new RuntimeException("Lý do hủy phải trên 3 ký tự");
         }
 
-        if ("Đã hủy".equalsIgnoreCase(donHang.getTrangThai())) {
+        if (DonHang.TT_DA_HUY.equals(donHang.getTrangThai())) {
             throw new RuntimeException("Đơn hàng này đã bị hủy trước đó");
         }
 
-        if ("Hoàn thành".equalsIgnoreCase(donHang.getTrangThai())) {
+        if (DonHang.TT_HOAN_THANH.equals(donHang.getTrangThai())) {
             throw new RuntimeException("Không thể hủy đơn hàng đã hoàn thành");
         }
 
-        donHang.setTrangThai("Đã hủy");
+        donHang.setTrangThai(DonHang.TT_DA_HUY);
         donHang.setLyDoHuy(lyDo);
 
         DonHang saved = donHangRepository.save(donHang);
@@ -467,7 +463,7 @@ public class DonHangService {
                 .nhanVien(nhanVien != null ? nhanVien.getHoTen() : "")
 
                 .ghiChu(donHang.getGhiChu())
-                .trangThai(donHang.getTrangThai())
+                .trangThai(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                 .tongCong(tongCong)
 
                 .sanPhams(sanPhams)
@@ -515,6 +511,11 @@ public class DonHangService {
         }
 
         return response;
+    }
+    private String readableHoaDonStatus(Integer status) {
+        if (vn.anyen.entity.HoaDon.TT_DA_TAO.equals(status)) return "Đã tạo";
+        if (vn.anyen.entity.HoaDon.TT_DA_HUY.equals(status)) return "Đã hủy";
+        return "Chưa cập nhật";
     }
 }
 

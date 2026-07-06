@@ -21,8 +21,8 @@ public class TaoHoaDonRequest {
     private BigDecimal tongTien;
 
     @NotBlank(message = "Phương thức thanh toán không được để trống")
-    private String phuongThucThanhToan;
+    private Integer phuongThucThanhToan;
 
-    @NotBlank(message = "Trạng thái hóa đơn không được để trống")
-    private String trangThai;
+    @NotNull(message = "Trạng thái hóa đơn không được để trống")
+    private Integer trangThai;
 }

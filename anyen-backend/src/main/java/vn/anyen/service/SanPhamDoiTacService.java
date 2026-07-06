@@ -32,9 +32,6 @@ import java.util.Locale;
 @Transactional
 public class SanPhamDoiTacService {
 
-    private static final String TRANG_THAI_DANG_BAN = "Đang bán";
-    private static final String TRANG_THAI_AN = "Ẩn";
-
     private final SanPhamDoiTacRepository sanPhamDoiTacRepository;
     private final DoiTacRepository doiTacRepository;
     private final NhanVienRepository nhanVienRepository;
@@ -89,10 +86,10 @@ public class SanPhamDoiTacService {
         SanPham sanPham = new SanPham();
         applyRequest(sanPham, request);
         sanPham.setMaDoiTac(maDoiTac);
-        sanPham.setHienThi(false);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
-        if (isBlank(sanPham.getTrangThai())) {
-            sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
+        if (sanPham.getTrangThai() == null) {
+            sanPham.setTrangThai(SanPham.TRANG_THAI_CHO_XAC_NHAN);
         }
         if (sanPham.getSoLuong() == null) {
             sanPham.setSoLuong(0);
@@ -103,14 +100,14 @@ public class SanPhamDoiTacService {
         saveChiTietVaHinhAnh(savedSanPham.getMaSanPham(), request);
 
         // Tạo thông báo cho Admin
-        List<vn.anyen.entity.NhanVien> admins = nhanVienRepository.findByVaiTro("Admin");
+        List<vn.anyen.entity.NhanVien> admins = nhanVienRepository.findByVaiTro(vn.anyen.entity.NhanVien.VAI_TRO_ADMIN);
         for (vn.anyen.entity.NhanVien admin : admins) {
             vn.anyen.entity.ThongBao thongBao = vn.anyen.entity.ThongBao.builder()
                     .tieuDe("Sản phẩm đối tác mới cần duyệt")
                     .noiDung("Đối tác vừa tạo sản phẩm: " + savedSanPham.getTenSanPham() + ". Vui lòng kiểm tra và duyệt.")
                     .loaiThongBao("HE_THONG")
                     .nguoiNhanId(admin.getMaNhanVien())
-                    .trangThai("CHUA_DOC")
+                    .trangThai(vn.anyen.entity.ThongBao.TT_CHUA_DOC)
                     .build();
             thongBaoRepository.save(thongBao);
         }
@@ -144,13 +141,13 @@ public class SanPhamDoiTacService {
 
     public SanPhamDoiTacResponse anSanPham(Authentication authentication, Integer id) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
-        sanPham.setTrangThai(TRANG_THAI_AN);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_AN);
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
     public SanPhamDoiTacResponse hienSanPham(Authentication authentication, Integer id) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
-        sanPham.setTrangThai(TRANG_THAI_DANG_BAN);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
@@ -223,7 +220,10 @@ public class SanPhamDoiTacService {
             }
 
             if (!isBlank(trangThai) && !"ALL".equalsIgnoreCase(trangThai)) {
-                predicates.add(cb.equal(cb.lower(root.get("trangThai")), trangThai.toLowerCase(Locale.ROOT)));
+                try {
+                    predicates.add(cb.equal(root.get("trangThai"), Integer.parseInt(trangThai)));
+                } catch (NumberFormatException e) {
+                }
             }
 
             if (minPrice != null) {
@@ -301,7 +301,7 @@ public class SanPhamDoiTacService {
         sanPham.setMauSac(request.getMauSac());
         sanPham.setHinhAnh(request.getHinhAnh());
         sanPham.setVatLieu(request.getVatLieu());
-        sanPham.setTrangThai(isBlank(request.getTrangThai()) ? TRANG_THAI_DANG_BAN : request.getTrangThai());
+        sanPham.setTrangThai(request.getTrangThai() == null ? SanPham.TRANG_THAI_DANG_BAN : request.getTrangThai());
         sanPham.setKichThuoc(request.getKichThuoc());
         sanPham.setTrongLuong(request.getTrongLuong());
         sanPham.setCnsx(request.getCnsx());

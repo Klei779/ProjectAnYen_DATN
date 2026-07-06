@@ -21,9 +21,9 @@ public class HoaDonService {
     private final HoaDonRepository hoaDonRepository;
     private final DonHangRepository donHangRepository;
 
-    private static final List<String> TRANG_THAI_DUOC_TAO_HOA_DON = Arrays.asList(
-            "Chờ thanh toán",
-            "Hoàn thành"
+    private static final List<Integer> TRANG_THAI_DUOC_TAO_HOA_DON = Arrays.asList(
+            DonHang.TT_CHO_THANH_TOAN,
+            DonHang.TT_HOAN_THANH
     );
 
     @Transactional
@@ -48,13 +48,13 @@ public class HoaDonService {
                 ? donHang.getTongTien()
                 : BigDecimal.ZERO;
 
-        String phuongThucThanhToan = request.getPhuongThucThanhToan();
+        Integer phuongThucThanhToan = request.getPhuongThucThanhToan();
 
-        if (phuongThucThanhToan == null || phuongThucThanhToan.trim().isEmpty()) {
+        if (phuongThucThanhToan == null) {
             phuongThucThanhToan = donHang.getPhuongThucThanhToan();
         }
 
-        String trangThaiHoaDon = request.getTrangThai();
+        Integer trangThaiHoaDon = request.getTrangThai();
 
         HoaDon hoaDon = HoaDon.builder()
                 .donHang(donHang)
@@ -66,11 +66,10 @@ public class HoaDonService {
 
         HoaDon saved = hoaDonRepository.save(hoaDon);
 
-        if ("Đã thanh toán".equalsIgnoreCase(trangThaiHoaDon)
-                || "Đã in".equalsIgnoreCase(trangThaiHoaDon)) {
-            donHang.setTrangThaiThanhToan("Đã thanh toán");
+        if (HoaDon.TT_DA_TAO.equals(trangThaiHoaDon)) {
+            donHang.setTrangThaiThanhToan(DonHang.TTTT_DA_THANH_TOAN);
         } else {
-            donHang.setTrangThaiThanhToan("Chưa thanh toán");
+            donHang.setTrangThaiThanhToan(DonHang.TTTT_CHUA_THANH_TOAN);
         }
 
         donHangRepository.save(donHang);

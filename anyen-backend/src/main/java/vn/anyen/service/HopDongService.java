@@ -220,7 +220,7 @@ public class HopDongService {
                 )
                 .ngayTaoDon(donHang.getNgayTaoDon())
                 .tongTien(donHang.getTongTien())
-                .trangThai(donHang.getTrangThai())
+                .trangThai(readableDonHangStatus(donHang.getTrangThai()))
                 .daCoHopDong(
                         hopDongRepository.existsByDonHang_MaDonHang(
                                 donHang.getMaDonHang()
@@ -289,7 +289,7 @@ public class HopDongService {
                 .maDonHangText(formatDonHangCode(donHang.getMaDonHang()))
                 .ngayTaoDon(donHang.getNgayTaoDon())
                 .tongTien(donHang.getTongTien())
-                .trangThai(donHang.getTrangThai())
+                .trangThai(readableDonHangStatus(donHang.getTrangThai()))
                 .ghiChu(donHang.getGhiChu())
 
                 .maKhachHang(
@@ -444,6 +444,17 @@ public class HopDongService {
         }
 
         return value;
+    }
+
+    private String readableDonHangStatus(Integer status) {
+        if (DonHang.TT_MOI_TAO.equals(status)) return "Mới tạo";
+        if (DonHang.TT_CHO_DOI_TAC_XAC_NHAN.equals(status)) return "Chờ đối tác xác nhận";
+        if (DonHang.TT_DA_XAC_NHAN.equals(status)) return "Đã xác nhận";
+        if (DonHang.TT_DANG_XU_LY.equals(status)) return "Đang xử lý";
+        if (DonHang.TT_CHO_THANH_TOAN.equals(status)) return "Chờ thanh toán";
+        if (DonHang.TT_HOAN_THANH.equals(status)) return "Hoàn thành";
+        if (DonHang.TT_DA_HUY.equals(status)) return "Đã hủy";
+        return "Chưa cập nhật";
     }
 
     private LocalDate parseDateOrDefault(String value, LocalDate defaultValue) {

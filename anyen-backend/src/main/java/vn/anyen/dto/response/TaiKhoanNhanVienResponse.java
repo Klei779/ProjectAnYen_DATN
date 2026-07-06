@@ -15,6 +15,6 @@ public class TaiKhoanNhanVienResponse {
     private String email;
     private String soDienThoai;
     private String diaChi;
-    private String vaiTro;
-    private String trangThai;
+    private Integer vaiTro;
+    private Integer trangThai;
 }

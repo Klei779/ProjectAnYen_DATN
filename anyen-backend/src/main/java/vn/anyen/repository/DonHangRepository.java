@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
-    List<DonHang> findByTrangThai(String trangThai);
+    List<DonHang> findByTrangThai(Integer trangThai);
     List<DonHang> findByKhachHang_MaKhachHangOrderByNgayTaoDonDesc(Integer maKhachHang);
 
     boolean existsByKhachHang_MaKhachHang(Integer maKhachHang);
@@ -20,8 +20,8 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     FROM DonHang dh
     WHERE dh.khachHang.maKhachHang = :maKhachHang
     AND (
-        LOWER(COALESCE(dh.trangThaiThanhToan, '')) IN ('da_thanh_toan', 'đã thanh toán', 'da thanh toan', 'paid')
-        OR LOWER(COALESCE(dh.trangThai, '')) IN ('da_thanh_toan', 'đã thanh toán', 'da thanh toan', 'paid', 'hoàn thành', 'hoan thanh')
+        dh.trangThaiThanhToan = 1
+        OR dh.trangThai = 6
     )
     """)
     boolean existsDonHangDaThanhToanByKhachHang(@Param("maKhachHang") Integer maKhachHang);

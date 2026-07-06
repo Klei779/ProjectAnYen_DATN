@@ -46,12 +46,18 @@ public class ThongBao {
     @Column(name = "MaKhachHang")
     private Integer maKhachHang;
 
+    public static final Integer TT_CHUA_DOC = 0;
+    public static final Integer TT_DA_DOC = 1;
+    public static final Integer TT_DA_CHAP_NHAN = 2;
+    public static final Integer TT_DA_TU_CHOI = 3;
+    public static final Integer TT_CHO_XAC_NHAN = 4;
+
     /**
      * Trạng thái:
-     * CHUA_DOC, DA_DOC, DA_CHAP_NHAN, DA_TU_CHOI
+     * 0 = Chưa đọc, 1 = Đã đọc, 2 = Đã chấp nhận, 3 = Đã từ chối, 4 = Chờ xác nhận
      */
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     /** Lý do từ chối (khi từ chối) */
     @Column(name = "LyDoTuChoi", columnDefinition = "TEXT")
@@ -68,7 +74,7 @@ public class ThongBao {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         if (trangThai == null) {
-            trangThai = "CHUA_DOC";
+            trangThai = TT_CHUA_DOC;
         }
     }
 

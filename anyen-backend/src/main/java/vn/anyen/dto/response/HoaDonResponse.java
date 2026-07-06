@@ -18,8 +18,8 @@ public class HoaDonResponse {
     private String maCode;
     private LocalDate ngayIn;
     private BigDecimal tongTien;
-    private String phuongThucThanhToan;
-    private String trangThai;
+    private Integer phuongThucThanhToan;
+    private Integer trangThai;
 
     public static HoaDonResponse fromEntity(HoaDon hoaDon) {
         Integer maDonHang = hoaDon.getDonHang() != null

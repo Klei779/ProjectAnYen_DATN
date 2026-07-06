@@ -13,8 +13,8 @@ public class QuanLyNhanVienResponse {
     private String hoTen;
     private String tenDangNhap;
     private String matKhau;
-    private String vaiTro;
-    private String trangThai;
+    private Integer vaiTro;
+    private Integer trangThai;
     private String email;
     private String diaChi;
     private String soDienThoai;

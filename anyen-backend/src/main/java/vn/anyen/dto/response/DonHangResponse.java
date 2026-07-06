@@ -29,10 +29,10 @@ public class DonHangResponse {
     private String tenNhanVien;
     private LocalDate NgayTaoDon;
     private BigDecimal tongTien;
-    private String trangThai;
+    private Integer trangThai;
     private String GhiChu;
-    private String phuongThucThanhToan;
-    private String trangThaiThanhToan;
+    private Integer phuongThucThanhToan;
+    private Integer trangThaiThanhToan;
     private String phuongThucGiaoHang;
     private BigDecimal phiVanChuyen;
     private BigDecimal giamGia;

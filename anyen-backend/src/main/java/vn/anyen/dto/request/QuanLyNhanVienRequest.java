@@ -2,6 +2,7 @@ package vn.anyen.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -40,6 +41,6 @@ public class QuanLyNhanVienRequest {
     @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
     private String diaChi;
 
-    @NotBlank(message = "Vai trò không được để trống")
-    private String vaiTro;
+    @NotNull(message = "Vai trò không được để trống")
+    private Integer vaiTro;
 }

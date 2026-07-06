@@ -18,7 +18,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     SELECT COUNT(hd) > 0
     FROM HoaDon hd
     WHERE hd.donHang.khachHang.maKhachHang = :maKhachHang
-    AND LOWER(COALESCE(hd.trangThai, '')) IN ('da_thanh_toan', 'đã thanh toán', 'da thanh toan', 'paid', 'hoàn thành', 'hoan thanh')
+    AND hd.trangThai = 1
     """)
     boolean existsHoaDonDaThanhToanByKhachHang(@Param("maKhachHang") Integer maKhachHang);
 }

@@ -29,7 +29,7 @@ public class SanPhamDoiTacResponse {
     private String mauSac;
     private String hinhAnh;
     private String vatLieu;
-    private String trangThai;
+    private Integer trangThai;
     private String kichThuoc;
     private String trongLuong;
     private String cnsx;

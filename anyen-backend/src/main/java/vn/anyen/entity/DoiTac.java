@@ -24,6 +24,9 @@ public class DoiTac {
     @Column(name = "MatKhau")
     private String matKhau;
 
+    public static final Integer TRANG_THAI_NGUNG_HOAT_DONG = 0;
+    public static final Integer TRANG_THAI_HOAT_DONG = 1;
+
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 }

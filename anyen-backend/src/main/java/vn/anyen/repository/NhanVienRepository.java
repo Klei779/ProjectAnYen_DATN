@@ -17,5 +17,5 @@ public interface NhanVienRepository
 
     boolean existsBySoDienThoai(String soDienThoai);
 
-    java.util.List<NhanVien> findByVaiTro(String vaiTro);
+    java.util.List<NhanVien> findByVaiTro(Integer vaiTro);
 }

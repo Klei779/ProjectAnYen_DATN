@@ -57,12 +57,12 @@ public class ThongBaoService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
 
         // Kiểm tra đã xử lý chưa
-        if ("DA_CHAP_NHAN".equals(thongBao.getTrangThai())
-                || "DA_TU_CHOI".equals(thongBao.getTrangThai())) {
+        if (ThongBao.TT_DA_CHAP_NHAN.equals(thongBao.getTrangThai())
+                || ThongBao.TT_DA_TU_CHOI.equals(thongBao.getTrangThai())) {
             throw new RuntimeException("Thông báo này đã được xử lý");
         }
 
-        thongBao.setTrangThai("DA_CHAP_NHAN");
+        thongBao.setTrangThai(ThongBao.TT_DA_CHAP_NHAN);
         thongBaoRepository.save(thongBao);
 
         // Gán nhân viên phụ trách cho khách hàng
@@ -89,12 +89,12 @@ public class ThongBaoService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
 
         // Kiểm tra đã xử lý chưa
-        if ("DA_CHAP_NHAN".equals(thongBao.getTrangThai())
-                || "DA_TU_CHOI".equals(thongBao.getTrangThai())) {
+        if (ThongBao.TT_DA_CHAP_NHAN.equals(thongBao.getTrangThai())
+                || ThongBao.TT_DA_TU_CHOI.equals(thongBao.getTrangThai())) {
             throw new RuntimeException("Thông báo này đã được xử lý");
         }
 
-        thongBao.setTrangThai("DA_TU_CHOI");
+        thongBao.setTrangThai(ThongBao.TT_DA_TU_CHOI);
         thongBao.setLyDoTuChoi(lyDoTuChoi);
         thongBaoRepository.save(thongBao);
 
@@ -125,7 +125,7 @@ public class ThongBaoService {
                     .nguoiGuiId(nguoiNhanId)
                     .nguoiNhanId(thongBao.getNguoiGuiId())
                     .maKhachHang(thongBao.getMaKhachHang())
-                    .trangThai("CHUA_DOC")
+                    .trangThai(ThongBao.TT_CHUA_DOC)
                     .lyDoTuChoi(lyDoTuChoi)
                     .build();
 
@@ -142,8 +142,8 @@ public class ThongBaoService {
         ThongBao thongBao = thongBaoRepository.findById(maThongBao)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy thông báo"));
 
-        if ("CHUA_DOC".equals(thongBao.getTrangThai())) {
-            thongBao.setTrangThai("DA_DOC");
+        if (ThongBao.TT_CHUA_DOC.equals(thongBao.getTrangThai())) {
+            thongBao.setTrangThai(ThongBao.TT_DA_DOC);
             thongBaoRepository.save(thongBao);
         }
     }

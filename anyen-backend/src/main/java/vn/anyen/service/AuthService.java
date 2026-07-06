@@ -55,14 +55,16 @@ public class AuthService {
                         nv.getMatKhau())) {
 
                     // Determine specific role
-                    String rawRole = nv.getVaiTro() != null ? nv.getVaiTro().trim() : "";
+                    Integer rawRole = nv.getVaiTro();
                     String specificRole = null;
-                    if (rawRole.equalsIgnoreCase("Quản lý An yên") || rawRole.equalsIgnoreCase("Admin") || rawRole.equalsIgnoreCase("Quản lý")) {
-                        specificRole = "ADMIN";
-                    } else if (rawRole.equalsIgnoreCase("Nhân viên hotline") || rawRole.equalsIgnoreCase("Hotline")) {
-                        specificRole = "HOTLINE";
-                    } else if (rawRole.equalsIgnoreCase("Nhân viên trực tiếp") || rawRole.equalsIgnoreCase("Nhân viên bán hàng") || rawRole.equalsIgnoreCase("Nhân viên tư vấn")) {
-                        specificRole = "NHANVIEN";
+                    if (rawRole != null) {
+                        if (rawRole.equals(NhanVien.VAI_TRO_ADMIN)) {
+                            specificRole = "ADMIN";
+                        } else if (rawRole.equals(NhanVien.VAI_TRO_HOTLINE)) {
+                            specificRole = "HOTLINE";
+                        } else if (rawRole.equals(NhanVien.VAI_TRO_BAN_HANG)) {
+                            specificRole = "NHANVIEN";
+                        }
                     }
 
                     if (specificRole == null) {

@@ -150,9 +150,9 @@ public class KhachHangService {
                     time,
                     "Tạo đơn hàng #" + dh.getMaDonHang(),
                     "Tổng tiền: " + (dh.getTongTien() != null ? dh.getTongTien() + "đ" : "Chưa cập nhật")
-                            + " • Thanh toán: " + defaultText(dh.getTrangThaiThanhToan(), "Chưa thanh toán"),
+                            + " • Thanh toán: " + readableDonHangThanhToanStatus(dh.getTrangThaiThanhToan()),
                     "DON_HANG",
-                    defaultText(dh.getTrangThai(), "Chưa cập nhật")
+                    readableDonHangStatus(dh.getTrangThai())
             ));
         });
 
@@ -175,9 +175,9 @@ public class KhachHangService {
                     toDateTime(hd.getNgayIn()),
                     "Tạo hóa đơn #" + hd.getMaHoaDon(),
                     "Tổng tiền: " + (hd.getTongTien() != null ? hd.getTongTien() + "đ" : "Chưa cập nhật")
-                            + " • Phương thức: " + defaultText(hd.getPhuongThucThanhToan(), "Chưa cập nhật"),
+                            + " • Phương thức: " + readableHoaDonPhuongThuc(hd.getPhuongThucThanhToan()),
                     "HOA_DON",
-                    defaultText(hd.getTrangThai(), "Chưa cập nhật")
+                    readableHoaDonStatus(hd.getTrangThai())
             ));
         });
 
@@ -243,7 +243,7 @@ public class KhachHangService {
             daTiepNhan = thongBaoRepository.existsByMaKhachHangAndNguoiNhanIdAndTrangThai(
                     maKhachHang,
                     maNhanVien,
-                    "DA_CHAP_NHAN"
+                    ThongBao.TT_DA_CHAP_NHAN
             );
         }
 
@@ -346,19 +346,48 @@ public class KhachHangService {
     }
 
     private String titleThongBao(ThongBao tb) {
-        if ("DA_CHAP_NHAN".equals(tb.getTrangThai())) return "Tiếp nhận khách hàng";
-        if ("DA_TU_CHOI".equals(tb.getTrangThai())) return "Từ chối tiếp nhận";
+        if (ThongBao.TT_DA_CHAP_NHAN.equals(tb.getTrangThai())) return "Tiếp nhận khách hàng";
+        if (ThongBao.TT_DA_TU_CHOI.equals(tb.getTrangThai())) return "Từ chối tiếp nhận";
 
         return defaultText(tb.getTieuDe(), "Thông báo công việc");
     }
 
-    private String readableThongBaoStatus(String status) {
-        if ("DA_CHAP_NHAN".equals(status)) return "Đã chấp nhận";
-        if ("DA_TU_CHOI".equals(status)) return "Đã từ chối";
-        if ("DA_DOC".equals(status)) return "Đã đọc";
-        if ("CHUA_DOC".equals(status)) return "Chưa đọc";
+    private String readableThongBaoStatus(Integer status) {
+        if (ThongBao.TT_DA_CHAP_NHAN.equals(status)) return "Đã chấp nhận";
+        if (ThongBao.TT_DA_TU_CHOI.equals(status)) return "Đã từ chối";
+        if (ThongBao.TT_DA_DOC.equals(status)) return "Đã đọc";
+        if (ThongBao.TT_CHUA_DOC.equals(status)) return "Chưa đọc";
+        return "Chưa cập nhật";
+    }
 
-        return defaultText(status, "Chưa cập nhật");
+    private String readableDonHangThanhToanStatus(Integer status) {
+        if (vn.anyen.entity.DonHang.TTTT_DA_THANH_TOAN.equals(status)) return "Đã thanh toán";
+        if (vn.anyen.entity.DonHang.TTTT_CHUA_THANH_TOAN.equals(status)) return "Chưa thanh toán";
+        if (vn.anyen.entity.DonHang.TTTT_CHO_XAC_NHAN.equals(status)) return "Chờ xác nhận";
+        return "Chưa thanh toán";
+    }
+
+    private String readableDonHangStatus(Integer status) {
+        if (vn.anyen.entity.DonHang.TT_MOI_TAO.equals(status)) return "Mới tạo";
+        if (vn.anyen.entity.DonHang.TT_CHO_DOI_TAC_XAC_NHAN.equals(status)) return "Chờ đối tác xác nhận";
+        if (vn.anyen.entity.DonHang.TT_DA_XAC_NHAN.equals(status)) return "Đã xác nhận";
+        if (vn.anyen.entity.DonHang.TT_DANG_XU_LY.equals(status)) return "Đang xử lý";
+        if (vn.anyen.entity.DonHang.TT_CHO_THANH_TOAN.equals(status)) return "Chờ thanh toán";
+        if (vn.anyen.entity.DonHang.TT_HOAN_THANH.equals(status)) return "Hoàn thành";
+        if (vn.anyen.entity.DonHang.TT_DA_HUY.equals(status)) return "Đã hủy";
+        return "Chưa cập nhật";
+    }
+
+    private String readableHoaDonPhuongThuc(Integer pt) {
+        if (vn.anyen.entity.DonHang.PT_TIEN_MAT.equals(pt)) return "Tiền mặt";
+        if (vn.anyen.entity.DonHang.PT_CHUYEN_KHOAN.equals(pt)) return "Chuyển khoản";
+        return "Chưa cập nhật";
+    }
+
+    private String readableHoaDonStatus(Integer status) {
+        if (vn.anyen.entity.HoaDon.TT_DA_TAO.equals(status)) return "Đã tạo";
+        if (vn.anyen.entity.HoaDon.TT_DA_HUY.equals(status)) return "Đã hủy";
+        return "Chưa cập nhật";
     }
 
     private LocalDateTime toDateTime(LocalDate date) {

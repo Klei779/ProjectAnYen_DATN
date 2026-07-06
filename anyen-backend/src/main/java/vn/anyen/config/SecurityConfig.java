@@ -41,7 +41,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
 
                         // API đăng nhập cho phép không cần token
-                        .requestMatchers("/api/auth/**")
+                        .requestMatchers("/api/auth/**", "/api/quanly-doitac/register")
                         .permitAll()
 
                         // API public cho khách hàng xem

@@ -23,6 +23,7 @@ import TrangThongBao from "../pages/doitac/TrangThongBaoDT.vue";
 import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
 import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 import TrangTaoSanPham from "../pages/doitac/TrangTaoSanPham.vue";
+import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
 
 // Nhân viên
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
@@ -70,6 +71,14 @@ const routes = [
                 component: TrangLienHe,
             },
         ],
+    },
+
+    // TRANG PUBLIC (Không cần login)
+    {
+        path: "/doitac/register",
+        name: "TrangDangKyDoiTac",
+        component: TrangDangKyDoiTac,
+        meta: { requiresAuth: false }
     },
 
     // ĐỐI TÁC

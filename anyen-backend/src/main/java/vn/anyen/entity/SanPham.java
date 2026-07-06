@@ -64,8 +64,12 @@ public class SanPham {
     @Column(name = "vatLieu")
     private String vatLieu;
 
+    public static final Integer TRANG_THAI_AN = 0;
+    public static final Integer TRANG_THAI_DANG_BAN = 1;
+    public static final Integer TRANG_THAI_CHO_XAC_NHAN = 2;
+
     @Column(name = "trangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     @Column(name = "kichThuoc")
     private String kichThuoc;
@@ -75,7 +79,4 @@ public class SanPham {
 
     @Column(name = "CNSX")
     private String cnsx;
-
-    @Column(name = "HienThi")
-    private Boolean hienThi;
 }

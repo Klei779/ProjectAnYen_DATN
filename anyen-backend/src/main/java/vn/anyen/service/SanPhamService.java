@@ -31,8 +31,6 @@ public class SanPhamService {
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
 
-    private static final String TRANG_THAI_AN = "Ẩn";
-
     public SanPhamPageResponse getSanPham(
             String keyword,
             String loai,
@@ -55,12 +53,7 @@ public class SanPhamService {
 
             predicates.add(cb.or(
                     cb.isNull(root.get("trangThai")),
-                    cb.notEqual(root.get("trangThai"), TRANG_THAI_AN)
-            ));
-
-            predicates.add(cb.or(
-                    cb.isNull(root.get("hienThi")),
-                    cb.equal(root.get("hienThi"), true)
+                    cb.notEqual(root.get("trangThai"), SanPham.TRANG_THAI_AN)
             ));
 
             if (keyword != null && !keyword.isBlank()) {
@@ -172,7 +165,7 @@ public class SanPhamService {
         SanPham sp = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        sp.setTrangThai(TRANG_THAI_AN);
+        sp.setTrangThai(SanPham.TRANG_THAI_AN);
 
         SanPham saved = sanPhamRepository.save(sp);
 
@@ -184,7 +177,7 @@ public class SanPhamService {
         int size = pageSize == null || pageSize < 1 ? 16 : pageSize;
         Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "maSanPham"));
 
-        Specification<SanPham> spec = (root, query, cb) -> cb.equal(root.get("hienThi"), false);
+        Specification<SanPham> spec = (root, query, cb) -> cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
         Page<SanPham> result = sanPhamRepository.findAll(spec, pageable);
 
@@ -203,14 +196,14 @@ public class SanPhamService {
         SanPham sp = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
-        sp.setHienThi(true);
+        sp.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
         SanPham saved = sanPhamRepository.save(sp);
         return mapToResponse(saved);
     }
 
     public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
         List<SanPham> sanPhams =
-                sanPhamRepository.findAllVisibleForTaoDonHang(TRANG_THAI_AN);
+                sanPhamRepository.findAllVisibleForTaoDonHang(SanPham.TRANG_THAI_AN);
 
         Map<Integer, DoiTac> doiTacMap = doiTacRepository.findAll()
                 .stream()

@@ -31,11 +31,18 @@ public class HoaDon {
     @Column(name = "TongTien")
     private BigDecimal tongTien;
 
+    public static final Integer TT_DA_HUY = 0;
+    public static final Integer TT_DA_TAO = 1;
+
+    public static final Integer PT_CHUA_CHON = 0;
+    public static final Integer PT_TIEN_MAT = 1;
+    public static final Integer PT_CHUYEN_KHOAN = 2;
+
     @Column(name = "PhuongThucThanhToan")
-    private String phuongThucThanhToan;
+    private Integer phuongThucThanhToan;
 
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     @Column(name = "CreatedAt", insertable = false, updatable = false)
     private LocalDateTime createdAt;

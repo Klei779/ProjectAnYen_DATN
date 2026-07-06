@@ -26,6 +26,15 @@ public class NhanVien {
     @Column(name = "MatKhau")
     private String matKhau;
 
+    public static final Integer TRANG_THAI_NGHI_VIEC = 0;
+    public static final Integer TRANG_THAI_HOAT_DONG = 1;
+
+    public static final Integer VAI_TRO_ADMIN = 1;
+    public static final Integer VAI_TRO_BAN_HANG = 2;
+    public static final Integer VAI_TRO_TU_VAN = 3;
+    public static final Integer VAI_TRO_HOTLINE = 4;
+    public static final Integer VAI_TRO_KE_TOAN = 5;
+
     @Column(name = "VaiTro")
     private Integer vaiTro;
 

@@ -53,14 +53,14 @@ class SanPhamDoiTacServiceTest {
         sanPham1.setMaSanPham(1);
         sanPham1.setTenSanPham("Quan tài gỗ cao cấp");
         sanPham1.setLoai("Quan tài");
-        sanPham1.setTrangThai("Đang bán");
+        sanPham1.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
         sanPham1.setMaDoiTac(1);
 
         sanPham2 = new SanPham();
         sanPham2.setMaSanPham(2);
         sanPham2.setTenSanPham("Bàn thờ gỗ");
         sanPham2.setLoai("Bàn thờ");
-        sanPham2.setTrangThai("Ẩn");
+        sanPham2.setTrangThai(SanPham.TRANG_THAI_AN);
         sanPham2.setMaDoiTac(1);
     }
 

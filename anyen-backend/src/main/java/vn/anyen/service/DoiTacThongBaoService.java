@@ -114,7 +114,7 @@ public class DoiTacThongBaoService {
         DonHang donHang = thongBao.getDonHang();
 
         if (donHang != null) {
-            donHang.setTrangThai("Đối tác đã từ chối");
+            donHang.setTrangThai(DonHang.TT_DA_HUY);
 
             String ghiChuCu = donHang.getGhiChu() == null
                     ? ""
@@ -229,8 +229,7 @@ public class DoiTacThongBaoService {
             );
         }
 
-        if (request.getTrangThai() == null
-                || request.getTrangThai().trim().isEmpty()) {
+        if (request.getTrangThai() == null) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Trạng thái không được để trống"
@@ -239,7 +238,7 @@ public class DoiTacThongBaoService {
 
         DonHang donHang = thongBao.getDonHang();
 
-        donHang.setTrangThai(request.getTrangThai().trim());
+        donHang.setTrangThai(request.getTrangThai());
 
         donHangRepository.save(donHang);
 
@@ -410,7 +409,7 @@ public class DoiTacThongBaoService {
                         .code("#DH" + String.format("%03d",
                                 donHang.getMaDonHang()))
                         .date(formatDate(donHang.getNgayTaoDon()))
-                        .status(donHang.getTrangThai())
+                        .status(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                         .payment("Chuyển khoản")
                         .build())
                 .customer(DoiTacThongBaoResponse.CustomerInfo.builder()
@@ -519,7 +518,7 @@ public class DoiTacThongBaoService {
                         ? donHang.getNhanVien().getHoTen()
                         : "")
                 .ghiChu(donHang.getGhiChu())
-                .trangThai(donHang.getTrangThai())
+                .trangThai(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                 .tongCong(tongCong)
                 .sanPhams(sanPhams)
                 .build();
@@ -558,11 +557,10 @@ public class DoiTacThongBaoService {
             return;
         }
 
-        if ("Chờ đối tác xác nhận".equals(donHang.getTrangThai())
-                || "Mới tạo".equals(donHang.getTrangThai())
-                || "Đối tác đã chấp nhận".equals(donHang.getTrangThai())) {
+        if (DonHang.TT_CHO_DOI_TAC_XAC_NHAN.equals(donHang.getTrangThai())
+                || DonHang.TT_MOI_TAO.equals(donHang.getTrangThai())) {
 
-            donHang.setTrangThai("Đã xác nhận");
+            donHang.setTrangThai(DonHang.TT_DA_XAC_NHAN);
             donHangRepository.save(donHang);
         }
     }

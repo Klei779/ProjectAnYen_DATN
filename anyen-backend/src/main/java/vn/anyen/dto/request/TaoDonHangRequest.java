@@ -24,8 +24,8 @@ public class TaoDonHangRequest {
 
     private LocalDate ngayTaoDon;
     private String ghiChu;
-    private String phuongThucThanhToan;
-    private String trangThaiThanhToan;
+    private Integer phuongThucThanhToan;
+    private Integer trangThaiThanhToan;
 
     @Valid
     @NotEmpty(message = "Đơn hàng phải có ít nhất 1 sản phẩm")

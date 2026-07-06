@@ -22,5 +22,5 @@ public class SanPhamTaoDonHangResponse {
     private String tenDoiTac;
 
     private String hinhAnh;
-    private String trangThai;
+    private Integer trangThai;
 }

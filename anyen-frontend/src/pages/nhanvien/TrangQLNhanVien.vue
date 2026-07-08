@@ -341,7 +341,7 @@ async function fetchDanhSachNhanVien() {
     alert(error.response?.data?.message || "Không thể tải danh sách nhân viên từ hệ thống.");
   }
 }
-
+//role
 function hienThiVaiTro(vaiTro) {
   const roles = {
     1: "Quản lý/Admin",

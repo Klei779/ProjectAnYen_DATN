@@ -47,11 +47,4 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
             Integer trangThai
     );
 
-    /**
-     * Tìm thông báo duyệt mới nhất theo mã sản phẩm
-     */
-    Optional<ThongBao> findFirstByMaSanPhamAndLoaiThongBaoOrderByNgayTaoDesc(
-            Integer maSanPham,
-            String loaiThongBao
-    );
 }

@@ -29,14 +29,14 @@ import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
 
 // Nhân viên
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
-import TrangQLDoiTac from "../pages/nhanvien/TrangQLDoiTac.vue";
+import TrangQLDoiTac from "../pages/admin/TrangQLDoiTac.vue";
 import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
 import TrangThongBaoNV from "../pages/nhanvien/TrangThongBaoNV.vue";
 import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
 import TrangQLNhanVien from "../pages/nhanvien/TrangQLNhanVien.vue";
-import TrangDuyetSanPham from "../pages/nhanvien/TrangDuyetSanPham.vue";
+import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";

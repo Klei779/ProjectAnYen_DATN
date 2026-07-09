@@ -1,13 +1,10 @@
 <template>
-  <div class="container-fluid">
-    <div class="row min-vh-100">
+  <div class="admin-layout">
 
-      <div class="col-auto p-0">
-        <AdminSidebar />
-      </div>
+    <AdminSidebar />
 
-      <!-- Nội dung -->
-      <div class="col p-0" style="background-color: #f8f9fa; display: flex; flex-direction: column;">
+    <!-- Nội dung -->
+    <div class="admin-content">
         <header class="page-topbar">
           <div class="topbar-left">
             <i class="fa-solid fa-bars"></i>
@@ -72,12 +69,11 @@
           </div>
         </header>
 
-        <div style="flex: 1;">
+        <div class="router-container">
           <router-view />
         </div>
-      </div>
-
     </div>
+
   </div>
 </template>
 
@@ -497,6 +493,27 @@ onUnmounted(() => {
 .user-short-info strong {
   font-size: 14px;
   color: #374151;
+}
+
+/* ── Flexbox Layout ── */
+.admin-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #f8f9fa;
+  overflow: hidden;
+}
+
+.router-container {
+  flex: 1;
+  overflow: auto;
 }
 
 @media (max-width:768px){

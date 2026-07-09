@@ -77,6 +77,13 @@ public class SecurityConfig {
                         )
                         .hasAuthority("ROLE_ADMIN")
 
+                        // ADMIN quản lý hợp đồng
+                        .requestMatchers(
+                                "/api/nhan-vien/quanlyhopdong",
+                                "/api/nhan-vien/quanlyhopdong/**"
+                        )
+                        .hasAuthority("ROLE_ADMIN")
+
                         // API đối tác
                         .requestMatchers("/api/doi-tac/**")
                         .hasAuthority("ROLE_DOITAC")

@@ -34,4 +34,7 @@ public class HopDong {
 
     @Column(name = "TrangThai")
     private String trangThai;
+
+    @Column(name = "An")
+    private Boolean an;
 }

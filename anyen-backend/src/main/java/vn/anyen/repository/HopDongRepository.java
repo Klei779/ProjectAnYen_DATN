@@ -76,4 +76,70 @@ public interface HopDongRepository extends JpaRepository<HopDong, Integer> {
             @Param("trangThai") String trangThai,
             Pageable pageable
     );
+
+    @Query(
+            value = """
+                SELECT hd.*
+                FROM hopdong hd
+                LEFT JOIN donhang dh ON dh.MaDonHang = hd.MaDonHang
+                LEFT JOIN khachhang kh ON kh.MaKhachHang = dh.MaKhachHang
+                WHERE
+                    (
+                        :keyword IS NULL
+                        OR :keyword = ''
+                        OR LOWER(kh.TenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                        OR kh.SoDienThoai LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(hd.MaHopDong AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(dh.MaDonHang AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                    )
+                AND
+                    (
+                        :trangThai IS NULL
+                        OR :trangThai = ''
+                        OR :trangThai = 'Tất cả'
+                        OR hd.TrangThai = :trangThai
+                    )
+                AND
+                    (
+                        :includeHidden = TRUE
+                        OR hd.An IS NULL
+                        OR hd.An = FALSE
+                    )
+                """,
+            countQuery = """
+                SELECT COUNT(*)
+                FROM hopdong hd
+                LEFT JOIN donhang dh ON dh.MaDonHang = hd.MaDonHang
+                LEFT JOIN khachhang kh ON kh.MaKhachHang = dh.MaKhachHang
+                WHERE
+                    (
+                        :keyword IS NULL
+                        OR :keyword = ''
+                        OR LOWER(kh.TenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                        OR kh.SoDienThoai LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(hd.MaHopDong AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                        OR CAST(dh.MaDonHang AS CHAR) LIKE CONCAT('%', :keyword, '%')
+                    )
+                AND
+                    (
+                        :trangThai IS NULL
+                        OR :trangThai = ''
+                        OR :trangThai = 'Tất cả'
+                        OR hd.TrangThai = :trangThai
+                    )
+                AND
+                    (
+                        :includeHidden = TRUE
+                        OR hd.An IS NULL
+                        OR hd.An = FALSE
+                    )
+                """,
+            nativeQuery = true
+    )
+    Page<HopDong> searchHopDongAdmin(
+            @Param("keyword") String keyword,
+            @Param("trangThai") String trangThai,
+            @Param("includeHidden") boolean includeHidden,
+            Pageable pageable
+    );
 }

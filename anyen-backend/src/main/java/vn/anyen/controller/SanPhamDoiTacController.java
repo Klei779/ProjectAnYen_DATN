@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping("/api/doi-tac/san-pham")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class SanPhamDoiTacController {
 
     private final SanPhamDoiTacService sanPhamDoiTacService;

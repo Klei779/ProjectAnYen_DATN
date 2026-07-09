@@ -11,15 +11,12 @@ import vn.anyen.dto.response.DoiTacDonHangPageResponse;
 import vn.anyen.dto.response.DoiTacDonHangResponse;
 import vn.anyen.dto.response.DoiTacThongBaoResponse;
 import vn.anyen.dto.response.XuLyThongBaoResponse;
-import vn.anyen.entity.ChiTietDonHang;
-import vn.anyen.entity.DoiTac;
-import vn.anyen.entity.DonHang;
-import vn.anyen.entity.ThongBaoDoiTac;
+import vn.anyen.entity.*;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
-
+import vn.anyen.constants.AppLabels;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,26 +33,30 @@ public class DoiTacThongBaoService {
     private final DoiTacRepository doiTacRepository;
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
-
+    private final ThongBaoService thongBaoService;
+    private static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
     private static final String LOAI_DON_HANG = "DON_HANG";
-    private static final String CHO_XAC_NHAN = "CHO_XAC_NHAN";
-    private static final String DA_CHAP_NHAN = "DA_CHAP_NHAN";
-    private static final String DA_TU_CHOI = "DA_TU_CHOI";
+    private static final Integer CHO_XAC_NHAN = 0;
+    private static final Integer DA_CHAP_NHAN = 1;
+    private static final Integer DA_TU_CHOI = 2;
 
     @Transactional(readOnly = true)
     public List<DoiTacThongBaoResponse> getThongBao(Authentication authentication) {
         DoiTac doiTac = getDoiTacDangNhap(authentication);
 
         List<ThongBaoDoiTac> thongBaos =
-                thongBaoRepository
-                        .findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
-                                doiTac.getMaDoiTac(),
-                                LOAI_DON_HANG,
-                                CHO_XAC_NHAN
-                        );
+                thongBaoRepository.findByDoiTac_MaDoiTacOrderByThoiGianTaoDesc(
+                        doiTac.getMaDoiTac()
+                );
 
         return thongBaos.stream()
-                .map(tb -> mapToThongBaoResponse(tb, doiTac.getMaDoiTac()))
+                .map(tb -> {
+                    if (LOAI_DUYET_SAN_PHAM.equals(tb.getLoai())) {
+                        return mapToSanPhamThongBaoResponse(tb);
+                    }
+
+                    return mapToThongBaoResponse(tb, doiTac.getMaDoiTac());
+                })
                 .toList();
     }
 
@@ -64,6 +65,7 @@ public class DoiTacThongBaoService {
             Authentication authentication
     ) {
         DoiTac doiTac = getDoiTacDangNhap(authentication);
+
         ThongBaoDoiTac thongBao =
                 getThongBaoCuaDoiTac(maThongBao, doiTac.getMaDoiTac());
 
@@ -79,12 +81,15 @@ public class DoiTacThongBaoService {
 
         if (donHang != null) {
             capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(donHang);
+
+            thongBaoService.taoThongBaoChapNhanDonHang(donHang.getMaDonHang());
+            thongBaoService.taoThongBaoChapNhanDonHangChoAdmin(donHang.getMaDonHang());
         }
 
         return XuLyThongBaoResponse.builder()
                 .success(true)
-                .message("Đã chấp nhận đơn hàng")
-                .redirectUrl("/doi-tac/quan-ly-don-hang")
+                .message("Đã chấp nhận thông báo")
+                .redirectUrl(donHang != null ? "/doi-tac/quan-ly-don-hang" : null)
                 .maThongBao(thongBao.getMaThongBao())
                 .maDonHang(donHang != null ? donHang.getMaDonHang() : null)
                 .build();
@@ -165,6 +170,7 @@ public class DoiTacThongBaoService {
                 .total(items.size())
                 .build();
     }
+
     @Transactional(readOnly = true)
     public DoiTacDonHangResponse getChiTietDonHang(
             Integer maDonHang,
@@ -557,5 +563,47 @@ public class DoiTacThongBaoService {
             donHang.setTrangThai(DonHang.TT_DA_XAC_NHAN);
             donHangRepository.save(donHang);
         }
+    }
+    private DoiTacThongBaoResponse mapToSanPhamThongBaoResponse(
+            ThongBaoDoiTac thongBao
+    ) {
+        SanPham sanPham = thongBao.getSanPham();
+
+        boolean daDuyet = DA_CHAP_NHAN.equals(thongBao.getTrangThaiThongBao());
+        boolean daTuChoi = DA_TU_CHOI.equals(thongBao.getTrangThaiThongBao());
+
+        String actionText;
+        if (daDuyet) {
+            actionText = "Sản phẩm đã được duyệt và đang bán";
+        } else if (daTuChoi) {
+            actionText = "Sản phẩm đã bị từ chối";
+        } else {
+            actionText = "Thông báo sản phẩm";
+        }
+
+        return DoiTacThongBaoResponse.builder()
+                .id(thongBao.getMaThongBao())
+                .category("product")
+                .type("product")
+                .icon(daDuyet ? "fa-solid fa-circle-check" : "fa-solid fa-circle-xmark")
+                .title(thongBao.getTieuDe())
+                .desc(thongBao.getNoiDung())
+                .actionText(actionText)
+                .time(formatDateTime(thongBao.getThoiGianTao()))
+                .isNew(!Boolean.TRUE.equals(thongBao.getDaDoc()))
+                .trangThaiThongBao(thongBao.getTrangThaiThongBao())
+                .lyDoTuChoi(thongBao.getLyDoTuChoi())
+                .order(null)
+                .customer(null)
+                .product(DoiTacThongBaoResponse.ProductInfo.builder()
+                        .id(sanPham != null ? sanPham.getMaSanPham() : null)
+                        .name(sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm đã bị xóa")
+                        .desc(sanPham != null ? sanPham.getLoai() : "")
+                        .quantity(sanPham != null && sanPham.getSoLuong() != null ? sanPham.getSoLuong() : 0)
+                        .price(sanPham != null && sanPham.getGiaTien() != null ? sanPham.getGiaTien() : BigDecimal.ZERO)
+                        .image(sanPham != null ? sanPham.getHinhAnh() : null)
+                        .build())
+                .note(thongBao.getLyDoTuChoi())
+                .build();
     }
 }

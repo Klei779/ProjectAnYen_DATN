@@ -10,7 +10,6 @@ import vn.anyen.service.HoaDonService;
 @RestController
 @RequestMapping("/api/nhan-vien/hoa-don")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class HoaDonController {
 
     private final HoaDonService hoaDonService;

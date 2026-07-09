@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 @RestController
 @RequestMapping("/api/san-pham")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;

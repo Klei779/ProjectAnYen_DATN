@@ -6,9 +6,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import vn.anyen.entity.ThongBao;
-import vn.anyen.entity.ThongBaoDoiTac;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
@@ -23,12 +23,14 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     /**
      * Đếm thông báo chưa đọc
      */
+    //test
     @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
     long countChuaDoc(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     @Modifying
     @Query("UPDATE ThongBao t SET t.trangThai = 1 WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
     void markAllAsRead(@Param("nguoiNhanId") Integer nguoiNhanId);
+
     boolean existsByMaKhachHangAndNguoiNhanIdAndTrangThai(
             Integer maKhachHang,
             Integer nguoiNhanId,
@@ -36,4 +38,20 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     );
 
     List<ThongBao> findByMaKhachHangOrderByNgayTaoDesc(Integer maKhachHang);
+
+    /**
+     * Lấy danh sách thông báo duyệt sản phẩm đang chờ xác nhận
+     */
+    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
+            String loaiThongBao,
+            Integer trangThai
+    );
+
+    /**
+     * Tìm thông báo duyệt mới nhất theo mã sản phẩm
+     */
+    Optional<ThongBao> findFirstByMaSanPhamAndLoaiThongBaoOrderByNgayTaoDesc(
+            Integer maSanPham,
+            String loaiThongBao
+    );
 }

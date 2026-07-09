@@ -30,6 +30,7 @@ public class ThongBao {
      * CONG_VIEC  - Thông báo công việc (có nút Chấp nhận / Từ chối)
      * HE_THONG   - Thông báo hệ thống (chỉ đọc)
      * TU_CHOI    - Phản hồi từ chối gửi về hotline
+     * DUYET_SAN_PHAM - Thông báo duyệt sản phẩm mới từ đối tác
      */
     @Column(name = "LoaiThongBao")
     private String loaiThongBao;
@@ -46,15 +47,14 @@ public class ThongBao {
     @Column(name = "MaKhachHang")
     private Integer maKhachHang;
 
-    public static final Integer TT_CHUA_DOC = 0;
-    public static final Integer TT_DA_DOC = 1;
-    public static final Integer TT_DA_CHAP_NHAN = 2;
-    public static final Integer TT_DA_TU_CHOI = 3;
-    public static final Integer TT_CHO_XAC_NHAN = 4;
+    /** Liên kết sản phẩm (cho loại DUYET_SAN_PHAM) */
+    @Column(name = "MaSanPham")
+    private Integer maSanPham;
 
     /**
      * Trạng thái:
-     * 0 = Chưa đọc, 1 = Đã đọc, 2 = Đã chấp nhận, 3 = Đã từ chối, 4 = Chờ xác nhận
+     * CHUA_DOC, DA_DOC, DA_CHAP_NHAN, DA_TU_CHOI
+     * CHO_XAC_NHAN - Chờ nhân viên duyệt sản phẩm
      */
     @Column(name = "TrangThai")
     private Integer trangThai;
@@ -74,7 +74,7 @@ public class ThongBao {
         ngayTao = LocalDateTime.now();
         ngayCapNhat = LocalDateTime.now();
         if (trangThai == null) {
-            trangThai = TT_CHUA_DOC;
+            trangThai = 0;
         }
     }
 

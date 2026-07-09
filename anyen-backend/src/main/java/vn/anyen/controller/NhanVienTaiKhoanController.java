@@ -13,7 +13,6 @@ import vn.anyen.service.TaiKhoanNhanVienService;
 @RestController
 @RequestMapping("/api/nhan-vien/tai-khoan")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class NhanVienTaiKhoanController {
 
     private final TaiKhoanNhanVienService taiKhoanNhanVienService;

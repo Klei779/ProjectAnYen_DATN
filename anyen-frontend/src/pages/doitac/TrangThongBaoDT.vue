@@ -1,4 +1,4 @@
-<template>
+  <template>
   <div class="notification-page">
     <section class="notification-left">
       <div class="page-title">
@@ -180,7 +180,7 @@
           <p class="note">{{ selectedNotification.note }}</p>
         </div>
 
-        <div class="detail-actions">
+        <div class="detail-actions" v-if="isChoXacNhan(selectedNotification)">
           <button class="reject-btn" @click="rejectOrder">
             Từ chối
           </button>
@@ -190,6 +190,21 @@
           </button>
         </div>
 
+        <div class="detail-actions" v-else>
+          <button class="accept-btn" type="button" @click="closePopup">
+            Đóng
+          </button>
+        </div>
+
+        <p class="hint" v-if="isChoXacNhan(selectedNotification)">
+          <i class="fa-solid fa-lock"></i>
+          Nếu bạn chấp nhận đơn hàng, hệ thống sẽ chuyển đơn sang Quản lý đơn hàng.
+        </p>
+
+        <p class="hint" v-else>
+          <i class="fa-solid fa-circle-info"></i>
+          Thông báo này đã được xử lý.
+        </p>
         <p class="hint">
           <i class="fa-solid fa-lock"></i>
           Nếu bạn chấp nhận đơn hàng, hệ thống sẽ chuyển đơn sang Quản lý đơn hàng.
@@ -302,7 +317,23 @@ const router = useRouter();
 const activeTab = ref("all");
 const selectedNotification = ref(null);
 const notifications = ref([]);
+const TT_DT_CHO_XAC_NHAN = 0;
+const TT_DT_DA_CHAP_NHAN = 1;
+const TT_DT_DA_TU_CHOI = 2;
 
+const isChoXacNhan = (item) => {
+  return Number(item?.trangThaiThongBao) === TT_DT_CHO_XAC_NHAN;
+};
+
+const getTrangThaiThongBaoText = (status) => {
+  const map = {
+    0: "Chờ xác nhận",
+    1: "Đã chấp nhận",
+    2: "Đã từ chối",
+  };
+
+  return map[Number(status)] || "Không xác định";
+};
 const tabs = [
   { key: "all", label: "Tất cả" },
   { key: "order", label: "Đơn hàng" },
@@ -336,13 +367,15 @@ const systemNotifications = [
     },
   }
 ];
-
 const loadThongBao = async () => {
   try {
     const data = await getThongBaoDoiTac();
 
     const orderNotifications = Array.isArray(data)
-        ? data
+        ? data.map(item => ({
+          ...item,
+          trangThaiThongBao: Number(item.trangThaiThongBao),
+        }))
         : [];
 
     notifications.value = [
@@ -401,6 +434,19 @@ const acceptOrder = async () => {
 
     const result = await chapNhanThongBao(maThongBao);
 
+    notifications.value = notifications.value.map(item => {
+      if (item.id === maThongBao) {
+        return {
+          ...item,
+          trangThaiThongBao: TT_DT_DA_CHAP_NHAN,
+          isNew: false,
+          actionText: "Đã chấp nhận đơn hàng",
+        };
+      }
+
+      return item;
+    });
+
     closePopup();
 
     await router.push(
@@ -408,7 +454,7 @@ const acceptOrder = async () => {
     );
   } catch (error) {
     console.error("Lỗi chấp nhận đơn hàng:", error);
-    alert("Chấp nhận đơn hàng thất bại");
+    alert(error.response?.data?.message || "Chấp nhận đơn hàng thất bại");
   }
 };
 
@@ -424,19 +470,30 @@ const rejectOrder = async () => {
 
   try {
     const maThongBao = selectedNotification.value.id;
+    const lyDoTrim = lyDo.trim();
 
-    await tuChoiThongBao(maThongBao, lyDo.trim());
+    await tuChoiThongBao(maThongBao, lyDoTrim);
 
-    notifications.value = notifications.value.filter(
-        item => item.id !== maThongBao
-    );
+    notifications.value = notifications.value.map(item => {
+      if (item.id === maThongBao) {
+        return {
+          ...item,
+          trangThaiThongBao: TT_DT_DA_TU_CHOI,
+          lyDoTuChoi: lyDoTrim,
+          isNew: false,
+          actionText: "Đã từ chối đơn hàng",
+        };
+      }
+
+      return item;
+    });
 
     closePopup();
 
     alert("Đã từ chối đơn hàng");
   } catch (error) {
     console.error("Lỗi từ chối đơn hàng:", error);
-    alert("Từ chối đơn hàng thất bại");
+    alert(error.response?.data?.message || "Từ chối đơn hàng thất bại");
   }
 };
 

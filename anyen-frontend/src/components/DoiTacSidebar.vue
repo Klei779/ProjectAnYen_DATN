@@ -54,7 +54,10 @@
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>
       </RouterLink>
-
+      <RouterLink to="/doi-tac/thong-ke-doanh-thu" class="menu-item" title="Thống kê doanh thu">
+        <i class="fa-solid fa-chart-line menu-icon"></i>
+        <span class="sidebar-text">Thống kê doanh thu</span>
+      </RouterLink>
       <RouterLink to="/doi-tac/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
         <i class="fa-solid fa-user menu-icon"></i>
         <span class="sidebar-text">Thông tin tài khoản</span>

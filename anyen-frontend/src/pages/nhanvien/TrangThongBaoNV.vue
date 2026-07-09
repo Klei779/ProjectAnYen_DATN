@@ -62,17 +62,39 @@
 
             <!-- Action Buttons Right (Inline) -->
             <div class="card-actions-wrapper">
-              <span class="time-ago" v-if="item.trangThai === 'CHUA_DOC'">Vừa xong</span>
-              
-              <div class="card-buttons" v-if="item.loaiThongBao === 'CONG_VIEC' && (item.trangThai === 'CHUA_DOC' || item.trangThai === 'DA_DOC')">
-                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">Từ chối</button>
+              <span class="time-ago" v-if="item.trangThai === 0">Vừa xong</span>
+
+              <div
+                  class="card-buttons"
+                  v-if="item.loaiThongBao === 'CONG_VIEC' && (item.trangThai === 0 || item.trangThai === 1)"
+              >
+                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
+                  Từ chối
+                </button>
                 <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading">
-                   <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i> Nhận công việc
+                  <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
+                  Nhận công việc
                 </button>
               </div>
-              <div class="card-buttons processed" v-else-if="item.loaiThongBao === 'CONG_VIEC'">
-                <span class="text-success fw-bold" v-if="item.trangThai === 'DA_CHAP_NHAN'"><i class="fa-solid fa-check"></i> Đã nhận</span>
-                <span class="text-danger fw-bold" v-if="item.trangThai === 'DA_TU_CHOI'"><i class="fa-solid fa-xmark"></i> Đã từ chối</span>
+
+              <div
+                  class="card-buttons"
+                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && item.trangThai === 4"
+              >
+                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
+                  Từ chối
+                </button>
+                <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading">
+                  <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
+                  Đồng ý
+                </button>
+              </div>
+              <div
+                  class="card-buttons processed"
+                  v-else-if="item.loaiThongBao === 'CONG_VIEC' || item.loaiThongBao === 'DUYET_SAN_PHAM'"
+              >
+                <span class="text-success fw-bold" v-if="item.trangThai === 2"><i class="fa-solid fa-check"></i> Đã nhận</span>
+                <span class="text-danger fw-bold" v-if="item.trangThai === 3"><i class="fa-solid fa-xmark"></i> Đã từ chối</span>
               </div>
             </div>
           </div>
@@ -127,9 +149,9 @@
             <div class="info-row">
               <span class="label">Trạng thái</span>
               <span class="value">
-                <span v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'" class="status-pill warning">Chờ tiếp nhận</span>
-                <span v-else-if="selectedNotification.trangThai === 'DA_CHAP_NHAN'" class="status-pill success">Đã tiếp nhận</span>
-                <span v-else-if="selectedNotification.trangThai === 'DA_TU_CHOI'" class="status-pill error">Đã từ chối</span>
+                <span v-if="selectedNotification.trangThai === 0 || selectedNotification.trangThai === 1" class="status-pill warning">Chờ tiếp nhận</span>
+                <span v-else-if="selectedNotification.trangThai === 2" class="status-pill success">Đã tiếp nhận</span>
+                <span v-else-if="selectedNotification.trangThai === 3" class="status-pill error">Đã từ chối</span>
               </span>
             </div>
             <div class="info-row">
@@ -154,12 +176,12 @@
           </div>
 
           <!-- Buttons -->
-          <div class="sidebar-actions" v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'">
+          <div class="sidebar-actions" v-if="selectedNotification.trangThai === 0 || selectedNotification.trangThai === 1">
             <button class="btn-outline-modal" @click="openRejectPopup(selectedNotification)">Từ chối</button>
             <button class="btn-primary-modal" @click="acceptCustomer(selectedNotification)">Tiếp nhận</button>
           </div>
           
-          <p class="sidebar-note" v-if="selectedNotification.trangThai === 'CHUA_DOC' || selectedNotification.trangThai === 'DA_DOC'">
+          <p class="sidebar-note" v-if="selectedNotification.trangThai === 0 || selectedNotification.trangThai === 1">
             <i class="fa-solid fa-lock"></i> Nếu bạn tiếp nhận khách hàng, hệ thống sẽ chuyển khách hàng sang danh sách quản lý khách hàng
           </p>
         </div>
@@ -266,11 +288,18 @@ const toast = ref({ show: false, message: "", type: "success" });
 const userHoTen = ref("Nhân viên");
 
 // Tabs matching the design
+const TT_CHUA_DOC = 0;
+const TT_DA_DOC = 1;
+const TT_DA_CHAP_NHAN = 2;
+const TT_DA_TU_CHOI = 3;
+const TT_CHO_XAC_NHAN = 4;
+
 const tabs = [
   { key: "all", label: "Tất cả" },
-  { key: "CHUA_DOC", label: "Chờ nhận" },
-  { key: "DA_TU_CHOI", label: "Đã từ chối" },
-  { key: "DA_CHAP_NHAN", label: "Đã nhận" }
+  { key: TT_CHUA_DOC, label: "Chờ nhận việc" },
+  { key: TT_CHO_XAC_NHAN, label: "Chờ duyệt sản phẩm" },
+  { key: TT_DA_TU_CHOI, label: "Đã từ chối" },
+  { key: TT_DA_CHAP_NHAN, label: "Đã nhận / Đã duyệt" }
 ];
 
 const notifications = ref([]);
@@ -282,25 +311,34 @@ let pollingInterval = null;
 
 const loadNotifications = async (isBackground = false) => {
   if (!isBackground) loading.value = true;
+
   try {
     const res = await api.get(API_URL);
-    
-    // Check if there are new unread notifications compared to old state
-    const currentUnread = notifications.value.filter(n => n.trangThai === 'CHUA_DOC').length;
-    const newUnread = res.data.filter(n => n.trangThai === 'CHUA_DOC').length;
-    
+
+    const data = res.data.map(item => ({
+      ...item,
+      trangThai: Number(item.trangThai)
+    }));
+
+    const currentUnread = notifications.value.filter(
+        n => Number(n.trangThai) === TT_CHUA_DOC
+    ).length;
+
+    const newUnread = data.filter(
+        n => Number(n.trangThai) === TT_CHUA_DOC
+    ).length;
+
     if (isBackground && newUnread > currentUnread) {
-        showToast("Bạn có thông báo công việc mới!", "success");
+      showToast("Bạn có thông báo công việc mới!", "success");
     }
 
-    notifications.value = res.data;
+    notifications.value = data;
   } catch (error) {
     console.error("Lỗi load thông báo:", error);
   } finally {
     if (!isBackground) loading.value = false;
   }
 };
-
 const startPolling = () => {
   // Poll every 5 seconds for real-time feel
   pollingInterval = setInterval(() => {
@@ -335,12 +373,12 @@ onUnmounted(() => {
 
 const filteredNotifications = computed(() => {
   let list = notifications.value;
-  
+
   if (activeTab.value === "all") {
     return list;
   }
 
-  return list.filter(item => item.trangThai === activeTab.value);
+  return list.filter(item => Number(item.trangThai) === Number(activeTab.value));
 });
 
 // Mini list in right panel/dropdown shows ALL types, sorted by date (handled by backend)
@@ -349,13 +387,15 @@ const miniNotifications = computed(() => {
 });
 
 const unreadCount = computed(() => {
-  return notifications.value.filter(item => item.trangThai === 'CHUA_DOC').length;
+  return notifications.value.filter(
+      item => Number(item.trangThai) === TT_CHUA_DOC
+  ).length;
 });
 
 const getCount = (key) => {
   let list = notifications.value;
   if (key === "all") return list.length;
-  return list.filter(item => item.trangThai === key).length;
+  return list.filter(item => Number(item.trangThai) === Number(key)).length;
 };
 
 // =================== ICONS ===================
@@ -364,7 +404,7 @@ const getMiniIconClass = (item) => {
   if (item.loaiThongBao === "CONG_VIEC") return "bg-red";
   if (item.loaiThongBao === "HE_THONG") return "bg-blue";
   if (item.loaiThongBao === "TU_CHOI") return "bg-yellow";
-  if (item.trangThai === "DA_CHAP_NHAN") return "bg-green";
+  if (item.trangThai === TT_DA_CHAP_NHAN) return "bg-green";
   return "bg-purple";
 };
 
@@ -372,7 +412,7 @@ const getMiniIconName = (item) => {
   if (item.loaiThongBao === "CONG_VIEC") return "fa-solid fa-briefcase";
   if (item.loaiThongBao === "HE_THONG") return "fa-solid fa-gear";
   if (item.loaiThongBao === "TU_CHOI") return "fa-solid fa-xmark";
-  if (item.trangThai === "DA_CHAP_NHAN") return "fa-solid fa-check";
+  if (item.trangThai === TT_DA_CHAP_NHAN) return "fa-solid fa-check";
   return "fa-solid fa-bell";
 };
 
@@ -380,13 +420,33 @@ const getMiniIconName = (item) => {
 
 const selectNotification = async (item) => {
   selectedNotification.value = item;
-  
-  if (item.trangThai === "CHUA_DOC") {
+
+  if (Number(item.trangThai) === TT_CHUA_DOC) {
     try {
       await api.put(`${API_URL}/${item.maThongBao}/da-doc`);
-      item.trangThai = "DA_DOC";
+
+      // Cập nhật local ngay để UI đổi liền
+      notifications.value = notifications.value.map(n => {
+        if (n.maThongBao === item.maThongBao) {
+          return {
+            ...n,
+            trangThai: TT_DA_DOC,
+            isNew: false,
+          };
+        }
+
+        return n;
+      });
+
+      // Cập nhật luôn popup đang mở
+      selectedNotification.value = {
+        ...item,
+        trangThai: TT_DA_DOC,
+        isNew: false,
+      };
+
     } catch (e) {
-      console.error(e);
+      console.error("Lỗi đánh dấu đã đọc:", e);
     }
   }
 };
@@ -394,9 +454,19 @@ const selectNotification = async (item) => {
 const markAllAsRead = async () => {
   try {
     await api.put(`${API_URL}/da-doc-tat-ca`);
-    notifications.value.forEach(n => {
-      if(n.trangThai === 'CHUA_DOC') n.trangThai = 'DA_DOC';
+
+    notifications.value = notifications.value.map(n => {
+      if (Number(n.trangThai) === TT_CHUA_DOC) {
+        return {
+          ...n,
+          trangThai: TT_DA_DOC,
+          isNew: false,
+        };
+      }
+
+      return n;
     });
+
     showToast("Đã đánh dấu tất cả là đã đọc");
   } catch (error) {
     console.error(error);
@@ -405,13 +475,21 @@ const markAllAsRead = async () => {
 
 const acceptCustomer = async (item) => {
   actionLoading.value = true;
+
   try {
     await api.put(`${API_URL}/${item.maThongBao}/chap-nhan`);
-    item.trangThai = "DA_CHAP_NHAN";
-    showToast("Nhận công việc thành công!", "success");
-    selectedNotification.value = null; // Close modal if open
+
+    item.trangThai = TT_DA_CHAP_NHAN;
+
+    if (item.loaiThongBao === "DUYET_SAN_PHAM") {
+      showToast("Đã duyệt sản phẩm. Sản phẩm đã được bày bán!", "success");
+    } else {
+      showToast("Nhận công việc thành công!", "success");
+    }
+
+    selectedNotification.value = null;
   } catch (error) {
-    showToast(error.response?.data?.message || "Lỗi khi nhận việc", "error");
+    showToast(error.response?.data?.message || "Lỗi khi xử lý thông báo", "error");
   } finally {
     actionLoading.value = false;
   }
@@ -435,17 +513,30 @@ const confirmReject = async () => {
     return;
   }
 
+  if (rejectReason.value.trim().length < 3) {
+    rejectError.value = "Lý do từ chối phải từ 3 ký tự trở lên";
+    return;
+  }
+
   actionLoading.value = true;
+
   try {
     await api.put(
         `${API_URL}/${itemToReject.value.maThongBao}/tu-choi`,
         { lyDoTuChoi: rejectReason.value.trim() }
     );
-    itemToReject.value.trangThai = "DA_TU_CHOI";
+
+    itemToReject.value.trangThai = TT_DA_TU_CHOI;
     itemToReject.value.lyDoTuChoi = rejectReason.value.trim();
-    showToast("Đã từ chối công việc!", "success");
+
+    if (itemToReject.value.loaiThongBao === "DUYET_SAN_PHAM") {
+      showToast("Đã từ chối và xóa sản phẩm khỏi database!", "success");
+    } else {
+      showToast("Đã từ chối công việc!", "success");
+    }
+
     closeRejectPopup();
-    selectedNotification.value = null; // Close modal if open
+    selectedNotification.value = null;
   } catch (error) {
     showToast(error.response?.data?.message || "Lỗi khi từ chối", "error");
   } finally {

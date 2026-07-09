@@ -13,7 +13,6 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/don-hang")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class DonHangController {
 
     private final DonHangService donHangService;

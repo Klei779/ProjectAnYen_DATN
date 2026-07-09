@@ -1,13 +1,17 @@
 package vn.anyen.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "doitac")
 @Getter
 @Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class DoiTac {
 
     @Id
@@ -18,6 +22,13 @@ public class DoiTac {
     @Column(name = "TenDoiTac")
     private String tenDoiTac;
 
+    @Column(name = "TenDoanhNghiep")
+    private String tenDoanhNghiep;
+
+    @Column(name = "MaSoThue")
+    private String maSoThue;
+
+
     @Column(name = "TenDangNhap")
     private String tenDangNhap;
 
@@ -27,28 +38,42 @@ public class DoiTac {
     @Column(name = "Email")
     private String email;
 
-    @Column(name = "TenDoanhNghiep")
-    private String tenDoanhNghiep;
-
-    @Column(name = "MaSoThue")
-    private String maSoThue;
-
     @Column(name = "SoDienThoai")
     private String soDienThoai;
 
     @Column(name = "DiaChi")
     private String diaChi;
 
-    public static final Integer TRANG_THAI_NGUNG_HOAT_DONG = 0;
-    public static final Integer TRANG_THAI_HOAT_DONG = 1;
-    public static final Integer TRANG_THAI_CHO_XAC_NHAN = 2; // Đang ký
+    // TrangThai constants (theo database mới)
+    // 0 = Ngừng hoạt động
+    // 1 = Đang hoạt động
+    // 2 = Chờ xác nhận (lời mời)
+    // 3 = Đã xóa
+    public static final Integer TT_NGUNG_HOAT_DONG = 0;
+    public static final Integer TT_DANG_HOAT_DONG = 1;
+    public static final Integer TT_CHO_XAC_NHAN = 2;
+    public static final Integer TT_DA_XOA = 3;
 
     @Column(name = "TrangThai")
     private Integer trangThai;
 
-    @Column(name = "CreatedAt", insertable = false, updatable = false)
-    private java.time.LocalDateTime createdAt;
+    @Column(name = "ConfirmationToken")
+    private String confirmationToken;
 
-    @Column(name = "UpdatedAt", insertable = false, updatable = false)
-    private java.time.LocalDateTime updatedAt;
+    @Column(name = "CreatedAt", updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "UpdatedAt")
+    private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

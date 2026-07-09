@@ -8,7 +8,6 @@ import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.LoginRequest;
 import vn.anyen.dto.response.LoginResponse;
 import vn.anyen.service.AuthService;
-import vn.anyen.service.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -16,7 +15,6 @@ import vn.anyen.service.JwtService;
 public class AuthController {
 
     private final AuthService authService;
-    private final JwtService jwtService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(

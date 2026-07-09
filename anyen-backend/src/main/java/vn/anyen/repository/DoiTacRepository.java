@@ -3,7 +3,6 @@ package vn.anyen.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vn.anyen.entity.DoiTac;
-import vn.anyen.entity.ThongBaoDoiTac;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,8 +10,8 @@ import java.util.Optional;
 import java.time.LocalDateTime;
 
 @Repository
-public interface DoiTacRepository
-        extends JpaRepository<DoiTac,Integer> {
+public interface DoiTacRepository extends JpaRepository<DoiTac, Integer> {
+
     Optional<DoiTac> findByTenDangNhap(String tenDangNhap);
     Optional<DoiTac> findByEmail(String email);
     List<DoiTac> findByTrangThaiAndCreatedAtBefore(Integer trangThai, LocalDateTime time);
@@ -21,4 +20,22 @@ public interface DoiTacRepository
             String tenDangNhap,
             String matKhau
     );
+
+    Optional<DoiTac> findByConfirmationToken(String confirmationToken);
+
+    boolean existsByTenDangNhap(String tenDangNhap);
+
+    boolean existsByEmail(String email);
+
+    boolean existsBySoDienThoai(String soDienThoai);
+
+    boolean existsByMaSoThue(String maSoThue);
+
+    List<DoiTac> findAllByOrderByMaDoiTacDesc();
+
+    boolean existsByEmailAndMaDoiTacNot(String email, Integer maDoiTac);
+
+    boolean existsBySoDienThoaiAndMaDoiTacNot(String soDienThoai, Integer maDoiTac);
+
+    boolean existsByMaSoThueAndMaDoiTacNot(String maSoThue, Integer maDoiTac);
 }

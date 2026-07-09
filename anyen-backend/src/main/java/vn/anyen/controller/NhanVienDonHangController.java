@@ -6,20 +6,19 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
+import vn.anyen.dto.request.HuyDonHangRequest;
 import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
-import vn.anyen.service.DonHangService;
 import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
+import vn.anyen.service.DonHangService;
 import vn.anyen.service.SanPhamService;
-import jakarta.validation.Valid;
-import vn.anyen.dto.request.HuyDonHangRequest;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/nhan-vien/don-hang")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
 public class NhanVienDonHangController {
 
     private final DonHangService donHangService;
@@ -38,6 +37,25 @@ public class NhanVienDonHangController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/{maDonHang}/co-hop-dong")
+    public ResponseEntity<Map<String, Boolean>> kiemTraDonHangCoHopDong(
+            @PathVariable Integer maDonHang
+    ) {
+        boolean daCoHopDong = donHangService.kiemTraDonHangDaCoHopDong(maDonHang);
+
+        return ResponseEntity.ok(Map.of("daCoHopDong", daCoHopDong));
+    }
+
+    @PutMapping("/{maDonHang}")
+    public ResponseEntity<DonHangResponse> capNhatDonHang(
+            @PathVariable Integer maDonHang,
+            @Valid @RequestBody TaoDonHangRequest request
+    ) {
+        return ResponseEntity.ok(
+                donHangService.capNhatDonHang(maDonHang, request)
+        );
+    }
+
     @PutMapping("/{maDonHang}/trang-thai")
     public ResponseEntity<DonHangResponse> capNhatTrangThaiDonHang(
             @PathVariable Integer maDonHang,
@@ -50,6 +68,7 @@ public class NhanVienDonHangController {
 
         return ResponseEntity.ok(response);
     }
+
     @PutMapping("/{maDonHang}/huy")
     public DonHangResponse huyDonHang(
             @PathVariable Integer maDonHang,
@@ -57,6 +76,7 @@ public class NhanVienDonHangController {
     ) {
         return donHangService.huyDonHang(maDonHang, request);
     }
+
     @GetMapping("/san-pham-options")
     public ResponseEntity<List<SanPhamTaoDonHangResponse>> getSanPhamTaoDonHangOptions() {
         return ResponseEntity.ok(

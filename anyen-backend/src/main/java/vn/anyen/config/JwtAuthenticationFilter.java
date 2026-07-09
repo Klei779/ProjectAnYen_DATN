@@ -41,23 +41,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtService.isTokenValid(token)) {
 
                 String tenDangNhap = jwtService.getUsernameFromToken(token);
-                String loaiTaiKhoan = jwtService.getRoleFromToken(token);
+                String roleFromToken = jwtService.getRoleFromToken(token);
 
-                if (tenDangNhap == null || loaiTaiKhoan == null) {
+                if (tenDangNhap == null || roleFromToken == null) {
                     filterChain.doFilter(request, response);
                     return;
                 }
 
-                loaiTaiKhoan = loaiTaiKhoan.trim();
+                String normalizedRole = normalizeRole(roleFromToken);
+                String authority = "ROLE_" + normalizedRole;
 
-                String authority = loaiTaiKhoan.startsWith("ROLE_")
-                        ? loaiTaiKhoan
-                        : "ROLE_" + loaiTaiKhoan;
-
+                System.out.println("========== JWT DEBUG ==========");
                 System.out.println("URI = " + request.getRequestURI());
                 System.out.println("USERNAME = " + tenDangNhap);
-                System.out.println("ROLE FROM TOKEN = " + loaiTaiKhoan);
+                System.out.println("ROLE FROM TOKEN = " + roleFromToken);
+                System.out.println("NORMALIZED ROLE = " + normalizedRole);
                 System.out.println("AUTHORITY = " + authority);
+                System.out.println("===============================");
 
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
@@ -66,9 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                 List.of(new SimpleGrantedAuthority(authority))
                         );
 
-                SecurityContextHolder
-                        .getContext()
-                        .setAuthentication(authentication);
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
 
         } catch (Exception e) {
@@ -77,5 +75,45 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    private String normalizeRole(String role) {
+        if (role == null) {
+            return "";
+        }
+
+        String value = role.trim();
+
+        if (value.startsWith("ROLE_")) {
+            value = value.substring(5);
+        }
+
+        if (value.equalsIgnoreCase("ADMIN")
+                || value.equalsIgnoreCase("Admin")
+                || value.equalsIgnoreCase("Quản lý")
+                || value.equalsIgnoreCase("Quản lý An yên")) {
+            return "ADMIN";
+        }
+
+        if (value.equalsIgnoreCase("DOITAC")
+                || value.equalsIgnoreCase("DOI_TAC")
+                || value.equalsIgnoreCase("Đối tác")) {
+            return "DOITAC";
+        }
+
+        if (value.equalsIgnoreCase("HOTLINE")
+                || value.equalsIgnoreCase("Nhân viên hotline")) {
+            return "HOTLINE";
+        }
+
+        if (value.equalsIgnoreCase("NHANVIEN")
+                || value.equalsIgnoreCase("NHAN_VIEN")
+                || value.equalsIgnoreCase("Nhân viên bán hàng")
+                || value.equalsIgnoreCase("Nhân viên tư vấn")
+                || value.equalsIgnoreCase("Nhân viên trực tiếp")) {
+            return "NHANVIEN";
+        }
+
+        return value.toUpperCase();
     }
 }

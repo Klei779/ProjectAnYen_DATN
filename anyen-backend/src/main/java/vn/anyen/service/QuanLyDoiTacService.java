@@ -1,170 +1,261 @@
 package vn.anyen.service;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import vn.anyen.dto.request.QuanLyDoiTacRequest;
+import vn.anyen.dto.response.QuanLyDoiTacResponse;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.repository.DoiTacRepository;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class QuanLyDoiTacService {
 
-    @Autowired
-    private DoiTacRepository doiTacRepository;
+    private final DoiTacRepository doiTacRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JavaMailSender javaMailSender;
+    private final TemplateEngine templateEngine;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
-    @Autowired
-    private JavaMailSender mailSender;
+    @Transactional(readOnly = true)
+    public List<QuanLyDoiTacResponse> getAllDoiTac() {
+        return doiTacRepository.findAllByOrderByMaDoiTacDesc()
+                .stream()
+                .filter(doiTac -> !DoiTac.TT_DA_XOA.equals(doiTac.getTrangThai()))
+                .map(this::mapToResponse)
+                .toList();
+    }
 
-    @Value("${jwt.secret:defaultSecretKeyForJwt123456789012345678901234567890}")
-    private String jwtSecret;
+    /**
+     * Tạo đối tác mới với trạng thái "Chờ xác nhận" và gửi email xác nhận.
+     * Phần này giữ lại cho người khác làm tiếp.
+     */
+    @Transactional
+    public QuanLyDoiTacResponse createDoiTac(vn.anyen.dto.request.ThemDoiTacRequest request) {
 
-    @Value("${frontend.url:http://localhost:5173}")
-    private String frontendUrl;
+        if (doiTacRepository.existsByEmail(trim(request.getEmail()))) {
+            throw new RuntimeException("Email đã được sử dụng bởi đối tác khác");
+        }
 
-    public List<DoiTac> getAllDoiTac() {
-        return doiTacRepository.findAll();
+        String confirmationToken = UUID.randomUUID().toString();
+
+        String tempUsername = "temp_" + UUID.randomUUID().toString().substring(0, 8);
+        String tempPassword = passwordEncoder.encode(UUID.randomUUID().toString());
+
+        // Đặt tên tạm thời là phần trước @ của email
+        String emailPart = request.getEmail().split("@")[0];
+
+        DoiTac doiTac = DoiTac.builder()
+                .tenDoiTac("Đối tác " + emailPart)
+                .tenDangNhap(tempUsername)
+                .matKhau(tempPassword)
+                .email(trim(request.getEmail()))
+                .trangThai(DoiTac.TT_CHO_XAC_NHAN)
+                .confirmationToken(confirmationToken)
+                .build();
+
+        doiTacRepository.save(doiTac);
+
+        guiEmailXacNhan(doiTac, confirmationToken);
+
+        return mapToResponse(doiTac);
     }
 
     @Transactional
-    public void inviteDoiTac(String email) {
-        Optional<DoiTac> existing = doiTacRepository.findByEmail(email);
-        if (existing.isPresent()) {
-            throw new RuntimeException("Email này đã được sử dụng hoặc đã được mời.");
-        }
+    public QuanLyDoiTacResponse updateDoiTac(Integer maDoiTac, QuanLyDoiTacRequest request) {
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác"));
 
-        // Tạo đối tác tạm
-        DoiTac doiTac = new DoiTac();
-        doiTac.setEmail(email);
-        doiTac.setTenDangNhap(email); // Tạm thời dùng email làm tên đăng nhập
-        doiTac.setTenDoiTac("Đối tác mới (" + email + ")");
-        doiTac.setMatKhau(passwordEncoder.encode("TEMP_PASSWORD")); // Mật khẩu tạm
-        doiTac.setTrangThai(DoiTac.TRANG_THAI_CHO_XAC_NHAN);
-        
+        validateTrungKhiSua(maDoiTac, request);
+
+        doiTac.setTenDoiTac(trim(request.getTenDoiTac()));
+        doiTac.setTenDoanhNghiep(trimNullable(request.getTenDoanhNghiep()));
+        doiTac.setMaSoThue(trimNullable(request.getMaSoThue()));
+        doiTac.setEmail(trim(request.getEmail()));
+        doiTac.setSoDienThoai(trim(request.getSoDienThoai()));
+        doiTac.setDiaChi(trimNullable(request.getDiaChi()));
+
         doiTacRepository.save(doiTac);
 
-        // Tạo token
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-        String token = Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + 3 * 24 * 60 * 60 * 1000L)) // 3 ngày
-                .signWith(key)
-                .compact();
+        return mapToResponse(doiTac);
+    }
 
-        // Gửi email HTML
-        String link = frontendUrl + "/doitac/register?token=" + token;
-        
+    @Transactional
+    public QuanLyDoiTacResponse updateTrangThai(Integer maDoiTac, Integer trangThai) {
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác"));
+
+        if (!DoiTac.TT_DANG_HOAT_DONG.equals(trangThai)
+                && !DoiTac.TT_NGUNG_HOAT_DONG.equals(trangThai)) {
+            throw new RuntimeException("Trạng thái chỉ được là Đang hoạt động hoặc Ngừng hoạt động");
+        }
+
+        doiTac.setTrangThai(trangThai);
+
+        doiTacRepository.save(doiTac);
+
+        return mapToResponse(doiTac);
+    }
+
+    @Transactional
+    public void deleteDoiTac(Integer maDoiTac) {
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác"));
+
+        doiTac.setTrangThai(DoiTac.TT_DA_XOA);
+
+        doiTacRepository.save(doiTac);
+    }
+
+    @Transactional
+    public DoiTac xacNhanDoiTac(String token) {
+
+        DoiTac doiTac = doiTacRepository.findByConfirmationToken(token)
+                .orElseThrow(() -> new RuntimeException("Token xác nhận không hợp lệ hoặc không tồn tại."));
+
+        if (DoiTac.TT_DA_XOA.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Lời mời hợp tác đã hết hạn do quá 24h.");
+        }
+
+        if (DoiTac.TT_DANG_HOAT_DONG.equals(doiTac.getTrangThai())) {
+            return doiTac;
+        }
+
+        // Tạm thời để trạng thái Chờ xác nhận trong lúc họ đang điền form
+        doiTac.setTrangThai(DoiTac.TT_CHO_XAC_NHAN);
+        doiTacRepository.save(doiTac);
+
+        return doiTac;
+    }
+
+    @Transactional
+    public void kyHopDong(vn.anyen.dto.request.KyHopDongRequest request) {
+        DoiTac doiTac = doiTacRepository.findByConfirmationToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Token không hợp lệ hoặc không tồn tại. Vui lòng kiểm tra lại link trong email."));
+
+        if (DoiTac.TT_DA_XOA.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Lời mời hợp tác đã hết hạn do quá 24h. Vui lòng liên hệ với An Yên để được cấp lại lời mời.");
+        }
+
+        if (doiTacRepository.existsByTenDangNhap(request.getTenDangNhap())
+                && !doiTac.getTenDangNhap().equals(request.getTenDangNhap())) {
+            throw new RuntimeException("Tên đăng nhập đã tồn tại trong hệ thống. Vui lòng chọn tên khác.");
+        }
+
+        if (doiTacRepository.existsBySoDienThoai(trim(request.getSoDienThoai()))) {
+            throw new RuntimeException("Số điện thoại đã được sử dụng bởi một tài khoản khác.");
+        }
+
+        String maSoThue = trimNullable(request.getMaSoThue());
+        if (maSoThue != null && doiTacRepository.existsByMaSoThue(maSoThue)) {
+            throw new RuntimeException("Mã số thuế đã tồn tại trong hệ thống.");
+        }
+
+        doiTac.setTenDangNhap(trim(request.getTenDangNhap()));
+        doiTac.setMatKhau(passwordEncoder.encode(request.getMatKhau()));
+        doiTac.setTenDoiTac(trim(request.getTenDoiTac()));
+        doiTac.setTenDoanhNghiep(trimNullable(request.getTenDoanhNghiep()));
+        doiTac.setMaSoThue(trimNullable(request.getMaSoThue()));
+        doiTac.setSoDienThoai(trim(request.getSoDienThoai()));
+        doiTac.setDiaChi(trimNullable(request.getDiaChi()));
+
+        // Giữ tương thích với code cũ.
+        // Nếu muốn đồng bộ trạng thái mới thì có thể đổi "Đã hợp tác" thành "Đang hợp tác".
+        doiTac.setTrangThai(DoiTac.TT_DANG_HOAT_DONG);
+
+        doiTac.setConfirmationToken(null);
+        doiTacRepository.save(doiTac);
+    }
+
+    private void validateTrungKhiSua(Integer maDoiTac, QuanLyDoiTacRequest request) {
+        String email = trim(request.getEmail());
+        String soDienThoai = trim(request.getSoDienThoai());
+        String maSoThue = trimNullable(request.getMaSoThue());
+
+        if (doiTacRepository.existsByEmailAndMaDoiTacNot(email, maDoiTac)) {
+            throw new RuntimeException("Email đã được sử dụng bởi đối tác khác");
+        }
+
+        if (doiTacRepository.existsBySoDienThoaiAndMaDoiTacNot(soDienThoai, maDoiTac)) {
+            throw new RuntimeException("Số điện thoại đã được sử dụng bởi đối tác khác");
+        }
+
+        if (maSoThue != null && doiTacRepository.existsByMaSoThueAndMaDoiTacNot(maSoThue, maDoiTac)) {
+            throw new RuntimeException("Mã số thuế đã được sử dụng bởi đối tác khác");
+        }
+    }
+
+    private void guiEmailXacNhan(DoiTac doiTac, String token) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            helper.setTo(email);
-            helper.setSubject("Thư Mời Hợp Tác - Dịch Vụ Mai Táng An Yên");
-            
-            String htmlContent = "<div style=\"font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 0; background-color: #fafafa; border-radius: 12px; overflow: hidden; border: 1px solid #e0e0e0;\">"
-                    + "<div style=\"background-color: #ffffff; padding: 25px 20px; text-align: center; border-bottom: 3px solid #d32f2f;\">"
-                    + "<h1 style=\"color: #d32f2f; margin: 0; font-size: 32px; font-weight: 700; font-family: 'Georgia', serif; font-style: italic;\">An Yên</h1>"
-                    + "<p style=\"color: #b71c1c; margin: 5px 0 0 0; font-size: 11px; font-weight: 600; letter-spacing: 1.5px;\">NƠI GỬI TRỌN NIỀM TIN</p>"
-                    + "</div>"
-                    + "<div style=\"padding: 40px 30px; background-color: #ffffff;\">"
-                    + "<h2 style=\"color: #333333; margin-top: 0; font-size: 20px;\">Kính chào Quý Đối tác,</h2>"
-                    + "<p style=\"color: #555555; line-height: 1.6; font-size: 15px;\">Bạn đã nhận được lời mời hợp tác chiến lược từ hệ thống <strong>Dịch vụ mai táng An Yên</strong>. Chúng tôi rất hân hạnh được đồng hành cùng bạn để mang đến những dịch vụ trọn vẹn và ý nghĩa nhất.</p>"
-                    + "<p style=\"color: #555555; line-height: 1.6; font-size: 15px;\">Để bắt đầu, vui lòng nhấn vào nút bên dưới để hoàn tất hồ sơ đăng ký đối tác. Lời mời này có hiệu lực trong vòng <strong>3 ngày</strong>.</p>"
-                    + "<div style=\"text-align: center; margin: 35px 0;\">"
-                    + "<a href=\"" + link + "\" style=\"display: inline-block; padding: 14px 35px; background-color: #d32f2f; color: #ffffff; text-decoration: none; font-weight: bold; border-radius: 50px; font-size: 15px; box-shadow: 0 4px 10px rgba(211,47,47,0.3);\">Hoàn tất Đăng ký ngay</a>"
-                    + "</div>"
-                    + "<p style=\"color: #757575; font-size: 13px; line-height: 1.5; text-align: center;\">Nếu nút bấm không hoạt động, bạn có thể sao chép và dán đường dẫn sau vào trình duyệt:<br><a href=\"" + link + "\" style=\"color: #d32f2f; word-break: break-all;\">" + link + "</a></p>"
-                    + "</div>"
-                    + "<div style=\"background-color: #b71c1c; padding: 25px 20px; text-align: center; color: #ffffff;\">"
-                    + "<p style=\"font-size: 14px; margin: 0 0 10px 0; font-weight: bold;\">CÔNG TY CỔ PHẦN DỊCH VỤ AN YÊN</p>"
-                    + "<p style=\"font-size: 12px; margin: 0 0 5px 0; opacity: 0.8;\">123 Đường An Lạc, Phường Yên Hòa, Quận Cầu Giấy, Hà Nội</p>"
-                    + "<p style=\"font-size: 12px; margin: 0; opacity: 0.8;\">Hotline: 1900 1234 &nbsp;|&nbsp; Email: info@anyen.vn</p>"
-                    + "<p style=\"font-size: 11px; margin: 15px 0 0 0; opacity: 0.6; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;\">&copy; 2026 Dịch vụ mai táng An Yên. Bảo lưu mọi quyền.</p>"
-                    + "</div>"
-                    + "</div>";
-            
+            String confirmUrl = "http://localhost:5173/doitac/register?token=" + token;
+
+            Context context = new Context();
+            context.setVariable("tenDoiTac", doiTac.getTenDoiTac());
+            context.setVariable("tenDoanhNghiep", doiTac.getTenDoanhNghiep());
+            context.setVariable("email", doiTac.getEmail());
+            context.setVariable("soDienThoai", doiTac.getSoDienThoai());
+            context.setVariable("tenDangNhap", doiTac.getTenDangNhap());
+            context.setVariable("confirmUrl", confirmUrl);
+
+            String htmlContent = templateEngine.process("xac-nhan-doi-tac", context);
+
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(doiTac.getEmail());
+            helper.setSubject("🤝 An Yên — Lời Mời Hợp Tác Chính Thức");
             helper.setText(htmlContent, true);
-            mailSender.send(message);
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi gửi email mời đối tác: " + e.getMessage());
+
+            javaMailSender.send(mimeMessage);
+
+        } catch (MessagingException e) {
+            throw new RuntimeException("Lỗi khi gửi email xác nhận đến đối tác: " + e.getMessage());
         }
     }
 
-    @Transactional
-    public void registerDoiTac(String token, String tenDoiTac, String tenDoanhNghiep, String maSoThue, 
-                               String tenDangNhap, String matKhau, String soDienThoai, String diaChi) {
-        String email;
-        try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
-            Claims claims = Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token)
-                    .getPayload();
-
-            email = claims.getSubject();
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            throw new RuntimeException("Lời mời hợp tác đã hết hạn.");
-        } catch (io.jsonwebtoken.JwtException e) {
-            throw new RuntimeException("Đường dẫn đăng ký không hợp lệ.");
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi xác thực đường dẫn: " + e.getMessage());
-        }
-
-        DoiTac doiTac = doiTacRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin đối tác với email này."));
-
-        if (!doiTac.getTrangThai().equals(DoiTac.TRANG_THAI_CHO_XAC_NHAN)) {
-            throw new RuntimeException("Lời mời này không còn hiệu lực hoặc đã được đăng ký.");
-        }
-
-        Optional<DoiTac> checkTenDangNhap = doiTacRepository.findByTenDangNhap(tenDangNhap);
-        if (checkTenDangNhap.isPresent() && !checkTenDangNhap.get().getMaDoiTac().equals(doiTac.getMaDoiTac())) {
-            throw new RuntimeException("Tên đăng nhập đã tồn tại, vui lòng chọn tên đăng nhập khác.");
-        }
-
-        doiTac.setTenDoiTac(tenDoiTac);
-        doiTac.setTenDoanhNghiep(tenDoanhNghiep);
-        doiTac.setMaSoThue(maSoThue);
-        doiTac.setTenDangNhap(tenDangNhap);
-        doiTac.setMatKhau(passwordEncoder.encode(matKhau));
-        doiTac.setSoDienThoai(soDienThoai);
-        doiTac.setDiaChi(diaChi);
-        doiTac.setTrangThai(DoiTac.TRANG_THAI_HOAT_DONG);
-        
-        doiTacRepository.save(doiTac);
+    private QuanLyDoiTacResponse mapToResponse(DoiTac doiTac) {
+        return QuanLyDoiTacResponse.builder()
+                .maDoiTac(doiTac.getMaDoiTac())
+                .tenDoiTac(doiTac.getTenDoiTac())
+                .tenDoanhNghiep(doiTac.getTenDoanhNghiep())
+                .maSoThue(doiTac.getMaSoThue())
+                .tenDangNhap(doiTac.getTenDangNhap())
+                .email(doiTac.getEmail())
+                .soDienThoai(doiTac.getSoDienThoai())
+                .diaChi(doiTac.getDiaChi())
+                .trangThai(doiTac.getTrangThai())
+                .createdAt(doiTac.getCreatedAt())
+                .build();
     }
 
-    // Chạy mỗi giờ kiểm tra các lời mời quá hạn 3 ngày
-    @Scheduled(cron = "0 0 * * * *")
-    @Transactional
-    public void cancelExpiredInvitations() {
-        LocalDateTime baNgayTruoc = LocalDateTime.now().minusDays(3);
-        List<DoiTac> expiredList = doiTacRepository.findByTrangThaiAndCreatedAtBefore(DoiTac.TRANG_THAI_CHO_XAC_NHAN, baNgayTruoc);
-        
-        for (DoiTac dt : expiredList) {
-            dt.setTrangThai(DoiTac.TRANG_THAI_NGUNG_HOAT_DONG);
-            doiTacRepository.save(dt);
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String trimNullable(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
         }
+
+        return value.trim();
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
     }
 }

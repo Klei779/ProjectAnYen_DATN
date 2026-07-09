@@ -3,7 +3,9 @@ package vn.anyen.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // Đảm bảo tính nhất quán dữ liệu
+import org.springframework.transaction.annotation.Transactional;
+import vn.anyen.constants.AppLabels;
+import vn.anyen.dto.request.CapNhatNhanVienRequest;
 import vn.anyen.dto.request.QuanLyNhanVienRequest;
 import vn.anyen.dto.response.QuanLyNhanVienResponse;
 import vn.anyen.entity.NhanVien;
@@ -19,80 +21,111 @@ public class QuanLyNhanVienService {
     private final NhanVienRepository nhanVienRepository;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * 1. Chức năng: Thêm mới nhân viên (Đã dọn dẹp dòng code trùng)
-     */
     @Transactional
     public QuanLyNhanVienResponse createQuanLyNhanVien(QuanLyNhanVienRequest request) {
+        String tenDangNhap = request.getTenDangNhap().trim();
+        String email = request.getEmail().trim();
+        String soDienThoai = request.getSoDienThoai().trim();
 
-        if (nhanVienRepository.existsByTenDangNhap(request.getTenDangNhap())) {
+        if (nhanVienRepository.existsByTenDangNhap(tenDangNhap)) {
             throw new RuntimeException("Tên đăng nhập đã tồn tại");
         }
-
-        if (nhanVienRepository.existsByEmail(request.getEmail())) {
+        if (nhanVienRepository.existsByEmail(email)) {
             throw new RuntimeException("Email đã tồn tại");
         }
-
-        if (nhanVienRepository.existsBySoDienThoai(request.getSoDienThoai())) {
+        if (nhanVienRepository.existsBySoDienThoai(soDienThoai)) {
             throw new RuntimeException("Số điện thoại đã tồn tại");
         }
 
-        // Tối ưu: Đã xóa đoạn check existsByTenDangNhap bị lặp lại ở đây
-
         NhanVien nhanVien = NhanVien.builder()
                 .hoTen(request.getHoTen().trim())
-                .tenDangNhap(request.getTenDangNhap().trim())
+                .tenDangNhap(tenDangNhap)
                 .matKhau(passwordEncoder.encode(request.getMatKhau()))
-                .email(request.getEmail().trim())
-                .soDienThoai(request.getSoDienThoai().trim())
-                .diaChi(request.getDiaChi())
+                .email(email)
+                .soDienThoai(soDienThoai)
+                .diaChi(trimToNull(request.getDiaChi()))
                 .vaiTro(request.getVaiTro())
                 .trangThai(NhanVien.TRANG_THAI_HOAT_DONG)
                 .build();
 
-        nhanVienRepository.save(nhanVien);
-
-        return mapToResponse(nhanVien);
+        return mapToResponse(nhanVienRepository.save(nhanVien));
     }
 
     /**
-     * 2. BỔ SUNG: Chức năng cho nhân viên nghỉ việc
+     * Cập nhật thông tin nhân viên.
+     * SecurityConfig chỉ cho ROLE_ADMIN, tương ứng nhân viên có VaiTro = 1,
+     * truy cập endpoint quản lý nhân viên.
      */
     @Transactional
-    public QuanLyNhanVienResponse nghiViecNhanVien(Integer maNhanVien) {
-        // Tìm nhân viên trong DB, không thấy thì báo lỗi
+    public QuanLyNhanVienResponse capNhatNhanVien(
+            Integer maNhanVien,
+            CapNhatNhanVienRequest request
+    ) {
         NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với mã: " + maNhanVien));
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy nhân viên với mã: " + maNhanVien
+                ));
 
-        // Kiểm tra nếu trạng thái đã là nghỉ việc từ trước
+        String tenDangNhap = request.getTenDangNhap().trim();
+        String email = request.getEmail().trim();
+        String soDienThoai = request.getSoDienThoai().trim();
+
+        if (nhanVienRepository.existsByTenDangNhapAndMaNhanVienNot(
+                tenDangNhap, maNhanVien)) {
+            throw new RuntimeException("Tên đăng nhập đã được nhân viên khác sử dụng");
+        }
+        if (nhanVienRepository.existsByEmailAndMaNhanVienNot(email, maNhanVien)) {
+            throw new RuntimeException("Email đã được nhân viên khác sử dụng");
+        }
+        if (nhanVienRepository.existsBySoDienThoaiAndMaNhanVienNot(
+                soDienThoai, maNhanVien)) {
+            throw new RuntimeException("Số điện thoại đã được nhân viên khác sử dụng");
+        }
+
+        nhanVien.setHoTen(request.getHoTen().trim());
+        nhanVien.setTenDangNhap(tenDangNhap);
+        nhanVien.setEmail(email);
+        nhanVien.setSoDienThoai(soDienThoai);
+        nhanVien.setDiaChi(trimToNull(request.getDiaChi()));
+        nhanVien.setVaiTro(request.getVaiTro());
+
+        // Mật khẩu là tùy chọn khi sửa. Để trống/null thì giữ mật khẩu cũ.
+        if (request.getMatKhau() != null && !request.getMatKhau().isBlank()) {
+            nhanVien.setMatKhau(passwordEncoder.encode(request.getMatKhau().trim()));
+        }
+
+        return mapToResponse(nhanVienRepository.save(nhanVien));
+    }
+
+    @Transactional
+    public QuanLyNhanVienResponse nghiViecNhanVien(Integer maNhanVien) {
+        NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy nhân viên với mã: " + maNhanVien
+                ));
+
         if (NhanVien.TRANG_THAI_NGHI_VIEC.equals(nhanVien.getTrangThai())) {
             throw new RuntimeException("Nhân viên này đã nghỉ việc từ trước");
         }
 
-        // Cập nhật trạng thái mới và lưu lại
         nhanVien.setTrangThai(NhanVien.TRANG_THAI_NGHI_VIEC);
-        nhanVienRepository.save(nhanVien);
-
-        return mapToResponse(nhanVien);
+        return mapToResponse(nhanVienRepository.save(nhanVien));
     }
 
-    /**
-     * 3. BỔ SUNG: Chức năng lấy danh sách tất cả nhân viên
-     */
-    @Transactional(readOnly = true) // Tối ưu hiệu năng khi chỉ đọc dữ liệu
+    @Transactional(readOnly = true)
     public List<QuanLyNhanVienResponse> getAllNhanVien() {
-        // Lấy toàn bộ danh sách Entity dưới Database lên
-        List<NhanVien> dsNhanVien = nhanVienRepository.findAll();
-
-        // Sử dụng Stream API để chuyển đổi (map) toàn bộ List Entity thành List Response DTO
-        return dsNhanVien.stream()
+        return nhanVienRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Hàm Helper dùng chung: Chuyển đổi từ Entity sang Response DTO (Clean Code)
-     */
+    private String trimToNull(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
     private QuanLyNhanVienResponse mapToResponse(NhanVien nhanVien) {
         return QuanLyNhanVienResponse.builder()
                 .maNhanVien(nhanVien.getMaNhanVien())
@@ -103,6 +136,10 @@ public class QuanLyNhanVienService {
                 .diaChi(nhanVien.getDiaChi())
                 .vaiTro(nhanVien.getVaiTro())
                 .trangThai(nhanVien.getTrangThai())
+                .tenTrangThai(AppLabels.getLabel(
+                        AppLabels.TRANG_THAI_NHAN_VIEN,
+                        nhanVien.getTrangThai()
+                ))
                 .build();
     }
 }

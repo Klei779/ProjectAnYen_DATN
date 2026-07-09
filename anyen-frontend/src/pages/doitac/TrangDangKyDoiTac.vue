@@ -72,7 +72,7 @@ const submitRegistration = async () => {
         isSubmitting.value = true;
         errorMessage.value = '';
         
-        await axios.post('http://localhost:8080/api/quanly-doitac/register', {
+        await axios.post('http://localhost:8080/api/auth/doi-tac/ky-hop-dong', {
             token: token.value,
             ...formData.value
         });

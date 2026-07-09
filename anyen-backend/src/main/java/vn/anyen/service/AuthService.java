@@ -37,6 +37,7 @@ public class AuthService {
             }
         }
 
+
         LoginResponse response = new LoginResponse();
 
         // Đăng nhập nhân viên
@@ -46,25 +47,26 @@ public class AuthService {
                     nhanVienRepository.findByTenDangNhap(
                             request.getTenDangNhap());
 
+
             if (optionalNv.isPresent()) {
 
                 NhanVien nv = optionalNv.get();
-
+                if (Integer.valueOf(0).equals(nv.getTrangThai())) {
+                    return response;
+                }
                 if (passwordEncoder.matches(
                         request.getMatKhau(),
                         nv.getMatKhau())) {
 
                     // Determine specific role
-                    Integer rawRole = nv.getVaiTro();
+                    int rawRole = nv.getVaiTro();
                     String specificRole = null;
-                    if (rawRole != null) {
-                        if (rawRole.equals(NhanVien.VAI_TRO_ADMIN)) {
-                            specificRole = "ADMIN";
-                        } else if (rawRole.equals(NhanVien.VAI_TRO_HOTLINE)) {
-                            specificRole = "HOTLINE";
-                        } else if (rawRole.equals(NhanVien.VAI_TRO_BAN_HANG)) {
-                            specificRole = "NHANVIEN";
-                        }
+                    if (rawRole == 1 ) {
+                        specificRole = "ADMIN";
+                    } else if (rawRole == 3 ) {
+                        specificRole = "HOTLINE";
+                    } else if (rawRole ==2) {
+                        specificRole = "NHANVIEN";
                     }
 
                     if (specificRole == null) {

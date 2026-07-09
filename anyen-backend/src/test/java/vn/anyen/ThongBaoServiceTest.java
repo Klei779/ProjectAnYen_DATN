@@ -50,7 +50,7 @@ class ThongBaoServiceTest {
         thongBaoCongViec.setTieuDe("Thông báo công việc mới");
         thongBaoCongViec.setNoiDung("Bạn được phân công tiếp nhận khách hàng mới");
         thongBaoCongViec.setLoaiThongBao("CONG_VIEC");
-        thongBaoCongViec.setTrangThai(ThongBao.TT_CHUA_DOC);
+        thongBaoCongViec.setTrangThai(0);
         thongBaoCongViec.setNguoiGuiId(100);
         thongBaoCongViec.setNguoiNhanId(200);
         thongBaoCongViec.setMaKhachHang(10);
@@ -151,7 +151,7 @@ class ThongBaoServiceTest {
         System.out.println("Mã khách hàng: " + khachHang.getMaKhachHang());
         System.out.println("Nhân viên phụ trách sau khi nhận: " + khachHang.getMaNhanVienPhuTrach());
 
-        assertEquals(ThongBao.TT_DA_CHAP_NHAN, thongBaoCongViec.getTrangThai());
+        assertEquals("DA_CHAP_NHAN", thongBaoCongViec.getTrangThai());
         assertEquals(200, khachHang.getMaNhanVienPhuTrach());
 
         verify(thongBaoRepository, times(1)).findById(maThongBao);
@@ -162,7 +162,7 @@ class ThongBaoServiceTest {
 
     @Test
     void chapNhan_thongBaoDaXuLy_thiBaoLoi() {
-        thongBaoCongViec.setTrangThai(ThongBao.TT_DA_CHAP_NHAN);
+        thongBaoCongViec.setTrangThai(3);
 
         when(thongBaoRepository.findById(1))
                 .thenReturn(Optional.of(thongBaoCongViec));
@@ -224,7 +224,7 @@ class ThongBaoServiceTest {
         System.out.println("Mã khách hàng: " + thongBaoPhanHoi.getMaKhachHang());
         System.out.println("Trạng thái: " + thongBaoPhanHoi.getTrangThai());
 
-        assertEquals(ThongBao.TT_DA_TU_CHOI, thongBaoGocDaTuChoi.getTrangThai());
+        assertEquals("DA_TU_CHOI", thongBaoGocDaTuChoi.getTrangThai());
         assertEquals(lyDoTuChoi, thongBaoGocDaTuChoi.getLyDoTuChoi());
 
         assertEquals("Từ chối tiếp nhận khách hàng", thongBaoPhanHoi.getTieuDe());
@@ -232,7 +232,7 @@ class ThongBaoServiceTest {
         assertEquals(nguoiNhanId, thongBaoPhanHoi.getNguoiGuiId());
         assertEquals(100, thongBaoPhanHoi.getNguoiNhanId());
         assertEquals(10, thongBaoPhanHoi.getMaKhachHang());
-        assertEquals(ThongBao.TT_CHUA_DOC, thongBaoPhanHoi.getTrangThai());
+        assertEquals("CHUA_DOC", thongBaoPhanHoi.getTrangThai());
         assertEquals(lyDoTuChoi, thongBaoPhanHoi.getLyDoTuChoi());
 
         assertTrue(thongBaoPhanHoi.getNoiDung().contains("Nhân viên Phụ Trách"));
@@ -246,7 +246,7 @@ class ThongBaoServiceTest {
 
     @Test
     void tuChoi_thongBaoDaXuLy_thiBaoLoi() {
-        thongBaoCongViec.setTrangThai(ThongBao.TT_DA_TU_CHOI);
+        thongBaoCongViec.setTrangThai(4);
 
         when(thongBaoRepository.findById(1))
                 .thenReturn(Optional.of(thongBaoCongViec));

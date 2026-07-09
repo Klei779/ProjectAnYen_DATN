@@ -63,15 +63,26 @@
             <p>Chỉ cập nhật các thông tin có trong bảng nhân viên</p>
           </div>
 
-          <button
-              v-if="!editMode"
-              class="btn-edit"
-              type="button"
-              @click="startEdit"
-          >
-            <i class="fa-solid fa-pen"></i>
-            Chỉnh sửa
-          </button>
+          <div class="header-actions">
+            <button
+                v-if="!editMode"
+                class="btn-edit"
+                type="button"
+                @click="startEdit"
+            >
+              <i class="fa-solid fa-pen"></i>
+              Chỉnh sửa
+            </button>
+
+            <button
+                class="btn-password"
+                type="button"
+                @click="showDoiMatKhau = !showDoiMatKhau"
+            >
+              <i class="fa-solid fa-key"></i>
+              {{ showDoiMatKhau ? "Ẩn đổi mật khẩu" : "Đổi mật khẩu" }}
+            </button>
+          </div>
         </div>
 
         <form v-if="editMode" class="edit-form" @submit.prevent="submitUpdate">
@@ -145,16 +156,20 @@
             <strong>{{ account?.diaChi || "Chưa cập nhật" }}</strong>
           </div>
         </div>
+        <div v-if="showDoiMatKhau" class="password-section">
+          <DoiMatKhau/>
+        </div>
       </main>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import {computed, onMounted, reactive, ref} from "vue";
+import {useRouter} from "vue-router";
+import {ElMessage} from "element-plus";
 import api from "../../api/api.js";
+import DoiMatKhau from "../../components/DoiMatKhau.vue";
 
 const router = useRouter();
 
@@ -163,6 +178,7 @@ const API_URL = "/api/nhan-vien/tai-khoan";
 const loading = ref(false);
 const saving = ref(false);
 const editMode = ref(false);
+const showDoiMatKhau = ref(false);
 
 const account = ref(null);
 
@@ -518,6 +534,44 @@ function getErrorMessage(error, fallback) {
   gap: 8px;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-password {
+  height: 38px;
+  padding: 0 15px;
+  border: 1px solid #17934a;
+  border-radius: 9px;
+  background: #fff;
+  color: #17934a;
+  font-weight: 800;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-password:hover {
+  background: #e8f8ef;
+}
+
+.password-section {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #eef2f7;
+}
+
+.password-section :deep(.change-password-card) {
+  max-width: 100%;
+  box-shadow: none;
+  border: 1px solid #eef2f7;
+}
+
 .info-list {
   display: flex;
   flex-direction: column;
@@ -681,6 +735,15 @@ function getErrorMessage(error, fallback) {
 
   .btn-outline,
   .btn-save {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .btn-password {
     width: 100%;
     justify-content: center;
   }

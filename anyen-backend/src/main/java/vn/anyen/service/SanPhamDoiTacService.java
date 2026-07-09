@@ -109,6 +109,8 @@ public class SanPhamDoiTacService {
 
         // Tạo thông báo cho nhân viên duyệt sản phẩm.
         // NguoiNhanId = null nghĩa là tất cả nhân viên đều thấy.
+        // maSanPham được nhúng vào NoiDung với format [MASP:id] vì
+        // bảng thongbao không có cột MaSanPham trong DB mới.
         ThongBao thongBao = ThongBao.builder()
                 .tieuDe("Duyệt sản phẩm mới")
                 .noiDung(
@@ -116,17 +118,18 @@ public class SanPhamDoiTacService {
                                 + " vừa thêm sản phẩm mới: "
                                 + savedSanPham.getTenSanPham()
                                 + ". Vui lòng xác nhận hoặc từ chối để quyết định sản phẩm có được bày bán hay không."
+                                + " [MASP:" + savedSanPham.getMaSanPham() + "]"
                 )
                 .loaiThongBao("DUYET_SAN_PHAM")
                 .nguoiGuiId(null)
                 .nguoiNhanId(null)
                 .maKhachHang(null)
-                .maSanPham(savedSanPham.getMaSanPham())
                 .trangThai(0) // 0 là Chưa đọc
                 .lyDoTuChoi(null)
                 .build();
 
         thongBaoRepository.save(thongBao);
+
 
         return toResponse(savedSanPham);
     }

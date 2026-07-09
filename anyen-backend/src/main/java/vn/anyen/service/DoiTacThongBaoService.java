@@ -6,6 +6,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 import vn.anyen.dto.request.TuChoiThongBaoRequest;
 import vn.anyen.dto.response.DoiTacDonHangPageResponse;
 import vn.anyen.dto.response.DoiTacDonHangResponse;
@@ -15,6 +16,7 @@ import vn.anyen.entity.*;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.DonHangRepository;
+import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
 import vn.anyen.constants.AppLabels;
 import java.math.BigDecimal;
@@ -22,6 +24,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 
 @Service
@@ -34,11 +38,18 @@ public class DoiTacThongBaoService {
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final ThongBaoService thongBaoService;
-    private static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
-    private static final String LOAI_DON_HANG = "DON_HANG";
+    private final SanPhamRepository sanPhamRepository;
+
+    // Loai dùng Integer để khớp TINYINT trong DB
+    private static final Integer LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
+    private static final Integer LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
+
     private static final Integer CHO_XAC_NHAN = 0;
     private static final Integer DA_CHAP_NHAN = 1;
     private static final Integer DA_TU_CHOI = 2;
+
+    // Pattern để parse maSanPham từ NoiDung: [MASP:123]
+    private static final Pattern MASP_PATTERN = Pattern.compile("\\[MASP:(\\d+)\\]");
 
     @Transactional(readOnly = true)
     public List<DoiTacThongBaoResponse> getThongBao(Authentication authentication) {
@@ -250,6 +261,7 @@ public class DoiTacThongBaoService {
                 .maDonHang(donHang.getMaDonHang())
                 .build();
     }
+
     public void taoThongBaoChoDonHang(Integer maDonHang) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -305,6 +317,10 @@ public class DoiTacThongBaoService {
         }
     }
 
+    // ========================
+    // Private helpers
+    // ========================
+
     private DoiTac getDoiTacDangNhap(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
             throw new ResponseStatusException(
@@ -342,6 +358,23 @@ public class DoiTacThongBaoService {
                     "Thông báo này đã được xử lý"
             );
         }
+    }
+
+    /**
+     * Parse maSanPham từ chuỗi NoiDung.
+     * Format: "...nội dung... [MASP:123]"
+     */
+    private Integer parseMaSanPhamFromNoiDung(String noiDung) {
+        if (noiDung == null) return null;
+        Matcher matcher = MASP_PATTERN.matcher(noiDung);
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(1));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+        return null;
     }
 
     private DoiTacThongBaoResponse mapToThongBaoResponse(
@@ -539,6 +572,7 @@ public class DoiTacThongBaoService {
                 DateTimeFormatter.ofPattern("dd/MM/yyyy")
         );
     }
+
     private void capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(DonHang donHang) {
         List<ThongBaoDoiTac> thongBaos =
                 thongBaoRepository.findByDonHang_MaDonHangAndLoai(
@@ -564,10 +598,19 @@ public class DoiTacThongBaoService {
             donHangRepository.save(donHang);
         }
     }
+
+    /**
+     * Map thông báo duyệt sản phẩm (Loai=1).
+     * SanPham được look up qua maSanPham parse từ NoiDung [MASP:id].
+     */
     private DoiTacThongBaoResponse mapToSanPhamThongBaoResponse(
             ThongBaoDoiTac thongBao
     ) {
-        SanPham sanPham = thongBao.getSanPham();
+        Integer maSanPham = parseMaSanPhamFromNoiDung(thongBao.getNoiDung());
+        SanPham sanPham = null;
+        if (maSanPham != null) {
+            sanPham = sanPhamRepository.findById(maSanPham).orElse(null);
+        }
 
         boolean daDuyet = DA_CHAP_NHAN.equals(thongBao.getTrangThaiThongBao());
         boolean daTuChoi = DA_TU_CHOI.equals(thongBao.getTrangThaiThongBao());
@@ -581,6 +624,7 @@ public class DoiTacThongBaoService {
             actionText = "Thông báo sản phẩm";
         }
 
+        final SanPham sp = sanPham;
         return DoiTacThongBaoResponse.builder()
                 .id(thongBao.getMaThongBao())
                 .category("product")
@@ -596,12 +640,12 @@ public class DoiTacThongBaoService {
                 .order(null)
                 .customer(null)
                 .product(DoiTacThongBaoResponse.ProductInfo.builder()
-                        .id(sanPham != null ? sanPham.getMaSanPham() : null)
-                        .name(sanPham != null ? sanPham.getTenSanPham() : "Sản phẩm đã bị xóa")
-                        .desc(sanPham != null ? sanPham.getLoai() : "")
-                        .quantity(sanPham != null && sanPham.getSoLuong() != null ? sanPham.getSoLuong() : 0)
-                        .price(sanPham != null && sanPham.getGiaTien() != null ? sanPham.getGiaTien() : BigDecimal.ZERO)
-                        .image(sanPham != null ? sanPham.getHinhAnh() : null)
+                        .id(sp != null ? sp.getMaSanPham() : maSanPham)
+                        .name(sp != null ? sp.getTenSanPham() : "Sản phẩm đã bị xóa")
+                        .desc(sp != null ? sp.getLoai() : "")
+                        .quantity(sp != null && sp.getSoLuong() != null ? sp.getSoLuong() : 0)
+                        .price(sp != null && sp.getGiaTien() != null ? sp.getGiaTien() : BigDecimal.ZERO)
+                        .image(sp != null ? sp.getHinhAnh() : null)
                         .build())
                 .note(thongBao.getLyDoTuChoi())
                 .build();

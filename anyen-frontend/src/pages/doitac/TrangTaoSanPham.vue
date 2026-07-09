@@ -35,7 +35,7 @@ const product = ref({
   khuyenMaiLoai: "PHAN_TRAM",
   mauSac: "",
   vatLieu: "",
-  trangThai: "Còn bán",
+  trangThai: 1,
   kichThuoc: "",
   trongLuong: "",
   cnsx: "",
@@ -318,7 +318,7 @@ const buildPayload = async () => {
     mauSac: product.value.mauSac,
     hinhAnh: mainImageUrl,
     vatLieu: product.value.vatLieu,
-    trangThai: product.value.trangThai === "Còn bán" ? "Đang bán" : "Ẩn",
+    trangThai: product.value.trangThai === "Còn bán" ? 1 : 0,
     kichThuoc: product.value.kichThuoc,
     trongLuong: product.value.trongLuong,
     cnsx: product.value.cnsx,
@@ -404,7 +404,7 @@ const saveDraft = async () => {
 
   try {
     const payload = await buildPayload();
-    payload.trangThai = "Ẩn";
+    payload.trangThai = 0;
     await api.post(API_URL, payload);
     alert("Đã lưu nháp sản phẩm!");
     router.push("/doi-tac/quan-ly-san-pham");
@@ -696,9 +696,9 @@ const cancelCreate = () => {
 
         <div class="tao-sp-field">
           <label>Trạng thái</label>
-          <select v-model="product.trangThai" class="tao-sp-select">
-            <option>Còn bán</option>
-            <option>Ngưng bán</option>
+          <select v-model.number="product.trangThai" class="tao-sp-select">
+            <option :value="1">Đang bán</option>
+            <option :value="0">Ẩn</option>
           </select>
         </div>
 

@@ -337,7 +337,7 @@ public class HopDongService {
                 .build();
     }
 
-    private HopDongResponse toResponse(HopDong hopDong) {
+    public HopDongResponse toResponse(HopDong hopDong) {
         DonHang donHang = hopDong.getDonHang();
 
         KhachHang khachHang =
@@ -393,7 +393,8 @@ public class HopDongService {
                 .thoiHanKetThuc(hopDong.getThoiHanKetThuc())
                 .ngayKetThuc(hopDong.getThoiHanKetThuc())
                 .ngayHetHan(hopDong.getThoiHanKetThuc())
-                .trangThai(hopDong.getTrangThai());
+                .trangThai(hopDong.getTrangThai())
+                .an(Boolean.TRUE.equals(hopDong.getAn()));
 
         if (chiTiet != null) {
             builder

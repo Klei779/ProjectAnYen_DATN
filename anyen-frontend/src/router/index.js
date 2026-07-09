@@ -36,6 +36,7 @@ import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
 import TrangQLNhanVien from "../pages/nhanvien/TrangQLNhanVien.vue";
+import TrangQLHopDongAdmin from "../pages/admin/TrangQLHopDong.vue";
 import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 // Hotline
@@ -208,6 +209,10 @@ const routes = [
             {
                 path: "quan-ly-nhan-vien",
                 component: TrangQLNhanVien,
+            },
+            {
+                path: "quan-ly-hop-dong",
+                component: TrangQLHopDongAdmin,
             },
             {
                 path: "thong-bao",

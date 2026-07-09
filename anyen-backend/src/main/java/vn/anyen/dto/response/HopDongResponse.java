@@ -36,6 +36,8 @@ public class HopDongResponse {
 
     private String trangThai;
 
+    private Boolean an;
+
     // Dữ liệu bảng hdongct
     private Integer maHDongCT;
 

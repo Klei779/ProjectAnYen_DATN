@@ -18,6 +18,10 @@ const props = defineProps({
     type: [Number, String],
     default: null,
   },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits(["canceled"]);
@@ -566,6 +570,7 @@ watch(
           </button>
 
           <button
+              v-if="!readonly"
               class="cancel-contract-btn"
               type="button"
               :disabled="canceling || displayStatus(hopDongDetail?.trangThai) === 'Đã hủy'"

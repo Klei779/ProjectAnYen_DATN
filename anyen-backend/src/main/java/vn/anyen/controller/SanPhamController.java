@@ -47,6 +47,12 @@ public class SanPhamController {
     public SanPhamFilterResponse getBoLocSanPham() {
         return sanPhamService.getBoLocSanPham();
     }
+
+    @GetMapping("/{id}")
+    public SanPhamResponse getSanPhamById(@PathVariable Integer id) {
+        return sanPhamService.getSanPhamById(id);
+    }
+
     @PutMapping("/{id}")
     public SanPhamResponse updateSanPham(
             @PathVariable Integer id,

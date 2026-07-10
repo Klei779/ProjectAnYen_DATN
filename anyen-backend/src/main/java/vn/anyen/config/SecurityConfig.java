@@ -39,6 +39,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/geocoding/**").permitAll()
 
                         // CỰC QUAN TRỌNG: cho phép preflight OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**")

@@ -2,6 +2,7 @@ package vn.anyen.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "khachhang")
@@ -47,4 +48,10 @@ public class KhachHang {
 
     @Column(name = "GhiChu", columnDefinition = "TEXT")
     private String ghiChu;
+
+    @Column(name = "Latitude")
+    private BigDecimal latitude;
+
+    @Column(name = "Longitude")
+    private BigDecimal longitude;
 }

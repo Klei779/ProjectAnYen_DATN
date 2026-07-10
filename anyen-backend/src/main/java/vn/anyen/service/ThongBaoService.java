@@ -390,7 +390,7 @@ public class ThongBaoService {
                 .loai(ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM)
                 .tieuDe(tieuDe)
                 .noiDung(noiDung)
-                .trangThaiThongBao(duocDuyet ? TRANG_THAI_DA_CHAP_NHAN : TRANG_THAI_DA_TU_CHOI)
+                .trangThaiThongBao(duocDuyet ? ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN : ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI)
                 .lyDoTuChoi(duocDuyet ? null : lyDoTuChoi)
                 .daDoc(false)
                 .thoiGianTao(LocalDateTime.now())

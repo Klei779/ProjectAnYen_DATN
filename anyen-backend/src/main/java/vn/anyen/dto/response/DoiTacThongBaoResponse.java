@@ -21,7 +21,7 @@ public class DoiTacThongBaoResponse {
     private String time;
     private Boolean isNew;
 
-    private Integer trangThaiThongBao;
+    private String trangThaiThongBao;
     private String lyDoTuChoi;
 
     private OrderInfo order;

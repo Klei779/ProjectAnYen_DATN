@@ -11,6 +11,7 @@ import TrangThongKeDoanhThuNV from "../pages/nhanvien/TrangThongKeDoanhThuNV.vue
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
 import TrangSanPham from "../pages/website/TrangSanPham.vue";
+import ChiTietSanPham from "../pages/website/ChiTietSanPham.vue";
 import TrangDichVu from "../pages/website/TrangDichVu.vue";
 import DichVuChiTiet from "../pages/website/TrangDichVuChiTiet.vue";
 import TrangGioiThieu from "../pages/website/TrangGioiThieu.vue";
@@ -56,6 +57,11 @@ const routes = [
             {
                 path: "san-pham",
                 component: TrangSanPham,
+            },
+            {
+                path: "san-pham/:id",
+                name: "ChiTietSanPham",
+                component: ChiTietSanPham,
             },
             {
                 path: "dich-vu",

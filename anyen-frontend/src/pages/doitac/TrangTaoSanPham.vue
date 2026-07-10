@@ -103,6 +103,25 @@ onMounted(() => {
   if (partnerId) {
     product.value.maDoiTac = partnerId;
   }
+
+  // Pre-fill with dummy data for testing (except images)
+  product.value.tenSanPham = "Quan tài gỗ gụ cao cấp";
+  product.value.loai = "Quan tài";
+  product.value.noiThat = "Lót nhung đỏ";
+  product.value.quyCach = "Trọn bộ";
+  product.value.tonGiao = "Phật giáo";
+  product.value.giaTien = "15000000";
+  product.value.soLuong = "10";
+  product.value.thietKe = "Truyền thống";
+  product.value.xuatXu = "Việt Nam";
+  product.value.ghiChu = "Sản phẩm được làm từ gỗ gụ tự nhiên, độ bền cao, phù hợp cho các lễ nghi tang lễ truyền thống.";
+  product.value.khuyenMai = "";
+  product.value.mauSac = "Nâu đậm";
+  product.value.vatLieu = "Gỗ Gụ";
+  product.value.trangThai = 1;
+  product.value.kichThuoc = "200 x 60 x 50 cm";
+  product.value.trongLuong = "80";
+  product.value.cnsx = "Thủ công truyền thống";
 });
 
 const toggleAdvanced = () => {

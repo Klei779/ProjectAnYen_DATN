@@ -40,13 +40,14 @@ public class DoiTacThongBaoService {
     private final ThongBaoService thongBaoService;
     private final SanPhamRepository sanPhamRepository;
 
-    // Loai dùng Integer để khớp TINYINT trong DB
-    private static final Integer LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
-    private static final Integer LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
+    // Loai dùng String để khớp VARCHAR trong DB
+    private static final String LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
+    private static final String LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
 
-    private static final Integer CHO_XAC_NHAN = 0;
-    private static final Integer DA_CHAP_NHAN = 1;
-    private static final Integer DA_TU_CHOI = 2;
+    // TrangThaiThongBao dùng String để khớp VARCHAR trong DB
+    private static final String CHO_XAC_NHAN = ThongBaoDoiTac.TRANG_THAI_CHO_XAC_NHAN;
+    private static final String DA_CHAP_NHAN = ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN;
+    private static final String DA_TU_CHOI = ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI;
 
     // Pattern để parse maSanPham từ NoiDung: [MASP:123]
     private static final Pattern MASP_PATTERN = Pattern.compile("\\[MASP:(\\d+)\\]");

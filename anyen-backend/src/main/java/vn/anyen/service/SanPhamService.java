@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import vn.anyen.constants.AppLabels;
 import vn.anyen.dto.SanPhamFilterOptionResponse;
 import vn.anyen.dto.SanPhamFilterResponse;
@@ -27,11 +28,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
 
+    @Transactional(readOnly = true)
     public SanPhamPageResponse getSanPham(
             String keyword,
             String loai,
@@ -52,14 +55,11 @@ public class SanPhamService {
         Specification<SanPham> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            predicates.add(cb.or(
-                    cb.isNull(root.get("trangThai")),
-                    cb.notEqual(root.get("trangThai"), SanPham.TRANG_THAI_AN)
-            ));
+            // Chỉ hiển thị sản phẩm đang bán lên trang chủ công khai
+            predicates.add(cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_DANG_BAN));
 
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";
-
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("tenSanPham")), kw),
                         cb.like(cb.lower(root.get("loai")), kw),
@@ -70,43 +70,27 @@ public class SanPhamService {
             }
 
             if (loai != null && !loai.isBlank()) {
-                predicates.add(
-                        cb.equal(
-                                cb.lower(root.get("loai")),
-                                loai.trim().toLowerCase()
-                        )
-                );
+                predicates.add(cb.equal(cb.lower(root.get("loai")), loai.trim().toLowerCase()));
             }
 
-            List<String> vatLieuList = splitParam(vatLieu);
-            if (!vatLieuList.isEmpty()) {
-                predicates.add(cb.lower(root.get("vatLieu")).in(vatLieuList));
+            if (vatLieu != null && !vatLieu.isBlank()) {
+                predicates.add(buildMultiLikePredicate(root.get("vatLieu"), vatLieu, cb));
             }
 
-            List<String> tonGiaoList = splitParam(tonGiao);
-            if (!tonGiaoList.isEmpty()) {
-                predicates.add(cb.lower(root.get("tonGiao")).in(tonGiaoList));
+            if (tonGiao != null && !tonGiao.isBlank()) {
+                predicates.add(buildMultiLikePredicate(root.get("tonGiao"), tonGiao, cb));
             }
 
             if (mauSac != null && !mauSac.isBlank()) {
-                predicates.add(
-                        cb.equal(
-                                cb.lower(root.get("mauSac")),
-                                mauSac.trim().toLowerCase()
-                        )
-                );
+                predicates.add(cb.equal(cb.lower(root.get("mauSac")), mauSac.trim().toLowerCase()));
             }
 
             if (minPrice != null) {
-                predicates.add(
-                        cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice)
-                );
+                predicates.add(cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice));
             }
 
             if (maxPrice != null) {
-                predicates.add(
-                        cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice)
-                );
+                predicates.add(cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -125,6 +109,7 @@ public class SanPhamService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
     public SanPhamFilterResponse getBoLocSanPham() {
         return SanPhamFilterResponse.builder()
                 .categories(mapOptions(sanPhamRepository.countVisibleByLoai()))
@@ -158,7 +143,6 @@ public class SanPhamService {
         sp.setCnsx(request.getCnsx());
 
         SanPham saved = sanPhamRepository.save(sp);
-
         return mapToResponse(saved);
     }
 
@@ -167,18 +151,19 @@ public class SanPhamService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
         sp.setTrangThai(SanPham.TRANG_THAI_AN);
-
         SanPham saved = sanPhamRepository.save(sp);
-
         return mapToResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public SanPhamPageResponse getSanPhamChoDuyet(Integer page, Integer pageSize) {
         int pageIndex = page == null || page < 1 ? 0 : page - 1;
         int size = pageSize == null || pageSize < 1 ? 16 : pageSize;
         Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "maSanPham"));
 
-        Specification<SanPham> spec = (root, query, cb) -> cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_CHO_XAC_NHAN);
+        // Chỉ so sánh với hằng số Integer chuẩn chỉnh
+        Specification<SanPham> spec = (root, query, cb) ->
+                cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
         Page<SanPham> result = sanPhamRepository.findAll(spec, pageable);
 
@@ -202,9 +187,9 @@ public class SanPhamService {
         return mapToResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
-        List<SanPham> sanPhams =
-                sanPhamRepository.findAllVisibleForTaoDonHang();
+        List<SanPham> sanPhams = sanPhamRepository.findAllVisibleForTaoDonHang();
 
         Map<Integer, DoiTac> doiTacMap = doiTacRepository.findAll()
                 .stream()
@@ -215,7 +200,8 @@ public class SanPhamService {
 
         return sanPhams.stream()
                 .map(sp -> {
-                    DoiTac doiTac = doiTacMap.get(sp.getMaDoiTac());
+                    // Do maDoiTac là Integer nên lấy trực tiếp không sợ lỗi ép kiểu
+                    DoiTac doiTac = sp.getMaDoiTac() != null ? doiTacMap.get(sp.getMaDoiTac()) : null;
 
                     return SanPhamTaoDonHangResponse.builder()
                             .maSanPham(sp.getMaSanPham())
@@ -224,16 +210,26 @@ public class SanPhamService {
                             .giaTien(sp.getGiaTien())
                             .tonKho(sp.getSoLuong() == null ? 0 : sp.getSoLuong())
                             .maDoiTac(sp.getMaDoiTac())
-                            .tenDoiTac(
-                                    doiTac != null
-                                            ? doiTac.getTenDoiTac()
-                                            : "Không rõ đối tác"
-                            )
+                            .tenDoiTac(doiTac != null ? doiTac.getTenDoiTac() : "Không rõ đối tác")
                             .hinhAnh(sp.getHinhAnh())
                             .trangThai(sp.getTrangThai())
                             .build();
                 })
                 .toList();
+    }
+
+    private Predicate buildMultiLikePredicate(
+            jakarta.persistence.criteria.Path<String> path,
+            String rawValue,
+            jakarta.persistence.criteria.CriteriaBuilder cb
+    ) {
+        List<Predicate> parts = new ArrayList<>();
+        for (String item : rawValue.split(",")) {
+            if (item != null && !item.isBlank()) {
+                parts.add(cb.like(cb.lower(path), "%" + item.trim().toLowerCase() + "%"));
+            }
+        }
+        return cb.or(parts.toArray(new Predicate[0]));
     }
 
     private List<SanPhamFilterOptionResponse> mapOptions(List<Object[]> rows) {
@@ -251,35 +247,22 @@ public class SanPhamService {
                 .toList();
     }
 
-    private List<String> splitParam(String value) {
-        if (value == null || value.isBlank()) {
-            return List.of();
-        }
-
-        return Arrays.stream(value.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .map(String::toLowerCase)
-                .toList();
-    }
-
     private Sort buildSort(String sortBy) {
         if ("oldest".equals(sortBy)) {
             return Sort.by(Sort.Direction.ASC, "maSanPham");
         }
-
         if ("price_asc".equals(sortBy)) {
             return Sort.by(Sort.Direction.ASC, "giaTien");
         }
-
         if ("price_desc".equals(sortBy)) {
             return Sort.by(Sort.Direction.DESC, "giaTien");
         }
-
         return Sort.by(Sort.Direction.DESC, "maSanPham");
     }
 
     private SanPhamResponse mapToResponse(SanPham sp) {
+        String tenDT = (sp.getMaDoiTac() != null) ? sanPhamRepository.findTenDoiTacByMaDoiTac(sp.getMaDoiTac()) : "Không rõ đối tác";
+
         return SanPhamResponse.builder()
                 .id(sp.getMaSanPham())
                 .name(sp.getTenSanPham())
@@ -291,8 +274,10 @@ public class SanPhamService {
                 .vatLieu(sp.getVatLieu())
                 .tonGiao(sp.getTonGiao())
                 .mauSac(sp.getMauSac())
-                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM,sp.getTrangThai()))
+                .soLuong(sp.getSoLuong()) // Đã thêm để hiển thị lên Vue table
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM, sp.getTrangThai()))
                 .trangThai(sp.getTrangThai())
+                .tenDoiTac(tenDT)
                 .build();
     }
 }

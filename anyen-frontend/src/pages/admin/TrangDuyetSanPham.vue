@@ -54,7 +54,7 @@
 
           <tr v-for="sp in danhSachSanPham" :key="sp.id">
             <td class="ps-4 fw-semibold text-muted">
-              #{{ sp. }}
+              #{{ sp.id }}
             </td>
 
             <td>
@@ -69,7 +69,7 @@
 
             <td>
               <div class="fw-semibold text-dark">
-                {{ sp.tenSanPham || "Chưa có tên" }}
+                {{ sp.name || "Chưa có tên" }}
               </div>
               <div class="small text-muted">
                 Vật liệu: {{ sp.vatLieu || "Chưa có" }}
@@ -100,13 +100,13 @@
 
             <td>
               <code class="text-danger fw-bold">
-                {{ formatCurrency(sp.giaTien) }}
+                {{ formatCurrency(sp.price) }}
               </code>
             </td>
 
             <td>
                 <span class="badge bg-warning text-dark px-2 py-1 rounded-pill">
-                  {{ sp.trangThai || "Chờ xác nhận" }}
+                  {{ sp.tenTrangThai }}
                 </span>
             </td>
 
@@ -119,10 +119,10 @@
                 <button
                     class="btn btn-sm btn-success px-3 rounded-2 shadow-sm"
                     @click="confirmDuyet(sp)"
-                    :disabled="loadingStates[sp.maSanPham]"
+                    :disabled="loadingStates[sp.id]"
                 >
                     <span
-                        v-if="loadingStates[sp.maSanPham] === 'duyet'"
+                        v-if="loadingStates[sp.id] === 'duyet'"
                         class="spinner-border spinner-border-sm me-1"
                     ></span>
                   <i v-else class="fa-solid fa-check me-1"></i>
@@ -132,10 +132,10 @@
                 <button
                     class="btn btn-sm btn-danger px-3 rounded-2 shadow-sm"
                     @click="confirmTuChoi(sp)"
-                    :disabled="loadingStates[sp.maSanPham]"
+                    :disabled="loadingStates[sp.id]"
                 >
                     <span
-                        v-if="loadingStates[sp.maSanPham] === 'tuChoi'"
+                        v-if="loadingStates[sp.id] === 'tuChoi'"
                         class="spinner-border spinner-border-sm me-1"
                     ></span>
                   <i v-else class="fa-solid fa-xmark me-1"></i>
@@ -154,26 +154,115 @@
       {{ errorMessage }}
     </div>
   </div>
-</template>
+  <!-- FORM TỪ CHỐI -->
+  <div
+      v-if="showRejectModal"
+      class="reject-overlay"
+      @click.self="closeRejectModal"
+  >
+    <div class="reject-modal">
+      <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+          <h5 class="fw-bold mb-1">Từ chối sản phẩm</h5>
+          <p class="text-muted mb-0">
+            Nhập lý do từ chối để gửi thông báo về đối tác.
+          </p>
+        </div>
 
+        <button
+            type="button"
+            class="btn-close"
+            @click="closeRejectModal"
+            :disabled="isRejecting"
+        ></button>
+      </div>
+
+      <div v-if="selectedProduct" class="reject-product-box mb-3">
+        <img
+            v-if="selectedProduct.image"
+            :src="getImageUrl(selectedProduct.image)"
+            alt="Ảnh sản phẩm"
+        />
+
+        <div>
+          <div class="fw-semibold">
+            {{ selectedProduct.name }}
+          </div>
+          <div class="small text-muted">
+            Mã SP: #{{ selectedProduct.id }}
+          </div>
+          <div class="small text-muted">
+            Đối tác: {{ selectedProduct.tenDoiTac || "Không rõ đối tác" }}
+          </div>
+        </div>
+      </div>
+
+      <label class="form-label fw-semibold">
+        Lý do từ chối <span class="text-danger">*</span>
+      </label>
+
+      <textarea
+          v-model="lyDoTuChoi"
+          class="form-control"
+          rows="5"
+          placeholder="Ví dụ: Hình ảnh chưa rõ, thông tin sản phẩm chưa đầy đủ..."
+          :disabled="isRejecting"
+      ></textarea>
+
+      <div class="small text-muted mt-1">
+        Tối thiểu 3 ký tự.
+      </div>
+
+      <div class="d-flex justify-content-end gap-2 mt-4">
+        <button
+            type="button"
+            class="btn btn-outline-secondary"
+            @click="closeRejectModal"
+            :disabled="isRejecting"
+        >
+          Hủy
+        </button>
+
+        <button
+            type="button"
+            class="btn btn-danger"
+            @click="submitTuChoi"
+            :disabled="isRejecting"
+        >
+        <span
+            v-if="isRejecting"
+            class="spinner-border spinner-border-sm me-1"
+        ></span>
+          Xác nhận từ chối
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
 <script setup>
 import { ref, reactive, onMounted } from "vue";
-import api from "../../api/api.js";
+// Import các hàm từ service
+import { getSanPhamChoDuyet, duyetSanPham, tuChoiSanPham } from "../../services/duyetSanPhamService.js";
 
 const danhSachSanPham = ref([]);
 const loadingStates = reactive({});
 const isLoading = ref(false);
 const errorMessage = ref("");
 
+// 1. SỬA HÀM LẤY DANH SÁCH
 const fetchDanhSachSanPhamChoDuyet = async () => {
   isLoading.value = true;
   errorMessage.value = "";
 
   try {
-    const res = await api.get("/api/san-pham/cho-duyet");
+    // Gọi thẳng hàm từ service
+    const data = await getSanPhamChoDuyet(1, 16);
 
-    // Backend trả về List<DuyetSanPhamResponse>
-    danhSachSanPham.value = Array.isArray(res.data) ? res.data : res.data.items || [];
+    // Kiểm tra cấu trúc data trả về từ Backend (PageResponse)
+    // Thông thường Spring Boot PageResponse sẽ bọc danh sách trong thuộc tính .content hoặc .items
+    if (data) {
+      danhSachSanPham.value = data.content || data.items || (Array.isArray(data) ? data : []);
+    }
   } catch (error) {
     console.error("Lỗi khi tải danh sách sản phẩm chờ duyệt:", error);
     errorMessage.value =
@@ -189,23 +278,22 @@ onMounted(() => {
   fetchDanhSachSanPhamChoDuyet();
 });
 
+// 2. SỬA HÀM DUYỆT
 const confirmDuyet = async (sp) => {
-  const ok = confirm(
-      `Bạn có chắc chắn muốn duyệt sản phẩm "${sp.tenSanPham}" không?`
-  );
-
+  const ok = confirm(`Bạn có chắc chắn muốn duyệt sản phẩm "${sp.name}" không?`);
   if (!ok) return;
 
-  loadingStates[sp.maSanPham] = "duyet";
+  loadingStates[sp.id] = "duyet";
   errorMessage.value = "";
 
   try {
-    await api.put(`/api/nhan-vien/duyet-san-pham/${sp.maSanPham}/duyet`);
+    // Gọi hàm từ service, không dùng api.put(...) bọc ngoài nữa
+    await duyetSanPham(sp.id);
 
     alert("Duyệt sản phẩm thành công! Sản phẩm đã chuyển sang Đang bán.");
 
     danhSachSanPham.value = danhSachSanPham.value.filter(
-        (item) => item.maSanPham !== sp.maSanPham
+        (item) => item.id !== sp.id
     );
   } catch (error) {
     console.error("Lỗi khi duyệt sản phẩm:", error);
@@ -215,40 +303,34 @@ const confirmDuyet = async (sp) => {
         "Đã xảy ra lỗi khi duyệt sản phẩm."
     );
   } finally {
-    delete loadingStates[sp.maSanPham];
+    delete loadingStates[sp.id];
   }
 };
 
+// 3. SỬA HÀM TỪ CHỐI
 const confirmTuChoi = async (sp) => {
-  const lyDoTuChoi = prompt(
-      `Nhập lý do từ chối sản phẩm "${sp.tenSanPham}":`
-  );
+  const lyDo = prompt(`Nhập lý do từ chối sản phẩm "${sp.name}":`);
+  if (lyDo === null) return;
 
-  if (lyDoTuChoi === null) return;
-
-  if (!lyDoTuChoi.trim() || lyDoTuChoi.trim().length < 3) {
+  if (!lyDo.trim() || lyDo.trim().length < 3) {
     alert("Lý do từ chối phải từ 3 ký tự trở lên.");
     return;
   }
 
-  const ok = confirm(
-      `Bạn có chắc chắn muốn từ chối và xóa sản phẩm "${sp.tenSanPham}" khỏi database không?`
-  );
-
+  const ok = confirm(`Bạn có chắc chắn muốn từ chối sản phẩm "${sp.name}" không?`);
   if (!ok) return;
 
-  loadingStates[sp.maSanPham] = "tuChoi";
+  loadingStates[sp.id] = "tuChoi";
   errorMessage.value = "";
 
   try {
-    await api.put(`/api/nhan-vien/duyet-san-pham/${sp.maSanPham}/tu-choi`, {
-      lyDoTuChoi: lyDoTuChoi.trim(),
-    });
+    // Sử dụng đúng hàm service đã viết
+    await tuChoiSanPham(sp.id, lyDo);
 
-    alert("Đã từ chối sản phẩm và xóa khỏi database.");
+    alert("Đã từ chối sản phẩm.");
 
     danhSachSanPham.value = danhSachSanPham.value.filter(
-        (item) => item.maSanPham !== sp.maSanPham
+        (item) => item.id !== sp.id
     );
   } catch (error) {
     console.error("Lỗi khi từ chối sản phẩm:", error);
@@ -258,7 +340,7 @@ const confirmTuChoi = async (sp) => {
         "Đã xảy ra lỗi khi từ chối sản phẩm."
     );
   } finally {
-    delete loadingStates[sp.maSanPham];
+    delete loadingStates[sp.id];
   }
 };
 

@@ -68,4 +68,8 @@ public interface SanPhamRepository
      * Entity SanPham không có createdAt nên sắp xếp theo maSanPham DESC.
      */
     List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(Integer trangThai);
+    @Query("""
+Select dt.tenDoiTac from SanPham sp inner join DoiTac dt on sp.maDoiTac= dt.maDoiTac
+""")
+    String findTenDoiTacByMaDoiTac(Integer maDoiTac);
 }

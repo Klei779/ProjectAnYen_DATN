@@ -52,15 +52,15 @@
             </td>
           </tr>
 
-          <tr v-for="sp in danhSachSanPham" :key="sp.maSanPham">
+          <tr v-for="sp in danhSachSanPham" :key="sp.id">
             <td class="ps-4 fw-semibold text-muted">
-              #{{ sp.maSanPham }}
+              #{{ sp. }}
             </td>
 
             <td>
               <img
-                  v-if="sp.hinhAnh"
-                  :src="getImageUrl(sp.hinhAnh)"
+                  v-if="sp.image"
+                  :src="getImageUrl(sp.image)"
                   alt="Ảnh sản phẩm"
                   class="product-img"
               />
@@ -170,7 +170,7 @@ const fetchDanhSachSanPhamChoDuyet = async () => {
   errorMessage.value = "";
 
   try {
-    const res = await api.get("/api/nhan-vien/duyet-san-pham");
+    const res = await api.get("/api/san-pham/cho-duyet");
 
     // Backend trả về List<DuyetSanPhamResponse>
     danhSachSanPham.value = Array.isArray(res.data) ? res.data : res.data.items || [];

@@ -20,6 +20,19 @@ public class AppLabels {
             "Đã chấp nhận",
             "Đã từ chối"
     };
+    public static final String[] ROLE_NHAN_VIEN ={
+            "Unknow",
+            "Quản lý",
+            "Nhân viên tư vấn trực tiếp",
+            "Nhân viên hotline"
+    };
+    public static final String[] TRANG_THAI_SAN_PHAM ={
+      "Ẩn",
+      "Đang bán",
+      "Chờ xác nhận",
+      "Từ chối"
+
+    };
     public static String getLabel(String[] labels, Integer code) {
         if (labels == null || code == null || code < 0 || code >= labels.length) {
             return "Không xác định";

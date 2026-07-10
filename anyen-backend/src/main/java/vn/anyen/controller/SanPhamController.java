@@ -72,4 +72,5 @@ public class SanPhamController {
     public SanPhamResponse duyetSanPham(@PathVariable Integer id) {
         return sanPhamService.duyetSanPham(id);
     }
+
 }

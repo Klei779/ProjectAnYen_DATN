@@ -16,5 +16,7 @@ public class TaiKhoanNhanVienResponse {
     private String soDienThoai;
     private String diaChi;
     private Integer vaiTro;
+    private String tenVaiTro;
+    private String tenTrangThai;
     private Integer trangThai;
 }

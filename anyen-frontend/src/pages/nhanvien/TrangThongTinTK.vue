@@ -33,9 +33,9 @@
 
         <span
             class="status-badge"
-            :class="{ inactive: account?.trangThai !== 'Đang hoạt động' }"
+            :class="{ inactive: account?.tenTrangThai !== 'Đang hoạt động' }"
         >
-          {{ account?.trangThai || "Đang hoạt động" }}
+          {{ account?.tenTrangThai || "Unknow" }}
         </span>
 
         <div class="profile-summary">
@@ -51,7 +51,7 @@
 
           <div>
             <span>Vai trò</span>
-            <strong>{{ account?.vaiTro || "---" }}</strong>
+            <strong>{{ account?.tenVaiTro || "---" }}</strong>
           </div>
         </div>
       </aside>

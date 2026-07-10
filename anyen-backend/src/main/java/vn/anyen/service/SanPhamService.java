@@ -290,6 +290,7 @@ public class SanPhamService {
                 .vatLieu(sp.getVatLieu())
                 .tonGiao(sp.getTonGiao())
                 .mauSac(sp.getMauSac())
+                .tenTrangThai(AppLabels.getLabels(AppLabels.))
                 .trangThai(sp.getTrangThai())
                 .build();
     }

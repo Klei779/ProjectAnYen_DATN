@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import vn.anyen.constants.AppLabels;
 import vn.anyen.dto.SanPhamFilterOptionResponse;
 import vn.anyen.dto.SanPhamFilterResponse;
 import vn.anyen.dto.SanPhamPageResponse;
@@ -290,7 +291,7 @@ public class SanPhamService {
                 .vatLieu(sp.getVatLieu())
                 .tonGiao(sp.getTonGiao())
                 .mauSac(sp.getMauSac())
-                .tenTrangThai(AppLabels.getLabels(AppLabels.))
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM,sp.getTrangThai()))
                 .trangThai(sp.getTrangThai())
                 .build();
     }

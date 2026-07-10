@@ -26,12 +26,13 @@ public class AppLabels {
             "Nhân viên tư vấn trực tiếp",
             "Nhân viên hotline"
     };
-    public static final String[] TRANG_THAI_SAN_PHAM ={
-      "Ẩn",
-      "Đang bán",
-      "Chờ xác nhận",
-      "Từ chối"
-
+    public static final String[] TRANG_THAI_SAN_PHAM = {
+            "Ẩn",
+            "Đang bán",
+            "Chờ xác nhận",
+            "Đã duyệt",
+            "Từ chối duyệt",
+            "Hết hàng"
     };
     public static String getLabel(String[] labels, Integer code) {
         if (labels == null || code == null || code < 0 || code >= labels.length) {

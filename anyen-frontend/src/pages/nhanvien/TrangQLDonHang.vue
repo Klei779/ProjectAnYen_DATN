@@ -479,14 +479,18 @@ const confirmPayment = async () => {
 
   await doUpdateStatus(order, "Hoàn thành");
 
+  await loadDonHangs();
+
+  const donMoi = donHangs.value.find(
+      x => getMaDonHang(x) === getMaDonHang(order)
+  );
+
   showPaymentDialog.value = false;
   selectedOrderForPayment.value = null;
 
-  xemHoaDon({
-    ...order,
-    trangThai: "Hoàn thành",
-    phuongThucThanhToan: "Chuyển khoản",
-  });
+  if (donMoi) {
+    xemHoaDon(donMoi);
+  }
 };
 
 const confirmCashPayment = async () => {
@@ -496,14 +500,18 @@ const confirmCashPayment = async () => {
 
   await doUpdateStatus(order, "Hoàn thành");
 
+  await loadDonHangs();
+
+  const donMoi = donHangs.value.find(
+      x => getMaDonHang(x) === getMaDonHang(order)
+  );
+
   showCashConfirmDialog.value = false;
   selectedOrderForPayment.value = null;
 
-  xemHoaDon({
-    ...order,
-    trangThai: "Hoàn thành",
-    phuongThucThanhToan: "Tiền mặt",
-  });
+  if (donMoi) {
+    xemHoaDon(donMoi);
+  }
 };
 </script>
 
@@ -727,13 +735,21 @@ const confirmCashPayment = async () => {
           </button>
 
           <button
+              v-if="daCoHoaDon(dh)"
               class="btn-invoice-created"
               @click.stop="xemHoaDon(dh)"
           >
-            <el-icon>
-              <View />
-            </el-icon>
+            <el-icon><View /></el-icon>
             Xem hóa đơn
+          </button>
+
+          <button
+              v-else-if="canTaoHoaDon(dh)"
+              class="btn-filled-blue"
+              @click.stop="taoHoaDon(dh)"
+          >
+            <el-icon><Tickets /></el-icon>
+            Tạo hóa đơn
           </button>
 
           <button

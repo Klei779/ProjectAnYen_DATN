@@ -261,6 +261,121 @@ const selectedNotification = ref(null);
 const loading = ref(false);
 const actionLoading = ref(false);
 const itemToReject = ref(null);
+const showTuChoiHoaDonDialog = ref(false);
+const thongBaoTuChoiHoaDon = ref(null);
+const lyDoTuChoiHoaDon = ref("");
+const xuLyHoaDonLoading = ref(false);
+
+const parseYeuCauHuyHoaDon = (thongBao) => {
+  try {
+    return JSON.parse(thongBao?.noiDung || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const laYeuCauHuyHoaDon = (thongBao) => {
+  return (
+      thongBao?.loaiThongBao === "YEU_CAU_HUY_HOA_DON"
+  );
+};
+
+const dangChoDuyetHuyHoaDon = (thongBao) => {
+  return (
+      laYeuCauHuyHoaDon(thongBao) &&
+      Number(thongBao?.trangThai) === 4
+  );
+};
+
+const chapNhanHuyHoaDon = async (thongBao) => {
+  try {
+    await ElMessageBox.confirm(
+        "Bạn có chắc chắn muốn chấp nhận hủy hóa đơn này?",
+        "Xác nhận hủy hóa đơn",
+        {
+          confirmButtonText: "Chấp nhận",
+          cancelButtonText: "Đóng",
+          type: "warning",
+        }
+    );
+
+    xuLyHoaDonLoading.value = true;
+
+    await api.put(
+        `/api/nhan-vien/thong-bao/${thongBao.maThongBao}/chap-nhan-huy-hoa-don`
+    );
+
+    ElMessage.success("Đã chấp nhận hủy hóa đơn");
+
+    await loadThongBao();
+  } catch (error) {
+    if (error === "cancel" || error === "close") return;
+
+    console.error(error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Chấp nhận hủy hóa đơn thất bại"
+    );
+  } finally {
+    xuLyHoaDonLoading.value = false;
+  }
+};
+
+const openTuChoiHuyHoaDon = (thongBao) => {
+  thongBaoTuChoiHoaDon.value = thongBao;
+  lyDoTuChoiHoaDon.value = "";
+  showTuChoiHoaDonDialog.value = true;
+};
+
+const closeTuChoiHuyHoaDon = () => {
+  showTuChoiHoaDonDialog.value = false;
+  thongBaoTuChoiHoaDon.value = null;
+  lyDoTuChoiHoaDon.value = "";
+};
+
+const tuChoiHuyHoaDon = async () => {
+  const lyDo = lyDoTuChoiHoaDon.value.trim();
+
+  if (lyDo.length < 4) {
+    ElMessage.warning("Lý do từ chối phải từ 4 ký tự");
+    return;
+  }
+
+  if (!thongBaoTuChoiHoaDon.value) {
+    ElMessage.error("Không tìm thấy yêu cầu cần từ chối");
+    return;
+  }
+
+  try {
+    xuLyHoaDonLoading.value = true;
+
+    await api.put(
+        `/api/nhan-vien/thong-bao/${thongBaoTuChoiHoaDon.value.maThongBao}/tu-choi-huy-hoa-don`,
+        {
+          lyDoTuChoi: lyDo,
+        }
+    );
+
+    ElMessage.success("Đã từ chối yêu cầu hủy hóa đơn");
+
+    closeTuChoiHuyHoaDon();
+    await loadThongBao();
+  } catch (error) {
+    console.error(error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Từ chối yêu cầu thất bại"
+    );
+  } finally {
+    xuLyHoaDonLoading.value = false;
+  }
+};
+
+
 
 // Bell & Mini Noti Dropdown
 const showMiniNoti = ref(false);

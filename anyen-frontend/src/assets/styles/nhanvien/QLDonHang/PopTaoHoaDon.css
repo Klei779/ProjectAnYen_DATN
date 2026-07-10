@@ -647,4 +647,39 @@
     .invoice-preview-footer {
         justify-content: center;
     }
+
+    .btn-request-cancel-invoice {
+        min-height: 40px;
+        padding: 0 16px;
+        border: 1px solid #dc2626;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #dc2626;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .btn-request-cancel-invoice:hover {
+        background: #fef2f2;
+    }
+
+    .cancel-invoice-dialog p {
+        margin: 0 0 12px;
+        color: #475569;
+    }
+
+    .cancel-invoice-error {
+        margin-top: 8px !important;
+        color: #dc2626 !important;
+        font-size: 13px;
+    }
+
+    .invoice-cancel-warning {
+        margin: 0;
+        padding: 10px 16px;
+        background: #fff7ed;
+        color: #c2410c;
+        text-align: center;
+        font-weight: 600;
+    }
 }

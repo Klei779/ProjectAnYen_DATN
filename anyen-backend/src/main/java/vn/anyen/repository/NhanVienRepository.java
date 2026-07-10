@@ -22,4 +22,9 @@ public interface NhanVienRepository
     boolean existsBySoDienThoai(String soDienThoai);
 
     List<NhanVien> findByVaiTro(Integer vaiTro);
+
+    Optional<NhanVien> findFirstByVaiTroAndTrangThai(
+            Integer vaiTro,
+            Integer trangThai
+    );
 }

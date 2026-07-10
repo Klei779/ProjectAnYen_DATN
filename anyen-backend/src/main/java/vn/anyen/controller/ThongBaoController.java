@@ -7,6 +7,10 @@ import vn.anyen.dto.request.TuChoiRequest;
 import vn.anyen.dto.response.ThongBaoResponse;
 import vn.anyen.service.JwtService;
 import vn.anyen.service.ThongBaoService;
+import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import vn.anyen.dto.request.TuChoiHoaDonRequest;
+import vn.anyen.service.HoaDonService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +23,7 @@ public class ThongBaoController {
 
     private final ThongBaoService thongBaoService;
     private final JwtService jwtService;
+    private final HoaDonService hoaDonService;
 
     /**
      * Lấy userId từ JWT token trong header Authorization
@@ -117,5 +122,29 @@ public class ThongBaoController {
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
         return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{maThongBao}/chap-nhan-huy-hoa-don")
+    public Map<String, Object> chapNhanHuyHoaDon(
+            @PathVariable Integer maThongBao,
+            Authentication authentication
+    ) {
+        return hoaDonService.chapNhanHuy(
+                maThongBao,
+                authentication.getName()
+        );
+    }
+
+    @PutMapping("/{maThongBao}/tu-choi-huy-hoa-don")
+    public Map<String, Object> tuChoiHuyHoaDon(
+            @PathVariable Integer maThongBao,
+            @Valid @RequestBody TuChoiHoaDonRequest request,
+            Authentication authentication
+    ) {
+        return hoaDonService.tuChoiHuy(
+                maThongBao,
+                authentication.getName(),
+                request
+        );
     }
 }

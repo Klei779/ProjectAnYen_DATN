@@ -54,4 +54,10 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
             Integer maSanPham,
             String loaiThongBao
     );
+
+    boolean existsByLoaiThongBaoAndNoiDungContainingAndTrangThai(
+            String loaiThongBao,
+            String noiDung,
+            Integer trangThai
+    );
 }

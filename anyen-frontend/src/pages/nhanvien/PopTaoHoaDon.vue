@@ -13,6 +13,60 @@ import {
 } from "@element-plus/icons-vue";
 import logoAnYen from "../../assets/images/icon/logoAnYen.png";
 
+const showHuyHoaDonDialog = ref(false);
+const lyDoHuyHoaDon = ref("");
+const huyHoaDonLoading = ref(false);
+
+const maHoaDonHienTai = computed(() => {
+  return (
+      props.donHang?.maHoaDon ||
+      props.donHang?.MaHoaDon ||
+      null
+  );
+});
+
+const openHuyHoaDonDialog = () => {
+  lyDoHuyHoaDon.value = "";
+  showHuyHoaDonDialog.value = true;
+};
+
+const closeHuyHoaDonDialog = () => {
+  showHuyHoaDonDialog.value = false;
+  lyDoHuyHoaDon.value = "";
+};
+
+const guiYeuCauHuyHoaDon = async () => {
+  if (lyDoHuyHoaDon.value.trim().length < 4) {
+    ElMessage.warning("Lý do hủy phải từ 4 ký tự");
+    return;
+  }
+
+  try {
+    huyHoaDonLoading.value = true;
+
+    await api.post(
+        `/api/nhan-vien/hoa-don/${maHoaDonHienTai.value}/yeu-cau-huy`,
+        {
+          lyDoHuy: lyDoHuyHoaDon.value.trim(),
+        }
+    );
+
+    ElMessage.success("Đã gửi yêu cầu hủy hóa đơn");
+
+    showHuyHoaDonDialog.value = false;
+    emit("created");
+    emit("update:modelValue", false);
+
+  } catch (e) {
+    ElMessage.error(
+        e.response?.data?.message ||
+        "Gửi yêu cầu thất bại"
+    );
+  } finally {
+    huyHoaDonLoading.value = false;
+  }
+};
+
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -40,24 +94,31 @@ const loading = ref(false);
 
 const isViewMode = computed(() => props.mode === "view");
 
-const formatDateInput = (value) => {
-  if (!value) {
-    const today = new Date();
-    return today.toISOString().slice(0, 10);
-  }
+const canRequestCancelInvoice = computed(() => {
 
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) {
-    return new Date().toISOString().slice(0, 10);
-  }
+  const ttDon =
+      props.donHang?.trangThai ||
+      props.donHang?.TrangThai;
 
-  return d.toISOString().slice(0, 10);
-};
+  const ttHoaDon =
+      props.donHang?.trangThaiHoaDon ||
+      props.donHang?.TrangThaiHoaDon;
+
+  return (
+      isViewMode.value &&
+      maHoaDonHienTai.value &&
+      ttDon !== "Hoàn thành" &&
+      ttHoaDon !== "Đã hủy"
+  );
+});
 
 watch(
     () => props.donHang,
     (dh) => {
       if (!dh) return;
+
+      console.log("========== DON HANG ==========");
+      console.log(dh);
 
       const pttt = dh.phuongThucThanhToan || dh.PhuongThucThanhToan;
       const phuongThucHopLe = ["Tiền mặt", "Chuyển khoản"].includes(pttt)
@@ -78,6 +139,20 @@ watch(
     },
     { immediate: true }
 );
+
+const formatDateInput = (value) => {
+  if (!value) {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
+  }
+
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  return d.toISOString().slice(0, 10);
+};
 
 const closePopup = () => {
   emit("update:modelValue", false);
@@ -698,12 +773,27 @@ const submitHoaDon = async () => {
             :srcdoc="invoicePreviewHtml"
         ></iframe>
 
+        <p
+            v-if="trangThaiDonHang === 'Hoàn thành'"
+            class="invoice-cancel-warning"
+        >
+          Không thể hủy hóa đơn vì đơn hàng đã hoàn thành.
+        </p>
+
         <div class="invoice-preview-footer">
           <button class="btn-preview-print" @click="printInvoice">
             <el-icon>
               <Printer />
             </el-icon>
             In hóa đơn
+          </button>
+
+          <button
+              v-if="canRequestCancelInvoice"
+              class="btn-request-cancel-invoice"
+              @click="openHuyHoaDonDialog"
+          >
+            Hủy hóa đơn
           </button>
 
           <button class="btn-preview-cancel" @click="closePopup">
@@ -932,6 +1022,39 @@ const submitHoaDon = async () => {
         </div>
       </div>
 
+      <el-dialog
+          v-model="showHuyHoaDonDialog"
+          title="Yêu cầu hủy hóa đơn"
+          width="460px"
+          :append-to-body="true"
+          :close-on-click-modal="false"
+      >
+        <div class="cancel-invoice-dialog">
+          <p>Vui lòng nhập lý do hủy hóa đơn.</p>
+
+          <el-input
+              v-model="lyDoHuyHoaDon"
+              type="textarea"
+              :rows="4"
+              maxlength="500"
+              show-word-limit
+              placeholder="Nhập lý do hủy..."
+          />
+        </div>
+
+        <template #footer>
+          <el-button @click="closeHuyHoaDonDialog">
+            Đóng
+          </el-button>
+
+          <el-button
+              type="danger"
+              @click="guiYeuCauHuyHoaDon"
+          >
+            Gửi yêu cầu
+          </el-button>
+        </template>
+      </el-dialog>
     </div>
   </Teleport>
 </template>

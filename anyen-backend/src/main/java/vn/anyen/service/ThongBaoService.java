@@ -5,6 +5,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
+import vn.anyen.constants.AppLabels;
+import vn.anyen.dto.request.TuChoiHoaDonRequest;
 import vn.anyen.dto.response.ThongBaoResponse;
 import vn.anyen.entity.*;
 import vn.anyen.repository.*;
@@ -36,6 +38,7 @@ public class ThongBaoService {
     private static final Integer TRANG_THAI_DA_DOC = 1;
     private static final Integer TRANG_THAI_DA_CHAP_NHAN = 2;
     private static final Integer TRANG_THAI_DA_TU_CHOI = 3;
+    private final HoaDonService hoaDonService;
 
 
     private static final DateTimeFormatter FORMATTER =
@@ -81,6 +84,20 @@ public class ThongBaoService {
         if (TRANG_THAI_DA_CHAP_NHAN.equals(thongBao.getTrangThai())
                 || TRANG_THAI_DA_TU_CHOI.equals(thongBao.getTrangThai())) {
             throw new RuntimeException("Thông báo này đã được xử lý");
+        }
+
+        if (AppLabels.TB_YEU_CAU_HUY_HOA_DON
+                .equals(thongBao.getLoaiThongBao())) {
+
+            NhanVien nv = nhanVienRepository
+                    .findById(nguoiNhanId)
+                    .orElseThrow();
+
+            hoaDonService.chapNhanHuy(
+                    thongBao.getMaThongBao(),
+                    nv.getTenDangNhap()
+            );
+            return;
         }
 
         if (LOAI_DUYET_SAN_PHAM.equals(thongBao.getLoaiThongBao())) {
@@ -167,6 +184,25 @@ public class ThongBaoService {
         if (TRANG_THAI_DA_CHAP_NHAN.equals(thongBao.getTrangThai())
                 || TRANG_THAI_DA_TU_CHOI.equals(thongBao.getTrangThai())) {
             throw new RuntimeException("Thông báo này đã được xử lý");
+        }
+
+        if (AppLabels.TB_YEU_CAU_HUY_HOA_DON
+                .equals(thongBao.getLoaiThongBao())) {
+
+            NhanVien nv = nhanVienRepository
+                    .findById(nguoiNhanId)
+                    .orElseThrow();
+
+            TuChoiHoaDonRequest request = new TuChoiHoaDonRequest();
+            request.setLyDoTuChoi(lyDoTuChoi);
+
+            hoaDonService.tuChoiHuy(
+                    thongBao.getMaThongBao(),
+                    nv.getTenDangNhap(),
+                    request
+            );
+
+            return;
         }
 
         if (LOAI_DUYET_SAN_PHAM.equals(thongBao.getLoaiThongBao())) {

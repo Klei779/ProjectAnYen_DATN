@@ -14,6 +14,15 @@ import java.time.LocalDateTime;
 @Builder
 public class ThongBaoDoiTac {
 
+    /** Loai: DON_HANG = Đơn hàng, DUYET_SAN_PHAM = Duyệt sản phẩm */
+    public static final String LOAI_DON_HANG = "DON_HANG";
+    public static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
+
+    /** TrangThaiThongBao: CHO_XAC_NHAN = Chờ xác nhận, DA_CHAP_NHAN = Đã chấp nhận, DA_TU_CHOI = Đã từ chối */
+    public static final String TRANG_THAI_CHO_XAC_NHAN = "CHO_XAC_NHAN";
+    public static final String TRANG_THAI_DA_CHAP_NHAN = "DA_CHAP_NHAN";
+    public static final String TRANG_THAI_DA_TU_CHOI = "DA_TU_CHOI";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "MaThongBao")
@@ -27,10 +36,11 @@ public class ThongBaoDoiTac {
     @JoinColumn(name = "MaDonHang")
     private DonHang donHang;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "MaSanPham")
-    private SanPham sanPham;
-
+    /**
+     * Loại thông báo: DON_HANG = Đơn hàng, DUYET_SAN_PHAM = Duyệt sản phẩm.
+     * Khi loai = DUYET_SAN_PHAM, mã sản phẩm được nhúng trong NoiDung
+     * với format [MASP:id]
+     */
     @Column(name = "Loai")
     private String loai;
 
@@ -41,7 +51,7 @@ public class ThongBaoDoiTac {
     private String noiDung;
 
     @Column(name = "TrangThaiThongBao")
-    private Integer trangThaiThongBao;
+    private String trangThaiThongBao;
 
     @Column(name = "LyDoTuChoi", columnDefinition = "TEXT")
     private String lyDoTuChoi;
@@ -57,8 +67,8 @@ public class ThongBaoDoiTac {
 
     @PrePersist
     public void prePersist() {
-        if (loai == null) loai = "DON_HANG";
-        if (trangThaiThongBao == null) trangThaiThongBao = 0;
+        if (loai == null) loai = LOAI_DON_HANG;
+        if (trangThaiThongBao == null) trangThaiThongBao = TRANG_THAI_CHO_XAC_NHAN;
         if (daDoc == null) daDoc = false;
         if (thoiGianTao == null) thoiGianTao = LocalDateTime.now();
     }

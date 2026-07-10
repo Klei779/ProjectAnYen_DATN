@@ -12,6 +12,7 @@ public interface HoaDonRepository extends JpaRepository<HoaDon, Integer> {
     boolean existsByDonHang_MaDonHang(Integer maDonHang);
 
     Optional<HoaDon> findByDonHang_MaDonHang(Integer maDonHang);
+    List<HoaDon> findAllByDonHang_MaDonHang(Integer maDonHang);
     List<HoaDon> findByDonHang_KhachHang_MaKhachHang(Integer maKhachHang);
 
     @Query("""

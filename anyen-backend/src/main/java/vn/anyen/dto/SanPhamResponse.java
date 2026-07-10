@@ -22,4 +22,18 @@ public class SanPhamResponse {
     private String tonGiao;
     private String mauSac;
     private Integer trangThai;
+
+    // Additional fields for product detail page
+    private String code;
+    private String quyCach;
+    private String kichThuoc;
+    private String trongLuong;
+    private String xuatXu;
+    private String nhaCungCap;
+    private String nhaSanXuat;
+    private Integer soLuong;
+    private String ngayCapNhat;
+    private BigDecimal discount;
+    private String moTa;
+    private String huongDanBaoQuan;
 }

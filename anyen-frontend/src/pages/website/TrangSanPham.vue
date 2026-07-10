@@ -183,7 +183,7 @@
                 <p>Không tìm thấy sản phẩm phù hợp</p>
               </div>
 
-              <div v-for="item in products" :key="item.id" class="product-card">
+              <div v-for="item in products" :key="item.id" class="product-card" @click="goToProductDetail(item.id)">
                 <div class="product-image">
                   <img :src="item.image ? `/images/${item.image}` : '/no-image.png'" :alt="item.name" />
 
@@ -196,7 +196,7 @@
                   <button
                       class="wishlist-btn"
                       :class="{ active: isWished(item.id) }"
-                      @click="toggleWish(item.id)"
+                      @click.stop="toggleWish(item.id)"
                   >
                     <i :class="isWished(item.id) ? 'fa-solid fa-heart' : 'fa-regular fa-heart'"></i>
                   </button>
@@ -249,9 +249,12 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
 import flowerIcon from '../../assets/images/icon/flower_icon.png'
 import { getProducts, getFilterOptions } from '../../services/productService.js'
+
+const router = useRouter()
 
 const isPriceOpen = ref(true)
 const isMaterialOpen = ref(true)
@@ -385,6 +388,10 @@ function resetFilter() {
   ignoreAutoWatch = false
   clearTimeout(reloadTimer)
   loadProducts()
+}
+
+function goToProductDetail(productId) {
+  router.push(`/san-pham/${productId}`)
 }
 
 watch(keyword, () => queueLoad(true))

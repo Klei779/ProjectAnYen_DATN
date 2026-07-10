@@ -2,6 +2,9 @@ package vn.anyen.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -14,7 +17,7 @@ import lombok.*;
 public class QuanLyNhanVienRequest {
 
     @NotBlank(message = "Họ tên không được để trống")
-    @Size(max = 100, message = "Họ tên tối đa 100 ký tự")
+    @Size(max = 50, message = "Họ tên tối đa 50 ký tự")
     private String hoTen;
 
     @NotBlank(message = "Tên đăng nhập không được để trống")
@@ -40,6 +43,8 @@ public class QuanLyNhanVienRequest {
     @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
     private String diaChi;
 
-    @NotBlank(message = "Vai trò không được để trống")
+    @NotNull(message = "Vai trò không được để trống")
+    @Min(value = 1, message = "Vai trò không hợp lệ")
+    @Max(value = 3, message = "Vai trò không hợp lệ")
     private Integer vaiTro;
 }

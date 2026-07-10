@@ -11,6 +11,7 @@ import TrangThongKeDoanhThuNV from "../pages/nhanvien/TrangThongKeDoanhThuNV.vue
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
 import TrangSanPham from "../pages/website/TrangSanPham.vue";
+import ChiTietSanPham from "../pages/website/ChiTietSanPham.vue";
 import TrangDichVu from "../pages/website/TrangDichVu.vue";
 import DichVuChiTiet from "../pages/website/TrangDichVuChiTiet.vue";
 import TrangGioiThieu from "../pages/website/TrangGioiThieu.vue";
@@ -29,14 +30,15 @@ import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
 
 // Nhân viên
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
-import TrangQLDoiTac from "../pages/nhanvien/TrangQLDoiTac.vue";
+import TrangQLDoiTac from "../pages/admin/TrangQLDoiTac.vue";
 import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
 import TrangThongBaoNV from "../pages/nhanvien/TrangThongBaoNV.vue";
 import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
 import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
 import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
 import TrangQLNhanVien from "../pages/nhanvien/TrangQLNhanVien.vue";
-import TrangDuyetSanPham from "../pages/nhanvien/TrangDuyetSanPham.vue";
+import TrangQLHopDongAdmin from "../pages/admin/TrangQLHopDong.vue";
+import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
@@ -55,6 +57,11 @@ const routes = [
             {
                 path: "san-pham",
                 component: TrangSanPham,
+            },
+            {
+                path: "san-pham/:id",
+                name: "ChiTietSanPham",
+                component: ChiTietSanPham,
             },
             {
                 path: "dich-vu",
@@ -208,6 +215,10 @@ const routes = [
             {
                 path: "quan-ly-nhan-vien",
                 component: TrangQLNhanVien,
+            },
+            {
+                path: "quan-ly-hop-dong",
+                component: TrangQLHopDongAdmin,
             },
             {
                 path: "thong-bao",

@@ -39,6 +39,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/geocoding/**").permitAll()
 
                         // CỰC QUAN TRỌNG: cho phép preflight OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
@@ -74,6 +75,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/nhan-vien/quanlynhanvien",
                                 "/api/nhan-vien/quanlynhanvien/**"
+                        )
+                        .hasAuthority("ROLE_ADMIN")
+
+                        // ADMIN quản lý hợp đồng
+                        .requestMatchers(
+                                "/api/nhan-vien/quanlyhopdong",
+                                "/api/nhan-vien/quanlyhopdong/**"
                         )
                         .hasAuthority("ROLE_ADMIN")
 

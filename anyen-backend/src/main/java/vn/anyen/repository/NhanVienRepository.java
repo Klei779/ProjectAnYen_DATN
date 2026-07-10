@@ -21,6 +21,21 @@ public interface NhanVienRepository
 
     boolean existsBySoDienThoai(String soDienThoai);
 
+    boolean existsByTenDangNhapAndMaNhanVienNot(
+            String tenDangNhap,
+            Integer maNhanVien
+    );
+
+    boolean existsByEmailAndMaNhanVienNot(
+            String email,
+            Integer maNhanVien
+    );
+
+    boolean existsBySoDienThoaiAndMaNhanVienNot(
+            String soDienThoai,
+            Integer maNhanVien
+    );
+
     List<NhanVien> findByVaiTro(Integer vaiTro);
 
     Optional<NhanVien> findFirstByVaiTroAndTrangThai(

@@ -35,7 +35,7 @@ const product = ref({
   khuyenMaiLoai: "PHAN_TRAM",
   mauSac: "",
   vatLieu: "",
-  trangThai: "Còn bán",
+  trangThai: 1,
   kichThuoc: "",
   trongLuong: "",
   cnsx: "",
@@ -103,6 +103,25 @@ onMounted(() => {
   if (partnerId) {
     product.value.maDoiTac = partnerId;
   }
+
+  // Pre-fill with dummy data for testing (except images)
+  product.value.tenSanPham = "Quan tài gỗ gụ cao cấp";
+  product.value.loai = "Quan tài";
+  product.value.noiThat = "Lót nhung đỏ";
+  product.value.quyCach = "Trọn bộ";
+  product.value.tonGiao = "Phật giáo";
+  product.value.giaTien = "15000000";
+  product.value.soLuong = "10";
+  product.value.thietKe = "Truyền thống";
+  product.value.xuatXu = "Việt Nam";
+  product.value.ghiChu = "Sản phẩm được làm từ gỗ gụ tự nhiên, độ bền cao, phù hợp cho các lễ nghi tang lễ truyền thống.";
+  product.value.khuyenMai = "";
+  product.value.mauSac = "Nâu đậm";
+  product.value.vatLieu = "Gỗ Gụ";
+  product.value.trangThai = 1;
+  product.value.kichThuoc = "200 x 60 x 50 cm";
+  product.value.trongLuong = "80";
+  product.value.cnsx = "Thủ công truyền thống";
 });
 
 const toggleAdvanced = () => {
@@ -318,7 +337,7 @@ const buildPayload = async () => {
     mauSac: product.value.mauSac,
     hinhAnh: mainImageUrl,
     vatLieu: product.value.vatLieu,
-    trangThai: product.value.trangThai === "Còn bán" ? "Đang bán" : "Ẩn",
+    trangThai: product.value.trangThai === "Còn bán" ? 1 : 0,
     kichThuoc: product.value.kichThuoc,
     trongLuong: product.value.trongLuong,
     cnsx: product.value.cnsx,
@@ -404,7 +423,7 @@ const saveDraft = async () => {
 
   try {
     const payload = await buildPayload();
-    payload.trangThai = "Ẩn";
+    payload.trangThai = 0;
     await api.post(API_URL, payload);
     alert("Đã lưu nháp sản phẩm!");
     router.push("/doi-tac/quan-ly-san-pham");
@@ -696,9 +715,9 @@ const cancelCreate = () => {
 
         <div class="tao-sp-field">
           <label>Trạng thái</label>
-          <select v-model="product.trangThai" class="tao-sp-select">
-            <option>Còn bán</option>
-            <option>Ngưng bán</option>
+          <select v-model.number="product.trangThai" class="tao-sp-select">
+            <option :value="1">Đang bán</option>
+            <option :value="0">Ẩn</option>
           </select>
         </div>
 

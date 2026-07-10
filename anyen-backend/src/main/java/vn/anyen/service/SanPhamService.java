@@ -133,6 +133,12 @@ public class SanPhamService {
                 .build();
     }
 
+    public SanPhamResponse getSanPhamById(Integer id) {
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+        return mapToResponse(sp);
+    }
+
     public SanPhamResponse updateSanPham(Integer id, SanPhamRequest request) {
         SanPham sp = sanPhamRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
@@ -291,6 +297,20 @@ public class SanPhamService {
                 .tonGiao(sp.getTonGiao())
                 .mauSac(sp.getMauSac())
                 .trangThai(sp.getTrangThai())
+                .code("SP" + String.format("%05d", sp.getMaSanPham()))
+                .quyCach(sp.getQuyCach())
+                .kichThuoc(sp.getKichThuoc())
+                .trongLuong(sp.getTrongLuong())
+                .xuatXu(sp.getXuatXu())
+                .nhaCungCap(sp.getMaDoiTac() != null ? "Đối tác #" + sp.getMaDoiTac() : "N/A")
+                .nhaSanXuat(sp.getCnsx())
+                .soLuong(sp.getSoLuong())
+                .ngayCapNhat("N/A")
+                .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null 
+                    ? sp.getGiaTien().subtract(sp.getKhuyenMai()) 
+                    : null)
+                .moTa(sp.getGhiChu())
+                .huongDanBaoQuan("Sản phẩm nên được bảo quản ở nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp và độ ẩm cao.")
                 .build();
     }
 }

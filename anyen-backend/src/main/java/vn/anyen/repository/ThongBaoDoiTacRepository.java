@@ -13,18 +13,19 @@ public interface ThongBaoDoiTacRepository
             Integer maDoiTac
     );
 
+    // Loai dùng String để khớp với cột VARCHAR trong DB
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
             Integer maDoiTac,
             String loai,
-            Integer trangThaiThongBao
+            String trangThaiThongBao
     );
 
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianXuLyDesc(
             Integer maDoiTac,
             String loai,
-            Integer trangThaiThongBao
+            String trangThaiThongBao
     );
 
     Optional<ThongBaoDoiTac> findByMaThongBaoAndDoiTac_MaDoiTac(
@@ -48,4 +49,6 @@ public interface ThongBaoDoiTacRepository
             Integer donHang,
             String loai
     );
+
+    List<ThongBaoDoiTac> findByDonHang_MaDonHang(Integer maDonHang);
 }

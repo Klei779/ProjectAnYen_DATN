@@ -42,18 +42,18 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     /**
      * Lấy danh sách thông báo duyệt sản phẩm đang chờ xác nhận
      */
-    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
-            String loaiThongBao,
-            Integer trangThai
-    );
-
-    /**
-     * Tìm thông báo duyệt mới nhất theo mã sản phẩm
-     */
-    Optional<ThongBao> findFirstByMaSanPhamAndLoaiThongBaoOrderByNgayTaoDesc(
-            Integer maSanPham,
-            String loaiThongBao
-    );
+//    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
+//            String loaiThongBao,
+//            Integer trangThai
+//    );
+//
+//    /**
+//     * Tìm thông báo duyệt mới nhất theo mã sản phẩm
+//     */
+//    Optional<ThongBao> findFirstByMaSanPhamAndLoaiThongBaoOrderByNgayTaoDesc(
+//            Integer maSanPham,
+//            String loaiThongBao
+//    );
 
     boolean existsByLoaiThongBaoAndNoiDungContainingAndTrangThai(
             String loaiThongBao,

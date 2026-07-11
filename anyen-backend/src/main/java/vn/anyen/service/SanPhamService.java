@@ -6,6 +6,7 @@ import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.anyen.constants.AppLabels;
 import vn.anyen.dto.SanPhamFilterOptionResponse;
 import vn.anyen.dto.SanPhamFilterResponse;
 import vn.anyen.dto.SanPhamPageResponse;
@@ -321,6 +322,7 @@ public class SanPhamService {
     }
 
     private SanPhamResponse mapToResponse(SanPham sp) {
+        String tenDT = (sp.getMaDoiTac() != null) ? sanPhamRepository.findTenDoiTacByMaDoiTac(sp.getMaDoiTac()) : "Không rõ đối tác";
         return SanPhamResponse.builder()
                 .id(sp.getMaSanPham())
                 .name(sp.getTenSanPham())
@@ -340,6 +342,8 @@ public class SanPhamService {
                 .xuatXu(sp.getXuatXu())
                 .nhaCungCap(sp.getMaDoiTac() != null ? "Đối tác #" + sp.getMaDoiTac() : "N/A")
                 .nhaSanXuat(sp.getCnsx())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM, sp.getTrangThai()))
+                .tenDoiTac(tenDT)
                 .soLuong(sp.getSoLuong())
                 .ngayCapNhat("N/A")
                 .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null 

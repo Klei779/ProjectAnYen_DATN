@@ -21,7 +21,7 @@ export async function duyetSanPham(id) {
     return response.data;
 }
 
-export async function tuChoiSanPham(maSanPham, lyDoTuChoi) {
+export async function tuChoiSanPham(id, lyDoTuChoi) {
     const response = await api.put(`${API_URL}/${id}/tu-choi`, {
         lyDoTuChoi: lyDoTuChoi ? lyDoTuChoi.trim() : "",
     });

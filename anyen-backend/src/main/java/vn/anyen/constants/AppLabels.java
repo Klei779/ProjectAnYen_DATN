@@ -21,6 +21,13 @@ public class AppLabels {
             "Đã chấp nhận",
             "Đã từ chối"
     };
+    public static final String[] TRANG_THAI_SAN_PHAM = {
+            "Ẩn",
+            "Đang bán",
+            "Chờ xác nhận",
+            "Từ chối duyệt",
+            "Hết hàng"
+    };
 
     public static String getLabel(String[] labels, Integer code) {
         if (labels == null || code == null || code < 0 || code >= labels.length) {

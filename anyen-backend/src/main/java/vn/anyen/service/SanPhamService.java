@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import vn.anyen.constants.AppLabels;
 import vn.anyen.dto.SanPhamFilterOptionResponse;
 import vn.anyen.dto.SanPhamFilterResponse;
 import vn.anyen.dto.SanPhamPageResponse;
@@ -30,6 +32,7 @@ public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
+    private final DoiTacThongBaoService doiTacThongBaoService;
 
     public SanPhamPageResponse getSanPham(
             String keyword,
@@ -178,12 +181,15 @@ public class SanPhamService {
         return mapToResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public SanPhamPageResponse getSanPhamChoDuyet(Integer page, Integer pageSize) {
         int pageIndex = page == null || page < 1 ? 0 : page - 1;
         int size = pageSize == null || pageSize < 1 ? 16 : pageSize;
         Pageable pageable = PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.DESC, "maSanPham"));
 
-        Specification<SanPham> spec = (root, query, cb) -> cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_CHO_XAC_NHAN);
+        // Chỉ so sánh với hằng số Integer chuẩn chỉnh
+        Specification<SanPham> spec = (root, query, cb) ->
+                cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
         Page<SanPham> result = sanPhamRepository.findAll(spec, pageable);
 
@@ -206,6 +212,37 @@ public class SanPhamService {
         SanPham saved = sanPhamRepository.save(sp);
         return mapToResponse(saved);
     }
+// Giả định bạn đã inject ThongBaoService vào bằng @RequiredArgsConstructor ở đầu class
+// private final ThongBaoService thongBaoService;
+
+    public SanPhamResponse tuChoiSanPham(Integer id, String lyDoTuChoi) {
+        // 1. Tìm sản phẩm
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        // 2. Cập nhật trạng thái sản phẩm sang 4 (Từ chối)
+        sp.setTrangThai(4);
+
+        // Lưu lý do trực tiếp vào ghi chú của sản phẩm nếu cần thiết
+        sp.setGhiChu("Từ chối duyệt. Lý do: " + lyDoTuChoi);
+
+        SanPham saved = sanPhamRepository.save(sp);
+
+        // 3. TÍCH HỢP: Gọi hàm gửi thông báo đến đối tác
+        try {
+            doiTacThongBaoService.taoThongBaoTuChoiSanPham(saved, lyDoTuChoi);
+        } catch (Exception e) {
+            // Bao bọc trong try-catch để nếu lỗi gửi thông báo (ví dụ lỗi DB thông báo)
+            // thì hành động từ chối sản phẩm chính vẫn thành công, tránh nghẽn hệ thống.
+            System.err.println("Lỗi phát sinh khi tạo thông báo từ chối sản phẩm: " + e.getMessage());
+        }
+
+        // 4. Trả về Response cho Frontend
+        return mapToResponse(saved);
+    }
+
+
+
 
     public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
         List<SanPham> sanPhams =
@@ -285,6 +322,7 @@ public class SanPhamService {
     }
 
     private SanPhamResponse mapToResponse(SanPham sp) {
+        String tenDT = (sp.getMaDoiTac() != null) ? sanPhamRepository.findTenDoiTacByMaDoiTac(sp.getMaDoiTac()) : "Không rõ đối tác";
         return SanPhamResponse.builder()
                 .id(sp.getMaSanPham())
                 .name(sp.getTenSanPham())
@@ -304,6 +342,8 @@ public class SanPhamService {
                 .xuatXu(sp.getXuatXu())
                 .nhaCungCap(sp.getMaDoiTac() != null ? "Đối tác #" + sp.getMaDoiTac() : "N/A")
                 .nhaSanXuat(sp.getCnsx())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM, sp.getTrangThai()))
+                .tenDoiTac(tenDT)
                 .soLuong(sp.getSoLuong())
                 .ngayCapNhat("N/A")
                 .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null 

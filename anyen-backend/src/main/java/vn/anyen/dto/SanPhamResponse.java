@@ -16,6 +16,9 @@ public class SanPhamResponse {
     private BigDecimal price;
     private BigDecimal oldPrice;
     private String image;
+    private String tenDoiTac;
+
+    private String tenTrangThai;
 
     private String loai;
     private String vatLieu;

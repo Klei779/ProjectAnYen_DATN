@@ -3,6 +3,7 @@ package vn.anyen.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.SanPham;
 
 import java.util.List;
@@ -68,4 +69,17 @@ public interface SanPhamRepository
      * Entity SanPham không có createdAt nên sắp xếp theo maSanPham DESC.
      */
     List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(Integer trangThai);
+    @Query("""
+
+    SELECT dt.tenDoiTac 
+
+    FROM DoiTac dt 
+
+    WHERE dt.maDoiTac = :maDoiTac
+
+""")
+
+    String findTenDoiTacByMaDoiTac(@Param("maDoiTac") Integer maDoiTac);
+
+
 }

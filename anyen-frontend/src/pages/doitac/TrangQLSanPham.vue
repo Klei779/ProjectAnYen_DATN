@@ -1,8 +1,10 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import {ref, computed, watch, onMounted} from "vue";
 import api from "../../api/api.js";
 
 const API_URL = "/api/doi-tac/san-pham";
+const NGUNG_BAN_API = (id) => `${API_URL}/${id}/ngung-ban`;
+const BAN_LAI_API = (id) => `${API_URL}/${id}/ban-lai`;
 
 const editingProduct = ref(null);
 const activeTab = ref("list");
@@ -47,8 +49,8 @@ const getProductId = (sp) => sp.id ?? sp.maSanPham ?? sp.maSP;
 const getProductStatus = (sp) => {
   const trangThai = sp.trangThai || sp.status || "";
 
-  if (trangThai === "Ẩn" || trangThai === "Đã ẩn") {
-    return "Ẩn";
+  if (trangThai === "Ngưng bán") {
+    return "Ngưng bán";
   }
 
   if (trangThai === "Hết hàng") {
@@ -93,7 +95,9 @@ const normalizeProduct = (sp) => {
     mauSac: sp.mauSac || "",
     hinhAnh: sp.hinhAnh || sp.image || "",
     vatLieu: sp.vatLieu || "",
-    trangThai: sp.trangThai || (status === "Ẩn" ? "Ẩn" : stock > 0 ? "Đang bán" : "Hết hàng"),
+    trangThai:
+        sp.trangThai ??
+        (stock > 0 ? "Đang bán" : "Hết hàng"),
     kichThuoc: sp.kichThuoc || "",
     trongLuong: sp.trongLuong || "",
     cnsx: sp.cnsx || sp.CNSX || "",
@@ -146,10 +150,6 @@ onMounted(() => {
   loadProducts();
 });
 
-const isHiddenProduct = (product) => {
-  return product.status === "Ẩn" || product.trangThai === "Ẩn" || product.trangThai === "Đã ẩn";
-};
-
 const categories = computed(() => {
   const map = new Map();
 
@@ -177,7 +177,7 @@ const categories = computed(() => {
     id: index + 1,
     name: cate.name,
     total: cate.total,
-    status: cate.total > 0 && cate.hidden === cate.total ? "Đang ẩn" : "Đang hiển thị",
+    status: cate.total > 0 && cate.hidden === cate.total ? "Ngưng bán" : "Đang bán",
   }));
 });
 
@@ -189,8 +189,8 @@ const outOfStockProducts = computed(() =>
     products.value.filter((p) => p.status === "Hết hàng")
 );
 
-const hiddenProducts = computed(() =>
-    products.value.filter((p) => p.status === "Ẩn" || p.trangThai === "Ẩn")
+const stoppedProducts = computed(() =>
+    products.value.filter(p => p.trangThai === "Ngưng bán")
 );
 
 const filteredProducts = computed(() => {
@@ -216,8 +216,8 @@ const filteredProducts = computed(() => {
       matchStatus = p.status === "Hết hàng";
     }
 
-    if (selectedStatus.value === "an") {
-      matchStatus = p.status === "Ẩn" || p.trangThai === "Ẩn";
+    if (selectedStatus.value === "ngung-ban") {
+      matchStatus = p.trangThai === "Ngưng bán";
     }
 
     return matchKeyword && matchCategory && matchStatus;
@@ -374,9 +374,11 @@ const increaseStock = (product) => {
   product.stock += 1;
   product.soLuong = product.stock;
 
-  if (product.status !== "Ẩn") {
-    product.status = product.stock > 0 ? "Còn hàng" : "Hết hàng";
-    product.trangThai = product.stock > 0 ? "Đang bán" : "Hết hàng";
+  if (product.trangThai !== "Ngưng bán") {
+    product.trangThai =
+        product.stock > 0
+            ? "Đang bán"
+            : "Hết hàng";
   }
 
   alert("Thêm tồn kho thành công!");
@@ -388,9 +390,11 @@ const decreaseStock = (product) => {
   product.stock -= 1;
   product.soLuong = product.stock;
 
-  if (product.status !== "Ẩn") {
-    product.status = product.stock > 0 ? "Còn hàng" : "Hết hàng";
-    product.trangThai = product.stock > 0 ? "Đang bán" : "Hết hàng";
+  if (product.trangThai !== "Ngưng bán") {
+    product.trangThai =
+        product.stock > 0
+            ? "Đang bán"
+            : "Hết hàng";
   }
 
   alert("Trừ tồn kho thành công!");
@@ -411,28 +415,46 @@ const saveStock = async (product) => {
   }
 };
 
-const changeProductStatus = async (product, trangThai) => {
+const isHiddenProduct = (product) => {
+  return product.trangThai === "Ngưng bán";
+};
+
+const ngungBanProduct = async (product) => {
+  if (!confirm(`Ngưng bán "${product.name}" ?`)) {
+    return;
+  }
+
   try {
-    // Backend SanPhamDoiTacController đang dùng /an và /hien
-    const action = trangThai === "Ẩn" ? "an" : "hien";
-    await api.patch(`${API_URL}/${product.id}/${action}`);
+    await api.patch(NGUNG_BAN_API(product.id));
 
-    alert(trangThai === "Ẩn" ? "Đã ẩn sản phẩm!" : "Đã hiện lại sản phẩm!");
+    alert("Ngưng bán thành công!");
+
     await loadProducts();
-  } catch (error) {
-    console.error("Lỗi cập nhật trạng thái sản phẩm:", error);
-    alert("Không thể cập nhật trạng thái sản phẩm.");
+  } catch (e) {
+    console.error(e);
+
+    alert(
+        e.response?.data ||
+        "Không thể ngưng bán sản phẩm."
+    );
   }
 };
 
-const hideProduct = (product) => {
-  if (confirm("Bạn có chắc muốn ẩn sản phẩm này không?")) {
-    changeProductStatus(product, "Ẩn");
-  }
-};
+const banLaiProduct = async (product) => {
+  try {
+    await api.patch(BAN_LAI_API(product.id));
 
-const showProduct = (product) => {
-  changeProductStatus(product, Number(product.stock || 0) > 0 ? "Đang bán" : "Hết hàng");
+    alert("Đã bán lại sản phẩm.");
+
+    await loadProducts();
+  } catch (e) {
+    console.error(e);
+
+    alert(
+        e.response?.data ||
+        "Không thể bán lại."
+    );
+  }
 };
 
 const showDetail = (product) => {
@@ -441,7 +463,7 @@ const showDetail = (product) => {
       `Loại: ${product.category}\n` +
       `Giá: ${formatPrice(product.price)}\n` +
       `Tồn kho: ${product.stock}\n` +
-      `Trạng thái: ${product.status}`
+      `Trạng thái: ${product.trangThai}`
   );
 };
 
@@ -525,7 +547,7 @@ const hideCategory = async (cate) => {
   if (list.length === 0) return;
 
   try {
-    await Promise.all(list.map((product) => api.patch(`${API_URL}/${product.id}/an`)));
+    await Promise.all(list.map((product) => api.patch(NGUNG_BAN_API(product.id))));
     alert("Đã ẩn danh mục sản phẩm!");
     await loadProducts();
   } catch (error) {
@@ -542,7 +564,7 @@ const showCategory = async (cate) => {
   if (list.length === 0) return;
 
   try {
-    await Promise.all(list.map((product) => api.patch(`${API_URL}/${product.id}/hien`)));
+    await Promise.all(list.map((product) => api.patch(BAN_LAI_API(product.id))));
     alert("Đã hiện lại danh mục sản phẩm!");
     await loadProducts();
   } catch (error) {
@@ -601,7 +623,9 @@ const handleImageUpload = (event) => {
             <option value="">Tất cả trạng thái sản phẩm</option>
             <option value="con-hang">Còn hàng</option>
             <option value="het-hang">Hết hàng</option>
-            <option value="an">Đã ẩn</option>
+            <option value="ngung-ban">
+              Ngưng bán
+            </option>
           </select>
 
           <select v-model="selectedCategory">
@@ -612,7 +636,7 @@ const handleImageUpload = (event) => {
           </select>
 
           <div class="search-input">
-            <input v-model="keyword" placeholder="Tìm kiếm sản phẩm..." />
+            <input v-model="keyword" placeholder="Tìm kiếm sản phẩm..."/>
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
 
@@ -658,8 +682,8 @@ const handleImageUpload = (event) => {
               <i class="fa-solid fa-list"></i>
             </div>
             <div>
-              <p>Sản phẩm đã ẩn</p>
-              <h3>{{ hiddenProducts.length }}</h3>
+              <p>Sản phẩm ngưng bán</p>
+              <h3>{{ stoppedProducts.length }}</h3>
             </div>
           </div>
         </div>
@@ -668,7 +692,7 @@ const handleImageUpload = (event) => {
 
         <div class="product-grid">
           <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
-            <img :src="product.image" :alt="product.name" />
+            <img :src="product.image" :alt="product.name"/>
 
             <div class="product-info">
               <h3>{{ product.name }}</h3>
@@ -713,21 +737,21 @@ const handleImageUpload = (event) => {
               </button>
 
               <button
-                  v-if="product.status !== 'Ẩn'"
+                  v-if="product.trangThai !== 'Ngưng bán'"
                   class="hide-btn"
-                  @click="hideProduct(product)"
+                  @click="ngungBanProduct(product)"
               >
-                <i class="fa-regular fa-eye-slash"></i>
-                Ẩn
+                <i class="fa-solid fa-ban"></i>
+                Ngưng bán
               </button>
 
               <button
                   v-else
                   class="hide-btn"
-                  @click="showProduct(product)"
+                  @click="banLaiProduct(product)"
               >
-                <i class="fa-regular fa-eye"></i>
-                Hiện
+                <i class="fa-solid fa-play"></i>
+                Bán lại
               </button>
 
               <button class="save-btn" @click="saveStock(product)">
@@ -792,7 +816,7 @@ const handleImageUpload = (event) => {
 
             <span
                 class="status category-status"
-                :class="cate.status === 'Đang hiển thị' ? 'available' : 'empty'"
+                :class="cate.status === 'Đang bán' ? 'available' : 'empty'"
             >
               {{ cate.status }}
             </span>
@@ -803,7 +827,7 @@ const handleImageUpload = (event) => {
               </button>
 
               <button
-                  v-if="cate.status === 'Đang hiển thị'"
+                  v-if="cate.status === 'Đang bán'"
                   title="Ẩn danh mục"
                   @click="hideCategory(cate)"
               >
@@ -835,22 +859,22 @@ const handleImageUpload = (event) => {
           <div class="form-grid">
             <div class="form-group">
               <label>Tên sản phẩm</label>
-              <input v-model="newProduct.tenSanPham" placeholder="Nhập tên sản phẩm" />
+              <input v-model="newProduct.tenSanPham" placeholder="Nhập tên sản phẩm"/>
             </div>
 
             <div class="form-group">
               <label>Loại</label>
-              <input v-model="newProduct.loai" placeholder="VD: Quan tài, bình tro cốt..." />
+              <input v-model="newProduct.loai" placeholder="VD: Quan tài, bình tro cốt..."/>
             </div>
 
             <div class="form-group">
               <label>Nội thất</label>
-              <input v-model="newProduct.noiThat" placeholder="Nhập nội thất" />
+              <input v-model="newProduct.noiThat" placeholder="Nhập nội thất"/>
             </div>
 
             <div class="form-group">
               <label>Quy cách</label>
-              <input v-model="newProduct.quyCach" placeholder="Nhập quy cách" />
+              <input v-model="newProduct.quyCach" placeholder="Nhập quy cách"/>
             </div>
 
             <div class="form-group">
@@ -867,76 +891,76 @@ const handleImageUpload = (event) => {
 
             <div class="form-group">
               <label>Giá tiền</label>
-              <input v-model="newProduct.giaTien" type="number" placeholder="Nhập giá tiền" />
+              <input v-model="newProduct.giaTien" type="number" placeholder="Nhập giá tiền"/>
             </div>
 
             <div class="form-group">
               <label>Mã đối tác</label>
-              <input v-model="newProduct.maDoiTac" type="number" placeholder="Backend có thể tự lấy từ token" />
+              <input v-model="newProduct.maDoiTac" type="number" placeholder="Backend có thể tự lấy từ token"/>
             </div>
 
             <div class="form-group">
               <label>Số lượng</label>
-              <input v-model="newProduct.soLuong" type="number" placeholder="Nhập số lượng" />
+              <input v-model="newProduct.soLuong" type="number" placeholder="Nhập số lượng"/>
             </div>
 
             <div class="form-group">
               <label>Thiết kế</label>
-              <input v-model="newProduct.thietKe" placeholder="Nhập thiết kế" />
+              <input v-model="newProduct.thietKe" placeholder="Nhập thiết kế"/>
             </div>
 
             <div class="form-group">
               <label>Xuất xứ</label>
-              <input v-model="newProduct.xuatXu" placeholder="Nhập xuất xứ" />
+              <input v-model="newProduct.xuatXu" placeholder="Nhập xuất xứ"/>
             </div>
 
             <div class="form-group">
               <label>Khuyến mãi</label>
-              <input v-model="newProduct.khuyenMai" type="number" placeholder="Nhập khuyến mãi" />
+              <input v-model="newProduct.khuyenMai" type="number" placeholder="Nhập khuyến mãi"/>
             </div>
 
             <div class="form-group">
               <label>Màu sắc</label>
-              <input v-model="newProduct.mauSac" placeholder="Nhập màu sắc" />
+              <input v-model="newProduct.mauSac" placeholder="Nhập màu sắc"/>
             </div>
 
             <div class="form-group">
               <label>Hình ảnh</label>
 
-              <input type="file" accept="image/*" @change="handleImageUpload" />
+              <input type="file" accept="image/*" @change="handleImageUpload"/>
 
               <div v-if="imagePreview" class="image-preview">
-                <img :src="imagePreview" alt="Ảnh sản phẩm" />
+                <img :src="imagePreview" alt="Ảnh sản phẩm"/>
               </div>
             </div>
 
             <div class="form-group">
               <label>Vật liệu</label>
-              <input v-model="newProduct.vatLieu" placeholder="Nhập vật liệu" />
+              <input v-model="newProduct.vatLieu" placeholder="Nhập vật liệu"/>
             </div>
 
             <div class="form-group">
               <label>Trạng thái</label>
               <select v-model="newProduct.trangThai">
                 <option>Đang bán</option>
-                <option>Ẩn</option>
+                <option>Ngưng bán</option>
                 <option>Hết hàng</option>
               </select>
             </div>
 
             <div class="form-group">
               <label>Kích thước</label>
-              <input v-model="newProduct.kichThuoc" placeholder="VD: 120x60x80cm" />
+              <input v-model="newProduct.kichThuoc" placeholder="VD: 120x60x80cm"/>
             </div>
 
             <div class="form-group">
               <label>Trọng lượng</label>
-              <input v-model="newProduct.trongLuong" placeholder="VD: 25kg" />
+              <input v-model="newProduct.trongLuong" placeholder="VD: 25kg"/>
             </div>
 
             <div class="form-group">
               <label>CNSX</label>
-              <input v-model="newProduct.cnsx" placeholder="Nhập CNSX" />
+              <input v-model="newProduct.cnsx" placeholder="Nhập CNSX"/>
             </div>
 
             <div class="form-group full">

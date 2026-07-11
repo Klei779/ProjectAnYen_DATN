@@ -57,4 +57,6 @@ public class AppLabels {
 
     public static final String TB_KET_QUA_HUY_HOA_DON =
             "KET_QUA_HUY_HOA_DON";
+
+    public static final Integer SP_NGUNG_BAN = 6;
 }

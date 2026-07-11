@@ -30,7 +30,6 @@ public class AppLabels {
             "Ẩn",
             "Đang bán",
             "Chờ xác nhận",
-            "Đã duyệt",
             "Từ chối duyệt",
             "Hết hàng"
     };

@@ -33,6 +33,8 @@ public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
+    private final DoiTacThongBaoService doiTacThongBaoService;
+
 
     @Transactional(readOnly = true)
     public SanPhamPageResponse getSanPham(
@@ -186,7 +188,34 @@ public class SanPhamService {
         SanPham saved = sanPhamRepository.save(sp);
         return mapToResponse(saved);
     }
+// Giả định bạn đã inject ThongBaoService vào bằng @RequiredArgsConstructor ở đầu class
+// private final ThongBaoService thongBaoService;
 
+    public SanPhamResponse tuChoiSanPham(Integer id, String lyDoTuChoi) {
+        // 1. Tìm sản phẩm
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+
+        // 2. Cập nhật trạng thái sản phẩm sang 4 (Từ chối)
+        sp.setTrangThai(4);
+
+        // Lưu lý do trực tiếp vào ghi chú của sản phẩm nếu cần thiết
+        sp.setGhiChu("Từ chối duyệt. Lý do: " + lyDoTuChoi);
+
+        SanPham saved = sanPhamRepository.save(sp);
+
+        // 3. TÍCH HỢP: Gọi hàm gửi thông báo đến đối tác
+        try {
+            doiTacThongBaoService.taoThongBaoTuChoiSanPham(saved, lyDoTuChoi);
+        } catch (Exception e) {
+            // Bao bọc trong try-catch để nếu lỗi gửi thông báo (ví dụ lỗi DB thông báo)
+            // thì hành động từ chối sản phẩm chính vẫn thành công, tránh nghẽn hệ thống.
+            System.err.println("Lỗi phát sinh khi tạo thông báo từ chối sản phẩm: " + e.getMessage());
+        }
+
+        // 4. Trả về Response cho Frontend
+        return mapToResponse(saved);
+    }
     @Transactional(readOnly = true)
     public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
         List<SanPham> sanPhams = sanPhamRepository.findAllVisibleForTaoDonHang();

@@ -3,6 +3,7 @@ package vn.anyen.repository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.SanPham;
 
 import java.util.List;
@@ -69,7 +70,9 @@ public interface SanPhamRepository
      */
     List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(Integer trangThai);
     @Query("""
-Select dt.tenDoiTac from SanPham sp inner join DoiTac dt on sp.maDoiTac= dt.maDoiTac
+    SELECT dt.tenDoiTac 
+    FROM DoiTac dt 
+    WHERE dt.maDoiTac = :maDoiTac
 """)
-    String findTenDoiTacByMaDoiTac(Integer maDoiTac);
+    String findTenDoiTacByMaDoiTac(@Param("maDoiTac") Integer maDoiTac);
 }

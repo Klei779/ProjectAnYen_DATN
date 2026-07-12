@@ -19,6 +19,7 @@ public class GoiDichVuResponse {
     private BigDecimal gia;
     private String moTa;
     private String hinhAnh;
+    private Integer trangThai;
 
     public static GoiDichVuResponse fromEntity(ComBo combo) {
         return new GoiDichVuResponse(
@@ -26,7 +27,8 @@ public class GoiDichVuResponse {
                 combo.getTenCombo(),
                 combo.getGia(),
                 combo.getMoTa(),
-                combo.getHinhAnh()
+                combo.getHinhAnh(),
+                combo.getTrangThai()
         );
     }
 }

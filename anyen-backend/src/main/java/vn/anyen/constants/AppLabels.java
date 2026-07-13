@@ -69,4 +69,15 @@ public class AppLabels {
 
     public static final String TB_KET_QUA_HUY_HOA_DON =
             "KET_QUA_HUY_HOA_DON";
+
+    //  TIN TỨC
+
+    public static final Integer TT_AN = 0;
+    public static final Integer TT_HIEN = 1;
+
+    public static final Integer TT_KIEN_THUC = 1;
+    public static final Integer TT_PHONG_TUC = 2;
+    public static final Integer TT_THONG_BAO = 3;
+    public static final Integer TT_HOAT_DONG = 4;
 }
+

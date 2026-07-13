@@ -60,7 +60,9 @@ public class SecurityConfig {
                                 "/api/lien-he",
                                 "/api/lien-he/**",
                                 "/api/khach-hang",
-                                "/api/khach-hang/**"
+                                "/api/khach-hang/**",
+                                "/api/tin-tuc",
+                                "/api/tin-tuc/**"
                         )
                         .permitAll()
 
@@ -96,7 +98,6 @@ public class SecurityConfig {
                                 "ROLE_HOTLINE",
                                 "ROLE_NHANVIEN"
                         )
-
                         .anyRequest()
                         .authenticated()
                 )

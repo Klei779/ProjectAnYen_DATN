@@ -36,6 +36,9 @@
       <RouterLink to="/gioi-thieu">
         Giới thiệu
       </RouterLink>
+      <RouterLink to="/tin-tuc">
+        Tin tức
+      </RouterLink>
 
       <RouterLink to="/lien-he">
         Liên hệ
@@ -109,6 +112,10 @@
 
       <RouterLink to="/gioi-thieu" @click="mobileMenuOpen=false">
         Giới thiệu
+      </RouterLink>
+
+      <RouterLink to="/tin-tuc" @click="mobileMenuOpen=false">
+        Tin tức
       </RouterLink>
 
       <RouterLink to="/lien-he" @click="mobileMenuOpen=false">

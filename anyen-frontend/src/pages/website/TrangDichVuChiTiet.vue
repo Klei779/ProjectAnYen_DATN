@@ -141,6 +141,7 @@
                   class="service-item-card"
               >
                 <div class="service-item-text">
+                  <span class="item-type">{{ getLoaiText(item.loai) }}</span>
                   <h4>{{ item.noiDung }}</h4>
                   <p>{{ getImageName(item) }}</p>
                 </div>
@@ -361,6 +362,12 @@ const getTrangTriImages = (item) => {
   }
 
   return result
+}
+
+const getLoaiText = (loai) => {
+  if (loai === 0) return 'Sản phẩm'
+  if (loai === 1) return 'Dịch vụ'
+  return 'Không xác định'
 }
 
 const resetData = () => {

@@ -28,7 +28,12 @@ public class AppLabels {
             "Từ chối duyệt",
             "Hết hàng"
     };
-
+    public static final String[] TEN_VAI_TRO = {
+            "Unknow",
+            "Quản lý",
+            "Nhân viên trực tiếp",
+            "Hotline"
+    };
     public static String getLabel(String[] labels, Integer code) {
         if (labels == null || code == null || code < 0 || code >= labels.length) {
             return "Không xác định";

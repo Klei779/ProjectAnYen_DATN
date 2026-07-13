@@ -140,6 +140,7 @@ public class QuanLyNhanVienService {
                         AppLabels.TRANG_THAI_NHAN_VIEN,
                         nhanVien.getTrangThai()
                 ))
+                .tenVaiTro(AppLabels.getLabel(AppLabels.TEN_VAI_TRO,nhanVien.getVaiTro()))
                 .build();
     }
 }

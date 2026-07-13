@@ -134,13 +134,39 @@ public class SanPhamDoiTacService {
         return toResponse(savedSanPham);
     }
     public SanPhamDoiTacResponse updateSanPham(Authentication authentication, Integer id, SanPhamDoiTacRequest request) {
-        validateRequest(request, false);
+        Integer maDoiTac = getMaDoiTac(authentication);
+        validateRequest(request, true);
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
-
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy đối tác"
+                ));
         applyRequest(sanPham, request);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
+        if (sanPham.getSoLuong() == null) {
+            sanPham.setSoLuong(0);
+        }
         SanPham savedSanPham = sanPhamDoiTacRepository.save(sanPham);
+        ThongBao thongBao = ThongBao.builder()
+                .tieuDe("Duyệt sản phẩm mới")
+                .noiDung(
+                        "Đối tác " + doiTac.getTenDoiTac()
+                                + " vừa cập nhật sản phẩm: "
+                                + savedSanPham.getTenSanPham()
+                                + ". Vui lòng xác nhận hoặc từ chối để quyết định sản phẩm có được cập nhật hay không."
+                                + " [MASP:" + savedSanPham.getMaSanPham() + "]"
+                )
+                .loaiThongBao("DUYET_SAN_PHAM")
+                .nguoiGuiId(null)
+                .nguoiNhanId(null)
+                .maKhachHang(null)
+                .trangThai(0) // 0 là Chưa đọc
+                .lyDoTuChoi(null)
+                .build();
 
+        thongBaoRepository.save(thongBao);
         sanPhamChiTietRepository.deleteByMaSanPham(id);
         sanPhamHinhAnhRepository.deleteByMaSanPham(id);
         saveChiTietVaHinhAnh(id, request);

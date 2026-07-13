@@ -461,7 +461,10 @@ const publishProduct = async () => {
     alert("Đã đăng sản phẩm thành công!");
     router.push("/doi-tac/quan-ly-san-pham");
   } catch (error) {
-    console.error("Lỗi đăng sản phẩm:", error);
+    console.log(error.response);
+    console.log(error.response?.data);
+    console.log(error.response?.status);
+      console.error("Lỗi đăng sản phẩm:", error);
     alert("Không thể đăng sản phẩm. Kiểm tra lại thông tin.");
   } finally {
     isSubmitting.value = false;

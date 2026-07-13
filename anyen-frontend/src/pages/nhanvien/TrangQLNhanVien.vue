@@ -39,6 +39,7 @@
             <th>Liên hệ</th>
             <th>Vai trò</th>
             <th>Trạng thái</th>
+            <th>Cập nhật nhân viên</th>
             <th class="text-end pe-4">Hành động</th>
           </tr>
           </thead>
@@ -56,9 +57,8 @@
               <div class="small text-muted">{{ nv.soDienThoai }}</div>
             </td>
             <td>
-              <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-2">
-                {{ hienThiVaiTro(nv.vaiTro) }}
-              </span>
+              <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1.5">{{ nv.tenVaiTro }}</span>
+
             </td>
             <td>
               <span
@@ -80,8 +80,11 @@
                 >
                   Sửa
                 </button>
-
-                <button
+              </div>
+</td>
+            <td>
+              <div v-if="isAdmin" class="d-flex justify-content-end gap-2 flex-wrap">
+              <button
                     v-if="Number(nv.trangThai) === 1"
                     class="btn btn-sm btn-outline-danger px-3 rounded-2"
                     :disabled="loadingStates[nv.maNhanVien]"
@@ -342,14 +345,7 @@ async function fetchDanhSachNhanVien() {
   }
 }
 //role
-function hienThiVaiTro(vaiTro) {
-  const roles = {
-    1: "Quản lý/Admin",
-    2: "Nhân viên",
-    3: "Hotline",
-  };
-  return roles[Number(vaiTro)] || "Không xác định";
-}
+
 
 onMounted(() => {
   if (isAdmin.value) {

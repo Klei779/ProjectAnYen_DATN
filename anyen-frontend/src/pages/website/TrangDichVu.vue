@@ -264,7 +264,9 @@ const loadCombos = async () => {
         'http://localhost:8080/api/dich-vu'
     )
 
-    packages.value = res.data.map(item => ({
+    packages.value = res.data
+        .filter(item => item.trangThai === 1) // Chỉ hiển thị combo đang hoạt động
+        .map(item => ({
       id: item.comboId,
       name: item.tenCombo,
       subtitle: item.moTa,

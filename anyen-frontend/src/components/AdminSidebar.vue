@@ -47,7 +47,10 @@
         <i class="fa-solid fa-file-contract menu-icon"></i>
         <span class="sidebar-text">Quản lý hợp đồng</span>
       </RouterLink>
-
+      <RouterLink to="/admin/duyet-san-pham" class="menu-item" title="Quản lý sản phẩm">
+        <i class="fa-solid fa-file-contract menu-icon"></i>
+        <span class="sidebar-text">Quản lý sản phẩm</span>
+      </RouterLink>
       <RouterLink to="/admin/thong-bao" class="menu-item" title="Thông báo">
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>

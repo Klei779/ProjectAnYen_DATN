@@ -28,7 +28,10 @@ public class ComBoChiTiet {
     private Integer comboId;
 
     @Column(name = "Loai")
-    private String loai;
+    private Integer loai;
+
+    public static final Integer LOAI_SAN_PHAM = 0;
+    public static final Integer LOAI_DICH_VU = 1;
 
     @Column(name = "NoiDung")
     private String noiDung;

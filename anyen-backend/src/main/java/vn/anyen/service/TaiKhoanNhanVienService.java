@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import vn.anyen.constants.AppLabels;
 import vn.anyen.dto.request.CapNhatTaiKhoanNVRequest;
 import vn.anyen.dto.response.TaiKhoanNhanVienResponse;
 import vn.anyen.entity.NhanVien;
@@ -53,6 +54,8 @@ public class TaiKhoanNhanVienService {
                 .diaChi(nv.getDiaChi())
                 .vaiTro(nv.getVaiTro())
                 .trangThai(nv.getTrangThai())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_NHAN_VIEN,nv.getTrangThai()))
+                .tenVaiTro(AppLabels.getLabel(AppLabels.TEN_VAI_TRO,nv.getVaiTro()))
                 .build();
     }
 

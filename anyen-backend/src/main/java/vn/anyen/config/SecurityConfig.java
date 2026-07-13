@@ -93,11 +93,7 @@ public class SecurityConfig {
 
                         // API nhân viên còn lại
                         .requestMatchers("/api/nhan-vien/**")
-                        .hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_HOTLINE",
-                                "ROLE_NHANVIEN"
-                        )
+                        .authenticated()
                         .anyRequest()
                         .authenticated()
                 )

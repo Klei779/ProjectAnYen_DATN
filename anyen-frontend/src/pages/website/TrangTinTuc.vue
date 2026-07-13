@@ -2,7 +2,7 @@
   <div class="tin-tuc-page">
 
     <!-- Banner -->
-    <section class="banner">
+    <section class="banner" :style="{ backgroundImage: `url(${heroSectionTrangSanPham})` }">
       <div class="banner-content">
         <h1>Tin tức An Yên</h1>
         <p>
@@ -85,6 +85,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import axios from "axios";
+import heroSectionTrangSanPham from "../../assets/images/TrangSanPham/heroSection_TrangSanPham.png";
 
 
 const router = useRouter();
@@ -180,9 +181,6 @@ onMounted(()=>{
       linear-gradient(
           rgba(0,0,0,.45),
           rgba(0,0,0,.45)
-      ),
-      url(
-      "https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2"
       );
 
   background-size:cover;
@@ -195,7 +193,7 @@ onMounted(()=>{
 
   justify-content:center;
 
-  color:white;
+  color: #15304e;
 
 }
 

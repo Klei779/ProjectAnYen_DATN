@@ -2,7 +2,9 @@ import api from "../api/api.js";
 
 const API_URL = "/api/nhan-vien/hoa-don-cua-toi";
 
+
 export async function getHoaDonCuaToi(params = {}) {
+
     const response = await api.get(API_URL, {
         params: {
             keyword: params.keyword || "",
@@ -15,6 +17,7 @@ export async function getHoaDonCuaToi(params = {}) {
         },
     });
 
+
     return {
         items: response.data.items || [],
         total: Number(response.data.total || 0),
@@ -23,4 +26,18 @@ export async function getHoaDonCuaToi(params = {}) {
         totalPages: Number(response.data.totalPages || 0),
         admin: Boolean(response.data.admin),
     };
+
+}
+
+
+// API lấy chi tiết hóa đơn
+export async function getChiTietHoaDon(maHoaDon){
+
+    const response = await api.get(
+        `${API_URL}/${maHoaDon}`
+    );
+
+
+    return response.data;
+
 }

@@ -58,4 +58,12 @@ public class HoaDonCuaToiController {
                 pageSize
         );
     }
+    @GetMapping("/{maHoaDon}")
+    public Map<String,Object> getChiTietHoaDon(
+            @PathVariable Integer maHoaDon
+    ){
+
+        return hoaDonCuaToiService
+                .getChiTietHoaDon(maHoaDon);
+    }
 }

@@ -60,7 +60,9 @@ public class SecurityConfig {
                                 "/api/lien-he",
                                 "/api/lien-he/**",
                                 "/api/khach-hang",
-                                "/api/khach-hang/**"
+                                "/api/khach-hang/**",
+                                "/api/tin-tuc",
+                                "/api/tin-tuc/**"
                         )
                         .permitAll()
 
@@ -91,12 +93,7 @@ public class SecurityConfig {
 
                         // API nhân viên còn lại
                         .requestMatchers("/api/nhan-vien/**")
-                        .hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_HOTLINE",
-                                "ROLE_NHANVIEN"
-                        )
-
+                        .authenticated()
                         .anyRequest()
                         .authenticated()
                 )

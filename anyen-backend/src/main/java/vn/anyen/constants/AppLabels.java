@@ -71,4 +71,14 @@ public class AppLabels {
             "KET_QUA_HUY_HOA_DON";
 
     public static final Integer SP_NGUNG_BAN = 6;
+
+    //  TIN TỨC
+
+    public static final Integer TT_AN = 0;
+    public static final Integer TT_HIEN = 1;
+
+    public static final Integer TT_KIEN_THUC = 1;
+    public static final Integer TT_PHONG_TUC = 2;
+    public static final Integer TT_THONG_BAO = 3;
+    public static final Integer TT_HOAT_DONG = 4;
 }

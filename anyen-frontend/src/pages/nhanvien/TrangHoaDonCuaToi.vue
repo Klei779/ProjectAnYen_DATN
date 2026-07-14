@@ -1,13 +1,15 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
-import { getHoaDonCuaToi } from "../../services/hoaDonCuaToiService.js";
+import { getHoaDonCuaToi, getChiTietHoaDon} from "../../services/hoaDonCuaToiService.js";
 
 const loading = ref(false);
 const hoaDons = ref([]);
 const total = ref(0);
 const isAdmin = ref(false);
-
+const detailVisible = ref(false);
+const detailLoading = ref(false);
+const hoaDonDetail = ref(null);
 const filters = ref({
   keyword: "",
   trangThai: "Tất cả",
@@ -116,7 +118,45 @@ const handlePageChange = (page) => {
   filters.value.page = page;
   loadHoaDon();
 };
+const xemChiTietHoaDon = async (item) => {
 
+  try {
+
+    detailLoading.value = true;
+
+
+    const data = await getChiTietHoaDon(
+        item.maHoaDon
+    );
+
+
+    hoaDonDetail.value = data;
+
+
+    detailVisible.value = true;
+
+
+  } catch(error) {
+
+    console.error(
+        "Lỗi lấy chi tiết hóa đơn:",
+        error
+    );
+
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        "Không thể tải chi tiết hóa đơn"
+    );
+
+
+  } finally {
+
+    detailLoading.value = false;
+
+  }
+
+};
 onMounted(() => {
   loadHoaDon();
 });
@@ -264,7 +304,7 @@ onMounted(() => {
             </td>
           </tr>
 
-          <tr v-for="item in hoaDons" :key="item.maHoaDon">
+          <tr v-for="item in hoaDons" :key="item.maHoaDon" class="invoice-row" @click="xemChiTietHoaDon(item)">
             <td>
               <div class="code-main">{{ item.soHoaDon }}</div>
               <small>#{{ item.maHoaDon }}</small>
@@ -317,6 +357,136 @@ onMounted(() => {
         />
       </div>
     </div>
+    <el-dialog
+        v-model="detailVisible"
+        title="Chi tiết hóa đơn"
+        width="800px"
+    >
+
+      <div
+          v-loading="detailLoading"
+          class="invoice-detail"
+      >
+
+        <template v-if="hoaDonDetail">
+
+          <div class="detail-header">
+
+            <h2>
+              {{ hoaDonDetail.maHoaDon }}
+            </h2>
+
+            <p>
+              Mã đơn hàng:
+              {{ hoaDonDetail.maDonHang }}
+            </p>
+
+          </div>
+
+
+          <el-divider />
+
+
+          <div class="customer-info">
+
+            <p>
+              <b>Khách hàng:</b>
+              {{ hoaDonDetail.khachHang?.ten }}
+            </p>
+
+
+            <p>
+              <b>Số điện thoại:</b>
+              {{ hoaDonDetail.khachHang?.soDienThoai }}
+            </p>
+
+
+            <p>
+              <b>Email:</b>
+              {{ hoaDonDetail.khachHang?.email }}
+            </p>
+
+
+            <p>
+              <b>Địa chỉ:</b>
+              {{ hoaDonDetail.khachHang?.diaChi }}
+            </p>
+
+
+            <p>
+              <b>Nhân viên phụ trách:</b>
+              {{ hoaDonDetail.nhanVien }}
+            </p>
+
+
+            <p>
+              <b>Ngày in:</b>
+              {{ formatDate(hoaDonDetail.ngayIn) }}
+            </p>
+
+          </div>
+
+
+          <el-divider />
+
+
+          <h3>
+            Chi tiết dịch vụ
+          </h3>
+
+
+          <el-table
+              :data="hoaDonDetail.chiTiet"
+              border
+          >
+
+            <el-table-column
+                label="Tên sản phẩm"
+                prop="tenSanPham"
+            />
+
+
+            <el-table-column
+                label="Số lượng"
+                prop="soLuong"
+                width="100"
+            />
+
+
+            <el-table-column
+                label="Đơn giá"
+                width="150"
+            >
+
+              <template #default="scope">
+
+                {{ formatMoney(scope.row.giaTien) }}
+
+              </template>
+
+            </el-table-column>
+
+
+          </el-table>
+
+
+          <div class="total-detail">
+
+            Tổng tiền:
+            <b>
+              {{ formatMoney(hoaDonDetail.tongTien) }}
+            </b>
+
+          </div>
+
+
+        </template>
+
+
+      </div>
+
+
+    </el-dialog>
   </div>
 </template>
 

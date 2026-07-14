@@ -17,7 +17,8 @@ import DichVuChiTiet from "../pages/website/TrangDichVuChiTiet.vue";
 import TrangGioiThieu from "../pages/website/TrangGioiThieu.vue";
 import TrangLienHe from "../pages/website/TrangLienHe.vue";
 import XacNhanDoiTac from "../pages/website/XacNhanDoiTac.vue";
-
+import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
+import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
@@ -80,6 +81,17 @@ const routes = [
             {
                 path: "lien-he",
                 component: TrangLienHe,
+            },
+            {
+                path:"/tin-tuc",
+                name:"TinTuc",
+                component:TrangTinTuc
+            },
+
+            {
+                path:"/tin-tuc/:id",
+                name:"ChiTietTinTuc",
+                component:ChiTietTinTuc
             },
             {
                 path: "xac-nhan-doi-tac",

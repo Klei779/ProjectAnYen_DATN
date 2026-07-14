@@ -132,4 +132,12 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             nativeQuery = true
     )
     long countDoiTacTuChoi(@Param("maDonHang") Integer maDonHang);
+
+    @Query("""
+        SELECT COUNT(dh)
+        FROM DonHang dh
+        WHERE dh.nhanVien.maNhanVien = :maNhanVien
+        AND dh.trangThai NOT IN (6, 7)
+    """)
+    long countDonDangXuLyByNhanVien(@Param("maNhanVien") Integer maNhanVien);
 }

@@ -9,8 +9,10 @@ import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 import vn.anyen.dto.request.HuyDonHangRequest;
 import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
+import vn.anyen.dto.response.NhanVienDeXuatResponse;
 import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
 import vn.anyen.service.DonHangService;
+import vn.anyen.service.QuanLyNhanVienService;
 import vn.anyen.service.SanPhamService;
 
 import java.util.List;
@@ -23,6 +25,7 @@ public class NhanVienDonHangController {
 
     private final DonHangService donHangService;
     private final SanPhamService sanPhamService;
+    private final QuanLyNhanVienService quanLyNhanVienService;
 
     @PostMapping
     public ResponseEntity<DonHangResponse> taoDonHang(
@@ -87,5 +90,13 @@ public class NhanVienDonHangController {
         return ResponseEntity.ok(
                 sanPhamService.getSanPhamTaoDonHangOptions()
         );
+    }
+
+    @GetMapping("/de-xuat-nhan-vien")
+    public ResponseEntity<List<NhanVienDeXuatResponse>> getNhanVienDeXuat(
+            @RequestParam Double lat,
+            @RequestParam Double lng
+    ) {
+        return ResponseEntity.ok(quanLyNhanVienService.getNhanVienDeXuat(lat, lng));
     }
 }

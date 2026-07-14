@@ -77,6 +77,11 @@ public class NhanVienDonHangController {
         return donHangService.huyDonHang(maDonHang, request);
     }
 
+    @PutMapping("/{maDonHang}/gui-doi-tac")
+    public ResponseEntity<DonHangResponse> guiDoiTac(@PathVariable Integer maDonHang) {
+        return ResponseEntity.ok(donHangService.guiDoiTac(maDonHang));
+    }
+
     @GetMapping("/san-pham-options")
     public ResponseEntity<List<SanPhamTaoDonHangResponse>> getSanPhamTaoDonHangOptions() {
         return ResponseEntity.ok(

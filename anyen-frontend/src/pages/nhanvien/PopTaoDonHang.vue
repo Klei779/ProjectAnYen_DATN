@@ -232,7 +232,7 @@
 
         <div class="footer-right">
           <button class="btn-primary" @click="submitOrder">
-            Lưu và gửi đối tác
+            Lưu đơn hàng
           </button>
         </div>
       </div>

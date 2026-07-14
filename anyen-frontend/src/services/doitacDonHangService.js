@@ -126,3 +126,29 @@ export async function updateTrangThaiDonHang(maDonHang, payload) {
 
   return response.data;
 }
+
+export async function xuLyDonHang(maDonHang, thoiGianUocTinh) {
+  const response = await api.post(`${API_URL}/${maDonHang}/xu-ly`, null, {
+    params: { thoiGianUocTinh }
+  });
+  return response.data;
+}
+
+export async function daGiaoDonHang(maDonHang) {
+  const response = await api.post(`${API_URL}/${maDonHang}/da-giao`);
+  return response.data;
+}
+
+export async function huyDonHang(maDonHang, lyDo) {
+  const response = await api.post(`${API_URL}/${maDonHang}/huy`, null, {
+    params: { lyDo }
+  });
+  return response.data;
+}
+
+export async function baoCaoSuCo(maDonHang, lyDo) {
+  const response = await api.post(`${API_URL}/${maDonHang}/bao-cao-su-co`, null, {
+    params: { lyDo }
+  });
+  return response.data;
+}

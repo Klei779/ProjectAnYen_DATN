@@ -28,7 +28,7 @@ public class ComBoChiTiet {
     private Integer comboId;
 
     @Column(name = "Loai")
-    private String loai;
+    private Integer loai;
 
     @Column(name = "NoiDung")
     private String noiDung;

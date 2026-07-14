@@ -201,7 +201,7 @@
     align-items: center;
     gap: 8px;
     z-index: 2;
-    width: 60px;
+    flex: 1;
 }
 
 .step-circle {
@@ -241,7 +241,8 @@
     font-size: 11px;
     color: #666;
     text-align: center;
-    white-space: nowrap;
+    white-space: normal;
+    line-height: 1.2;
 }
 
 .step-line {

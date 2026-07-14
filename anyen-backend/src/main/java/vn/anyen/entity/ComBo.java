@@ -34,5 +34,5 @@ public class ComBo {
     private String hinhAnh;
 
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 }

@@ -40,8 +40,14 @@
           </div>
 
           <div class="noti-action">
-            <p>{{ item.actionText }}</p>
-            <i class="fa-solid fa-chevron-right"></i>
+            <template v-if="isChoXacNhan(item)">
+              <button class="btn-sm btn-reject" @click.stop="quickReject(item)">Từ chối</button>
+              <button class="btn-sm btn-accept" @click.stop="quickAccept(item)">Chấp nhận</button>
+            </template>
+            <template v-else>
+              <p>{{ item.actionText }}</p>
+              <i class="fa-solid fa-chevron-right"></i>
+            </template>
           </div>
         </div>
       </div>
@@ -317,22 +323,22 @@ const router = useRouter();
 const activeTab = ref("all");
 const selectedNotification = ref(null);
 const notifications = ref([]);
-const TT_DT_CHO_XAC_NHAN = 0;
-const TT_DT_DA_CHAP_NHAN = 1;
-const TT_DT_DA_TU_CHOI = 2;
+const TT_DT_CHO_XAC_NHAN = "CHO_XAC_NHAN";
+const TT_DT_DA_CHAP_NHAN = "DA_CHAP_NHAN";
+const TT_DT_DA_TU_CHOI = "DA_TU_CHOI";
 
 const isChoXacNhan = (item) => {
-  return Number(item?.trangThaiThongBao) === TT_DT_CHO_XAC_NHAN;
+  return item?.trangThaiThongBao === TT_DT_CHO_XAC_NHAN;
 };
 
 const getTrangThaiThongBaoText = (status) => {
   const map = {
-    0: "Chờ xác nhận",
-    1: "Đã chấp nhận",
-    2: "Đã từ chối",
+    "CHO_XAC_NHAN": "Chờ xác nhận",
+    "DA_CHAP_NHAN": "Đã chấp nhận",
+    "DA_TU_CHOI": "Đã từ chối",
   };
 
-  return map[Number(status)] || "Không xác định";
+  return map[status] || "Không xác định";
 };
 const tabs = [
   { key: "all", label: "Tất cả" },
@@ -374,7 +380,6 @@ const loadThongBao = async () => {
     const orderNotifications = Array.isArray(data)
         ? data.map(item => ({
           ...item,
-          trangThaiThongBao: Number(item.trangThaiThongBao),
         }))
         : [];
 
@@ -456,6 +461,16 @@ const acceptOrder = async () => {
     console.error("Lỗi chấp nhận đơn hàng:", error);
     alert(error.response?.data?.message || "Chấp nhận đơn hàng thất bại");
   }
+};
+
+const quickAccept = async (item) => {
+  selectedNotification.value = item;
+  await acceptOrder();
+};
+
+const quickReject = async (item) => {
+  selectedNotification.value = item;
+  await rejectOrder();
 };
 
 const rejectOrder = async () => {

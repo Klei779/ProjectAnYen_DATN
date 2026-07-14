@@ -20,7 +20,7 @@ public class TaoHoaDonRequest {
 
     private BigDecimal tongTien;
 
-    @NotBlank(message = "Phương thức thanh toán không được để trống")
+    @NotNull(message = "Phương thức thanh toán không được để trống")
     private Integer phuongThucThanhToan;
 
     @NotNull(message = "Trạng thái hóa đơn không được để trống")

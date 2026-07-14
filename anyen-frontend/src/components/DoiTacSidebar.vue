@@ -21,11 +21,11 @@
         <small>Nhà cung cấp</small>
       </div>
 
-      <UserProfileDropdown 
-        v-if="showProfile" 
-        :user="user" 
-        icon-class="bi bi-flower1"
-        @logout="logout" 
+      <UserProfileDropdown
+          v-if="showProfile"
+          :user="user"
+          icon-class="bi bi-flower1"
+          @logout="logout"
       />
     </div>
 
@@ -38,6 +38,15 @@
       <RouterLink to="/doi-tac/quan-ly-san-pham" class="menu-item" title="Quản lý sản phẩm">
         <i class="fa-solid fa-box menu-icon"></i>
         <span class="sidebar-text">Quản lý sản phẩm</span>
+      </RouterLink>
+
+      <RouterLink
+          to="/doi-tac/tao-combo"
+          class="menu-item"
+          title="Tạo Combo"
+      >
+        <i class="fa-solid fa-boxes-stacked menu-icon"></i>
+        <span class="sidebar-text">Tạo Combo</span>
       </RouterLink>
 
       <RouterLink to="/doi-tac/tao-san-pham" class="menu-item" title="Tạo sản phẩm">
@@ -83,8 +92,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from "vue";
-import { useRouter } from "vue-router";
+import {ref, onMounted, onUnmounted} from "vue";
+import {useRouter} from "vue-router";
 import UserProfileDropdown from "./UserProfileDropdown.vue";
 
 const router = useRouter();

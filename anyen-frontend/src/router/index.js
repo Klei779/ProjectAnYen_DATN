@@ -27,6 +27,7 @@ import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
 import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 import TrangTaoSanPham from "../pages/doitac/TrangTaoSanPham.vue";
 import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
+import TaoCombo from "../pages/doitac/TaoCombo.vue";
 
 // Nhân viên
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
@@ -115,6 +116,10 @@ const routes = [
             {
                 path: "quan-ly-san-pham",
                 component: TrangQLSanPham,
+            },
+            {
+                path: "tao-combo",
+                component: TaoCombo,
             },
             {
                 path: "tao-san-pham",

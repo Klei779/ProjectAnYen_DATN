@@ -41,3 +41,7 @@ export async function cancelHopDong(id) {
     const response = await api.put(`${API_URL}/${id}/huy`);
     return response.data;
 }
+export async function deleteHopDong(id) {
+    const response = await api.delete(`${API_URL}/${id}`);
+    return response.data;
+}

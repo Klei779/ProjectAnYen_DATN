@@ -67,4 +67,13 @@ public class HopDongController {
     public HopDongResponse huyHopDong(@PathVariable Integer id) {
         return hopDongService.huyHopDong(id);
     }
+    @DeleteMapping("/{id}")
+    public Map<String, Object> xoaHopDong(@PathVariable Integer id) {
+        hopDongService.xoaHopDongChuaKy(id);
+
+        return Map.of(
+                "success", true,
+                "message", "Xóa hợp đồng chưa ký thành công"
+        );
+    }
 }

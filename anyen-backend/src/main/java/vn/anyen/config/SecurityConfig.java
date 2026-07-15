@@ -51,6 +51,7 @@ public class SecurityConfig {
 
                         // Public website
                         .requestMatchers(
+                                "/images/**",
                                 "/api/gioi-thieu",
                                 "/api/gioi-thieu/**",
                                 "/api/san-pham",

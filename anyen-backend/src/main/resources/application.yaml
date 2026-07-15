@@ -8,9 +8,9 @@ server:
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/dich_vu_mai_tang?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:root123}
+    url: jdbc:mysql://localhost:3306/dich_vu_mai_tang?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
+    username: root
+    password: root123
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   mail:

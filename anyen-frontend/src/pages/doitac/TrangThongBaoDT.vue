@@ -489,31 +489,61 @@ const notifications = ref([]);
 
 
 const loadThongBao = async () => {
-
   loading.value = true;
 
-
-
   try {
-
     const data = await getThongBaoDoiTac();
+    const list = Array.isArray(data) ? data : [];
 
+    notifications.value = list.map(item => ({
+      MaThongBao:
+          item.MaThongBao ??
+          item.maThongBao ??
+          item.id,
 
+      Loai:
+          item.Loai ??
+          item.loai,
 
-    notifications.value = Array.isArray(data) ? data : [];
+      TieuDe:
+          item.TieuDe ??
+          item.tieuDe,
 
+      NoiDung:
+          item.NoiDung ??
+          item.noiDung,
+
+      MaDonHang:
+          item.MaDonHang ??
+          item.maDonHang,
+
+      ThoiGianTao:
+          item.ThoiGianTao ??
+          item.thoiGianTao ??
+          item.thoiGian,
+
+      TrangThaiThongBao:
+          item.TrangThaiThongBao ??
+          item.trangThaiThongBao ??
+          item.trangThai,
+
+      DaDoc:
+          item.DaDoc ??
+          item.daDoc ??
+          false,
+
+      LyDoTuChoi:
+          item.LyDoTuChoi ??
+          item.lyDoTuChoi
+    }));
+
+    console.log("Thông báo sau khi chuẩn hóa:", notifications.value);
   } catch (error) {
-
     console.error("Lỗi tải thông báo:", error);
-
     showToast("Không thể tải danh sách thông báo", "error");
-
   } finally {
-
     loading.value = false;
-
   }
-
 };
 
 

@@ -299,7 +299,7 @@ const router = createRouter({
     routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
     const token = localStorage.getItem("token");
 
     const requiresAuth = to.matched.some(
@@ -312,14 +312,12 @@ router.beforeEach((to, from, next) => {
 
     // Route không cần đăng nhập thì cho qua
     if (!requiresAuth) {
-        next();
-        return;
+        return true;
     }
 
     // Route cần đăng nhập nhưng không có token
     if (!token) {
-        next("/");
-        return;
+        return "/";
     }
 
     let roleFromToken = null;
@@ -339,8 +337,7 @@ router.beforeEach((to, from, next) => {
             localStorage.removeItem("tenDangNhap");
             localStorage.removeItem("id");
 
-            next("/");
-            return;
+            return "/";
         }
 
     } catch (error) {
@@ -350,26 +347,24 @@ router.beforeEach((to, from, next) => {
         localStorage.removeItem("tenDangNhap");
         localStorage.removeItem("id");
 
-        next("/");
-        return;
+        return "/";
     }
 
     // Có token nhưng sai quyền
     if (requiredRole && roleFromToken !== requiredRole) {
         if (roleFromToken === "NHANVIEN") {
-            next("/nhan-vien/tong-quan");
+            return "/nhan-vien/tong-quan";
         } else if (roleFromToken === "DOITAC") {
-            next("/doi-tac/tong-quan");
+            return "/doi-tac/tong-quan";
         } else if (roleFromToken === "ADMIN") {
-            next("/admin/tong-quan");
+            return "/admin/tong-quan";
         } else if (roleFromToken === "HOTLINE") {
-            next("/hotline/quan-ly-cong-viec");
+            return "/hotline/quan-ly-cong-viec";
         } else {
-            next("/");
+            return "/";
         }
-        return;
     }
 
-    next();
+    return true;
 });
 export default router;

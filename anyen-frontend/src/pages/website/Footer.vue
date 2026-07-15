@@ -1,101 +1,157 @@
 <template>
   <footer class="footer">
+    <div class="footer-main">
+      <div class="footer-container">
+        <!-- Thông tin thương hiệu -->
+        <div class="footer-brand">
+          <RouterLink to="/" class="footer-logo-link">
+            <img
+                :src="logofooter"
+                alt="Logo An Yên"
+                class="footer-logo"
+            />
+          </RouterLink>
 
-    <div class="container-fluid footer-container">
+          <p class="footer-description">
+            An Yên – Đồng hành cùng gia đình trong những khoảnh khắc thiêng liêng,
+            mang đến sự an lành và yên tâm trọn vẹn.
+          </p>
 
-      <!-- Logo -->
-      <div class="footer-brand">
+          <div class="footer-social">
+            <a href="#" aria-label="Facebook">
+              <i class="fab fa-facebook-f"></i>
+            </a>
 
-        <img
-            :src="logofooter"
-            alt="An Yên"
-            class="logo"
-        >
+            <a href="#" aria-label="YouTube">
+              <i class="fab fa-youtube"></i>
+            </a>
 
-        <p class="footer-desc">
-          An Yên - Luôn đồng hành cùng gia đình trong
-          những khoảnh khắc thiêng liêng
-        </p>
+            <a href="#" aria-label="Zalo">
+              <span class="zalo-text">Zalo</span>
+            </a>
 
-        <div class="social">
-          <i class="fab fa-facebook-f"></i>
-          <i class="fab fa-instagram"></i>
-          <i class="fab fa-youtube"></i>
-          <i class="fab fa-tiktok"></i>
+            <a href="#" aria-label="TikTok">
+              <i class="fab fa-tiktok"></i>
+            </a>
+          </div>
         </div>
 
-      </div>
-
-      <!-- Menu -->
-      <div class="row footer-row">
-
         <!-- Về An Yên -->
-        <div class="col-6 col-lg-3 footer-col">
+        <div class="footer-column">
           <h2>VỀ AN YÊN</h2>
 
-          <p>Giới thiệu</p>
-          <p>Sứ mệnh - Tầm nhìn</p>
-          <p>Giá trị cốt lõi</p>
+          <nav class="footer-menu">
+            <RouterLink to="/gioi-thieu">Giới thiệu</RouterLink>
+            <RouterLink to="/gioi-thieu">Sứ mệnh - Tầm nhìn</RouterLink>
+            <RouterLink to="/gioi-thieu">Giá trị cốt lõi</RouterLink>
+          </nav>
         </div>
 
         <!-- Sản phẩm -->
-        <div class="col-6 col-lg-3 footer-col">
+        <div class="footer-column">
           <h2>SẢN PHẨM</h2>
 
-          <p>Bàn thờ & Phụ kiện</p>
-          <p>Hương & Nhang</p>
-          <p>Đồ thờ cúng</p>
+          <nav class="footer-menu">
+            <RouterLink to="/san-pham">Bàn thờ & Phụ kiện</RouterLink>
+            <RouterLink to="/san-pham">Hương & Nhang</RouterLink>
+            <RouterLink to="/san-pham">Đồ thờ cúng</RouterLink>
+            <RouterLink to="/san-pham">Vật phẩm tâm linh</RouterLink>
+            <RouterLink to="/san-pham" class="footer-more">
+              Xem thêm
+            </RouterLink>
+          </nav>
         </div>
 
         <!-- Dịch vụ -->
-        <div class="col-6 col-lg-3 footer-col">
+        <div class="footer-column">
           <h2>DỊCH VỤ</h2>
 
-          <p>Gói tang lễ</p>
-          <p>Dịch vụ lễ</p>
-          <p>Quy trình phục vụ</p>
+          <nav class="footer-menu">
+            <RouterLink to="/dich-vu">Gói tang lễ</RouterLink>
+            <RouterLink to="/dich-vu">Dịch vụ lễ</RouterLink>
+            <RouterLink to="/dich-vu">Quy trình phục vụ</RouterLink>
+            <RouterLink to="/dich-vu">Chính sách bảo hành</RouterLink>
+          </nav>
+        </div>
+
+        <!-- Tin tức -->
+        <div class="footer-column">
+          <h2>TIN TỨC</h2>
+
+          <nav class="footer-menu">
+            <RouterLink to="/tin-tuc">Tin tức</RouterLink>
+            <RouterLink to="/tin-tuc">Kiến thức tang lễ</RouterLink>
+            <RouterLink to="/tin-tuc">Hướng dẫn</RouterLink>
+            <RouterLink to="/tin-tuc">Phong tục</RouterLink>
+          </nav>
         </div>
 
         <!-- Liên hệ -->
-        <div class="col-6 col-lg-3 footer-col">
+        <div class="footer-column footer-contact">
           <h2>LIÊN HỆ</h2>
 
-          <p>📞 0000 000 000</p>
-          <p>✉️ info@anyen.vn</p>
-          <p>🌐 www.anyen.vn</p>
-          <p>📍 Q12, HCM</p>
-        </div>
+          <a href="tel:19001234" class="contact-item">
+            <i class="fas fa-phone"></i>
 
-      </div>
+            <span>1900 1234</span>
+          </a>
 
-    </div>
+          <a href="mailto:info@anyen.vn" class="contact-item">
+            <i class="fas fa-envelope"></i>
 
-    <div class="footer-bottom">
+            <span>info@anyen.vn</span>
+          </a>
 
-      <div class="container-fluid">
+          <a
+              href="https://www.anyen.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="contact-item"
+          >
+            <i class="fas fa-globe"></i>
 
-        <div class="footer-bottom-inner">
+            <span>www.anyen.vn</span>
+          </a>
 
-          <span>
-            © 2024 An Yên. All rights reserved.
-          </span>
+          <div class="contact-item contact-address">
+            <i class="fas fa-map-marker-alt"></i>
 
-          <div class="footer-links">
-            <p>Chính sách bảo mật</p>
-            <p>Điều khoản sử dụng</p>
+            <span>
+              Quận 12, Thành phố Hồ Chí Minh
+            </span>
           </div>
-
         </div>
-
       </div>
-
     </div>
 
+    <!-- Footer cuối -->
+    <div class="footer-bottom">
+      <div class="footer-bottom-container">
+        <p>
+          © {{ currentYear }} An Yên. All rights reserved.
+        </p>
+
+        <div class="footer-bottom-links">
+          <RouterLink to="/chinh-sach-bao-mat">
+            Chính sách bảo mật
+          </RouterLink>
+
+          <span></span>
+
+          <RouterLink to="/dieu-khoan-su-dung">
+            Điều khoản sử dụng
+          </RouterLink>
+        </div>
+      </div>
+    </div>
   </footer>
 </template>
 
 <script setup>
+import { computed } from "vue";
 import logofooter from "../../assets/images/icon/logofooter.png";
+
+const currentYear = computed(() => new Date().getFullYear());
 </script>
 
 <style src="../../assets/styles/components/Footer.css"></style>

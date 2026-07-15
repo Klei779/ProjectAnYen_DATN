@@ -210,6 +210,10 @@ public class QuanLyDoiTacService {
             context.setVariable("soDienThoai", doiTac.getSoDienThoai());
             context.setVariable("tenDangNhap", doiTac.getTenDangNhap());
             context.setVariable("confirmUrl", confirmUrl);
+            context.setVariable("websiteUrl", "http://localhost:5173/");
+            context.setVariable("websiteDisplay", "www.anyen.vn");
+            context.setVariable("logoUrl", "https://res.cloudinary.com/duongtan/image/upload/v1721030000/logoAnYen.png");
+            context.setVariable("footerLogoUrl", "https://res.cloudinary.com/duongtan/image/upload/v1721030000/logoAnYen.png");
 
             String htmlContent = templateEngine.process("xac-nhan-doi-tac", context);
 

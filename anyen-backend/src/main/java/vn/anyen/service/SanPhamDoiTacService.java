@@ -222,21 +222,36 @@ public class SanPhamDoiTacService {
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    public SanPhamDoiTacResponse anSanPham(Authentication authentication, Integer id) {
+    public SanPhamDoiTacResponse anSanPham(
+            Authentication authentication,
+            Integer id
+    ) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+
+        // Chỉ sản phẩm đang bán mới được ngưng bán
+        if (!SanPham.TRANG_THAI_DANG_BAN.equals(sanPham.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Chỉ sản phẩm đang bán mới có thể ngưng bán"
+            );
+        }
 
         sanPham.setTrangThai(SanPham.TRANG_THAI_AN);
 
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    public SanPhamDoiTacResponse hienSanPham(Authentication authentication, Integer id) {
+    public SanPhamDoiTacResponse hienSanPham(
+            Authentication authentication,
+            Integer id
+    ) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
-        if (SanPham.TRANG_THAI_CHO_XAC_NHAN.equals(sanPham.getTrangThai())) {
+        // Chỉ sản phẩm đã ngưng bán/ẩn mới được bán lại
+        if (!SanPham.TRANG_THAI_AN.equals(sanPham.getTrangThai())) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Sản phẩm đang chờ nhân viên duyệt, không thể tự chuyển sang đang bán"
+                    HttpStatus.CONFLICT,
+                    "Chỉ sản phẩm đã ngưng bán mới có thể bán lại"
             );
         }
 

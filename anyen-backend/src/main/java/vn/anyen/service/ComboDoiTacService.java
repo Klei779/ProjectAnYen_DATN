@@ -17,6 +17,10 @@ import vn.anyen.repository.ComBoChiTietRepository;
 import vn.anyen.repository.ComBoRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamDoiTacRepository;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.util.Set;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -34,6 +38,7 @@ public class ComboDoiTacService {
     private final ComBoChiTietRepository comboChiTietRepository;
     private final SanPhamDoiTacRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
     public List<ComboDoiTacResponse> getCombos(Authentication authentication) {
@@ -60,19 +65,92 @@ public class ComboDoiTacService {
     @Transactional
     public ComboDoiTacResponse createCombo(
             Authentication authentication,
-            ComboDoiTacRequest request
+            ComboDoiTacRequest request,
+            List<MultipartFile> files
     ) {
         DoiTac doiTac = requireDoiTac(authentication);
-        List<ValidatedComboItem> items = validateProducts(doiTac, request);
+
+        List<ValidatedComboItem> items =
+                validateProducts(doiTac, request);
+
         validateComboPrice(request.getGia(), items);
+        validateComboImages(files);
 
         ComBo combo = new ComBo();
         combo.setMaDoiTac(doiTac.getMaDoiTac());
+
         applyRequest(combo, request);
 
         ComBo saved = comboRepository.save(combo);
+
+        List<String> imageUrls = uploadComboImages(files);
+
+        if (!imageUrls.isEmpty()) {
+            /*
+             * Hiện tại bảng combo chỉ có một cột HinhAnh,
+             * nên tạm lưu URL ảnh đầu tiên.
+             */
+            saved.setHinhAnh(imageUrls.get(0));
+            saved = comboRepository.save(saved);
+        }
+
         saveDetails(saved, items);
+
         return toResponse(saved);
+    }
+
+    private void validateComboImages(
+            List<MultipartFile> files
+    ) {
+        if (files == null || files.isEmpty()) {
+            return;
+        }
+
+        List<MultipartFile> realFiles = files.stream()
+                .filter(file ->
+                        file != null && !file.isEmpty()
+                )
+                .toList();
+
+        if (realFiles.size() > 20) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Combo chỉ được chọn tối đa 20 ảnh"
+            );
+        }
+
+        long maxFileSize = 5L * 1024 * 1024;
+
+        Set<String> allowedTypes = Set.of(
+                "image/jpeg",
+                "image/png",
+                "image/webp"
+        );
+
+        for (MultipartFile file : realFiles) {
+            if (file.getSize() > maxFileSize) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Ảnh "
+                                + file.getOriginalFilename()
+                                + " vượt quá 5 MB"
+                );
+            }
+
+            String contentType = file.getContentType();
+
+            if (
+                    contentType == null
+                            || !allowedTypes.contains(contentType)
+            ) {
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Ảnh "
+                                + file.getOriginalFilename()
+                                + " không đúng định dạng JPG, PNG hoặc WEBP"
+                );
+            }
+        }
     }
 
     @Transactional
@@ -346,5 +424,36 @@ public class ComboDoiTacService {
     }
 
     private record ValidatedComboItem(SanPham product, int quantity) {
+    }
+
+    private List<String> uploadComboImages(
+            List<MultipartFile> files
+    ) {
+        List<String> imageUrls = new ArrayList<>();
+
+        if (files == null || files.isEmpty()) {
+            return imageUrls;
+        }
+
+        for (MultipartFile file : files) {
+            if (file == null || file.isEmpty()) {
+                continue;
+            }
+
+            try {
+                String imageUrl = cloudinaryService.upload(file);
+                imageUrls.add(imageUrl);
+            } catch (IOException exception) {
+                throw new ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Không thể tải ảnh "
+                                + file.getOriginalFilename()
+                                + " lên Cloudinary",
+                        exception
+                );
+            }
+        }
+
+        return imageUrls;
     }
 }

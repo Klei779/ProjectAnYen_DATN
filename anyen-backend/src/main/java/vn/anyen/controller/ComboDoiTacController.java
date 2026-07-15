@@ -2,10 +2,12 @@ package vn.anyen.controller;
 
 import jakarta.validation.Valid;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import vn.anyen.dto.request.ComboDoiTacRequest;
 import vn.anyen.dto.response.ComboDoiTacResponse;
 import vn.anyen.dto.response.SanPhamComboDoiTacResponse;
@@ -21,21 +23,38 @@ public class ComboDoiTacController {
     private final ComboDoiTacService comboDoiTacService;
 
     @GetMapping
-    public List<ComboDoiTacResponse> getCombos(Authentication authentication) {
+    public List<ComboDoiTacResponse> getCombos(
+            Authentication authentication
+    ) {
         return comboDoiTacService.getCombos(authentication);
     }
 
     @GetMapping("/san-pham")
-    public List<SanPhamComboDoiTacResponse> getSanPham(Authentication authentication) {
+    public List<SanPhamComboDoiTacResponse> getSanPham(
+            Authentication authentication
+    ) {
         return comboDoiTacService.getSanPhamCoTheChon(authentication);
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ComboDoiTacResponse create(
             Authentication authentication,
-            @Valid @RequestBody ComboDoiTacRequest request
+
+            @Valid
+            @RequestPart("data")
+            ComboDoiTacRequest request,
+
+            @RequestPart(
+                    value = "files",
+                    required = false
+            )
+            List<MultipartFile> files
     ) {
-        return comboDoiTacService.createCombo(authentication, request);
+        return comboDoiTacService.createCombo(
+                authentication,
+                request,
+                files
+        );
     }
 
     @PutMapping("/{comboId}")
@@ -44,7 +63,11 @@ public class ComboDoiTacController {
             @PathVariable Integer comboId,
             @Valid @RequestBody ComboDoiTacRequest request
     ) {
-        return comboDoiTacService.updateCombo(authentication, comboId, request);
+        return comboDoiTacService.updateCombo(
+                authentication,
+                comboId,
+                request
+        );
     }
 
     @PatchMapping("/{comboId}/trang-thai")

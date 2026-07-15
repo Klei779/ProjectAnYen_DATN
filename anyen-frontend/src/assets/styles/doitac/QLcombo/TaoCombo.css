@@ -23,6 +23,65 @@
     font-family: Inter, "Segoe UI", Arial, sans-serif;
 }
 
+.image-upload-box {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.image-file-input {
+    display: none;
+}
+
+.select-image-button,
+.remove-image-button {
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: 9px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.select-image-button {
+    border: 1px solid #f0b4ad;
+    background: #fff;
+    color: #b42318;
+}
+
+.select-image-button:hover {
+    background: #fff5f4;
+}
+
+.remove-image-button {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.selected-file-name {
+    max-width: 320px;
+    overflow: hidden;
+    color: #4b5563;
+    font-size: 14px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.image-note {
+    display: block;
+    margin-top: 8px;
+    color: #6b7280;
+}
+
+.image-preview img {
+    width: 220px;
+    height: 150px;
+    border-radius: 12px;
+    object-fit: cover;
+}
+
 .create-combo-page,
 .create-combo-page * {
     box-sizing: border-box;

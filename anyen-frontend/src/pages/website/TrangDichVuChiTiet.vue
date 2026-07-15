@@ -112,7 +112,7 @@
                 :key="item.comboChiTietId"
                 class="trang-tri-section"
             >
-              <h3>{{ item.noiDung }}</h3>
+              <h3>{{ item.noiDung }} <span v-if="item.soLuong > 1" class="combo-quantity-badge">× {{ item.soLuong }}</span></h3>
 
               <p>
                 Các mẫu trang trí sảnh tang được chuẩn bị trang nghiêm, phù hợp với từng gói dịch vụ.
@@ -142,7 +142,7 @@
               >
                 <div class="service-item-text">
                   <span class="item-type">{{ getLoaiText(item.loai) }}</span>
-                  <h4>{{ item.noiDung }}</h4>
+                  <h4>{{ item.noiDung }} <span v-if="item.soLuong > 1" class="combo-quantity-badge">× {{ item.soLuong }}</span></h4>
                   <p>{{ getImageName(item) }}</p>
                 </div>
 
@@ -461,4 +461,16 @@ watch(
 )
 </script>
 
-<style scoped src="../../assets/styles/website/TrangDichVuChiTiet.css"></style>
+<style scoped src="../../assets/styles/website/TrangDichVuChiTiet.css">
+.combo-quantity-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #fff1f2;
+  color: #9f1239;
+  font-size: 12px;
+  font-weight: 800;
+}
+</style>

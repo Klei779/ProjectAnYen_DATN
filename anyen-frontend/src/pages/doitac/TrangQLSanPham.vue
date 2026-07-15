@@ -1,6 +1,7 @@
 <script setup>
 import {ref, computed, watch, onMounted} from "vue";
 import api from "../../api/api.js";
+import { ElMessage } from "element-plus";
 
 const API_URL = "/api/doi-tac/san-pham";
 const NGUNG_BAN_API = (id) => `${API_URL}/${id}/an`;
@@ -18,6 +19,8 @@ const pageSize = 16;
 const loading = ref(false);
 const imagePreview = ref("");
 const products = ref([]);
+const stockDrafts = ref({});
+const savingStockId = ref(null);
 const total = ref(0);
 const selectedProductDetail = ref(null);
 const loadingProductDetail = ref(false);
@@ -139,6 +142,9 @@ const loadProducts = async () => {
                     : [];
 
     products.value = items.map(normalizeProduct);
+    stockDrafts.value = Object.fromEntries(
+        products.value.map(product => [product.id, product.stock])
+    );
     total.value = data.total ?? data.totalElements ?? products.value.length;
   } catch (error) {
     console.error("Lỗi load sản phẩm đối tác:", error);
@@ -379,49 +385,100 @@ const updateProduct = async () => {
   }
 };
 
-const increaseStock = (product) => {
-  product.stock += 1;
-  product.soLuong = product.stock;
-
-  if (product.trangThai !== "Ngưng bán") {
-    product.trangThai =
-        product.stock > 0
-            ? "Đang bán"
-            : "Hết hàng";
-  }
-
-  alert("Thêm tồn kho thành công!");
+const getDraftStock = (product) => {
+  const value = stockDrafts.value[product.id];
+  return Math.max(0, Number(value ?? product.stock ?? 0));
 };
 
-const decreaseStock = (product) => {
-  if (product.stock <= 0) return;
+const isStockDirty = (product) => getDraftStock(product) !== Number(product.stock || 0);
 
-  product.stock -= 1;
-  product.soLuong = product.stock;
-
-  if (product.trangThai !== "Ngưng bán") {
-    product.trangThai =
-        product.stock > 0
-            ? "Đang bán"
-            : "Hết hàng";
-  }
-
-  alert("Trừ tồn kho thành công!");
+const getDraftStockStatus = (product) => {
+  if (product.trangThaiCode === 0) return "Ngưng bán";
+  if (product.trangThaiCode === 2) return "Chờ duyệt";
+  return getDraftStock(product) > 0 ? "Còn hàng" : "Hết hàng";
 };
+
+const changeStockDraft = (product, delta) => {
+  stockDrafts.value = {
+    ...stockDrafts.value,
+    [product.id]: Math.max(0, getDraftStock(product) + delta),
+  };
+};
+
+const increaseStock = (product) => changeStockDraft(product, 1);
+const decreaseStock = (product) => changeStockDraft(product, -1);
 
 const saveStock = async (product) => {
+  if (!isStockDirty(product) || savingStockId.value === product.id) return;
+
   try {
-    // Backend SanPhamDoiTacController nhận @RequestBody { soLuong }
+    savingStockId.value = product.id;
     await api.patch(`${API_URL}/${product.id}/ton-kho`, {
-      soLuong: product.stock,
+      soLuong: getDraftStock(product),
     });
 
-    alert("Lưu tồn kho thành công!");
+    ElMessage.success("Đã lưu số lượng tồn kho");
     await loadProducts();
   } catch (error) {
     console.error("Lỗi lưu tồn kho:", error);
-    alert("Không thể lưu tồn kho.");
+    ElMessage.error(error?.response?.data?.message || "Không thể lưu tồn kho");
+  } finally {
+    savingStockId.value = null;
   }
+};
+
+const escapeExcelCell = (value) => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
+const exportProductsToExcel = () => {
+  const rows = filteredProducts.value;
+  if (!rows.length) {
+    ElMessage.warning("Không có sản phẩm để xuất");
+    return;
+  }
+
+  const headers = [
+    "STT", "Mã sản phẩm", "Tên sản phẩm", "Loại", "Giá bán", "Khuyến mãi",
+    "Tồn kho", "Trạng thái duyệt", "Trạng thái bán", "Vật liệu", "Màu sắc",
+    "Kích thước", "Xuất xứ", "CNSX", "Ghi chú"
+  ];
+  const bodyRows = rows.map((product, index) => [
+    index + 1,
+    product.sku,
+    product.name,
+    product.category,
+    Number(product.price || 0),
+    Number(product.khuyenMai || 0),
+    Number(product.stock || 0),
+    getApprovalLabel(product.trangThaiCode),
+    product.status,
+    product.vatLieu,
+    product.mauSac,
+    product.kichThuoc,
+    product.xuatXu,
+    product.cnsx,
+    product.ghiChu,
+  ]);
+
+  const table = `
+    <table border="1">
+      <thead><tr>${headers.map(header => `<th>${escapeExcelCell(header)}</th>`).join("")}</tr></thead>
+      <tbody>${bodyRows.map(row => `<tr>${row.map(cell => `<td>${escapeExcelCell(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table>`;
+  const workbook = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${table}</body></html>`;
+  const blob = new Blob(["\ufeff", workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `danh-sach-san-pham-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  ElMessage.success(`Đã xuất ${rows.length} sản phẩm`);
 };
 
 const isHiddenProduct = (product) => {
@@ -663,7 +720,7 @@ const handleImageUpload = (event) => {
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
 
-          <button class="export-btn">
+          <button class="export-btn" type="button" @click="exportProductsToExcel">
             <i class="fa-solid fa-download"></i>
             Xuất danh sách
           </button>
@@ -730,24 +787,22 @@ const handleImageUpload = (event) => {
                 {{ formatPrice(product.price) }}
               </p>
 
-              <div class="stock-row">
-                <div>
-                  <p>Tồn kho</p>
-
+              <div class="stock-row" :class="{ dirty: isStockDirty(product) }">
+                <div class="stock-copy">
+                  <p class="stock-label">Tồn kho: <strong>{{ getDraftStock(product) }}</strong></p>
                   <span
                       class="status"
-                      :class="product.status === 'Còn hàng' || product.status === 'Đang bán' ? 'available' : 'empty'"
+                      :class="getDraftStockStatus(product) === 'Còn hàng' ? 'available' : 'empty'"
                   >
-                    {{ product.status }}
+                    {{ getDraftStockStatus(product) }}
                   </span>
+                  <small v-if="isStockDirty(product)" class="unsaved-stock">Chưa lưu</small>
                 </div>
 
                 <div class="stock-control">
-                  <button @click="decreaseStock(product)">−</button>
-
-                  <span>{{ product.stock }}</span>
-
-                  <button @click="increaseStock(product)">+</button>
+                  <button type="button" :disabled="getDraftStock(product) === 0" @click="decreaseStock(product)">−</button>
+                  <span>{{ getDraftStock(product) }}</span>
+                  <button type="button" @click="increaseStock(product)">+</button>
                 </div>
               </div>
             </div>
@@ -781,9 +836,14 @@ const handleImageUpload = (event) => {
                 Bán lại
               </button>
 
-              <button class="save-btn" @click="saveStock(product)">
+              <button
+                  class="save-btn"
+                  type="button"
+                  :disabled="!isStockDirty(product) || savingStockId === product.id"
+                  @click="saveStock(product)"
+              >
                 <i class="fa-regular fa-floppy-disk"></i>
-                Lưu
+                {{ savingStockId === product.id ? "Đang lưu" : "Lưu" }}
               </button>
             </div>
           </div>
@@ -1017,17 +1077,35 @@ const handleImageUpload = (event) => {
           <div class="detail-content">
             <div v-if="loadingProductDetail" class="detail-loading">Đang tải chi tiết sản phẩm...</div>
             <template v-else>
-              <p class="detail-eyebrow">SẢN PHẨM #{{ selectedProductDetail.id }}</p>
-              <h2>{{ selectedProductDetail.name }}</h2>
-              <p class="detail-price">{{ formatPrice(selectedProductDetail.price) }}</p>
+              <div class="detail-heading-row">
+                <div>
+                  <p class="detail-eyebrow">SẢN PHẨM #{{ selectedProductDetail.id }}</p>
+                  <h2>{{ selectedProductDetail.name }}</h2>
+                </div>
+                <span class="detail-stock-pill" :class="selectedProductDetail.stock > 0 ? 'in-stock' : 'out-stock'">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                  Tồn kho {{ selectedProductDetail.stock }}
+                </span>
+              </div>
+
+              <div class="detail-price-row">
+                <p class="detail-price">{{ formatPrice(selectedProductDetail.price) }}</p>
+                <span v-if="Number(selectedProductDetail.khuyenMai || 0) > 0" class="detail-promotion">
+                  Khuyến mãi {{ formatPrice(selectedProductDetail.khuyenMai) }}
+                </span>
+              </div>
 
               <div class="detail-grid">
-                <div><span>Loại</span><strong>{{ selectedProductDetail.category || '—' }}</strong></div>
-                <div><span>Tồn kho</span><strong>{{ selectedProductDetail.stock }}</strong></div>
+                <div><span>Loại sản phẩm</span><strong>{{ selectedProductDetail.category || '—' }}</strong></div>
                 <div><span>Vật liệu</span><strong>{{ selectedProductDetail.vatLieu || '—' }}</strong></div>
+                <div><span>Nội thất</span><strong>{{ selectedProductDetail.noiThat || '—' }}</strong></div>
                 <div><span>Màu sắc</span><strong>{{ selectedProductDetail.mauSac || '—' }}</strong></div>
                 <div><span>Kích thước</span><strong>{{ selectedProductDetail.kichThuoc || '—' }}</strong></div>
-                <div><span>Xuất xứ</span><strong>{{ selectedProductDetail.xuatXu || '—' }}</strong></div>
+                <div><span>Trọng lượng</span><strong>{{ selectedProductDetail.trongLuong || '—' }}</strong></div>
+                <div><span>Quy cách</span><strong>{{ selectedProductDetail.quyCach || '—' }}</strong></div>
+                <div><span>Thiết kế</span><strong>{{ selectedProductDetail.thietKe || '—' }}</strong></div>
+                <div><span>Tôn giáo</span><strong>{{ selectedProductDetail.tonGiao || '—' }}</strong></div>
+                <div><span>Xuất xứ / CNSX</span><strong>{{ selectedProductDetail.xuatXu || '—' }} / {{ selectedProductDetail.cnsx || '—' }}</strong></div>
               </div>
 
               <section class="database-detail-section">
@@ -1215,74 +1293,129 @@ const handleImageUpload = (event) => {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: rgba(15, 23, 42, .62);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, .72);
+  backdrop-filter: blur(8px);
 }
 
 .product-detail-modal {
   position: relative;
-  width: min(920px, 96vw);
-  max-height: 90vh;
-  overflow: auto;
+  width: min(1120px, 96vw);
+  height: min(760px, 92vh);
+  max-height: 92vh;
+  min-height: 0;
+  overflow: hidden;
   display: grid;
-  grid-template-columns: minmax(280px, 42%) 1fr;
+  grid-template-columns: minmax(330px, 38%) minmax(0, 1fr);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 24px;
   background: #fff;
-  border-radius: 20px;
-  box-shadow: 0 30px 80px rgba(15, 23, 42, .35);
+  box-shadow: 0 38px 100px rgba(15, 23, 42, .44);
 }
 
 .detail-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 3;
-  width: 38px;
-  height: 38px;
-  border: 0;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(15, 23, 42, .08);
   border-radius: 50%;
-  background: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.94);
+  color: #334155;
   cursor: pointer;
+  box-shadow: 0 7px 18px rgba(15, 23, 42, .13);
 }
 
-.detail-image-wrap { position: relative; min-height: 430px; background: #f3f4f6; }
-.detail-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
-.detail-status { position: absolute; left: 18px; bottom: 18px; }
-.detail-content { padding: 42px 38px 34px; }
-.detail-eyebrow { margin: 0 0 8px; color: #b91c1c; font-weight: 800; letter-spacing: .08em; }
-.detail-content h2 { margin: 0; font-size: 30px; color: #1f2937; }
-.detail-price { margin: 14px 0 24px; color: #b91c1c; font-size: 24px; font-weight: 800; }
-.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
-.detail-grid div { padding: 13px 14px; background: #f8fafc; border-radius: 10px; }
-.detail-grid span { display: block; margin-bottom: 4px; color: #64748b; font-size: 12px; }
-.detail-grid strong { color: #1f2937; }
-.detail-description { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
-.detail-description h4 { margin: 0 0 8px; }
-.detail-description p { color: #4b5563; line-height: 1.65; }
-.detail-loading { min-height: 260px; display: grid; place-items: center; color: #64748b; font-weight: 700; }
-.database-detail-section { margin-top: 26px; padding-top: 22px; border-top: 1px solid #e5e7eb; }
+.detail-close:hover { color: #9f1239; transform: rotate(5deg); }
+.detail-image-wrap {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 20%, #fff7f8, #e9eef5 65%);
+}
+.detail-image-wrap::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(15,23,42,.42), transparent);
+  pointer-events: none;
+}
+.detail-image-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.detail-image-wrap:hover img { transform: scale(1.025); }
+.detail-status { position: absolute; z-index: 2; left: 22px; bottom: 22px; }
+.detail-content {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 42px 40px 36px;
+  background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
+}
+.detail-content::-webkit-scrollbar { width: 9px; }
+.detail-content::-webkit-scrollbar-track { background: #f1f5f9; }
+.detail-content::-webkit-scrollbar-thumb { border: 2px solid #f1f5f9; border-radius: 999px; background: #94a3b8; }
+.detail-content::-webkit-scrollbar-thumb:hover { background: #64748b; }
+.detail-heading-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-right: 26px; }
+.detail-eyebrow { margin: 0 0 7px; color: #9f1239; font-size: 11px; font-weight: 850; letter-spacing: .12em; }
+.detail-content h2 { margin: 0; color: #172033; font-size: clamp(25px, 3vw, 34px); line-height: 1.18; letter-spacing: -.025em; }
+.detail-stock-pill { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.detail-stock-pill.in-stock { background: #dcfce7; color: #166534; }
+.detail-stock-pill.out-stock { background: #fee2e2; color: #991b1b; }
+.detail-price-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0 23px; padding-bottom: 20px; border-bottom: 1px solid #e7ebf0; }
+.detail-price { margin: 0; color: #9f1239; font-size: 27px; font-weight: 850; }
+.detail-promotion { padding: 6px 9px; border-radius: 7px; background: #fff7ed; color: #c2410c; font-size: 11px; font-weight: 750; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.detail-grid div { min-height: 67px; padding: 12px 14px; border: 1px solid #e5eaf0; border-radius: 12px; background: #fff; box-shadow: 0 5px 14px rgba(15,23,42,.035); }
+.detail-grid span { display: block; margin-bottom: 5px; color: #7a8698; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.detail-grid strong { display: block; overflow: hidden; color: #263244; font-size: 13px; line-height: 1.4; text-overflow: ellipsis; }
+.detail-description { margin-top: 22px; padding: 18px; border: 1px solid #e5eaf0; border-radius: 13px; background: #fff; }
+.detail-description h4 { margin: 0 0 8px; color: #263244; }
+.detail-description p { margin: 0; color: #596579; line-height: 1.7; }
+.detail-loading { min-height: 420px; display: grid; place-items: center; color: #64748b; font-weight: 700; }
+.database-detail-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid #e5e7eb; }
 .detail-section-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
 .detail-section-heading h3 { margin: 3px 0 0; color: #1f2937; font-size: 18px; }
 .detail-section-kicker { color: #991b1b; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
 .detail-count { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: #fef2f2; color: #991b1b; font-size: 12px; font-weight: 700; }
 .database-detail-list { display: grid; gap: 12px; }
-.database-detail-item { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
-.detail-order { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #991b1b; color: #fff; font-weight: 800; font-size: 12px; }
+.database-detail-item { display: grid; grid-template-columns: 36px 1fr; gap: 13px; padding: 16px; border: 1px solid #e5eaf0; border-radius: 13px; background: #fff; box-shadow: 0 5px 14px rgba(15,23,42,.03); }
+.detail-order { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #9f1239; color: #fff; font-weight: 800; font-size: 12px; }
 .database-detail-item h4 { margin: 2px 0 7px; color: #1f2937; font-size: 15px; }
 .database-detail-item p { margin: 0; color: #4b5563; line-height: 1.65; white-space: pre-line; }
-.empty-database-detail { padding: 18px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; text-align: center; background: #f8fafc; }
+.empty-database-detail { padding: 20px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; text-align: center; background: #f8fafc; }
 .detail-image-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .detail-image-gallery figure { margin: 0; }
-.detail-image-gallery img { width: 100%; height: 118px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; background: #f3f4f6; }
+.detail-image-gallery img { width: 100%; height: 124px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; background: #f3f4f6; }
 .detail-image-gallery figcaption { margin-top: 5px; color: #64748b; font-size: 11px; }
 .inline-gallery { margin-top: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.inline-gallery img { height: 96px; }
+.inline-gallery img { height: 102px; }
 
-@media (max-width: 760px) {
-  .product-detail-modal { grid-template-columns: 1fr; }
-  .detail-image-wrap { min-height: 260px; max-height: 320px; }
+@media (max-width: 900px) {
+  .product-detail-modal {
+    height: auto;
+    max-height: 92vh;
+    grid-template-columns: 1fr;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .detail-image-wrap { min-height: 300px; height: 320px; max-height: 360px; }
+  .detail-content { height: auto; min-height: auto; overflow: visible; padding: 32px 24px 28px; }
+}
+
+@media (max-width: 620px) {
+  .product-detail-overlay { padding: 10px; }
+  .product-detail-modal { width: 100%; height: auto; max-height: 96vh; border-radius: 17px; }
+  .detail-heading-row { display: grid; padding-right: 22px; }
   .detail-grid { grid-template-columns: 1fr; }
   .detail-image-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .detail-content { padding: 28px 20px 24px; }
+  .detail-content { padding: 26px 17px 22px; }
 }
 </style>
 

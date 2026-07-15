@@ -13,6 +13,7 @@ public class ComboDoiTacResponse {
     private Integer maDoiTac;
     private String tenCombo;
     private BigDecimal gia;
+    private BigDecimal tongGiaSanPham;
     private String moTa;
     private String hinhAnh;
     private Integer trangThai;

@@ -15,6 +15,8 @@ public class ComBoChiTietResponse {
 
     private Integer loai;
 
+    private Integer soLuong;
+
     private String noiDung;
 
     private List<ComBoChiTietHinhAnhResponse> hinhAnhs;

@@ -611,10 +611,20 @@ FROM `thongbao` AS tb
                    ON sp.`MaSanPham` = tb.`MaSanPham`
 WHERE tb.`LoaiThongBao` = 'DUYET_SAN_PHAM'
 ORDER BY tb.`MaThongBao` DESC;
+ALTER TABLE `combochitiet`
+    MODIFY COLUMN `ComboChiTietId` INT NOT NULL AUTO_INCREMENT,
+    ADD COLUMN `SoLuong` INT NOT NULL DEFAULT 1 AFTER `Loai`;
 
+UPDATE `combochitiet`
+SET `SoLuong` = 1
+WHERE `SoLuong` IS NULL OR `SoLuong` <= 0;
+
+SELECT `ComboChiTietId`, `ComboID`, `MaSanPham`, `SoLuong`
+FROM `combochitiet`
+ORDER BY `ComboID`, `ComboChiTietId`;
 
 SHOW COLUMNS FROM `combo`;
 SHOW COLUMNS FROM `combochitiet`;
 SHOW COLUMNS FROM `thongbao`;
 
-select * from nhanvien
+select * from sanphamchitiet

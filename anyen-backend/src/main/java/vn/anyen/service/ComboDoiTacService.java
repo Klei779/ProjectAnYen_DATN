@@ -19,10 +19,10 @@ import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamDoiTacRepository;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -53,7 +53,7 @@ public class ComboDoiTacService {
                         SanPham.TRANG_THAI_DANG_BAN
                 )
                 .stream()
-                .map(this::toProductResponse)
+                .map(product -> toProductResponse(product, null))
                 .toList();
     }
 
@@ -63,14 +63,15 @@ public class ComboDoiTacService {
             ComboDoiTacRequest request
     ) {
         DoiTac doiTac = requireDoiTac(authentication);
-        List<SanPham> sanPhams = validateProducts(doiTac, request.getMaSanPhams());
+        List<ValidatedComboItem> items = validateProducts(doiTac, request);
+        validateComboPrice(request.getGia(), items);
 
         ComBo combo = new ComBo();
         combo.setMaDoiTac(doiTac.getMaDoiTac());
         applyRequest(combo, request);
 
         ComBo saved = comboRepository.save(combo);
-        saveDetails(saved, sanPhams);
+        saveDetails(saved, items);
         return toResponse(saved);
     }
 
@@ -82,14 +83,15 @@ public class ComboDoiTacService {
     ) {
         DoiTac doiTac = requireDoiTac(authentication);
         ComBo combo = findOwnedCombo(comboId, doiTac.getMaDoiTac());
-        List<SanPham> sanPhams = validateProducts(doiTac, request.getMaSanPhams());
+        List<ValidatedComboItem> items = validateProducts(doiTac, request);
+        validateComboPrice(request.getGia(), items);
 
         applyRequest(combo, request);
         ComBo saved = comboRepository.save(combo);
 
         comboChiTietRepository.deleteByComboId(comboId);
         comboChiTietRepository.flush();
-        saveDetails(saved, sanPhams);
+        saveDetails(saved, items);
 
         return toResponse(saved);
     }
@@ -108,20 +110,21 @@ public class ComboDoiTacService {
 
     private void applyRequest(ComBo combo, ComboDoiTacRequest request) {
         combo.setTenCombo(request.getTenCombo().trim());
-        combo.setGia(request.getGia() == null ? BigDecimal.ZERO : request.getGia());
+        combo.setGia(request.getGia());
         combo.setMoTa(trimToNull(request.getMoTa()));
         combo.setHinhAnh(trimToNull(request.getHinhAnh()));
         combo.setTrangThai(normalizeStatus(request.getTrangThai()));
     }
 
-    private void saveDetails(ComBo combo, List<SanPham> sanPhams) {
-        List<ComBoChiTiet> details = sanPhams.stream()
-                .map(product -> {
+    private void saveDetails(ComBo combo, List<ValidatedComboItem> items) {
+        List<ComBoChiTiet> details = items.stream()
+                .map(item -> {
                     ComBoChiTiet detail = new ComBoChiTiet();
                     detail.setComboId(combo.getComboId());
-                    detail.setMaSanPham(product.getMaSanPham());
+                    detail.setMaSanPham(item.product().getMaSanPham());
                     detail.setLoai(ComBoChiTiet.LOAI_SAN_PHAM);
-                    detail.setNoiDung(product.getTenSanPham());
+                    detail.setSoLuong(item.quantity());
+                    detail.setNoiDung(item.product().getTenSanPham());
                     return detail;
                 })
                 .toList();
@@ -130,81 +133,140 @@ public class ComboDoiTacService {
         comboChiTietRepository.flush();
     }
 
-    private List<SanPham> validateProducts(DoiTac doiTac, List<Integer> ids) {
-        if (ids == null || ids.isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Combo phải có ít nhất một sản phẩm"
-            );
-        }
-
-        Set<Integer> uniqueIds = ids.stream()
-                .filter(id -> id != null)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        if (uniqueIds.isEmpty()) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Danh sách sản phẩm không hợp lệ"
-            );
-        }
-
-        List<SanPham> products = sanPhamRepository.findAllById(uniqueIds);
+    private List<ValidatedComboItem> validateProducts(
+            DoiTac doiTac,
+            ComboDoiTacRequest request
+    ) {
+        LinkedHashMap<Integer, Integer> requestedItems = resolveRequestedItems(request);
+        List<SanPham> products = sanPhamRepository.findAllById(requestedItems.keySet());
         Map<Integer, SanPham> productMap = products.stream()
                 .collect(Collectors.toMap(SanPham::getMaSanPham, Function.identity()));
 
-        return uniqueIds.stream()
-                .map(id -> {
-                    SanPham product = productMap.get(id);
-                    if (product == null) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Không tìm thấy sản phẩm có mã " + id
-                        );
-                    }
+        List<ValidatedComboItem> result = new ArrayList<>();
+        for (Map.Entry<Integer, Integer> entry : requestedItems.entrySet()) {
+            Integer productId = entry.getKey();
+            Integer quantity = entry.getValue();
+            SanPham product = productMap.get(productId);
 
-                    if (!doiTac.getMaDoiTac().equals(product.getMaDoiTac())) {
-                        throw new ResponseStatusException(
-                                HttpStatus.FORBIDDEN,
-                                "Combo chỉ được chứa sản phẩm của chính đối tác đang đăng nhập"
-                        );
-                    }
+            if (product == null) {
+                throw badRequest("Không tìm thấy sản phẩm có mã " + productId);
+            }
+            if (!doiTac.getMaDoiTac().equals(product.getMaDoiTac())) {
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN,
+                        "Combo chỉ được chứa sản phẩm của chính đối tác đang đăng nhập"
+                );
+            }
+            if (!SanPham.TRANG_THAI_DANG_BAN.equals(product.getTrangThai())) {
+                throw badRequest("Sản phẩm " + product.getTenSanPham() + " chưa ở trạng thái đang bán");
+            }
 
-                    if (!SanPham.TRANG_THAI_DANG_BAN.equals(product.getTrangThai())) {
-                        throw new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Sản phẩm " + product.getTenSanPham() + " chưa ở trạng thái đang bán"
-                        );
-                    }
+            int stock = Math.max(0, product.getSoLuong() == null ? 0 : product.getSoLuong());
+            if (quantity > stock) {
+                throw badRequest(
+                        "Số lượng " + product.getTenSanPham()
+                                + " trong combo (" + quantity + ") vượt tồn kho hiện tại (" + stock + ")"
+                );
+            }
 
-                    return product;
-                })
-                .toList();
+            result.add(new ValidatedComboItem(product, quantity));
+        }
+        return result;
+    }
+
+    private LinkedHashMap<Integer, Integer> resolveRequestedItems(ComboDoiTacRequest request) {
+        LinkedHashMap<Integer, Integer> result = new LinkedHashMap<>();
+
+        if (request.getSanPhams() != null && !request.getSanPhams().isEmpty()) {
+            for (ComboDoiTacRequest.ComboSanPhamRequest item : request.getSanPhams()) {
+                if (item == null || item.getMaSanPham() == null) {
+                    throw badRequest("Danh sách sản phẩm không hợp lệ");
+                }
+                Integer quantity = item.getSoLuong();
+                if (quantity == null || quantity <= 0) {
+                    throw badRequest("Số lượng sản phẩm trong combo phải lớn hơn 0");
+                }
+                addUniqueItem(result, item.getMaSanPham(), quantity);
+            }
+        } else if (request.getMaSanPhams() != null && !request.getMaSanPhams().isEmpty()) {
+            for (Integer productId : request.getMaSanPhams()) {
+                if (productId == null) {
+                    throw badRequest("Danh sách sản phẩm không hợp lệ");
+                }
+                addUniqueItem(result, productId, 1);
+            }
+        }
+
+        if (result.isEmpty()) {
+            throw badRequest("Combo phải có ít nhất một sản phẩm");
+        }
+        return result;
+    }
+
+    private void addUniqueItem(Map<Integer, Integer> items, Integer productId, Integer quantity) {
+        if (items.putIfAbsent(productId, quantity) != null) {
+            throw badRequest("Sản phẩm mã " + productId + " bị chọn trùng trong combo");
+        }
+    }
+
+    private void validateComboPrice(BigDecimal comboPrice, List<ValidatedComboItem> items) {
+        if (comboPrice == null || comboPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw badRequest("Giá combo phải lớn hơn 0");
+        }
+
+        BigDecimal totalProductPrice = calculateTotalProductPrice(items);
+        if (totalProductPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw badRequest("Không thể tạo combo vì tổng giá sản phẩm chưa hợp lệ");
+        }
+        if (comboPrice.compareTo(totalProductPrice) > 0) {
+            throw badRequest(
+                    "Giá combo không được lớn hơn tổng giá sản phẩm theo số lượng ("
+                            + totalProductPrice.stripTrailingZeros().toPlainString() + " đ)"
+            );
+        }
+    }
+
+    private BigDecimal calculateTotalProductPrice(List<ValidatedComboItem> items) {
+        return items.stream()
+                .map(item -> safePrice(item.product()).multiply(BigDecimal.valueOf(item.quantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private ComboDoiTacResponse toResponse(ComBo combo) {
-        List<ComBoChiTiet> details = comboChiTietRepository.findByComboId(combo.getComboId());
-        List<Integer> productIds = details.stream()
+        List<ComBoChiTiet> details = comboChiTietRepository.findByComboId(combo.getComboId())
+                .stream()
                 .filter(detail -> ComBoChiTiet.LOAI_SAN_PHAM.equals(detail.getLoai()))
+                .filter(detail -> detail.getMaSanPham() != null)
+                .toList();
+
+        List<Integer> productIds = details.stream()
                 .map(ComBoChiTiet::getMaSanPham)
-                .filter(id -> id != null)
+                .distinct()
                 .toList();
 
         Map<Integer, SanPham> productMap = sanPhamRepository.findAllById(productIds)
                 .stream()
                 .collect(Collectors.toMap(SanPham::getMaSanPham, Function.identity()));
 
-        List<SanPhamComboDoiTacResponse> products = productIds.stream()
-                .map(productMap::get)
-                .filter(product -> product != null)
-                .map(this::toProductResponse)
+        List<SanPhamComboDoiTacResponse> products = details.stream()
+                .map(detail -> {
+                    SanPham product = productMap.get(detail.getMaSanPham());
+                    if (product == null) return null;
+                    return toProductResponse(product, normalizeQuantity(detail.getSoLuong()));
+                })
+                .filter(item -> item != null)
                 .toList();
+
+        BigDecimal totalProductPrice = products.stream()
+                .map(item -> item.getThanhTien() == null ? BigDecimal.ZERO : item.getThanhTien())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return ComboDoiTacResponse.builder()
                 .comboId(combo.getComboId())
                 .maDoiTac(combo.getMaDoiTac())
                 .tenCombo(combo.getTenCombo())
                 .gia(combo.getGia())
+                .tongGiaSanPham(totalProductPrice)
                 .moTa(combo.getMoTa())
                 .hinhAnh(combo.getHinhAnh())
                 .trangThai(combo.getTrangThai())
@@ -213,15 +275,29 @@ public class ComboDoiTacService {
                 .build();
     }
 
-    private SanPhamComboDoiTacResponse toProductResponse(SanPham product) {
+    private SanPhamComboDoiTacResponse toProductResponse(SanPham product, Integer quantityInCombo) {
+        BigDecimal lineTotal = quantityInCombo == null
+                ? null
+                : safePrice(product).multiply(BigDecimal.valueOf(quantityInCombo));
+
         return SanPhamComboDoiTacResponse.builder()
                 .maSanPham(product.getMaSanPham())
                 .tenSanPham(product.getTenSanPham())
                 .giaTien(product.getGiaTien())
                 .hinhAnh(product.getHinhAnh())
                 .soLuong(product.getSoLuong())
+                .soLuongTrongCombo(quantityInCombo)
+                .thanhTien(lineTotal)
                 .trangThai(product.getTrangThai())
                 .build();
+    }
+
+    private BigDecimal safePrice(SanPham product) {
+        return product.getGiaTien() == null ? BigDecimal.ZERO : product.getGiaTien();
+    }
+
+    private int normalizeQuantity(Integer quantity) {
+        return quantity == null || quantity <= 0 ? 1 : quantity;
     }
 
     private ComBo findOwnedCombo(Integer comboId, Integer partnerId) {
@@ -249,7 +325,7 @@ public class ComboDoiTacService {
             return ComBo.TT_HOAT_DONG;
         }
         if (!List.of(ComBo.TT_AN, ComBo.TT_HOAT_DONG, ComBo.TT_NGUNG_KINH_DOANH).contains(status)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Trạng thái combo không hợp lệ");
+            throw badRequest("Trạng thái combo không hợp lệ");
         }
         return status;
     }
@@ -263,5 +339,12 @@ public class ComboDoiTacService {
     private String trimToNull(String value) {
         if (value == null || value.trim().isEmpty()) return null;
         return value.trim();
+    }
+
+    private ResponseStatusException badRequest(String message) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, message);
+    }
+
+    private record ValidatedComboItem(SanPham product, int quantity) {
     }
 }

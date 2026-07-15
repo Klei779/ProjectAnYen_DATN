@@ -28,6 +28,9 @@ public class ComBoChiTiet {
     @Column(name = "Loai")
     private Integer loai;
 
+    @Column(name = "SoLuong", nullable = false)
+    private Integer soLuong = 1;
+
     public static final Integer LOAI_SAN_PHAM = 0;
     public static final Integer LOAI_DICH_VU = 1;
 

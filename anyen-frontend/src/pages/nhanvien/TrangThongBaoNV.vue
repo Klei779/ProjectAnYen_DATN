@@ -198,6 +198,16 @@
              <div class="system-content-box mt-4">
                <p>{{ selectedNotification.noiDung }}</p>
              </div>
+
+             <!-- Nút Tạo hợp đồng cho thông báo DON_HANG -->
+             <div v-if="selectedNotification.loaiThongBao === 'DON_HANG' && parseMaDonHangFromNoiDung(selectedNotification.noiDung)" class="sidebar-actions" style="margin-top: 16px;">
+               <button
+                   class="btn-primary-modal"
+                   @click="router.push('/nhan-vien/quan-ly-hop-dong?donHangId=' + parseMaDonHangFromNoiDung(selectedNotification.noiDung))"
+               >
+                 <i class="fa-solid fa-file-contract"></i> Tạo hợp đồng
+               </button>
+             </div>
           </div>
         </div>
       </div>
@@ -253,7 +263,17 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import api from "../../api/api.js";
+
+const router = useRouter();
+
+// Helper: parse maDonHang from notification content
+const parseMaDonHangFromNoiDung = (noiDung) => {
+  if (!noiDung) return null;
+  const match = noiDung.match(/DH(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+};
 
 // Layout & State
 const activeTab = ref("all");

@@ -2,16 +2,10 @@ package vn.anyen.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.CapNhatNhanVienRequest;
 import vn.anyen.dto.request.QuanLyNhanVienRequest;
+import vn.anyen.dto.response.NhanVienDeXuatResponse;
 import vn.anyen.dto.response.QuanLyNhanVienResponse;
 import vn.anyen.service.QuanLyNhanVienService;
 
@@ -52,5 +46,13 @@ public class QuanLyNhanVienController {
     @PutMapping("/nghi-viec/{maNhanVien}")
     public QuanLyNhanVienResponse nghiViecNhanVien(@PathVariable Integer maNhanVien) {
         return quanLyNhanVienService.nghiViecNhanVien(maNhanVien);
+    }
+
+    @GetMapping("/de-xuat")
+    public List<NhanVienDeXuatResponse> getNhanVienDeXuat(
+            @RequestParam Double lat,
+            @RequestParam Double lng
+    ) {
+        return quanLyNhanVienService.getNhanVienDeXuat(lat, lng);
     }
 }

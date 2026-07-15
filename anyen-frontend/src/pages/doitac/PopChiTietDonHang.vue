@@ -76,8 +76,8 @@ const getProgressWidth = (steps) => {
     width="960px"
     class="partner-order-dialog"
     :show-close="false"
-    destroy-on-close
     align-center
+    :z-index="10050"
   >
     <!-- HEADER -->
     <template #header>

@@ -16,6 +16,7 @@ import vn.anyen.entity.*;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.DonHangRepository;
+import vn.anyen.repository.HopDongRepository;
 import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
 import vn.anyen.constants.AppLabels;
@@ -39,6 +40,7 @@ public class DoiTacThongBaoService {
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final ThongBaoService thongBaoService;
     private final SanPhamRepository sanPhamRepository;
+    private final HopDongRepository hopDongRepository;
 
     // Loai dùng String để khớp VARCHAR trong DB
     private static final String LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
@@ -141,6 +143,8 @@ public class DoiTacThongBaoService {
 
             donHang.setGhiChu(ghiChuMoi.trim());
             donHangRepository.save(donHang);
+            
+            thongBaoService.taoThongBaoTuChoiDonHang(donHang.getMaDonHang(), request.getLyDo(), doiTac.getTenDoiTac());
         }
 
         thongBaoRepository.save(thongBao);
@@ -555,6 +559,7 @@ public class DoiTacThongBaoService {
                 .trangThai(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                 .tongCong(tongCong)
                 .sanPhams(sanPhams)
+                .daCoHopDong(hopDongRepository.existsByDonHang_MaDonHang(donHang.getMaDonHang()))
                 .build();
     }
 

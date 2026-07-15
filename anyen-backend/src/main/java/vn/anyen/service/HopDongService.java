@@ -22,6 +22,11 @@ import vn.anyen.entity.KhachHang;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.HopDongRepository;
+import vn.anyen.repository.ThongBaoDoiTacRepository;
+import vn.anyen.entity.ThongBaoDoiTac;
+import vn.anyen.entity.DoiTac;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -37,6 +42,8 @@ public class HopDongService {
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final HDongCTRepository hDongCTRepository;
+    private final ThongBaoDoiTacRepository thongBaoDoiTacRepository;
+    private final vn.anyen.repository.DoiTacRepository doiTacRepository;
 
     public HopDongPageResponse getHopDongs(
             String keyword,
@@ -197,6 +204,26 @@ public class HopDongService {
                     .build();
 
             hDongCTRepository.save(chiTiet);
+        }
+
+        // Notify partners
+        List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(donHang.getMaDonHang());
+        Set<DoiTac> doiTacs = chiTiets.stream()
+                .filter(ct -> ct.getSanPham() != null && ct.getSanPham().getMaDoiTac() != null)
+                .map(ct -> doiTacRepository.findById(ct.getSanPham().getMaDoiTac()).orElse(null))
+                .filter(dt -> dt != null)
+                .collect(Collectors.toSet());
+
+        for (DoiTac dt : doiTacs) {
+            ThongBaoDoiTac tb = new ThongBaoDoiTac();
+            tb.setDoiTac(dt);
+            tb.setDonHang(donHang);
+            tb.setLoai(ThongBaoDoiTac.LOAI_DON_HANG);
+            tb.setTieuDe("Đơn hàng đã được tạo hợp đồng");
+            tb.setNoiDung("Hợp đồng cho đơn hàng DH" + String.format("%03d", donHang.getMaDonHang()) + " đã được tạo. Bạn có thể bắt đầu xử lý đơn hàng.");
+            tb.setTrangThaiThongBao(ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN);
+            tb.setThoiGianTao(LocalDateTime.now());
+            thongBaoDoiTacRepository.save(tb);
         }
 
         return toResponse(saved);

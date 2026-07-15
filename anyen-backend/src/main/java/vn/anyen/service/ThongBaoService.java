@@ -482,6 +482,50 @@ public class ThongBaoService {
     }
 
     @Transactional
+    public void taoThongBaoTuChoiDonHang(Integer maDonHang, String lyDo, String tenDoiTac) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy đơn hàng"
+                ));
+
+        if (donHang.getNhanVien() == null) {
+            return;
+        }
+
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
+
+        String tenKhachHang = "Không có";
+        if (donHang.getKhachHang() != null) {
+            tenKhachHang = donHang.getKhachHang().getTenKhachHang();
+        }
+
+        String maDonHangText = "DH" + String.format("%03d", donHang.getMaDonHang());
+
+        ThongBao thongBao = new ThongBao();
+        thongBao.setTieuDe("Đối tác đã từ chối đơn hàng");
+        thongBao.setNoiDung(
+                "Đơn hàng " + maDonHangText +
+                        " của khách hàng " + tenKhachHang +
+                        " đã bị đối tác " + tenDoiTac + " từ chối."
+        );
+        thongBao.setLoaiThongBao("DON_HANG");
+        thongBao.setNguoiGuiId(null);
+        thongBao.setNguoiNhanId(nguoiNhanId);
+        thongBao.setLyDoTuChoi(lyDo);
+
+        if (donHang.getKhachHang() != null) {
+            thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
+        }
+
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setNgayCapNhat(LocalDateTime.now());
+
+        thongBaoRepository.save(thongBao);
+    }
+
+    @Transactional
     public void taoThongBaoChapNhanDonHangChoAdmin(Integer maDonHang) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -636,5 +680,17 @@ public class ThongBaoService {
 
             thongBaoRepository.save(thongBao);
         }
+    }
+
+    public void taoThongBaoHeThongChoNhanVien(Integer maNhanVien, String tieuDe, String noiDung) {
+        ThongBao tb = new ThongBao();
+        tb.setNguoiNhanId(maNhanVien);
+        tb.setLoaiThongBao(LOAI_DON_HANG);
+        tb.setTieuDe(tieuDe);
+        tb.setNoiDung(noiDung);
+        tb.setTrangThai(TRANG_THAI_CHUA_DOC);
+        tb.setNgayTao(LocalDateTime.now());
+        tb.setNgayCapNhat(LocalDateTime.now());
+        thongBaoRepository.save(tb);
     }
 }

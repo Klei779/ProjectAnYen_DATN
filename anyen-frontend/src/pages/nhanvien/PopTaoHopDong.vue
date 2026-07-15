@@ -27,6 +27,13 @@ import {
 const visible = defineModel();
 const emit = defineEmits(["success", "saved"]);
 
+const props = defineProps({
+  initialDonHangId: {
+    type: Number,
+    default: null
+  }
+});
+
 const AUTO_CONTRACT_CODE = "Tự động sau khi lưu";
 
 const userStr = localStorage.getItem("user");
@@ -762,7 +769,10 @@ watch(
 
       await loadDonHangOptions();
 
-      console.log("DON HANG OPTIONS:", donHangOptions.value);
+      if (props.initialDonHangId) {
+        selectedMaDonHang.value = props.initialDonHangId;
+        await onSelectDonHang(props.initialDonHangId);
+      }
     },
     {
       immediate: true

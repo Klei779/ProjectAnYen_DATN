@@ -1,8 +1,9 @@
 <script setup>
 import { ref, onMounted, computed } from "vue";
-import { getDonHangsDoiTac } from "../../services/doitacDonHangService.js";
+import { getDonHangsDoiTac, xuLyDonHang, daGiaoDonHang, huyDonHang, baoCaoSuCo } from "../../services/doitacDonHangService.js";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
-import { Search, Filter, View } from "@element-plus/icons-vue";
+import { Search, Filter, View, Document, Warning, Check, Box } from "@element-plus/icons-vue";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 const donHangs = ref([]);
 const showPopup = ref(false);
@@ -179,6 +180,91 @@ const completedCount = computed(() => {
     return s.includes("hoàn") || s.includes("xong");
   }).length;
 });
+
+const handleXuLy = async (dh) => {
+  try {
+    const { value: thoiGianUocTinh } = await ElMessageBox.prompt(
+        'Nhập thời gian giao hàng ước tính:',
+        'Xử lý đơn hàng',
+        {
+          confirmButtonText: 'Lưu',
+          cancelButtonText: 'Hủy',
+          inputPattern: /.+/,
+          inputErrorMessage: 'Vui lòng nhập thời gian ước tính'
+        }
+    );
+    if (thoiGianUocTinh) {
+      await xuLyDonHang(dh.maDonHang, thoiGianUocTinh);
+      ElMessage.success("Đã cập nhật trạng thái Đang xử lý");
+      fetchDonHangs();
+    }
+  } catch (e) {
+    // cancelled
+  }
+};
+
+const handleDaGiao = async (dh) => {
+  try {
+    await ElMessageBox.confirm(
+        'Xác nhận đơn hàng đã được giao thành công?',
+        'Xác nhận đã giao',
+        {
+          confirmButtonText: 'Xác nhận',
+          cancelButtonText: 'Hủy',
+          type: 'success'
+        }
+    );
+    await daGiaoDonHang(dh.maDonHang);
+    ElMessage.success("Đã cập nhật trạng thái Đã giao");
+    fetchDonHangs();
+  } catch (e) {
+    // cancelled
+  }
+};
+
+const handleHuy = async (dh) => {
+  try {
+    const { value: lyDo } = await ElMessageBox.prompt(
+        'Nhập lý do hủy đơn hàng:',
+        'Hủy đơn hàng',
+        {
+          confirmButtonText: 'Hủy đơn',
+          cancelButtonText: 'Đóng',
+          inputPattern: /.+/,
+          inputErrorMessage: 'Vui lòng nhập lý do'
+        }
+    );
+    if (lyDo) {
+      await huyDonHang(dh.maDonHang, lyDo);
+      ElMessage.success("Đã hủy đơn hàng");
+      fetchDonHangs();
+    }
+  } catch (e) {
+    // cancelled
+  }
+};
+
+const handleBaoCaoSuCo = async (dh) => {
+  try {
+    const { value: lyDo } = await ElMessageBox.prompt(
+        'Nhập chi tiết sự cố:',
+        'Báo cáo sự cố',
+        {
+          confirmButtonText: 'Gửi báo cáo',
+          cancelButtonText: 'Hủy',
+          inputType: 'textarea',
+          inputPattern: /.+/,
+          inputErrorMessage: 'Vui lòng nhập chi tiết sự cố'
+        }
+    );
+    if (lyDo) {
+      await baoCaoSuCo(dh.maDonHang, lyDo);
+      ElMessage.success("Đã gửi báo cáo sự cố cho nhân viên");
+    }
+  } catch (e) {
+    // cancelled
+  }
+};
 </script>
 
 <template>
@@ -339,18 +425,67 @@ const completedCount = computed(() => {
           </td>
 
           <td class="col-action">
-            <el-button
-                size="small"
-                type="primary"
-                plain
-                class="detail-btn"
-                @click="openChiTiet(dh)"
-            >
-              <el-icon>
-                <View />
-              </el-icon>
-              Xem chi tiết
-            </el-button>
+            <div class="action-buttons">
+              <el-button
+                  size="small"
+                  type="primary"
+                  plain
+                  class="detail-btn"
+                  @click="openChiTiet(dh)"
+              >
+                <el-icon>
+                  <View />
+                </el-icon>
+                Chi tiết
+              </el-button>
+
+              <!-- Nút Xử lý: khi trạng thái Đã xác nhận -->
+              <el-button
+                  v-if="getStatus(dh) === 'Đã xác nhận'"
+                  size="small"
+                  type="success"
+                  :disabled="!dh.daCoHopDong"
+                  :title="!dh.daCoHopDong ? 'Đơn hàng chưa có hợp đồng, không thể xử lý' : 'Bắt đầu xử lý đơn hàng'"
+                  @click="handleXuLy(dh)"
+              >
+                <el-icon><Check /></el-icon>
+                Xử lý
+              </el-button>
+
+              <!-- Nút Đã giao: khi trạng thái Đang xử lý -->
+              <el-button
+                  v-if="getStatus(dh) === 'Đang xử lý'"
+                  size="small"
+                  type="success"
+                  @click="handleDaGiao(dh)"
+              >
+                <el-icon><Box /></el-icon>
+                Đã giao
+              </el-button>
+
+              <!-- Nút Hủy đơn: khi đơn chưa hoàn thành/hủy -->
+              <el-button
+                  v-if="!['Hoàn thành', 'Đã hủy', 'Đối tác từ chối', 'Chờ thanh toán'].includes(getStatus(dh))"
+                  size="small"
+                  type="danger"
+                  plain
+                  @click="handleHuy(dh)"
+              >
+                Hủy
+              </el-button>
+
+              <!-- Nút Báo cáo sự cố: khi đơn đang xử lý -->
+              <el-button
+                  v-if="['Đang xử lý', 'Đã xác nhận'].includes(getStatus(dh))"
+                  size="small"
+                  type="warning"
+                  plain
+                  @click="handleBaoCaoSuCo(dh)"
+              >
+                <el-icon><Warning /></el-icon>
+                Sự cố
+              </el-button>
+            </div>
           </td>
         </tr>
         </tbody>
@@ -358,7 +493,6 @@ const completedCount = computed(() => {
     </div>
 
     <PopChiTietDonHang
-        v-if="showPopup"
         v-model="showPopup"
         :don-hang="selectedDonHang"
     />
@@ -533,7 +667,14 @@ const completedCount = computed(() => {
 }
 
 .col-action {
-  width: 150px;
+  width: 320px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 }
 
 .code-text {

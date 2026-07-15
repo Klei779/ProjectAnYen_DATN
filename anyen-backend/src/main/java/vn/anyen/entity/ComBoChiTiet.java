@@ -30,9 +30,6 @@ public class ComBoChiTiet {
     @Column(name = "Loai")
     private Integer loai;
 
-    public static final Integer LOAI_SAN_PHAM = 0;
-    public static final Integer LOAI_DICH_VU = 1;
-
     @Column(name = "NoiDung")
     private String noiDung;
 }

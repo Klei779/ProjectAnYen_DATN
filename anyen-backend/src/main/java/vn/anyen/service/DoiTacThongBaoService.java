@@ -386,102 +386,18 @@ public class DoiTacThongBaoService {
             ThongBaoDoiTac thongBao,
             Integer maDoiTac
     ) {
-        DonHang donHang = thongBao.getDonHang();
-
-        List<ChiTietDonHang> chiTiets =
-                chiTietDonHangRepository
-                        .findByDonHang_MaDonHang(donHang.getMaDonHang())
-                        .stream()
-                        .filter(ct ->
-                                ct.getSanPham() != null
-                                        && ct.getSanPham().getMaDoiTac() != null
-                                        && maDoiTac.equals(
-                                        ct.getSanPham().getMaDoiTac()
-                                )
-                        )
-                        .toList();
-
-        ChiTietDonHang first =
-                chiTiets.isEmpty() ? null : chiTiets.get(0);
-
-        BigDecimal tongTienCuaDoiTac =
-                chiTiets.stream()
-                        .map(ct -> {
-                            BigDecimal gia = ct.getGiaTien() == null
-                                    ? BigDecimal.ZERO
-                                    : ct.getGiaTien();
-
-                            int soLuong = ct.getSoLuong() == null
-                                    ? 0
-                                    : ct.getSoLuong();
-
-                            return gia.multiply(BigDecimal.valueOf(soLuong));
-                        })
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        int tongSoLuong =
-                chiTiets.stream()
-                        .mapToInt(ct -> ct.getSoLuong() == null
-                                ? 0
-                                : ct.getSoLuong())
-                        .sum();
-
-        String tenKhachHang = donHang.getKhachHang() != null
-                ? donHang.getKhachHang().getTenKhachHang()
-                : "";
-
         return DoiTacThongBaoResponse.builder()
-                .id(thongBao.getMaThongBao())
-                .category("order")
-                .type("order")
-                .icon("fa-regular fa-clipboard")
-                .title(thongBao.getTieuDe())
-                .desc("Khách hàng: " + tenKhachHang)
-                .actionText("Vui lòng xác nhận đơn hàng")
-                .time(formatDateTime(thongBao.getThoiGianTao()))
-                .isNew(!Boolean.TRUE.equals(thongBao.getDaDoc()))
-                .trangThaiThongBao(thongBao.getTrangThaiThongBao())
-                .lyDoTuChoi(thongBao.getLyDoTuChoi())
-                .order(DoiTacThongBaoResponse.OrderInfo.builder()
-                        .id(donHang.getMaDonHang())
-                        .code("#DH" + String.format("%03d",
-                                donHang.getMaDonHang()))
-                        .date(formatDate(donHang.getNgayTaoDon()))
-                        .status(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
-                        .payment("Chuyển khoản")
-                        .build())
-                .customer(DoiTacThongBaoResponse.CustomerInfo.builder()
-                        .id(donHang.getKhachHang() != null
-                                ? donHang.getKhachHang().getMaKhachHang()
-                                : null)
-                        .name(tenKhachHang)
-                        .phone(donHang.getKhachHang() != null
-                                ? donHang.getKhachHang().getSoDienThoai()
-                                : "")
-                        .email(donHang.getKhachHang() != null
-                                ? donHang.getKhachHang().getEmail()
-                                : "")
-                        .address(donHang.getKhachHang() != null
-                                ? donHang.getKhachHang().getDiaChi()
-                                : "")
-                        .build())
-                .product(DoiTacThongBaoResponse.ProductInfo.builder()
-                        .id(first != null && first.getSanPham() != null
-                                ? first.getSanPham().getMaSanPham()
-                                : null)
-                        .name(first != null && first.getSanPham() != null
-                                ? first.getSanPham().getTenSanPham()
-                                : "Sản phẩm / dịch vụ")
-                        .desc(first != null && first.getSanPham() != null
-                                ? first.getSanPham().getLoai()
-                                : "")
-                        .quantity(tongSoLuong)
-                        .price(tongTienCuaDoiTac)
-                        .image(first != null && first.getSanPham() != null
-                                ? first.getSanPham().getHinhAnh()
-                                : null)
-                        .build())
-                .note(donHang.getGhiChu())
+                .MaThongBao(thongBao.getMaThongBao())
+                .MaDoiTac(thongBao.getDoiTac() != null ? thongBao.getDoiTac().getMaDoiTac() : null)
+                .MaDonHang(thongBao.getDonHang() != null ? thongBao.getDonHang().getMaDonHang() : null)
+                .Loai(thongBao.getLoai())
+                .TieuDe(thongBao.getTieuDe())
+                .NoiDung(thongBao.getNoiDung())
+                .TrangThaiThongBao(thongBao.getTrangThaiThongBao())
+                .LyDoTuChoi(thongBao.getLyDoTuChoi())
+                .DaDoc(thongBao.getDaDoc())
+                .ThoiGianTao(thongBao.getThoiGianTao())
+                .ThoiGianXuLy(thongBao.getThoiGianXuLy())
                 .build();
     }
 
@@ -612,48 +528,18 @@ public class DoiTacThongBaoService {
     private DoiTacThongBaoResponse mapToSanPhamThongBaoResponse(
             ThongBaoDoiTac thongBao
     ) {
-        Integer maSanPham = parseMaSanPhamFromNoiDung(thongBao.getNoiDung());
-        SanPham sanPham = null;
-        if (maSanPham != null) {
-            sanPham = sanPhamRepository.findById(maSanPham).orElse(null);
-        }
-
-        boolean daDuyet = DA_CHAP_NHAN.equals(thongBao.getTrangThaiThongBao());
-        boolean daTuChoi = DA_TU_CHOI.equals(thongBao.getTrangThaiThongBao());
-
-        String actionText;
-        if (daDuyet) {
-            actionText = "Sản phẩm đã được duyệt và đang bán";
-        } else if (daTuChoi) {
-            actionText = "Sản phẩm đã bị từ chối";
-        } else {
-            actionText = "Thông báo sản phẩm";
-        }
-
-        final SanPham sp = sanPham;
         return DoiTacThongBaoResponse.builder()
-                .id(thongBao.getMaThongBao())
-                .category("product")
-                .type("product")
-                .icon(daDuyet ? "fa-solid fa-circle-check" : "fa-solid fa-circle-xmark")
-                .title(thongBao.getTieuDe())
-                .desc(thongBao.getNoiDung())
-                .actionText(actionText)
-                .time(formatDateTime(thongBao.getThoiGianTao()))
-                .isNew(!Boolean.TRUE.equals(thongBao.getDaDoc()))
-                .trangThaiThongBao(thongBao.getTrangThaiThongBao())
-                .lyDoTuChoi(thongBao.getLyDoTuChoi())
-                .order(null)
-                .customer(null)
-                .product(DoiTacThongBaoResponse.ProductInfo.builder()
-                        .id(sp != null ? sp.getMaSanPham() : maSanPham)
-                        .name(sp != null ? sp.getTenSanPham() : "Sản phẩm đã bị xóa")
-                        .desc(sp != null ? sp.getLoai() : "")
-                        .quantity(sp != null && sp.getSoLuong() != null ? sp.getSoLuong() : 0)
-                        .price(sp != null && sp.getGiaTien() != null ? sp.getGiaTien() : BigDecimal.ZERO)
-                        .image(sp != null ? sp.getHinhAnh() : null)
-                        .build())
-                .note(thongBao.getLyDoTuChoi())
+                .MaThongBao(thongBao.getMaThongBao())
+                .MaDoiTac(thongBao.getDoiTac() != null ? thongBao.getDoiTac().getMaDoiTac() : null)
+                .MaDonHang(thongBao.getDonHang() != null ? thongBao.getDonHang().getMaDonHang() : null)
+                .Loai(thongBao.getLoai())
+                .TieuDe(thongBao.getTieuDe())
+                .NoiDung(thongBao.getNoiDung())
+                .TrangThaiThongBao(thongBao.getTrangThaiThongBao())
+                .LyDoTuChoi(thongBao.getLyDoTuChoi())
+                .DaDoc(thongBao.getDaDoc())
+                .ThoiGianTao(thongBao.getThoiGianTao())
+                .ThoiGianXuLy(thongBao.getThoiGianXuLy())
                 .build();
     }
     public void taoThongBaoTuChoiSanPham(SanPham sanPham, String lyDoTuChoi) {

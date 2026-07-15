@@ -41,7 +41,7 @@ public interface NhanVienRepository extends JpaRepository<NhanVien, Integer> {
 
     @Query("""
         SELECT nv FROM NhanVien nv
-        WHERE nv.vaiTro = 3
+        WHERE nv.vaiTro = 2
         AND nv.trangThai = 1
         AND nv.latitude IS NOT NULL
         AND nv.longitude IS NOT NULL

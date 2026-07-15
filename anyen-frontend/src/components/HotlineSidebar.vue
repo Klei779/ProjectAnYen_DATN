@@ -34,7 +34,12 @@
         <i class="fa-solid fa-briefcase menu-icon"></i>
         <span class="sidebar-text">Quản lý công việc</span>
       </RouterLink>
-      
+
+      <RouterLink to="/hotline/thong-bao" class="menu-item" title="Thông báo">
+        <i class="fa-solid fa-bell menu-icon"></i>
+        <span class="sidebar-text">Thông báo</span>
+      </RouterLink>
+
       <RouterLink to="/hotline/quan-ly-don-hang" class="menu-item" title="Quản lý đơn hàng">
         <i class="fa-solid fa-cart-shopping menu-icon"></i>
         <span class="sidebar-text">Quản lý đơn hàng</span>

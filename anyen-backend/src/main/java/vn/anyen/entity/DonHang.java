@@ -65,4 +65,7 @@ public class DonHang {
 
     @Column(name = "LyDoHuy")
     private String lyDoHuy;
+
+    @Column(name = "AudioUrl", columnDefinition = "TEXT")
+    private String audioUrl;
 }

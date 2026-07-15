@@ -11,8 +11,10 @@ import vn.anyen.dto.response.ThongBaoResponse;
 import vn.anyen.entity.*;
 import vn.anyen.repository.*;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -692,5 +694,53 @@ public class ThongBaoService {
         tb.setNgayTao(LocalDateTime.now());
         tb.setNgayCapNhat(LocalDateTime.now());
         thongBaoRepository.save(tb);
+    }
+
+    /**
+     * Giao công việc cho nhân viên - tạo thông báo CONG_VIEC
+     */
+    @Transactional
+    public ThongBao giaoCongViec(Integer nguoiGuiId, Integer maNhanVien, String hoTenKhachHang, String soDienThoaiKhachHang, String diaChiKhachHang, String audioUrl, Double latitude, Double longitude) {
+        NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
+
+        // Tạo khách hàng mới
+        KhachHang khachHang = KhachHang.builder()
+                .tenKhachHang(hoTenKhachHang)
+                .soDienThoai(soDienThoaiKhachHang)
+                .diaChi(diaChiKhachHang)
+                .ngayDangKy(LocalDateTime.now())
+                .nguonDangKy("HOTLINE")
+                .build();
+
+        if (latitude != null && longitude != null) {
+            khachHang.setLatitude(BigDecimal.valueOf(latitude));
+            khachHang.setLongitude(BigDecimal.valueOf(longitude));
+        }
+
+        khachHang = khachHangRepository.save(khachHang);
+
+        // Tạo thông báo công việc
+        String noiDung = String.format(
+                "Khách hàng: %s\nSĐT: %s\nĐịa chỉ: %s\n%s",
+                hoTenKhachHang,
+                soDienThoaiKhachHang,
+                diaChiKhachHang,
+                audioUrl != null ? "Có ghi âm cuộc gọi" : "Không có ghi âm"
+        );
+
+        ThongBao thongBao = ThongBao.builder()
+                .tieuDe("Công việc mới - Khách hàng cần hỗ trợ")
+                .noiDung(noiDung)
+                .loaiThongBao(LOAI_CONG_VIEC)
+                .nguoiGuiId(nguoiGuiId)
+                .nguoiNhanId(maNhanVien)
+                .maKhachHang(khachHang.getMaKhachHang())
+                .trangThai(TRANG_THAI_CHUA_DOC)
+                .ngayTao(LocalDateTime.now())
+                .ngayCapNhat(LocalDateTime.now())
+                .build();
+
+        return thongBaoRepository.save(thongBao);
     }
 }

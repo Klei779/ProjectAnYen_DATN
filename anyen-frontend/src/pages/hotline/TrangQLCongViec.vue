@@ -334,6 +334,7 @@
 
 <script setup>
 import { ref, nextTick } from "vue";
+import axios from "axios";
 
 import {
   LMap,
@@ -556,14 +557,52 @@ const handleSelectNhanVien = debounce(async (employee) => {
   }
 }, 300); // Debounce 300ms
 
-const giaoViec = () => {
+const giaoViec = async () => {
   if (!selectedNhanVien.value) {
     alert("Vui lòng chọn nhân viên để giao việc");
     return;
   }
 
-  alert(`Đã giao việc cho nhân viên: ${selectedNhanVien.value.hoTen}`);
-  // TODO: Gọi API để giao việc thực sự
+  if (!hoTenKhachHang.value || !soDienThoaiKhachHang.value || !diaChiA.value) {
+    alert("Vui lòng nhập đầy đủ thông tin khách hàng");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem('token');
+    const response = await axios.post('/api/nhan-vien/thong-bao/giao-cong-viec', {
+      maNhanVien: selectedNhanVien.value.maNhanVien,
+      hoTenKhachHang: hoTenKhachHang.value,
+      soDienThoaiKhachHang: soDienThoaiKhachHang.value,
+      diaChiKhachHang: diaChiA.value,
+      audioUrl: audioUrl.value,
+      latitude: locationA.value ? locationA.value[0] : null,
+      longitude: locationA.value ? locationA.value[1] : null
+    }, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.data.success) {
+      alert(`Đã giao việc cho nhân viên: ${selectedNhanVien.value.hoTen}`);
+
+      // Reset form
+      hoTenKhachHang.value = '';
+      soDienThoaiKhachHang.value = '';
+      diaChiA.value = '';
+      selectedNhanVien.value = null;
+      nhanVienDeXuat.value = [];
+      locationA.value = null;
+      routePath.value = [];
+      selectedNhanVienLocation.value = null;
+      audioUrl.value = null;
+      recordingDuration.value = 0;
+    }
+  } catch (error) {
+    console.error('Lỗi khi giao việc:', error);
+    alert(error.response?.data?.message || 'Không thể giao việc cho nhân viên');
+  }
 };
 
 // Ghi âm cuộc gọi
@@ -705,7 +744,7 @@ const chonVaGiaoViec = async (employee) => {
 
   await handleSelectNhanVien(employee);
 
-  giaoViec();
+  await giaoViec();
 };
 </script>
 

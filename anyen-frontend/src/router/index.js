@@ -44,6 +44,7 @@ import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
+import TrangThongBaoHL from "../pages/hotline/TrangThongBao.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
 
 const routes = [
@@ -280,6 +281,10 @@ const routes = [
             {
                 path: "quan-ly-cong-viec",
                 component: TrangQLCongViec,
+            },
+            {
+                path: "thong-bao",
+                component: TrangThongBaoHL,
             },
             {
                 path: "quan-ly-don-hang",

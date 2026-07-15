@@ -3,6 +3,7 @@ package vn.anyen.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.anyen.dto.request.GiaoCongViecRequest;
 import vn.anyen.dto.request.TuChoiRequest;
 import vn.anyen.dto.response.ThongBaoResponse;
 import vn.anyen.service.JwtService;
@@ -146,5 +147,73 @@ public class ThongBaoController {
                 authentication.getName(),
                 request
         );
+    }
+
+    /**
+     * Test endpoint
+     */
+    @GetMapping("/test")
+    public ResponseEntity<?> test() {
+        System.out.println("=== TEST ENDPOINT CALLED ===");
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Test endpoint working");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Giao công việc cho nhân viên (Hotline gửi)
+     */
+    @PostMapping("/giao-cong-viec")
+    public ResponseEntity<?> giaoCongViec(
+            @RequestBody GiaoCongViecRequest request,
+            @RequestHeader("Authorization") String authHeader) {
+
+        System.out.println("=== GIAO CONG VIEC CALLED ===");
+        System.out.println("Request: " + request);
+
+        Integer nguoiGuiId = getUserIdFromHeader(authHeader);
+
+        thongBaoService.giaoCongViec(
+                nguoiGuiId,
+                request.getMaNhanVien(),
+                request.getHoTenKhachHang(),
+                request.getSoDienThoaiKhachHang(),
+                request.getDiaChiKhachHang(),
+                request.getAudioUrl(),
+                request.getLatitude(),
+                request.getLongitude()
+        );
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Đã giao công việc cho nhân viên thành công");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Lấy danh sách thông báo của hotline (chỉ các thông báo gửi đến hotline)
+     */
+    @GetMapping("/hotline")
+    public List<ThongBaoResponse> getHotlineNotifications(
+            @RequestHeader("Authorization") String authHeader) {
+
+        Integer userId = getUserIdFromHeader(authHeader);
+        return thongBaoService.getThongBaoByNguoiNhan(userId);
+    }
+
+    /**
+     * Đánh dấu tất cả đã đọc cho hotline
+     */
+    @PutMapping("/hotline/da-doc-tat-ca")
+    public ResponseEntity<?> markAllAsReadHotline(
+            @RequestHeader("Authorization") String authHeader) {
+
+        Integer userId = getUserIdFromHeader(authHeader);
+        thongBaoService.danhDauTatCaDaDoc(userId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
     }
 }

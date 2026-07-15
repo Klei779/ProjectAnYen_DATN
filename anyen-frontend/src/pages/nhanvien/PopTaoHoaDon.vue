@@ -720,20 +720,12 @@ const submitHoaDon = async () => {
     return;
   }
 
-  let ptThanhToanInt = 0;
-  if (form.value.phuongThucThanhToan === "Tiền mặt") ptThanhToanInt = 1;
-  else if (form.value.phuongThucThanhToan === "Chuyển khoản") ptThanhToanInt = 2;
-
-  let trangThaiInt = 0;
-  if (form.value.trangThai === "Chưa thanh toán") trangThaiInt = 0;
-  else if (form.value.trangThai === "Đã thanh toán" || form.value.trangThai === "Đã in") trangThaiInt = 1;
-
   const payload = {
     maDonHang: maDonHang.value,
     ngayIn: form.value.ngayIn,
     tongTien: tongThanhToan.value,
-    phuongThucThanhToan: ptThanhToanInt,
-    trangThai: trangThaiInt,
+    phuongThucThanhToan: form.value.phuongThucThanhToan,
+    trangThai: form.value.trangThai,
   };
 
   try {
@@ -1014,7 +1006,7 @@ const submitHoaDon = async () => {
             </button>
           </div>
 
-          <div class="footer-right" v-if="!isViewMode">
+          <div class="footer-right">
             <button
                 class="btn-submit"
                 :class="{ disabled: !canCreateInvoice || loading }"
@@ -1024,7 +1016,7 @@ const submitHoaDon = async () => {
               <el-icon>
                 <Money />
               </el-icon>
-              {{ loading ? "Đang tạo..." : "Lưu hóa đơn" }}
+              {{ loading ? "Đang tạo..." : "Tạo hóa đơn" }}
             </button>
           </div>
         </div>

@@ -1,9 +1,6 @@
 package vn.anyen.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,6 +15,7 @@ import lombok.Setter;
 public class ComBoChiTiet {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ComboChiTietId")
     private Integer comboChiTietId;
 
@@ -29,6 +27,9 @@ public class ComBoChiTiet {
 
     @Column(name = "Loai")
     private Integer loai;
+
+    public static final Integer LOAI_SAN_PHAM = 0;
+    public static final Integer LOAI_DICH_VU = 1;
 
     @Column(name = "NoiDung")
     private String noiDung;

@@ -34,6 +34,8 @@ const showProfile = ref(false);
 const routeTitles = {
   "/doi-tac/tong-quan": "Tổng quan",
   "/doi-tac/quan-ly-san-pham": "Quản lý sản phẩm",
+  "/doi-tac/quan-ly-combo": "Quản lý combo",
+  "/doi-tac/tao-combo": "Tạo combo",
   "/doi-tac/quan-ly-don-hang": "Quản lý đơn hàng",
   "/doi-tac/thong-bao": "Thông báo",
   "/doi-tac/thong-tin-tai-khoan": "Thông tin tài khoản",

@@ -49,26 +49,8 @@ export async function getDonHangById(maDonHang) {
   return response.data;
 }
 
-export async function guiDoiTac(maDonHang) {
-  const response = await api.put(`${API_URL}/${maDonHang}/gui-doi-tac`);
-  return response.data;
-}
-
-export async function capNhatTrangThai(maDonHang, trangThaiStr) {
-  const MAP_REVERSE = {
-    "Mới tạo": 1,
-    "Chờ đối tác xác nhận": 2,
-    "Đã xác nhận": 3,
-    "Đang xử lý": 4,
-    "Chờ thanh toán": 5,
-    "Hoàn thành": 6,
-    "Đã hủy": 7,
-    "Đối tác từ chối": 8,
-  };
-  
-  const trangThai = MAP_REVERSE[trangThaiStr] || trangThaiStr;
-
-  const response = await api.put(`${API_URL}/${maDonHang}/trang-thai`, {
+export async function capNhatTrangThai(maDonHang, trangThai) {
+  const response = await api.put(`/api/don-hang/${maDonHang}/trang-thai`, {
     trangThai,
   });
 

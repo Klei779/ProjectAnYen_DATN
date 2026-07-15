@@ -11,10 +11,8 @@ import vn.anyen.dto.response.ThongBaoResponse;
 import vn.anyen.entity.*;
 import vn.anyen.repository.*;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,6 +40,7 @@ public class ThongBaoService {
     private static final Integer TRANG_THAI_DA_DOC = 1;
     private static final Integer TRANG_THAI_DA_CHAP_NHAN = 2;
     private static final Integer TRANG_THAI_DA_TU_CHOI = 3;
+    private static final Integer TRANG_THAI_CHO_XAC_NHAN = 4;
     private final HoaDonService hoaDonService;
 
 
@@ -119,6 +118,13 @@ public class ThongBaoService {
         throw new RuntimeException("Loại thông báo này không hỗ trợ chấp nhận");
     }
 
+    private Integer getMaSanPham(ThongBao thongBao) {
+        if (thongBao.getMaSanPham() != null) {
+            return thongBao.getMaSanPham();
+        }
+        return parseMaSanPhamFromNoiDung(thongBao.getNoiDung());
+    }
+
     private Integer parseMaSanPhamFromNoiDung(String noiDung) {
         if (noiDung == null) return null;
         Matcher matcher = MASP_PATTERN.matcher(noiDung);
@@ -133,7 +139,7 @@ public class ThongBaoService {
     }
 
     private void chapNhanDuyetSanPham(ThongBao thongBao, Integer nguoiNhanId) {
-        Integer maSanPham = parseMaSanPhamFromNoiDung(thongBao.getNoiDung());
+        Integer maSanPham = getMaSanPham(thongBao);
         if (maSanPham == null) {
             throw new RuntimeException("Thông báo này không có mã sản phẩm");
         }
@@ -188,8 +194,7 @@ public class ThongBaoService {
      *
      * Nếu là DUYET_SAN_PHAM:
      * - Gửi thông báo về đối tác: sản phẩm bị từ chối.
-     * - Bỏ MaSanPham trong thông báo nhân viên.
-     * - Xóa sản phẩm khỏi database.
+     * - Giữ sản phẩm trong database để bảo toàn lịch sử và chuyển sang trạng thái Ẩn.
      */
     @Transactional
     public void tuChoi(Integer maThongBao, Integer nguoiNhanId, String lyDoTuChoi) {
@@ -238,7 +243,7 @@ public class ThongBaoService {
     }
 
     private void tuChoiDuyetSanPham(ThongBao thongBao, Integer nguoiNhanId, String lyDoTuChoi) {
-        Integer maSanPham = parseMaSanPhamFromNoiDung(thongBao.getNoiDung());
+        Integer maSanPham = getMaSanPham(thongBao);
         if (maSanPham == null) {
             throw new RuntimeException("Thông báo này không có mã sản phẩm");
         }
@@ -250,7 +255,7 @@ public class ThongBaoService {
             throw new RuntimeException("Sản phẩm này không ở trạng thái chờ xác nhận");
         }
 
-        // 1. Gửi thông báo về đối tác trước khi xóa sản phẩm.
+        // 1. Gửi thông báo kết quả về đối tác.
         guiThongBaoDoiTacVeKetQuaDuyetSanPham(
                 sanPham,
                 false,
@@ -264,8 +269,9 @@ public class ThongBaoService {
 
         thongBaoRepository.save(thongBao);
 
-        // 3. Xóa sản phẩm khỏi database.
-        sanPhamRepository.delete(sanPham);
+        // 3. Không xóa dữ liệu; chuyển sản phẩm sang trạng thái Ẩn.
+        sanPham.setTrangThai(SanPham.TRANG_THAI_AN);
+        sanPhamRepository.save(sanPham);
     }
 
     private void tuChoiCongViec(ThongBao thongBao, Integer nguoiNhanId, String lyDoTuChoi) {
@@ -345,7 +351,7 @@ public class ThongBaoService {
                 .maKhachHang(tb.getMaKhachHang());
 
         if (LOAI_DUYET_SAN_PHAM.equals(tb.getLoaiThongBao())) {
-            builder.maSanPham(parseMaSanPhamFromNoiDung(tb.getNoiDung()));
+            builder.maSanPham(getMaSanPham(tb));
         }
 
         if (tb.getNgayTao() != null) {
@@ -413,7 +419,7 @@ public class ThongBaoService {
                 ? "Sản phẩm \"" + tenSanPham
                 + "\" đã được nhân viên duyệt và đang được bày bán trên hệ thống."
                 : "Sản phẩm \"" + tenSanPham
-                + "\" đã bị nhân viên từ chối và đã bị xóa khỏi hệ thống."
+                + "\" đã bị nhân viên từ chối và được chuyển sang trạng thái ẩn."
                 + " Lý do: " + lyDoTuChoi;
 
         if (duocDuyet) {
@@ -471,50 +477,6 @@ public class ThongBaoService {
         thongBao.setLoaiThongBao("DON_HANG");
         thongBao.setNguoiGuiId(null);
         thongBao.setNguoiNhanId(nguoiNhanId);
-
-        if (donHang.getKhachHang() != null) {
-            thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
-        }
-
-        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
-        thongBao.setNgayTao(LocalDateTime.now());
-        thongBao.setNgayCapNhat(LocalDateTime.now());
-
-        thongBaoRepository.save(thongBao);
-    }
-
-    @Transactional
-    public void taoThongBaoTuChoiDonHang(Integer maDonHang, String lyDo, String tenDoiTac) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Không tìm thấy đơn hàng"
-                ));
-
-        if (donHang.getNhanVien() == null) {
-            return;
-        }
-
-        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
-
-        String tenKhachHang = "Không có";
-        if (donHang.getKhachHang() != null) {
-            tenKhachHang = donHang.getKhachHang().getTenKhachHang();
-        }
-
-        String maDonHangText = "DH" + String.format("%03d", donHang.getMaDonHang());
-
-        ThongBao thongBao = new ThongBao();
-        thongBao.setTieuDe("Đối tác đã từ chối đơn hàng");
-        thongBao.setNoiDung(
-                "Đơn hàng " + maDonHangText +
-                        " của khách hàng " + tenKhachHang +
-                        " đã bị đối tác " + tenDoiTac + " từ chối."
-        );
-        thongBao.setLoaiThongBao("DON_HANG");
-        thongBao.setNguoiGuiId(null);
-        thongBao.setNguoiNhanId(nguoiNhanId);
-        thongBao.setLyDoTuChoi(lyDo);
 
         if (donHang.getKhachHang() != null) {
             thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
@@ -682,65 +644,5 @@ public class ThongBaoService {
 
             thongBaoRepository.save(thongBao);
         }
-    }
-
-    public void taoThongBaoHeThongChoNhanVien(Integer maNhanVien, String tieuDe, String noiDung) {
-        ThongBao tb = new ThongBao();
-        tb.setNguoiNhanId(maNhanVien);
-        tb.setLoaiThongBao(LOAI_DON_HANG);
-        tb.setTieuDe(tieuDe);
-        tb.setNoiDung(noiDung);
-        tb.setTrangThai(TRANG_THAI_CHUA_DOC);
-        tb.setNgayTao(LocalDateTime.now());
-        tb.setNgayCapNhat(LocalDateTime.now());
-        thongBaoRepository.save(tb);
-    }
-
-    /**
-     * Giao công việc cho nhân viên - tạo thông báo CONG_VIEC
-     */
-    @Transactional
-    public ThongBao giaoCongViec(Integer nguoiGuiId, Integer maNhanVien, String hoTenKhachHang, String soDienThoaiKhachHang, String diaChiKhachHang, String audioUrl, Double latitude, Double longitude) {
-        NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên"));
-
-        // Tạo khách hàng mới
-        KhachHang khachHang = KhachHang.builder()
-                .tenKhachHang(hoTenKhachHang)
-                .soDienThoai(soDienThoaiKhachHang)
-                .diaChi(diaChiKhachHang)
-                .ngayDangKy(LocalDateTime.now())
-                .nguonDangKy("HOTLINE")
-                .build();
-
-        if (latitude != null && longitude != null) {
-            khachHang.setLatitude(BigDecimal.valueOf(latitude));
-            khachHang.setLongitude(BigDecimal.valueOf(longitude));
-        }
-
-        khachHang = khachHangRepository.save(khachHang);
-
-        // Tạo thông báo công việc
-        String noiDung = String.format(
-                "Khách hàng: %s\nSĐT: %s\nĐịa chỉ: %s\n%s",
-                hoTenKhachHang,
-                soDienThoaiKhachHang,
-                diaChiKhachHang,
-                audioUrl != null ? "Có ghi âm cuộc gọi" : "Không có ghi âm"
-        );
-
-        ThongBao thongBao = ThongBao.builder()
-                .tieuDe("Công việc mới - Khách hàng cần hỗ trợ")
-                .noiDung(noiDung)
-                .loaiThongBao(LOAI_CONG_VIEC)
-                .nguoiGuiId(nguoiGuiId)
-                .nguoiNhanId(maNhanVien)
-                .maKhachHang(khachHang.getMaKhachHang())
-                .trangThai(TRANG_THAI_CHUA_DOC)
-                .ngayTao(LocalDateTime.now())
-                .ngayCapNhat(LocalDateTime.now())
-                .build();
-
-        return thongBaoRepository.save(thongBao);
     }
 }

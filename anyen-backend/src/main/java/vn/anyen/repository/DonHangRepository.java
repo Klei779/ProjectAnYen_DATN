@@ -41,7 +41,6 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
                             OR LOWER(kh.TenKhachHang) LIKE LOWER(CONCAT('%', :keyword, '%'))
                             OR kh.SoDienThoai LIKE CONCAT('%', :keyword, '%')
                       )
-                      AND dh.TrangThai NOT IN (1, 2, 8)
                       AND (
                             :trangThai IS NULL
                             OR :trangThai = ''
@@ -57,7 +56,6 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
                     JOIN sanpham sp ON sp.MaSanPham = ct.MaSanPham
                     LEFT JOIN khachhang kh ON kh.MaKhachHang = dh.MaKhachHang
                     WHERE sp.MaDoiTac = :maDoiTac
-                      AND dh.TrangThai NOT IN (1, 2, 8)
                       AND (
                             :keyword IS NULL
                             OR :keyword = ''
@@ -132,12 +130,4 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
             nativeQuery = true
     )
     long countDoiTacTuChoi(@Param("maDonHang") Integer maDonHang);
-
-    @Query("""
-        SELECT COUNT(dh)
-        FROM DonHang dh
-        WHERE dh.nhanVien.maNhanVien = :maNhanVien
-        AND dh.trangThai NOT IN (6, 7)
-    """)
-    long countDonDangXuLyByNhanVien(@Param("maNhanVien") Integer maNhanVien);
 }

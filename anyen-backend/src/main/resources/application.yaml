@@ -1,6 +1,11 @@
 server:
 
   port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 
 
@@ -11,9 +16,13 @@ spring:
     url: jdbc:mysql://localhost:3306/dich_vu_mai_tang?useSSL=false&serverTimezone=Asia/Ho_Chi_Minh&allowPublicKeyRetrieval=true
 
     username: root
+<<<<<<< HEAD
 
     password: 123456
 
+=======
+    password: root123
+>>>>>>> b4d7834 (Quản lý combo BE tạo combo, hotline giao task và FE chi tiết sản phẩm đối tác)
     driver-class-name: com.mysql.cj.jdbc.Driver
 
 
@@ -87,5 +96,9 @@ cloudinary:
   cloud-name: dnj7xhvs1
 
   api-key: 388776263683842
+<<<<<<< HEAD
 
   api-secret: juvH1fN2TZwjFMTXdxewks7MVmE
+=======
+  api-secret: juvH1fN2TZwjFMTXdxewks7MVmE
+>>>>>>> b4d7834 (Quản lý combo BE tạo combo, hotline giao task và FE chi tiết sản phẩm đối tác)

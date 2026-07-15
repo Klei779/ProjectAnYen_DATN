@@ -24,7 +24,7 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
      * Đếm thông báo chưa đọc
      */
     //test
-    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
+    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai IN (0, 4)")
     long countChuaDoc(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     @Modifying

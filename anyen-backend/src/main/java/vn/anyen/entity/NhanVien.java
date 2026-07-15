@@ -56,25 +56,4 @@ public class NhanVien {
 
     @Column(name = "Longitude")
     private BigDecimal longitude;
-
-    @Column(name = "TinhThanh")
-    private String tinhThanh;
-
-    @Column(name = "QuanHuyen")
-    private String quanHuyen;
-
-    @Column(name = "PhuongXa")
-    private String phuongXa;
-
-    @Column(name = "SoNhaDuong")
-    private String soNhaDuong;
-
-    @Column(name = "DiaChiDayDu")
-    private String diaChiDayDu;
-
-    @Column(name = "TrangThaiLamViec")
-    private String trangThaiLamViec;
-
-    @Column(name = "CapNhatToaDoTai")
-    private java.time.LocalDateTime capNhatToaDoTai;
 }

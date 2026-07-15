@@ -6,7 +6,6 @@ import {
   formatDate,
   capNhatTrangThai,
   getSanPhamTaoDonHang,
-  guiDoiTac,
 } from "../../services/donHangService.js";
 
 const props = defineProps({
@@ -112,6 +111,15 @@ const normalizeOrder = (data) => {
 
   cloned.GhiChu = cloned.GhiChu || cloned.ghiChuNoiBo || cloned.ghiChu || "";
 
+<<<<<<< HEAD
+=======
+  cloned.phuongThucThanhToan =
+      cloned.phuongThucThanhToan || "Chưa chọn";
+
+  cloned.trangThaiThanhToan =
+      cloned.trangThaiThanhToan || "Chưa thanh toán";
+
+>>>>>>> b4d7834 (Quản lý combo BE tạo combo, hotline giao task và FE chi tiết sản phẩm đối tác)
   cloned.phiVanChuyen = Number(cloned.phiVanChuyen || 0);
   cloned.giamGia = Number(cloned.giamGia || 0);
 
@@ -382,11 +390,7 @@ const capNhatTrangThaiTiep = async () => {
   if (!order.value || !nextStatus.value) return;
 
   try {
-    if (nextStatus.value === 'Chờ đối tác xác nhận') {
-      await guiDoiTac(getOrderId());
-    } else {
-      await capNhatTrangThai(getOrderId(), nextStatus.value);
-    }
+    await capNhatTrangThai(getOrderId(), nextStatus.value);
 
     ElMessage.success(`Đã cập nhật trạng thái: ${nextStatus.value}`);
 
@@ -591,7 +595,7 @@ const capNhatTrangThaiTiep = async () => {
 
           <div class="progress-actions">
             <button
-                v-if="nextStatus && (currentStatus === 'Mới tạo' || currentStatus === 'Chờ thanh toán')"
+                v-if="nextStatus"
                 class="btn-capnhat-tt"
                 @click="capNhatTrangThaiTiep"
             >
@@ -603,7 +607,7 @@ const capNhatTrangThaiTiep = async () => {
               }}
             </button>
 
-            <div v-if="nextStatus && (currentStatus === 'Mới tạo' || currentStatus === 'Chờ thanh toán')" class="status-note">
+            <div v-if="nextStatus" class="status-note">
               Trạng thái hiện tại:
               <strong>{{ currentStatus }}</strong>
               <br />

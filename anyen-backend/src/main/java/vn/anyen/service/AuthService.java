@@ -61,11 +61,14 @@ public class AuthService {
                     // Determine specific role
                     int rawRole = nv.getVaiTro();
                     String specificRole = null;
-                    if (rawRole == 1 ) {
+                    if (rawRole == NhanVien.VAI_TRO_ADMIN) {
                         specificRole = "ADMIN";
-                    } else if (rawRole == 3 ) {
+                    } else if (rawRole == NhanVien.VAI_TRO_TU_VAN
+                            || rawRole == NhanVien.VAI_TRO_HOTLINE) {
+                        // Vai trò 3 là nhân viên trực tuyến/tư vấn, vai trò 4 là Hotline.
+                        // Cả hai cùng sử dụng màn hình tiếp nhận cuộc gọi và giao việc.
                         specificRole = "HOTLINE";
-                    } else if (rawRole ==2) {
+                    } else if (rawRole == NhanVien.VAI_TRO_BAN_HANG) {
                         specificRole = "NHANVIEN";
                     }
 

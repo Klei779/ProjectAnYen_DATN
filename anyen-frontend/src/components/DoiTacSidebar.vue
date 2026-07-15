@@ -40,6 +40,11 @@
         <span class="sidebar-text">Quản lý sản phẩm</span>
       </RouterLink>
 
+      <RouterLink to="/doi-tac/quan-ly-combo" class="menu-item" title="Quản lý combo">
+        <i class="fa-solid fa-layer-group menu-icon"></i>
+        <span class="sidebar-text">Quản lý combo</span>
+      </RouterLink>
+
       <RouterLink
           to="/doi-tac/tao-combo"
           class="menu-item"

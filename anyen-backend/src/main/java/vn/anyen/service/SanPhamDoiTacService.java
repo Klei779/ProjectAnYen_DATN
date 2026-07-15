@@ -79,6 +79,42 @@ public class SanPhamDoiTacService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public SanPhamDoiTacResponse getChiTietSanPham(
+            Authentication authentication,
+            Integer id
+    ) {
+        SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+        SanPhamDoiTacResponse response = toResponse(sanPham);
+
+        response.setChiTietList(
+                sanPhamChiTietRepository.findByMaSanPhamOrderByThuTuAsc(id)
+                        .stream()
+                        .map(chiTiet -> SanPhamDoiTacResponse.ChiTietSanPhamResponse.builder()
+                                .maChiTiet(chiTiet.getMaChiTiet())
+                                .loaiKhoi(chiTiet.getLoaiKhoi())
+                                .noiDung(chiTiet.getNoiDung())
+                                .thuTu(chiTiet.getThuTu())
+                                .build())
+                        .toList()
+        );
+
+        response.setHinhAnhList(
+                sanPhamHinhAnhRepository.findByMaSanPhamOrderByThuTuAsc(id)
+                        .stream()
+                        .map(hinhAnh -> SanPhamDoiTacResponse.HinhAnhSanPhamResponse.builder()
+                                .maHinhAnh(hinhAnh.getMaHinhAnh())
+                                .maChiTiet(hinhAnh.getMaChiTiet())
+                                .loaiHinhAnh(hinhAnh.getLoaiHinhAnh())
+                                .urlHinhAnh(hinhAnh.getUrlHinhAnh())
+                                .thuTu(hinhAnh.getThuTu())
+                                .build())
+                        .toList()
+        );
+
+        return response;
+    }
+
     public SanPhamDoiTacResponse createSanPham(Authentication authentication, SanPhamDoiTacRequest request) {
         Integer maDoiTac = getMaDoiTac(authentication);
         validateRequest(request, true);
@@ -109,8 +145,7 @@ public class SanPhamDoiTacService {
 
         // Tạo thông báo cho nhân viên duyệt sản phẩm.
         // NguoiNhanId = null nghĩa là tất cả nhân viên đều thấy.
-        // maSanPham được nhúng vào NoiDung với format [MASP:id] vì
-        // bảng thongbao không có cột MaSanPham trong DB mới.
+        // Lưu trực tiếp MaSanPham để giao diện duyệt không phải phân tích chuỗi nội dung.
         ThongBao thongBao = ThongBao.builder()
                 .tieuDe("Duyệt sản phẩm mới")
                 .noiDung(
@@ -124,7 +159,8 @@ public class SanPhamDoiTacService {
                 .nguoiGuiId(null)
                 .nguoiNhanId(null)
                 .maKhachHang(null)
-                .trangThai(0) // 0 là Chưa đọc
+                .maSanPham(savedSanPham.getMaSanPham())
+                .trangThai(4) // 4 là Chờ xác nhận
                 .lyDoTuChoi(null)
                 .build();
 
@@ -162,7 +198,8 @@ public class SanPhamDoiTacService {
                 .nguoiGuiId(null)
                 .nguoiNhanId(null)
                 .maKhachHang(null)
-                .trangThai(0) // 0 là Chưa đọc
+                .maSanPham(savedSanPham.getMaSanPham())
+                .trangThai(4) // 4 là Chờ xác nhận
                 .lyDoTuChoi(null)
                 .build();
 

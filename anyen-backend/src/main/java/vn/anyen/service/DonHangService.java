@@ -90,7 +90,7 @@ public class DonHangService {
                 .nhanVien(nhanVien)
                 .ngayTaoDon(LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh")))
                 .tongTien(BigDecimal.ZERO)
-                .trangThai(DonHang.TT_MOI_TAO)
+                .trangThai(DonHang.TT_CHO_DOI_TAC_XAC_NHAN)
                 .ghiChu(request.getGhiChu())
                 .phuongThucThanhToan(
                         request.getPhuongThucThanhToan() != null
@@ -115,6 +115,10 @@ public class DonHangService {
 
         DonHang donHangDaLuu = donHangRepository.save(savedDonHang);
 
+        doiTacThongBaoService.taoThongBaoChoDonHang(
+                donHangDaLuu.getMaDonHang()
+        );
+
         return mapToDonHangResponse(donHangDaLuu);
     }
 
@@ -128,88 +132,6 @@ public class DonHangService {
         }
 
         return hopDongRepository.existsByDonHang_MaDonHang(maDonHang);
-    }
-
-    @Transactional
-    public DonHangResponse doiTacChapNhanDonHang(Integer maDonHang, Integer maDoiTac) {
-        return capNhatTrangThai(maDonHang, DonHang.TT_DA_XAC_NHAN);
-    }
-
-    @Transactional
-    public DonHangResponse doiTacTuChoiDonHang(Integer maDonHang, Integer maDoiTac) {
-        return capNhatTrangThai(maDonHang, DonHang.TT_DOI_TAC_TU_CHOI);
-    }
-
-    @Transactional
-    public DonHangResponse doiTacXuLyDonHang(Integer maDonHang, Integer maDoiTac, String thoiGianUocTinh) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
-        
-        // Thêm ghi chú thời gian ước tính
-        String ghiChuMoi = (donHang.getGhiChu() == null ? "" : donHang.getGhiChu() + "\n") 
-                + "Đối tác hẹn giao lúc: " + thoiGianUocTinh;
-        donHang.setGhiChu(ghiChuMoi.trim());
-        donHangRepository.save(donHang);
-        
-        // Gửi thông báo cho nhân viên
-        thongBaoService.taoThongBaoDonHangDangXuLy(maDonHang);
-        
-        return capNhatTrangThai(maDonHang, DonHang.TT_DANG_XU_LY);
-    }
-
-    @Transactional
-    public DonHangResponse doiTacDaGiaoDonHang(Integer maDonHang, Integer maDoiTac) {
-        return capNhatTrangThai(maDonHang, DonHang.TT_CHO_THANH_TOAN);
-    }
-
-    @Transactional
-    public DonHangResponse doiTacHuyDonHang(Integer maDonHang, Integer maDoiTac, String lyDo) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
-        
-        String ghiChuMoi = (donHang.getGhiChu() == null ? "" : donHang.getGhiChu() + "\n") 
-                + "Đối tác hủy đơn. Lý do: " + lyDo;
-        donHang.setGhiChu(ghiChuMoi.trim());
-        donHangRepository.save(donHang);
-        
-        return capNhatTrangThai(maDonHang, DonHang.TT_DA_HUY);
-    }
-
-    @Transactional
-    public void doiTacBaoCaoSuCo(Integer maDonHang, Integer maDoiTac, String lyDo) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
-        
-        String noiDung = "Đối tác báo cáo sự cố đơn hàng #DH" + String.format("%03d", maDonHang) + ". Lý do: " + lyDo;
-        // ThongBaoService doesn't have a direct method for this, so we'll use a generic method if available, or just create one.
-        thongBaoService.taoThongBaoHeThongChoNhanVien(
-            donHang.getNhanVien().getMaNhanVien(),
-            "Báo cáo sự cố đơn hàng #DH" + String.format("%03d", maDonHang),
-            noiDung
-        );
-    }
-
-    @Transactional
-    public DonHangResponse guiDoiTac(Integer maDonHang) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Không tìm thấy đơn hàng #" + maDonHang
-                ));
-
-        if (!DonHang.TT_MOI_TAO.equals(donHang.getTrangThai())) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Chỉ có thể gửi đối tác khi đơn hàng ở trạng thái Mới tạo"
-            );
-        }
-
-        donHang.setTrangThai(DonHang.TT_CHO_DOI_TAC_XAC_NHAN);
-        donHangRepository.save(donHang);
-
-        doiTacThongBaoService.taoThongBaoChoDonHang(maDonHang);
-
-        return mapToDonHangResponse(donHang);
     }
 
     @Transactional
@@ -786,19 +708,6 @@ public class DonHangService {
             Integer maDonHang,
             Integer trangThaiMoi
     ) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng #" + maDonHang));
-                
-        Integer trangThaiHienTai = donHang.getTrangThai();
-        
-        if (!DonHang.TT_HOAN_THANH.equals(trangThaiMoi)) {
-            throw new RuntimeException("Nhân viên chỉ có thể cập nhật trạng thái Hoàn thành.");
-        }
-        
-        if (!DonHang.TT_CHO_THANH_TOAN.equals(trangThaiHienTai)) {
-            throw new RuntimeException("Chỉ có thể Hoàn thành đơn hàng khi đang ở trạng thái Chờ thanh toán.");
-        }
-        
         return capNhatTrangThai(maDonHang, trangThaiMoi);
     }
 
@@ -937,7 +846,6 @@ public class DonHangService {
                 .ghiChu(donHang.getGhiChu())
                 .trangThai(getTrangThaiString(donHang.getTrangThai()))
                 .tongCong(tongCong)
-                .daCoHopDong(hopDongRepository.existsByDonHang_MaDonHang(donHang.getMaDonHang()))
 
                 .sanPhams(sanPhams)
                 .build();

@@ -23,6 +23,11 @@ export async function getSanPhamDoiTac(params = {}) {
     return response.data;
 }
 
+export async function getChiTietSanPhamDoiTac(id) {
+    const response = await api.get(`${API_URL}/${id}`);
+    return response.data;
+}
+
 export async function createSanPhamDoiTac(payload) {
     const response = await api.post(API_URL, payload);
     return response.data;

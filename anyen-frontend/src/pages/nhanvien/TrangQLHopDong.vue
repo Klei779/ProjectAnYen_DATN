@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { useRoute, useRouter } from "vue-router";
 
 import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
 
@@ -359,14 +358,7 @@ const visiblePages = computed(() => {
   return [1, "...", page.value, "...", max];
 });
 
-const route = useRoute();
-const initialDonHangId = ref(null);
-
 onMounted(() => {
-  if (route.query.donHangId) {
-    initialDonHangId.value = Number(route.query.donHangId);
-    showCreateContract.value = true;
-  }
   loadHopDongs();
 });
 </script>
@@ -661,7 +653,6 @@ onMounted(() => {
 
     <PopTaoHopDong
         v-model="showCreateContract"
-        :initial-don-hang-id="initialDonHangId"
         @saved="afterCreateContract"
         @success="afterCreateContract"
     />

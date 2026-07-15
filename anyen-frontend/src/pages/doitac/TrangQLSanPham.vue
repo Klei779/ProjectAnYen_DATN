@@ -3,8 +3,8 @@ import {ref, computed, watch, onMounted} from "vue";
 import api from "../../api/api.js";
 
 const API_URL = "/api/doi-tac/san-pham";
-const NGUNG_BAN_API = (id) => `${API_URL}/${id}/ngung-ban`;
-const BAN_LAI_API = (id) => `${API_URL}/${id}/ban-lai`;
+const NGUNG_BAN_API = (id) => `${API_URL}/${id}/an`;
+const BAN_LAI_API = (id) => `${API_URL}/${id}/hien`;
 
 const editingProduct = ref(null);
 const activeTab = ref("list");
@@ -19,6 +19,8 @@ const loading = ref(false);
 const imagePreview = ref("");
 const products = ref([]);
 const total = ref(0);
+const selectedProductDetail = ref(null);
+const loadingProductDetail = ref(false);
 
 const emptyProduct = () => ({
   tenSanPham: "",
@@ -47,24 +49,30 @@ const newProduct = ref(emptyProduct());
 const getProductId = (sp) => sp.id ?? sp.maSanPham ?? sp.maSP;
 
 const getProductStatus = (sp) => {
-  const trangThai = sp.trangThai || sp.status || "";
-
-  if (trangThai === "Ngưng bán") {
-    return "Ngưng bán";
-  }
-
-  if (trangThai === "Hết hàng") {
-    return "Hết hàng";
-  }
-
+  const approvalCode = Number(sp.trangThai ?? sp.status ?? 2);
+  if (approvalCode === 0) return "Ngưng bán";
+  if (approvalCode === 2) return "Chờ duyệt";
   const stock = Number(sp.stock ?? sp.soLuong ?? 0);
   return stock > 0 ? "Còn hàng" : "Hết hàng";
+};
+
+const getApprovalLabel = (code) => {
+  if (Number(code) === 1) return "Đã duyệt";
+  if (Number(code) === 2) return "Chờ duyệt";
+  return "Đang ẩn / Đã từ chối";
+};
+
+const getApprovalClass = (code) => {
+  if (Number(code) === 1) return "approved";
+  if (Number(code) === 2) return "pending";
+  return "hidden";
 };
 
 const normalizeProduct = (sp) => {
   const id = getProductId(sp);
   const stock = Number(sp.stock ?? sp.soLuong ?? 0);
   const status = getProductStatus(sp);
+  const trangThaiCode = Number(sp.trangThai ?? sp.status ?? 2);
 
   return {
     id,
@@ -95,12 +103,13 @@ const normalizeProduct = (sp) => {
     mauSac: sp.mauSac || "",
     hinhAnh: sp.hinhAnh || sp.image || "",
     vatLieu: sp.vatLieu || "",
-    trangThai:
-        sp.trangThai ??
-        (stock > 0 ? "Đang bán" : "Hết hàng"),
+    trangThaiCode,
+    trangThai: trangThaiCode === 1 ? "Đang bán" : trangThaiCode === 2 ? "Chờ duyệt" : "Ngưng bán",
     kichThuoc: sp.kichThuoc || "",
     trongLuong: sp.trongLuong || "",
     cnsx: sp.cnsx || sp.CNSX || "",
+    chiTietList: Array.isArray(sp.chiTietList) ? sp.chiTietList : [],
+    hinhAnhList: Array.isArray(sp.hinhAnhList) ? sp.hinhAnhList : [],
   };
 };
 
@@ -182,7 +191,7 @@ const categories = computed(() => {
 });
 
 const availableProducts = computed(() =>
-    products.value.filter((p) => p.status === "Còn hàng" || p.trangThai === "Đang bán")
+    products.value.filter((p) => p.trangThaiCode === 1)
 );
 
 const outOfStockProducts = computed(() =>
@@ -190,7 +199,7 @@ const outOfStockProducts = computed(() =>
 );
 
 const stoppedProducts = computed(() =>
-    products.value.filter(p => p.trangThai === "Ngưng bán")
+    products.value.filter(p => p.trangThaiCode === 0)
 );
 
 const filteredProducts = computed(() => {
@@ -217,7 +226,7 @@ const filteredProducts = computed(() => {
     }
 
     if (selectedStatus.value === "ngung-ban") {
-      matchStatus = p.trangThai === "Ngưng bán";
+      matchStatus = p.trangThaiCode === 0;
     }
 
     return matchKeyword && matchCategory && matchStatus;
@@ -416,7 +425,7 @@ const saveStock = async (product) => {
 };
 
 const isHiddenProduct = (product) => {
-  return product.trangThai === "Ngưng bán";
+  return product.trangThaiCode === 0;
 };
 
 const ngungBanProduct = async (product) => {
@@ -457,14 +466,28 @@ const banLaiProduct = async (product) => {
   }
 };
 
-const showDetail = (product) => {
-  alert(
-      `Tên sản phẩm: ${product.name}\n` +
-      `Loại: ${product.category}\n` +
-      `Giá: ${formatPrice(product.price)}\n` +
-      `Tồn kho: ${product.stock}\n` +
-      `Trạng thái: ${product.trangThai}`
-  );
+const showDetail = async (product) => {
+  loadingProductDetail.value = true;
+  selectedProductDetail.value = product;
+
+  try {
+    const response = await api.get(`${API_URL}/${product.id}`);
+    selectedProductDetail.value = normalizeProduct(response.data || product);
+  } catch (error) {
+    console.error("Lỗi tải chi tiết sản phẩm:", error);
+    alert(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Không thể tải chi tiết sản phẩm."
+    );
+    selectedProductDetail.value = null;
+  } finally {
+    loadingProductDetail.value = false;
+  }
+};
+
+const closeDetail = () => {
+  selectedProductDetail.value = null;
 };
 
 
@@ -487,7 +510,7 @@ const buildPayloadFromProduct = (product, overrides = {}) => ({
   mauSac: overrides.mauSac ?? product.mauSac ?? "",
   hinhAnh: overrides.hinhAnh ?? product.hinhAnh ?? product.image ?? "",
   vatLieu: overrides.vatLieu ?? product.vatLieu ?? "",
-  trangThai: overrides.trangThai ?? product.trangThai ?? "Đang bán",
+  trangThai: Number(overrides.trangThai ?? product.trangThaiCode ?? 1),
   kichThuoc: overrides.kichThuoc ?? product.kichThuoc ?? "",
   trongLuong: overrides.trongLuong ?? product.trongLuong ?? "",
   cnsx: overrides.cnsx ?? product.cnsx ?? "",
@@ -692,6 +715,10 @@ const handleImageUpload = (event) => {
 
         <div class="product-grid">
           <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
+            <div class="approval-bar" :class="getApprovalClass(product.trangThaiCode)">
+              <i :class="product.trangThaiCode === 1 ? 'fa-solid fa-circle-check' : 'fa-regular fa-clock'"></i>
+              {{ getApprovalLabel(product.trangThaiCode) }}
+            </div>
             <img :src="product.image" :alt="product.name"/>
 
             <div class="product-info">
@@ -737,7 +764,7 @@ const handleImageUpload = (event) => {
               </button>
 
               <button
-                  v-if="product.trangThai !== 'Ngưng bán'"
+                  v-if="product.trangThaiCode === 1"
                   class="hide-btn"
                   @click="ngungBanProduct(product)"
               >
@@ -746,7 +773,7 @@ const handleImageUpload = (event) => {
               </button>
 
               <button
-                  v-else
+                  v-else-if="product.trangThaiCode === 0"
                   class="hide-btn"
                   @click="banLaiProduct(product)"
               >
@@ -977,6 +1004,94 @@ const handleImageUpload = (event) => {
           </div>
         </div>
       </template>
+
+      <div v-if="selectedProductDetail" class="product-detail-overlay" @click.self="closeDetail">
+        <article class="product-detail-modal">
+          <button class="detail-close" type="button" @click="closeDetail"><i class="fa-solid fa-xmark"></i></button>
+          <div class="detail-image-wrap">
+            <img :src="selectedProductDetail.image" :alt="selectedProductDetail.name" />
+            <span class="approval-bar detail-status" :class="getApprovalClass(selectedProductDetail.trangThaiCode)">
+              {{ getApprovalLabel(selectedProductDetail.trangThaiCode) }}
+            </span>
+          </div>
+          <div class="detail-content">
+            <div v-if="loadingProductDetail" class="detail-loading">Đang tải chi tiết sản phẩm...</div>
+            <template v-else>
+              <p class="detail-eyebrow">SẢN PHẨM #{{ selectedProductDetail.id }}</p>
+              <h2>{{ selectedProductDetail.name }}</h2>
+              <p class="detail-price">{{ formatPrice(selectedProductDetail.price) }}</p>
+
+              <div class="detail-grid">
+                <div><span>Loại</span><strong>{{ selectedProductDetail.category || '—' }}</strong></div>
+                <div><span>Tồn kho</span><strong>{{ selectedProductDetail.stock }}</strong></div>
+                <div><span>Vật liệu</span><strong>{{ selectedProductDetail.vatLieu || '—' }}</strong></div>
+                <div><span>Màu sắc</span><strong>{{ selectedProductDetail.mauSac || '—' }}</strong></div>
+                <div><span>Kích thước</span><strong>{{ selectedProductDetail.kichThuoc || '—' }}</strong></div>
+                <div><span>Xuất xứ</span><strong>{{ selectedProductDetail.xuatXu || '—' }}</strong></div>
+              </div>
+
+              <section class="database-detail-section">
+                <div class="detail-section-heading">
+                  <div>
+                    <h3>Chi tiết cấu tạo sản phẩm</h3>
+                  </div>
+                  <span class="detail-count">{{ selectedProductDetail.chiTietList.length }} mục</span>
+                </div>
+
+                <div v-if="selectedProductDetail.chiTietList.length" class="database-detail-list">
+                  <article
+                      v-for="(chiTiet, index) in selectedProductDetail.chiTietList"
+                      :key="chiTiet.maChiTiet || index"
+                      class="database-detail-item"
+                  >
+                    <div class="detail-order">{{ chiTiet.thuTu ?? index + 1 }}</div>
+                    <div>
+                      <h4>{{ chiTiet.loaiKhoi || `Chi tiết ${index + 1}` }}</h4>
+                      <p>{{ chiTiet.noiDung || 'Chưa có nội dung.' }}</p>
+
+                      <div v-if="selectedProductDetail.hinhAnhList.some(img => img.maChiTiet === chiTiet.maChiTiet)" class="detail-image-gallery inline-gallery">
+                        <img
+                            v-for="image in selectedProductDetail.hinhAnhList.filter(img => img.maChiTiet === chiTiet.maChiTiet)"
+                            :key="image.maHinhAnh"
+                            :src="image.urlHinhAnh"
+                            :alt="image.loaiHinhAnh || chiTiet.loaiKhoi"
+                        />
+                      </div>
+                    </div>
+                  </article>
+                </div>
+
+                <div v-else class="empty-database-detail">
+                  Sản phẩm này chưa có dữ liệu trong bảng sanphamchitiet.
+                </div>
+              </section>
+
+              <section v-if="selectedProductDetail.hinhAnhList.some(img => !img.maChiTiet)" class="database-detail-section image-section">
+                <div class="detail-section-heading">
+                  <div>
+                    <span class="detail-section-kicker">SANPHAMHINHANH</span>
+                    <h3>Hình ảnh bổ sung</h3>
+                  </div>
+                </div>
+                <div class="detail-image-gallery">
+                  <figure
+                      v-for="image in selectedProductDetail.hinhAnhList.filter(img => !img.maChiTiet)"
+                      :key="image.maHinhAnh"
+                  >
+                    <img :src="image.urlHinhAnh" :alt="image.loaiHinhAnh || selectedProductDetail.name" />
+                    <figcaption>{{ image.loaiHinhAnh || 'Hình ảnh sản phẩm' }}</figcaption>
+                  </figure>
+                </div>
+              </section>
+
+              <div class="detail-description">
+                <h4>Ghi chú</h4>
+                <p>{{ selectedProductDetail.ghiChu || 'Chưa có ghi chú cho sản phẩm.' }}</p>
+              </div>
+            </template>
+          </div>
+        </article>
+      </div>
     </section>
   </div>
 </template>
@@ -1063,6 +1178,111 @@ const handleImageUpload = (event) => {
 
 .table-actions button:hover {
   color: #b91c1c;
+}
+
+
+.product-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.approval-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.product-card > .approval-bar {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, .14);
+}
+
+.approval-bar.approved { background: #dcfce7; color: #166534; }
+.approval-bar.pending { background: #fef3c7; color: #92400e; }
+.approval-bar.hidden { background: #fee2e2; color: #991b1b; }
+
+.product-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .62);
+  backdrop-filter: blur(4px);
+}
+
+.product-detail-modal {
+  position: relative;
+  width: min(920px, 96vw);
+  max-height: 90vh;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(280px, 42%) 1fr;
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 30px 80px rgba(15, 23, 42, .35);
+}
+
+.detail-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 3;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255,255,255,.92);
+  cursor: pointer;
+}
+
+.detail-image-wrap { position: relative; min-height: 430px; background: #f3f4f6; }
+.detail-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+.detail-status { position: absolute; left: 18px; bottom: 18px; }
+.detail-content { padding: 42px 38px 34px; }
+.detail-eyebrow { margin: 0 0 8px; color: #b91c1c; font-weight: 800; letter-spacing: .08em; }
+.detail-content h2 { margin: 0; font-size: 30px; color: #1f2937; }
+.detail-price { margin: 14px 0 24px; color: #b91c1c; font-size: 24px; font-weight: 800; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.detail-grid div { padding: 13px 14px; background: #f8fafc; border-radius: 10px; }
+.detail-grid span { display: block; margin-bottom: 4px; color: #64748b; font-size: 12px; }
+.detail-grid strong { color: #1f2937; }
+.detail-description { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
+.detail-description h4 { margin: 0 0 8px; }
+.detail-description p { color: #4b5563; line-height: 1.65; }
+.detail-loading { min-height: 260px; display: grid; place-items: center; color: #64748b; font-weight: 700; }
+.database-detail-section { margin-top: 26px; padding-top: 22px; border-top: 1px solid #e5e7eb; }
+.detail-section-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.detail-section-heading h3 { margin: 3px 0 0; color: #1f2937; font-size: 18px; }
+.detail-section-kicker { color: #991b1b; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.detail-count { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: #fef2f2; color: #991b1b; font-size: 12px; font-weight: 700; }
+.database-detail-list { display: grid; gap: 12px; }
+.database-detail-item { display: grid; grid-template-columns: 34px 1fr; gap: 12px; padding: 15px; border: 1px solid #e5e7eb; border-radius: 12px; background: #fff; }
+.detail-order { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #991b1b; color: #fff; font-weight: 800; font-size: 12px; }
+.database-detail-item h4 { margin: 2px 0 7px; color: #1f2937; font-size: 15px; }
+.database-detail-item p { margin: 0; color: #4b5563; line-height: 1.65; white-space: pre-line; }
+.empty-database-detail { padding: 18px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; text-align: center; background: #f8fafc; }
+.detail-image-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.detail-image-gallery figure { margin: 0; }
+.detail-image-gallery img { width: 100%; height: 118px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; background: #f3f4f6; }
+.detail-image-gallery figcaption { margin-top: 5px; color: #64748b; font-size: 11px; }
+.inline-gallery { margin-top: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inline-gallery img { height: 96px; }
+
+@media (max-width: 760px) {
+  .product-detail-modal { grid-template-columns: 1fr; }
+  .detail-image-wrap { min-height: 260px; max-height: 320px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-image-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-content { padding: 28px 20px 24px; }
 }
 </style>
 

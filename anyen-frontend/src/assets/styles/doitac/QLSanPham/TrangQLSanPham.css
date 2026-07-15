@@ -3,7 +3,16 @@
     min-height: 100vh;
     background: #fafafa;
     color: #181818;
-    font-family: Arial, sans-serif;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+
+.admin-layout button,
+.admin-layout input,
+.admin-layout select,
+.admin-layout textarea,
+.admin-layout table {
+    font-family: inherit;
 }
 
 .page-content {

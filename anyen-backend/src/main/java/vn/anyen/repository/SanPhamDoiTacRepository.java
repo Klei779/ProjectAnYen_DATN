@@ -7,4 +7,8 @@ import vn.anyen.entity.SanPham;
 
 @Repository
 public interface SanPhamDoiTacRepository extends JpaRepository<SanPham, Integer>, JpaSpecificationExecutor<SanPham> {
+    java.util.List<SanPham> findByMaDoiTacAndTrangThaiOrderByMaSanPhamDesc(
+            Integer maDoiTac,
+            Integer trangThai
+    );
 }

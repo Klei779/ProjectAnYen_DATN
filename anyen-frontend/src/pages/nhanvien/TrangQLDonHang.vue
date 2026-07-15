@@ -1,21 +1,16 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { useRouter } from "vue-router";
-
-const router = useRouter();
 
 import PopTaoDonHang from "./PopTaoDonHang.vue";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
 import PopTaoHoaDon from "./PopTaoHoaDon.vue";
-import api from "../../api/api.js";
 
 import {
   getDonHangs,
   taoDonHang,
   capNhatDonHang,
   capNhatTrangThai,
-  guiDoiTac as guiDoiTacAPI,
   huyDonHang as huyDonHangAPI,
   kiemTraDonHangCoHopDong,
   formatDate,
@@ -68,22 +63,9 @@ const loadDonHangs = async () => {
 
     const data = await getDonHangs();
 
-    const rawList = Array.isArray(data) ? data : data?.items || [];
-    const MAP_TRANG_THAI = {
-      1: "Mới tạo",
-      2: "Chờ đối tác xác nhận",
-      3: "Đã xác nhận",
-      4: "Đang xử lý",
-      5: "Chờ thanh toán",
-      6: "Hoàn thành",
-      7: "Đã hủy",
-      8: "Đối tác từ chối",
-    };
-    
-    donHangs.value = rawList.map(item => ({
-      ...item,
-      trangThai: typeof item.trangThai === 'number' ? MAP_TRANG_THAI[item.trangThai] || item.trangThai : item.trangThai
-    }));
+    donHangs.value = Array.isArray(data)
+        ? data
+        : data?.items || [];
   } catch (error) {
     console.error("Lỗi khi tải đơn hàng:", error);
     ElMessage.error("Không thể tải danh sách đơn hàng");
@@ -277,8 +259,8 @@ const buildUpdateOrderPayload = (order) => {
     email: order?.emailKH || order?.email || "",
     diaChi: order?.diaChiKH || order?.diaChi || "",
     ghiChu: order?.GhiChu || order?.ghiChuNoiBo || order?.ghiChu || "",
-    phuongThucThanhToan: { "Chưa chọn": 0, "Tiền mặt": 1, "Chuyển khoản": 2 }[order?.phuongThucThanhToan || "Chưa chọn"] ?? 0,
-    trangThaiThanhToan: { "Chưa thanh toán": 0, "Đã thanh toán": 1, "Chờ xác nhận": 2 }[order?.trangThaiThanhToan || "Chưa thanh toán"] ?? 0,
+    phuongThucThanhToan: order?.phuongThucThanhToan || "Chưa chọn",
+    trangThaiThanhToan: order?.trangThaiThanhToan || "Chưa thanh toán",
     items: sanPhams.map((sp) => ({
       maSanPham: sp.MaSanPham || sp.maSanPham,
       soLuong: Number(sp.SoLuong || sp.soLuong || 1),
@@ -359,12 +341,7 @@ const xemHoaDon = (dh) => {
     return;
   }
 
-  if (!daCoHoaDon(dh) && ["Chờ thanh toán", "Hoàn thành"].includes(dh.trangThai)) {
-    hoaDonMode.value = "create";
-  } else {
-    hoaDonMode.value = "view";
-  }
-
+  hoaDonMode.value = "view";
   selectedDonHangHoaDon.value = {
     ...dh,
     trangThaiHoaDon: dh.trangThaiHoaDon || dh.trangThaiHoaDon || "Đã in",
@@ -439,7 +416,7 @@ const handleCreateOrder = async (payload) => {
   try {
     await taoDonHang(payload);
 
-    ElMessage.success("Tạo đơn hàng thành công");
+    ElMessage.success("Tạo đơn hàng và gửi thông báo đối tác thành công");
 
     showCreateOrder.value = false;
     await loadDonHangs();
@@ -473,22 +450,6 @@ const doUpdateStatus = async (dh, next) => {
   }
 };
 
-const guiDoiTac = async (dh) => {
-  try {
-    const maDonHang = getMaDonHang(dh);
-    await guiDoiTacAPI(maDonHang);
-    ElMessage.success("Đã gửi đơn hàng cho đối tác");
-    await loadDonHangs();
-  } catch (error) {
-    console.error("Lỗi khi gửi đối tác:", error);
-    ElMessage.error(
-        error.response?.data?.message ||
-        error.response?.data ||
-        "Gửi đối tác thất bại"
-    );
-  }
-};
-
 const updateNextStatus = async (dh) => {
   const next = nextStatus(dh);
 
@@ -499,32 +460,16 @@ const updateNextStatus = async (dh) => {
       selectedOrderForPayment.value = dh;
       showPaymentDialog.value = true;
       return;
-    } else if (dh.phuongThucThanhToan === "Tiền mặt") {
+    }
+
+    if (dh.phuongThucThanhToan === "Tiền mặt") {
       selectedOrderForPayment.value = dh;
       showCashConfirmDialog.value = true;
-      return;
-    } else {
-      ElMessage.warning("Vui lòng sửa đơn hàng và chọn phương thức thanh toán trước khi thanh toán");
       return;
     }
   }
 
   await doUpdateStatus(dh, next);
-};
-
-const autoCreateInvoice = async (order, ptThanhToan) => {
-  try {
-    const payload = {
-      maDonHang: getMaDonHang(order),
-      ngayIn: new Date().toISOString().slice(0, 10),
-      tongTien: order.tongCong || order.tongTien || order.TongTien || 0,
-      phuongThucThanhToan: ptThanhToan,
-      trangThai: 1, // Đã thanh toán
-    };
-    await api.post("/api/nhan-vien/hoa-don", payload);
-  } catch (err) {
-    console.error("Lỗi tự động tạo hóa đơn:", err);
-  }
 };
 
 const confirmPayment = async () => {
@@ -534,16 +479,18 @@ const confirmPayment = async () => {
 
   await doUpdateStatus(order, "Hoàn thành");
 
+  await loadDonHangs();
+
+  const donMoi = donHangs.value.find(
+      x => getMaDonHang(x) === getMaDonHang(order)
+  );
+
   showPaymentDialog.value = false;
   selectedOrderForPayment.value = null;
 
-  await autoCreateInvoice(order, 2);
-
-  xemHoaDon({
-    ...order,
-    trangThai: "Hoàn thành",
-    phuongThucThanhToan: "Chuyển khoản",
-  });
+  if (donMoi) {
+    xemHoaDon(donMoi);
+  }
 };
 
 const confirmCashPayment = async () => {
@@ -553,16 +500,18 @@ const confirmCashPayment = async () => {
 
   await doUpdateStatus(order, "Hoàn thành");
 
+  await loadDonHangs();
+
+  const donMoi = donHangs.value.find(
+      x => getMaDonHang(x) === getMaDonHang(order)
+  );
+
   showCashConfirmDialog.value = false;
   selectedOrderForPayment.value = null;
 
-  await autoCreateInvoice(order, 1);
-
-  xemHoaDon({
-    ...order,
-    trangThai: "Hoàn thành",
-    phuongThucThanhToan: "Tiền mặt",
-  });
+  if (donMoi) {
+    xemHoaDon(donMoi);
+  }
 };
 </script>
 
@@ -786,50 +735,37 @@ const confirmCashPayment = async () => {
           </button>
 
           <button
-              v-if="daCoHoaDon(dh) || canTaoHoaDon(dh)"
+              v-if="daCoHoaDon(dh)"
               class="btn-invoice-created"
               @click.stop="xemHoaDon(dh)"
           >
-            <el-icon>
-              <View />
-            </el-icon>
-            {{ daCoHoaDon(dh) ? 'Xem hóa đơn' : 'Tạo hóa đơn' }}
+            <el-icon><View /></el-icon>
+            Xem hóa đơn
           </button>
 
-          <!-- Nút Xác nhận gửi cho đơn Mới tạo -->
           <button
-              v-if="dh.trangThai === 'Mới tạo'"
-              class="btn-filled-green"
-              @click.stop="guiDoiTac(dh)"
+              v-else-if="canTaoHoaDon(dh)"
+              class="btn-filled-blue"
+              @click.stop="taoHoaDon(dh)"
           >
-            Xác nhận gửi
+            <el-icon><Tickets /></el-icon>
+            Tạo hóa đơn
           </button>
 
-          <!-- Nút Thanh toán cho đơn Chờ thanh toán -->
           <button
-              v-else-if="dh.trangThai === 'Chờ thanh toán'"
+              v-if="nextStatus(dh) && dh.trangThai !== 'Chờ đối tác xác nhận'"
               class="btn-filled-green"
-              @click.stop="updateNextStatus(dh)"
+              @click="updateNextStatus(dh)"
           >
-            Thanh toán
+            {{ dh.trangThai === "Chờ thanh toán" ? "Thanh toán" : "Cập nhật" }}
           </button>
 
-          <!-- Nút Tạo hợp đồng cho đơn Đã xác nhận -->
           <button
-              v-else-if="dh.trangThai === 'Đã xác nhận' && !dh.daCoHopDong"
-              class="btn-filled-green"
-              @click.stop="router.push('/nhan-vien/quan-ly-hop-dong?donHangId=' + getMaDonHang(dh))"
-          >
-            Tạo hợp đồng
-          </button>
-
-          <!-- Hiển thị Chờ đối tác hoặc Đang xử lý (vô hiệu hóa nút) -->
-          <button
-              v-else-if="dh.trangThai !== 'Đã hủy' && dh.trangThai !== 'Hoàn thành'"
+              v-else-if="dh.trangThai === 'Chờ đối tác xác nhận'"
               class="btn-disabled"
               disabled
           >
-            {{ dh.trangThai === 'Chờ đối tác xác nhận' ? 'Chờ đối tác' : 'Đang xử lý' }}
+            Chờ đối tác
           </button>
 
           <button

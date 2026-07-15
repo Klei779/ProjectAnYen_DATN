@@ -29,6 +29,7 @@ import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 import TrangTaoSanPham from "../pages/doitac/TrangTaoSanPham.vue";
 import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
 import TaoCombo from "../pages/doitac/TaoCombo.vue";
+import TrangQLCombo from "../pages/doitac/TrangQLCombo.vue";
 
 // Nhân viên
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
@@ -44,7 +45,6 @@ import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
-import TrangThongBaoHL from "../pages/hotline/TrangThongBao.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
 
 const routes = [
@@ -129,6 +129,10 @@ const routes = [
             {
                 path: "quan-ly-san-pham",
                 component: TrangQLSanPham,
+            },
+            {
+                path: "quan-ly-combo",
+                component: TrangQLCombo,
             },
             {
                 path: "tao-combo",
@@ -283,12 +287,12 @@ const routes = [
                 component: TrangQLCongViec,
             },
             {
-                path: "thong-bao",
-                component: TrangThongBaoHL,
-            },
-            {
                 path: "quan-ly-don-hang",
                 component: TrangQLDonHangHL,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinNV,
             }
         ],
     },

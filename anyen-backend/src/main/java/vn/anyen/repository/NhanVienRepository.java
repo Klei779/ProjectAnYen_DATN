@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface NhanVienRepository extends JpaRepository<NhanVien, Integer> {
+public interface NhanVienRepository
+        extends JpaRepository<NhanVien,Integer> {
 
     Optional<NhanVien> findByTenDangNhap(String tenDangNhap);
 
@@ -37,15 +38,13 @@ public interface NhanVienRepository extends JpaRepository<NhanVien, Integer> {
 
     List<NhanVien> findByVaiTro(Integer vaiTro);
 
-    Optional<NhanVien> findFirstByVaiTroAndTrangThai(Integer vaiTro, Integer trangThai);
+    List<NhanVien> findByVaiTroAndTrangThaiOrderByHoTenAsc(
+            Integer vaiTro,
+            Integer trangThai
+    );
 
-    @Query("""
-        SELECT nv FROM NhanVien nv
-        WHERE nv.vaiTro = 2
-        AND nv.trangThai = 1
-        AND nv.latitude IS NOT NULL
-        AND nv.longitude IS NOT NULL
-        AND (nv.trangThaiLamViec IS NULL OR nv.trangThaiLamViec = 'RANH')
-    """)
-    List<NhanVien> findActiveConsultants();
+    Optional<NhanVien> findFirstByVaiTroAndTrangThai(
+            Integer vaiTro,
+            Integer trangThai
+    );
 }

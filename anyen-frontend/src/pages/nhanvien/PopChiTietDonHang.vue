@@ -6,7 +6,6 @@ import {
   formatDate,
   capNhatTrangThai,
   getSanPhamTaoDonHang,
-  guiDoiTac,
 } from "../../services/donHangService.js";
 
 const props = defineProps({
@@ -114,15 +113,11 @@ const normalizeOrder = (data) => {
 
   cloned.GhiChu = cloned.GhiChu || cloned.ghiChuNoiBo || cloned.ghiChu || "";
 
-  const mapPT = { 0: "Chưa chọn", 1: "Tiền mặt", 2: "Chuyển khoản" };
-  cloned.phuongThucThanhToan = mapPT[cloned.phuongThucThanhToan] !== undefined
-      ? mapPT[cloned.phuongThucThanhToan]
-      : (cloned.phuongThucThanhToan || "Chưa chọn");
+  cloned.phuongThucThanhToan =
+      cloned.phuongThucThanhToan || "Chưa chọn";
 
-  const mapTT = { 0: "Chưa thanh toán", 1: "Đã thanh toán", 2: "Chờ xác nhận" };
-  cloned.trangThaiThanhToan = mapTT[cloned.trangThaiThanhToan] !== undefined
-      ? mapTT[cloned.trangThaiThanhToan]
-      : (cloned.trangThaiThanhToan || "Chưa thanh toán");
+  cloned.trangThaiThanhToan =
+      cloned.trangThaiThanhToan || "Chưa thanh toán";
 
   cloned.phiVanChuyen = Number(cloned.phiVanChuyen || 0);
   cloned.giamGia = Number(cloned.giamGia || 0);
@@ -450,11 +445,7 @@ const capNhatTrangThaiTiep = async () => {
   }
 
   try {
-    if (nextStatus.value === 'Chờ đối tác xác nhận') {
-      await guiDoiTac(getOrderId());
-    } else {
-      await capNhatTrangThai(getOrderId(), nextStatus.value);
-    }
+    await capNhatTrangThai(getOrderId(), nextStatus.value);
 
     ElMessage.success(`Đã cập nhật trạng thái: ${nextStatus.value}`);
 
@@ -695,7 +686,7 @@ const capNhatTrangThaiTiep = async () => {
 
           <div class="progress-actions">
             <button
-                v-if="nextStatus && (currentStatus === 'Mới tạo' || currentStatus === 'Chờ thanh toán')"
+                v-if="nextStatus"
                 class="btn-capnhat-tt"
                 @click="capNhatTrangThaiTiep"
             >
@@ -707,7 +698,7 @@ const capNhatTrangThaiTiep = async () => {
               }}
             </button>
 
-            <div v-if="nextStatus && (currentStatus === 'Mới tạo' || currentStatus === 'Chờ thanh toán')" class="status-note">
+            <div v-if="nextStatus" class="status-note">
               Trạng thái hiện tại:
               <strong>{{ currentStatus }}</strong>
               <br />

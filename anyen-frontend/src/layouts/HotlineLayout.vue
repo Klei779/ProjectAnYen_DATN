@@ -32,7 +32,7 @@
                 </div>
 
                 <div class="mini-list">
-                  <div v-for="item in miniNotifications" :key="item.maThongBao" class="mini-item" :class="{'unread': item.trangThai === 'CHUA_DOC'}">
+                  <div v-for="item in miniNotifications" :key="item.maThongBao" class="mini-item" :class="{'unread': Number(item.trangThai) === 0 || Number(item.trangThai) === 4}">
                     <div class="mini-icon" :class="getMiniIconClass(item)">
                       <i :class="getMiniIconName(item)"></i>
                     </div>
@@ -97,6 +97,7 @@ const showProfile = ref(false);
 const routeTitles = {
   "/hotline/quan-ly-cong-viec": "Quản lý công việc",
   "/hotline/quan-ly-don-hang": "Quản lý đơn hàng",
+  "/hotline/thong-tin-tai-khoan": "Thông tin cá nhân",
 };
 
 const pageTitle = computed(() => {
@@ -110,7 +111,7 @@ let pollingInterval = null;
 const API_URL = "/api/nhan-vien/thong-bao";
 
 const unreadCount = computed(() => {
-  return notifications.value.filter(item => item.trangThai === 'CHUA_DOC').length;
+  return notifications.value.filter(item => Number(item.trangThai) === 0 || Number(item.trangThai) === 4).length;
 });
 
 const miniNotifications = computed(() => {
@@ -144,7 +145,7 @@ const markAllAsRead = async () => {
   try {
     await api.put(`${API_URL}/da-doc-tat-ca`);
     notifications.value.forEach(n => {
-      if(n.trangThai === 'CHUA_DOC') n.trangThai = 'DA_DOC';
+      if (Number(n.trangThai) === 0) n.trangThai = 1;
     });
   } catch (error) {
     console.error(error);
@@ -165,7 +166,7 @@ const getMiniIconClass = (item) => {
   if (item.loaiThongBao === "CONG_VIEC") return "bg-red";
   if (item.loaiThongBao === "HE_THONG") return "bg-blue";
   if (item.loaiThongBao === "TU_CHOI") return "bg-yellow";
-  if (item.trangThai === "DA_CHAP_NHAN") return "bg-green";
+  if (Number(item.trangThai) === 2) return "bg-green";
   return "bg-purple";
 };
 
@@ -173,7 +174,7 @@ const getMiniIconName = (item) => {
   if (item.loaiThongBao === "CONG_VIEC") return "fa-solid fa-briefcase";
   if (item.loaiThongBao === "HE_THONG") return "fa-solid fa-gear";
   if (item.loaiThongBao === "TU_CHOI") return "fa-solid fa-xmark";
-  if (item.trangThai === "DA_CHAP_NHAN") return "fa-solid fa-check";
+  if (Number(item.trangThai) === 2) return "fa-solid fa-check";
   return "fa-solid fa-bell";
 };
 

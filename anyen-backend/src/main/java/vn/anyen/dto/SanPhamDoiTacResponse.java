@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Builder
@@ -33,4 +34,30 @@ public class SanPhamDoiTacResponse {
     private String kichThuoc;
     private String trongLuong;
     private String cnsx;
+
+    private List<ChiTietSanPhamResponse> chiTietList;
+    private List<HinhAnhSanPhamResponse> hinhAnhList;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ChiTietSanPhamResponse {
+        private Integer maChiTiet;
+        private String loaiKhoi;
+        private String noiDung;
+        private Integer thuTu;
+    }
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class HinhAnhSanPhamResponse {
+        private Integer maHinhAnh;
+        private Integer maChiTiet;
+        private String loaiHinhAnh;
+        private String urlHinhAnh;
+        private Integer thuTu;
+    }
 }

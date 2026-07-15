@@ -49,6 +49,14 @@ public class SanPhamDoiTacController {
         );
     }
 
+    @GetMapping("/{id}")
+    public SanPhamDoiTacResponse getChiTietSanPham(
+            Authentication authentication,
+            @PathVariable Integer id
+    ) {
+        return sanPhamDoiTacService.getChiTietSanPham(authentication, id);
+    }
+
     @PostMapping
     public SanPhamDoiTacResponse createSanPham(
             Authentication authentication,

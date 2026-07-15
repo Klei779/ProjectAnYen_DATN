@@ -548,3 +548,203 @@
         font-size: 13px;
     }
 }
+
+/* ================================
+   POPUP CHỌN PHƯƠNG THỨC THANH TOÁN
+================================ */
+
+.payment-method-content {
+  padding: 4px 0 10px;
+}
+
+.payment-order-info {
+  margin: 0 0 20px;
+  color: #4b5563;
+  font-size: 14px;
+  text-align: center;
+}
+
+.payment-order-info strong {
+  color: #1f2937;
+}
+
+.payment-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-method-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  text-align: left;
+  transition: 0.2s ease;
+}
+
+.payment-method-card:hover {
+  border-color: #47715d;
+  background: #f7faf8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(71, 113, 93, 0.1);
+}
+
+.payment-method-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #edf5f0;
+  color: #47715d;
+  font-size: 23px;
+}
+
+.payment-method-text {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.payment-method-text strong {
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.payment-method-text span {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* ================================
+   POPUP QR
+================================ */
+
+.qr-payment-content {
+  text-align: center;
+}
+
+.qr-payment-content > p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.payment-qr-image {
+  display: block;
+  width: 100%;
+  max-width: 290px;
+  margin: 18px auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.bank-payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #f7f8f7;
+  text-align: left;
+}
+
+.bank-payment-info > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.bank-payment-info span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.bank-payment-info strong {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+/* ================================
+   XÁC NHẬN TIỀN MẶT
+================================ */
+
+.cash-confirm-content {
+  text-align: center;
+  padding: 8px 0;
+}
+
+.cash-confirm-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #edf5f0;
+  color: #47715d;
+  font-size: 28px;
+}
+
+.cash-confirm-content p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.cash-payment-total {
+  margin-top: 18px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 10px;
+  background: #f7f8f7;
+}
+
+.cash-payment-total span {
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.cash-payment-total strong {
+  color: #47715d;
+  font-size: 17px;
+}
+
+@media (max-width: 576px) {
+  .payment-method-card {
+    padding: 13px;
+  }
+
+  .payment-method-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .payment-method-text strong {
+    font-size: 14px;
+  }
+
+  .payment-method-text span {
+    font-size: 12px;
+  }
+
+  .payment-qr-image {
+    max-width: 240px;
+  }
+}

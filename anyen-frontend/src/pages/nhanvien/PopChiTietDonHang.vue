@@ -35,8 +35,6 @@ const visible = computed({
 
 const order = ref(null);
 
-const showPaymentDialog = ref(false);
-const showCashConfirmDialog = ref(false);
 const showAddProductDialog = ref(false);
 
 const activeTab = ref("info");
@@ -113,16 +111,6 @@ const normalizeOrder = (data) => {
   cloned.cccd = cloned.cccd || cloned.CCCD || "";
 
   cloned.GhiChu = cloned.GhiChu || cloned.ghiChuNoiBo || cloned.ghiChu || "";
-
-  const mapPT = { 0: "Chưa chọn", 1: "Tiền mặt", 2: "Chuyển khoản" };
-  cloned.phuongThucThanhToan = mapPT[cloned.phuongThucThanhToan] !== undefined
-      ? mapPT[cloned.phuongThucThanhToan]
-      : (cloned.phuongThucThanhToan || "Chưa chọn");
-
-  const mapTT = { 0: "Chưa thanh toán", 1: "Đã thanh toán", 2: "Chờ xác nhận" };
-  cloned.trangThaiThanhToan = mapTT[cloned.trangThaiThanhToan] !== undefined
-      ? mapTT[cloned.trangThaiThanhToan]
-      : (cloned.trangThaiThanhToan || "Chưa thanh toán");
 
   cloned.phiVanChuyen = Number(cloned.phiVanChuyen || 0);
   cloned.giamGia = Number(cloned.giamGia || 0);
@@ -390,64 +378,8 @@ const getOrderId = () => {
   return order.value?.maDonHang || order.value?.MaDonHang;
 };
 
-const confirmPayment = async () => {
-  if (!order.value) return;
-
-  try {
-    await capNhatTrangThai(getOrderId(), "Hoàn thành");
-
-    ElMessage.success("Đã cập nhật trạng thái: Hoàn thành");
-
-    order.value.trangThai = "Hoàn thành";
-    showPaymentDialog.value = false;
-
-    emit("cap-nhat");
-  } catch (error) {
-    console.error("Lỗi khi cập nhật trạng thái:", error);
-    ElMessage.error(
-        error.response?.data?.message ||
-        error.response?.data ||
-        "Cập nhật trạng thái thất bại"
-    );
-  }
-};
-
-const confirmCashPayment = async () => {
-  if (!order.value) return;
-
-  try {
-    await capNhatTrangThai(getOrderId(), "Hoàn thành");
-
-    ElMessage.success("Đã cập nhật trạng thái: Hoàn thành");
-
-    order.value.trangThai = "Hoàn thành";
-    showCashConfirmDialog.value = false;
-
-    emit("cap-nhat");
-  } catch (error) {
-    console.error("Lỗi khi cập nhật trạng thái:", error);
-    ElMessage.error(
-        error.response?.data?.message ||
-        error.response?.data ||
-        "Cập nhật trạng thái thất bại"
-    );
-  }
-};
-
 const capNhatTrangThaiTiep = async () => {
   if (!order.value || !nextStatus.value) return;
-
-  if (currentStatus.value === "Chờ thanh toán") {
-    if (order.value.phuongThucThanhToan === "Chuyển khoản") {
-      showPaymentDialog.value = true;
-      return;
-    }
-
-    if (order.value.phuongThucThanhToan === "Tiền mặt") {
-      showCashConfirmDialog.value = true;
-      return;
-    }
-  }
 
   try {
     if (nextStatus.value === 'Chờ đối tác xác nhận') {
@@ -513,42 +445,6 @@ const capNhatTrangThaiTiep = async () => {
               </div>
               <div class="info-val">
                 {{ formatDate(order.NgayTaoDon) }}
-              </div>
-            </div>
-
-            <div class="info-row">
-              <div class="info-label">
-                <i class="fa-solid fa-wallet"></i>
-                Phương thức thanh toán:
-              </div>
-              <div class="info-val">
-                <el-select
-                    v-model="order.phuongThucThanhToan"
-                    placeholder="Chọn phương thức"
-                    style="width: 100%"
-                >
-                  <el-option label="Chưa chọn" value="Chưa chọn" />
-                  <el-option label="Tiền mặt" value="Tiền mặt" />
-                  <el-option label="Chuyển khoản" value="Chuyển khoản" />
-                </el-select>
-              </div>
-            </div>
-
-            <div class="info-row">
-              <div class="info-label">
-                <i class="fa-solid fa-money-check"></i>
-                Trạng thái thanh toán:
-              </div>
-              <div class="info-val">
-                <el-select
-                    v-model="order.trangThaiThanhToan"
-                    placeholder="Chọn trạng thái"
-                    style="width: 100%"
-                >
-                  <el-option label="Chưa thanh toán" value="Chưa thanh toán" />
-                  <el-option label="Đã đặt cọc" value="Đã đặt cọc" />
-                  <el-option label="Đã thanh toán" value="Đã thanh toán" />
-                </el-select>
               </div>
             </div>
           </div>
@@ -859,42 +755,6 @@ const capNhatTrangThaiTiep = async () => {
             </div>
             <div class="info-val">
               {{ formatDate(order.NgayTaoDon) }}
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-wallet"></i>
-              Phương thức thanh toán:
-            </div>
-            <div class="info-val">
-              <el-select
-                  v-model="order.phuongThucThanhToan"
-                  placeholder="Chọn phương thức"
-                  style="width: 100%"
-              >
-                <el-option label="Chưa chọn" value="Chưa chọn" />
-                <el-option label="Tiền mặt" value="Tiền mặt" />
-                <el-option label="Chuyển khoản" value="Chuyển khoản" />
-              </el-select>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-money-check"></i>
-              Trạng thái thanh toán:
-            </div>
-            <div class="info-val">
-              <el-select
-                  v-model="order.trangThaiThanhToan"
-                  placeholder="Chọn trạng thái"
-                  style="width: 100%"
-              >
-                <el-option label="Chưa thanh toán" value="Chưa thanh toán" />
-                <el-option label="Đã đặt cọc" value="Đã đặt cọc" />
-                <el-option label="Đã thanh toán" value="Đã thanh toán" />
-              </el-select>
             </div>
           </div>
         </div>
@@ -1269,85 +1129,6 @@ const capNhatTrangThaiTiep = async () => {
           </div>
         </div>
       </div>
-    </el-dialog>
-
-    <el-dialog
-        v-model="showPaymentDialog"
-        title="Thanh toán chuyển khoản"
-        width="400px"
-        center
-        :append-to-body="true"
-        :z-index="10060"
-    >
-      <div style="text-align: center">
-        <p>
-          Vui lòng quét mã QR bên dưới để thanh toán cho đơn hàng
-          <strong>#{{ order?.maCode }}</strong>
-        </p>
-
-        <p
-            style="
-            font-size: 18px;
-            font-weight: bold;
-            color: #e74c3c;
-            margin: 10px 0;
-          "
-        >
-          Số tiền: {{ formatCurrency(tongCong) }}
-        </p>
-
-        <img
-            v-if="order"
-            :src="`https://img.vietqr.io/image/MB-140213032008-compact.png?amount=${tongCong}&addInfo=${order.maCode}`"
-            alt="QR Code Thanh Toán"
-            style="max-width: 100%; border-radius: 8px; margin: 10px 0"
-        />
-      </div>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showPaymentDialog = false">
-            Hủy
-          </el-button>
-
-          <el-button
-              type="primary"
-              @click="confirmPayment"
-          >
-            Xác nhận đã thanh toán
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <el-dialog
-        v-model="showCashConfirmDialog"
-        title="Xác nhận thanh toán"
-        width="400px"
-        center
-        :append-to-body="true"
-        :z-index="10060"
-    >
-      <div style="text-align: center; padding: 20px 0">
-        <p style="font-size: 16px">
-          Bạn có chắc chắn khách đã thanh toán đủ?
-        </p>
-      </div>
-
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showCashConfirmDialog = false">
-            Hủy
-          </el-button>
-
-          <el-button
-              type="primary"
-              @click="confirmCashPayment"
-          >
-            Xác nhận
-          </el-button>
-        </span>
-      </template>
     </el-dialog>
   </el-dialog>
 </template>

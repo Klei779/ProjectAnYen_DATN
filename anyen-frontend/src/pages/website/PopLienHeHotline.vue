@@ -51,17 +51,17 @@ defineEmits(["close"]);
   {
     id: 1,
     chucVu: "Tư vấn",
-    soDienThoai: "0901111111"
+    soDienThoai: "0826772109"
   },
   {
     id: 2,
     chucVu: "Hỗ trợ khách hàng",
-    soDienThoai: "0902222222"
+    soDienThoai: "0357402033"
   },
   {
     id: 3,
     chucVu: "Trực 24/7",
-    soDienThoai: "0903333333"
+    soDienThoai: "0392168473"
   }
   ]
 </script>

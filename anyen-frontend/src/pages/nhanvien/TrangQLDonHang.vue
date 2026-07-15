@@ -41,8 +41,10 @@ const showCreateOrder = ref(false);
 const showChiTiet = ref(false);
 const selectedDonHang = ref(null);
 
+const showPaymentMethodDialog = ref(false);
 const showPaymentDialog = ref(false);
 const showCashConfirmDialog = ref(false);
+
 const selectedOrderForPayment = ref(null);
 
 const showTaoHoaDon = ref(false);
@@ -71,15 +73,15 @@ const loadDonHangs = async () => {
     const rawList = Array.isArray(data) ? data : data?.items || [];
     const MAP_TRANG_THAI = {
       1: "Mới tạo",
-      2: "Chờ đối tác xác nhận",
-      3: "Đã xác nhận",
+      2: "Xác nhận",
+      3: "Đã nhận",
       4: "Đang xử lý",
       5: "Thanh toán",
       6: "Hoàn thành",
       7: "Đã hủy",
       8: "Đối tác từ chối",
     };
-    
+
     donHangs.value = rawList.map(item => ({
       ...item,
       trangThai: typeof item.trangThai === 'number' ? MAP_TRANG_THAI[item.trangThai] || item.trangThai : item.trangThai
@@ -376,7 +378,7 @@ const xemHoaDon = (dh) => {
 const STEPS = [
   "Mới tạo",
   "Xác nhận",
-  "Đã xác nhận",
+  "Đã nhận",
   "Đang xử lý",
   "Thanh toán",
   "Hoàn thành",
@@ -421,7 +423,7 @@ const nextStatus = (dh) => {
 const trangThaiBadgeClass = (tt) => {
   if (tt === "Mới tạo") return "badge-yellow";
   if (tt === "Xác nhận") return "badge-pink";
-  if (tt === "Đã xác nhận") return "badge-blue";
+  if (tt === "Đã nhận") return "badge-blue";
   if (tt === "Đang xử lý") return "badge-orange";
   if (tt === "Thanh toán") return "badge-purple";
   if (tt === "Hoàn thành") return "badge-green";
@@ -490,26 +492,98 @@ const guiDoiTac = async (dh) => {
 };
 
 const updateNextStatus = async (dh) => {
+  console.log("Đơn hàng được chọn thanh toán:", dh);
+
   const next = nextStatus(dh);
 
   if (!next) return;
 
   if (dh.trangThai === "Thanh toán") {
-    if (dh.phuongThucThanhToan === "Chuyển khoản") {
-      selectedOrderForPayment.value = dh;
-      showPaymentDialog.value = true;
-      return;
-    } else if (dh.phuongThucThanhToan === "Tiền mặt") {
-      selectedOrderForPayment.value = dh;
-      showCashConfirmDialog.value = true;
-      return;
-    } else {
-      ElMessage.warning("Vui lòng sửa đơn hàng và chọn phương thức thanh toán trước khi thanh toán");
-      return;
-    }
+    selectedOrderForPayment.value = dh;
+    showPaymentMethodDialog.value = true;
+    return;
   }
 
   await doUpdateStatus(dh, next);
+};
+
+const getTongTienThanhToan = (order) => {
+  return Number(
+    order?.tongCong ??
+    order?.tongTien ??
+    order?.TongTien ??
+    order?.thanhTien ??
+    order?.tongThanhToan ??
+    order?.totalAmount ??
+    0
+  );
+};
+
+const chooseCashPayment = () => {
+  if (!selectedOrderForPayment.value) {
+    ElMessage.warning("Không tìm thấy đơn hàng cần thanh toán");
+    return;
+  }
+
+  showPaymentMethodDialog.value = false;
+
+  setTimeout(() => {
+    showCashConfirmDialog.value = true;
+  }, 100);
+};
+
+const chooseBankTransfer = () => {
+  if (!selectedOrderForPayment.value) {
+    ElMessage.warning("Không tìm thấy đơn hàng cần thanh toán");
+    return;
+  }
+
+  showPaymentMethodDialog.value = false;
+
+  setTimeout(() => {
+    showPaymentDialog.value = true;
+  }, 100);
+};
+
+const closePaymentMethodDialog = () => {
+  showPaymentMethodDialog.value = false;
+  selectedOrderForPayment.value = null;
+};
+
+const backToPaymentMethod = () => {
+  showPaymentDialog.value = false;
+  showCashConfirmDialog.value = false;
+
+  setTimeout(() => {
+    showPaymentMethodDialog.value = true;
+  }, 100);
+};
+
+const closeAllPaymentDialogs = () => {
+  showPaymentMethodDialog.value = false;
+  showPaymentDialog.value = false;
+  showCashConfirmDialog.value = false;
+  selectedOrderForPayment.value = null;
+};
+
+const getVietQrUrl = (order) => {
+  if (!order) return "";
+
+  const amount = getTongTienThanhToan(order);
+
+  const orderCode =
+      order.maCode ||
+      order.maDonHang ||
+      order.MaDonHang ||
+      "";
+
+  const addInfo = encodeURIComponent(
+      `Thanh toan don hang ${orderCode}` 
+  );
+
+  const accountName = encodeURIComponent("AN YEN");
+
+  return `https://img.vietqr.io/image/MB-140213032008-compact2.png?amount=${amount}&addInfo=${addInfo}&accountName=${accountName}`;
 };
 
 const autoCreateInvoice = async (order, ptThanhToan) => {
@@ -528,41 +602,69 @@ const autoCreateInvoice = async (order, ptThanhToan) => {
 };
 
 const confirmPayment = async () => {
-  if (!selectedOrderForPayment.value) return;
+  if (!selectedOrderForPayment.value) {
+    ElMessage.warning("Không tìm thấy đơn hàng cần thanh toán");
+    return;
+  }
 
   const order = selectedOrderForPayment.value;
 
-  await doUpdateStatus(order, "Hoàn thành");
+  try {
+    await doUpdateStatus(order, "Hoàn thành");
 
-  showPaymentDialog.value = false;
-  selectedOrderForPayment.value = null;
+    await autoCreateInvoice(order, 2);
 
-  await autoCreateInvoice(order, 2);
+    closeAllPaymentDialogs();
 
-  xemHoaDon({
-    ...order,
-    trangThai: "Hoàn thành",
-    phuongThucThanhToan: "Chuyển khoản",
-  });
+    ElMessage.success("Xác nhận thanh toán chuyển khoản thành công");
+
+    xemHoaDon({
+      ...order,
+      trangThai: "Hoàn thành",
+      phuongThucThanhToan: "Chuyển khoản",
+    });
+  } catch (error) {
+    console.error("Lỗi xác nhận thanh toán chuyển khoản:", error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Xác nhận thanh toán thất bại"
+    );
+  }
 };
 
 const confirmCashPayment = async () => {
-  if (!selectedOrderForPayment.value) return;
+  if (!selectedOrderForPayment.value) {
+    ElMessage.warning("Không tìm thấy đơn hàng cần thanh toán");
+    return;
+  }
 
   const order = selectedOrderForPayment.value;
 
-  await doUpdateStatus(order, "Hoàn thành");
+  try {
+    await doUpdateStatus(order, "Hoàn thành");
 
-  showCashConfirmDialog.value = false;
-  selectedOrderForPayment.value = null;
+    await autoCreateInvoice(order, 1);
 
-  await autoCreateInvoice(order, 1);
+    closeAllPaymentDialogs();
 
-  xemHoaDon({
-    ...order,
-    trangThai: "Hoàn thành",
-    phuongThucThanhToan: "Tiền mặt",
-  });
+    ElMessage.success("Xác nhận thanh toán tiền mặt thành công");
+
+    xemHoaDon({
+      ...order,
+      trangThai: "Hoàn thành",
+      phuongThucThanhToan: "Tiền mặt",
+    });
+  } catch (error) {
+    console.error("Lỗi xác nhận thanh toán tiền mặt:", error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Xác nhận thanh toán thất bại"
+    );
+  }
 };
 </script>
 
@@ -592,7 +694,7 @@ const confirmCashPayment = async () => {
           <option>Tất cả</option>
           <option>Mới tạo</option>
           <option>Xác nhận</option>
-          <option>Đã xác nhận</option>
+          <option>Đã nhận</option>
           <option>Đang xử lý</option>
           <option>Thanh toán</option>
           <option>Hoàn thành</option>
@@ -816,7 +918,7 @@ const confirmCashPayment = async () => {
 
           <!-- Nút Tạo hợp đồng cho đơn Đã xác nhận -->
           <button
-              v-else-if="dh.trangThai === 'Đã xác nhận' && !dh.daCoHopDong"
+              v-else-if="dh.trangThai === 'Đã nhận' && !dh.daCoHopDong"
               class="btn-filled-green"
               @click.stop="router.push('/nhan-vien/quan-ly-hop-dong?donHangId=' + getMaDonHang(dh))"
           >
@@ -936,71 +1038,172 @@ const confirmCashPayment = async () => {
       </template>
     </el-dialog>
 
+    <!-- ── Popup chọn phương thức thanh toán ── -->
+    <el-dialog
+        v-model="showPaymentMethodDialog"
+        title="Chọn phương thức thanh toán"
+        width="460px"
+        center
+        :close-on-click-modal="false"
+        :append-to-body="true"
+        :z-index="10060"
+    >
+      <div class="payment-method-content">
+        <p class="payment-order-info">
+          Chọn phương thức thanh toán cho đơn hàng
+          <strong>#{{ selectedOrderForPayment?.maCode }}</strong>
+        </p>
+
+        <div class="payment-method-list">
+          <button
+              type="button"
+              class="payment-method-card"
+              @click="chooseCashPayment"
+          >
+            <div class="payment-method-icon">
+              <el-icon>
+                <Wallet />
+              </el-icon>
+            </div>
+
+            <div class="payment-method-text">
+              <strong>COD / Tiền mặt</strong>
+              <span>Khách hàng thanh toán trực tiếp bằng tiền mặt</span>
+            </div>
+          </button>
+
+          <button
+              type="button"
+              class="payment-method-card"
+              @click="chooseBankTransfer"
+          >
+            <div class="payment-method-icon">
+              <el-icon>
+                <Tickets />
+              </el-icon>
+            </div>
+
+            <div class="payment-method-text">
+              <strong>Chuyển khoản ngân hàng</strong>
+              <span>Hiển thị mã QR để khách hàng quét thanh toán</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="closePaymentMethodDialog">
+          Đóng
+        </el-button>
+      </template>
+    </el-dialog>
     <!-- ── Popup thanh toán QR ── -->
     <el-dialog
         v-model="showPaymentDialog"
         title="Thanh toán chuyển khoản"
-        width="400px"
+        width="440px"
         center
+        :close-on-click-modal="false"
         :append-to-body="true"
-        :z-index="10060"
+        :z-index="10061"
     >
-      <div style="text-align: center">
+      <div class="qr-payment-content">
         <p>
-          Vui lòng quét mã QR bên dưới để thanh toán cho đơn hàng
+          Quét mã QR để thanh toán đơn hàng
           <strong>#{{ selectedOrderForPayment?.maCode }}</strong>
         </p>
 
         <img
             v-if="selectedOrderForPayment"
-            :src="`https://img.vietqr.io/image/MB-140213032008-compact.png?addInfo=${selectedOrderForPayment.maCode}`"
-            alt="QR Code Thanh Toán"
-            style="max-width: 100%; border-radius: 8px; margin: 20px 0"
+            class="payment-qr-image"
+            :src="getVietQrUrl(selectedOrderForPayment)"
+            alt="Mã QR thanh toán"
         />
+
+        <div class="bank-payment-info">
+          <div>
+            <span>Ngân hàng</span>
+            <strong>MB Bank</strong>
+          </div>
+
+          <div>
+            <span>Số tài khoản</span>
+            <strong>140213032008</strong>
+          </div>
+
+          <div>
+            <span>Số tiền</span>
+            <strong>
+              {{ getTongTienThanhToan(selectedOrderForPayment).toLocaleString("vi-VN") }} đ
+            </strong>
+          </div>
+        </div>
       </div>
 
       <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="showPaymentDialog = false">
-            Hủy
-          </el-button>
+    <span class="dialog-footer">
+      <el-button @click="backToPaymentMethod">
+        Quay lại
+      </el-button>
 
-          <el-button
-              type="primary"
-              @click="confirmPayment"
-          >
-            Xác nhận đã thanh toán
-          </el-button>
-        </span>
+      <el-button
+          type="primary"
+          @click="confirmPayment"
+      >
+        Xác nhận đã thanh toán
+      </el-button>
+    </span>
       </template>
     </el-dialog>
 
-    <!-- ── Popup xác nhận thanh toán tiền mặt ── -->
+    <!-- ── Popup xác nhận thanh toán COD / tiền mặt ── -->
     <el-dialog
         v-model="showCashConfirmDialog"
-        title="Xác nhận thanh toán"
-        width="400px"
+        title="Xác nhận thanh toán tiền mặt"
+        width="420px"
         center
+        :close-on-click-modal="false"
         :append-to-body="true"
-        :z-index="10060"
+        :z-index="10061"
     >
-      <div style="text-align: center; padding: 20px 0">
-        <p style="font-size: 16px">
-          Bạn có chắc chắn khách đã thanh toán đủ?
+      <div class="cash-confirm-content">
+        <div class="cash-confirm-icon">
+          <el-icon>
+            <Wallet />
+          </el-icon>
+        </div>
+
+        <p>
+          Xác nhận khách hàng đã thanh toán đủ tiền cho đơn hàng
+          <strong>
+            #{{
+              selectedOrderForPayment?.maCode
+              || selectedOrderForPayment?.maDonHang
+              || selectedOrderForPayment?.MaDonHang
+            }}
+          </strong>?
         </p>
+
+        <div class="cash-payment-total">
+          <span>Số tiền cần thu</span>
+
+          <strong>
+            {{ getTongTienThanhToan(selectedOrderForPayment).toLocaleString("vi-VN") }} đ
+          </strong>
+        </div>
       </div>
 
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="showCashConfirmDialog = false">
-            Hủy
+          <el-button @click="backToPaymentMethod">
+            Quay lại
           </el-button>
 
           <el-button
               type="primary"
               @click="confirmCashPayment"
           >
-            Xác nhận
+            Xác nhận đã nhận tiền
           </el-button>
         </span>
       </template>

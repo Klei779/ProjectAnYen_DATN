@@ -72,11 +72,6 @@
         <span class="sidebar-text">Thông tin tài khoản</span>
       </RouterLink>
 
-      <RouterLink to="/doi-tac/doi-mat-khau" class="menu-item" title="Đổi mật khẩu">
-        <i class="fa-solid fa-lock menu-icon"></i>
-        <span class="sidebar-text">Đổi mật khẩu</span>
-      </RouterLink>
-
       <div class="logout-btn-container mt-3">
         <button
             class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold logout-btn"

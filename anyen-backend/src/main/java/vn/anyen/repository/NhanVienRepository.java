@@ -37,6 +37,8 @@ public interface NhanVienRepository extends JpaRepository<NhanVien, Integer> {
 
     List<NhanVien> findByVaiTro(Integer vaiTro);
 
+    Optional<NhanVien> findFirstByVaiTroAndTrangThai(Integer vaiTro, Integer trangThai);
+
     @Query("""
         SELECT nv FROM NhanVien nv
         WHERE nv.vaiTro = 3

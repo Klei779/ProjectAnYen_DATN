@@ -79,7 +79,8 @@ public class ComBoServiceImpl implements ComBoService {
         return chiTiets.stream()
                 .map(item -> ComBoChiTietResponse.builder()
                         .comboChiTietId(item.getComboChiTietId())
-                        .loai(item.getLoai() != null ? String.valueOf(item.getLoai()) : null)
+                        .loai(item.getLoai() != null ? Integer.valueOf
+                                (item.getLoai()) : null)
                         .noiDung(item.getNoiDung())
                         .hinhAnhs(
                                 hinhAnhMap.getOrDefault(

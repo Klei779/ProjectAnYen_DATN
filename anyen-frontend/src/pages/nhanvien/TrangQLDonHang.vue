@@ -74,7 +74,7 @@ const loadDonHangs = async () => {
       2: "Chờ đối tác xác nhận",
       3: "Đã xác nhận",
       4: "Đang xử lý",
-      5: "Chờ thanh toán",
+      5: "Thanh toán",
       6: "Hoàn thành",
       7: "Đã hủy",
       8: "Đối tác từ chối",
@@ -342,7 +342,7 @@ const daCoHoaDon = (dh) => {
 
 const canTaoHoaDon = (dh) => {
   return (
-      ["Chờ thanh toán", "Hoàn thành"].includes(dh.trangThai) &&
+      ["Thanh toán", "Hoàn thành"].includes(dh.trangThai) &&
       !daCoHoaDon(dh)
   );
 };
@@ -359,7 +359,7 @@ const xemHoaDon = (dh) => {
     return;
   }
 
-  if (!daCoHoaDon(dh) && ["Chờ thanh toán", "Hoàn thành"].includes(dh.trangThai)) {
+  if (!daCoHoaDon(dh) && ["Thanh toán", "Hoàn thành"].includes(dh.trangThai)) {
     hoaDonMode.value = "create";
   } else {
     hoaDonMode.value = "view";
@@ -375,10 +375,10 @@ const xemHoaDon = (dh) => {
 // ── Stepper trạng thái ─────────────────────────────
 const STEPS = [
   "Mới tạo",
-  "Chờ đối tác xác nhận",
+  "Xác nhận",
   "Đã xác nhận",
   "Đang xử lý",
-  "Chờ thanh toán",
+  "Thanh toán",
   "Hoàn thành",
 ];
 
@@ -420,10 +420,10 @@ const nextStatus = (dh) => {
 // ── Badge class ─────────────────────────────
 const trangThaiBadgeClass = (tt) => {
   if (tt === "Mới tạo") return "badge-yellow";
-  if (tt === "Chờ đối tác xác nhận") return "badge-pink";
+  if (tt === "Xác nhận") return "badge-pink";
   if (tt === "Đã xác nhận") return "badge-blue";
   if (tt === "Đang xử lý") return "badge-orange";
-  if (tt === "Chờ thanh toán") return "badge-purple";
+  if (tt === "Thanh toán") return "badge-purple";
   if (tt === "Hoàn thành") return "badge-green";
   if (tt === "Đã hủy") return "badge-red";
   return "badge-gray";
@@ -494,7 +494,7 @@ const updateNextStatus = async (dh) => {
 
   if (!next) return;
 
-  if (dh.trangThai === "Chờ thanh toán") {
+  if (dh.trangThai === "Thanh toán") {
     if (dh.phuongThucThanhToan === "Chuyển khoản") {
       selectedOrderForPayment.value = dh;
       showPaymentDialog.value = true;
@@ -591,10 +591,10 @@ const confirmCashPayment = async () => {
         >
           <option>Tất cả</option>
           <option>Mới tạo</option>
-          <option>Chờ đối tác xác nhận</option>
+          <option>Xác nhận</option>
           <option>Đã xác nhận</option>
           <option>Đang xử lý</option>
-          <option>Chờ thanh toán</option>
+          <option>Thanh toán</option>
           <option>Hoàn thành</option>
           <option>Đã hủy</option>
         </select>
@@ -807,7 +807,7 @@ const confirmCashPayment = async () => {
 
           <!-- Nút Thanh toán cho đơn Chờ thanh toán -->
           <button
-              v-else-if="dh.trangThai === 'Chờ thanh toán'"
+              v-else-if="dh.trangThai === 'Thanh toán'"
               class="btn-filled-green"
               @click.stop="updateNextStatus(dh)"
           >
@@ -829,7 +829,7 @@ const confirmCashPayment = async () => {
               class="btn-disabled"
               disabled
           >
-            {{ dh.trangThai === 'Chờ đối tác xác nhận' ? 'Chờ đối tác' : 'Đang xử lý' }}
+            {{ dh.trangThai === 'Xác nhận' ? 'Chờ đối tác' : 'Đang xử lý' }}
           </button>
 
           <button

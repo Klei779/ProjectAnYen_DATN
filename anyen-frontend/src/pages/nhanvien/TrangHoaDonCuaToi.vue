@@ -20,11 +20,18 @@ const filters = ref({
 });
 
 const trangThaiOptions = [
-  "Tất cả",
-  "Đã in",
-  "Đã thanh toán",
-  "Chưa thanh toán",
-  "Đã hủy",
+  {
+    label: "Tất cả",
+    value: "Tất cả",
+  },
+  {
+    label: "Đã in",
+    value: "1",
+  },
+  {
+    label: "Đã hủy",
+    value: "0",
+  },
 ];
 
 const phuongThucOptions = [
@@ -55,16 +62,36 @@ const formatDate = (value) => {
   return date.toLocaleDateString("vi-VN");
 };
 
-const statusClass = (status) => {
-  const value = String(status || "").toLowerCase();
+const formatTrangThaiHoaDon = (value) => {
+  const status = String(value ?? "").trim().toUpperCase();
 
-  if (value.includes("hủy")) return "status-cancel";
-  if (value.includes("đã in") || value.includes("thanh toán")) return "status-success";
-  if (value.includes("chưa")) return "status-wait";
+  const statusMap = {
+    "0": "Đã hủy",
+    "1": "Đã in",
+
+    DA_HUY: "Đã hủy",
+    "ĐÃ HỦY": "Đã hủy",
+
+    DA_IN: "Đã in",
+    "ĐÃ IN": "Đã in",
+  };
+
+  return statusMap[status] || value || "Chưa cập nhật";
+};
+
+const statusClass = (status) => {
+  const value = formatTrangThaiHoaDon(status).toLowerCase();
+
+  if (value.includes("hủy")) {
+    return "status-cancel";
+  }
+
+  if (value.includes("đã in")) {
+    return "status-success";
+  }
 
   return "status-default";
 };
-
 const loadHoaDon = async () => {
   try {
     loading.value = true;
@@ -160,6 +187,28 @@ const xemChiTietHoaDon = async (item) => {
 onMounted(() => {
   loadHoaDon();
 });
+const formatPhuongThucThanhToan = (value) => {
+  const payment = String(value ?? "").trim().toUpperCase();
+
+  const paymentMap = {
+    "0": "Chưa cập nhật",
+    "1": "Tiền mặt",
+    "2": "Chuyển khoản",
+    "3": "VietQR",
+    "4": "Sepay",
+
+    TIEN_MAT: "Tiền mặt",
+    "TIỀN MẶT": "Tiền mặt",
+
+    CHUYEN_KHOAN: "Chuyển khoản",
+    "CHUYỂN KHOẢN": "Chuyển khoản",
+
+    VIETQR: "VietQR",
+    SEPAY: "Sepay",
+  };
+
+  return paymentMap[payment] || value || "Chưa cập nhật";
+};
 </script>
 
 <template>
@@ -229,9 +278,9 @@ onMounted(() => {
         <el-select v-model="filters.trangThai">
           <el-option
               v-for="item in trangThaiOptions"
-              :key="item"
-              :label="item"
-              :value="item"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
           />
         </el-select>
       </div>
@@ -326,14 +375,14 @@ onMounted(() => {
 
             <td>
               <span class="payment-badge">
-                {{ item.phuongThucThanhToan || "Chưa cập nhật" }}
-              </span>
+  {{ formatPhuongThucThanhToan(item.phuongThucThanhToan) }}
+</span>
             </td>
 
             <td>
               <span class="status-badge" :class="statusClass(item.trangThai)">
-                {{ item.trangThai || "Chưa cập nhật" }}
-              </span>
+  {{ formatTrangThaiHoaDon(item.trangThai) }}
+</span>
             </td>
 
             <td class="money-cell">

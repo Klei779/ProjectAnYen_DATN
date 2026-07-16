@@ -68,14 +68,6 @@ const totalPaymentRevenue = computed(() => {
   }, 0);
 });
 
-const paymentRows = computed(() => {
-  return thongKe.value.phuongThucThanhToan.map((item) => ({
-    ...item,
-    percent: totalPaymentRevenue.value > 0
-        ? Math.round((item.doanhThu / totalPaymentRevenue.value) * 100)
-        : 0,
-  }));
-});
 
 const formatMoney = (value) => {
   return Number(value || 0).toLocaleString("vi-VN") + "đ";
@@ -153,7 +145,34 @@ const loadThongKe = async () => {
     loading.value = false;
   }
 };
+  const formatPhuongThucThanhToan = (value) => {
+  const phuongThuc = String(value ?? "").trim().toUpperCase();
 
+  const danhSachPhuongThuc = {
+  "0": "Chưa chọn",
+  "1": "Tiền mặt",
+  "2": "Chuyển khoản",
+  TIEN_MAT: "Tiền mặt",
+  CHUYEN_KHOAN: "Chuyển khoản",
+};
+
+  return danhSachPhuongThuc[phuongThuc] || value || "Chưa xác định";
+};
+
+  const paymentRows = computed(() => {
+  return thongKe.value.phuongThucThanhToan.map((item) => ({
+  ...item,
+  tenPhuongThucThanhToan: formatPhuongThucThanhToan(
+  item.phuongThucThanhToan
+  ),
+  percent:
+  totalPaymentRevenue.value > 0
+  ? Math.round(
+  (Number(item.doanhThu || 0) / totalPaymentRevenue.value) * 100
+  )
+  : 0,
+}));
+});
 onMounted(() => {
   setThisMonth();
 });
@@ -296,7 +315,7 @@ onMounted(() => {
               class="payment-item"
           >
             <div class="payment-top">
-              <strong>{{ item.phuongThucThanhToan }}</strong>
+              <strong>{{ item.tenPhuongThucThanhToan }}</strong>
               <span>{{ item.percent }}%</span>
             </div>
             <div class="payment-track">

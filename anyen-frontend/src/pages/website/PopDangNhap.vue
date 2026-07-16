@@ -1,18 +1,29 @@
 <template>
-  <Transition name="login-popup">
-    <div v-if="show" class="modal-overlay" @click="$emit('close')">
-      <div class="login-modal" @click.stop>
-        <div class="login-modal">
-
-          <button class="close-btn" @click="$emit('close')">
-            ✕
+  <Teleport to="body">
+    <Transition name="login-popup">
+      <div
+          v-if="show"
+          class="modal-overlay"
+          @click="emit('close')"
+      >
+        <div
+            class="login-modal"
+            role="dialog"
+            aria-modal="true"
+            @click.stop
+        >
+          <button
+              type="button"
+              class="close-btn"
+              aria-label="Đóng"
+              @click="emit('close')"
+          >
+            <i class="fa-solid fa-xmark"></i>
           </button>
 
-          <div class="row g-0 h-100">
-
+          <div class="row g-0 login-modal-row">
             <!-- Banner -->
-            <div class="col-5 login-banner">
-
+            <div class="col-md-5 login-banner">
               <img
                   src="../../assets/images/icon/boat_login.png"
                   alt="Boat"
@@ -33,12 +44,10 @@
                     class="flower-divider"
                 />
               </div>
-
             </div>
 
             <!-- Content -->
-            <div class="col-7 login-content">
-
+            <div class="col-md-7 login-content">
               <h2>ĐĂNG NHẬP</h2>
 
               <img
@@ -48,7 +57,6 @@
               />
 
               <div class="tabs">
-
                 <button
                     type="button"
                     :class="{ active: activeTab === 'staff' }"
@@ -64,55 +72,72 @@
                 >
                   Đối tác
                 </button>
-
               </div>
 
               <form @submit.prevent="handleLogin">
-
                 <div v-if="hasError" class="error-msg-box">
-                  <i class="fa-solid fa-triangle-exclamation"></i> {{ errorMessage }}
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  {{ errorMessage }}
                 </div>
 
-                <div class="form-group" :class="{'has-error': hasError}">
+                <div
+                    class="form-group"
+                    :class="{ 'has-error': hasError }"
+                >
                   <label>Email hoặc số điện thoại</label>
 
-                  <el-input v-model="form.username" :prefix-icon="User"
-                            placeholder="Nhập email hoặc số điện thoại" @input="hasError = false" />
+                  <el-input
+                      v-model="form.username"
+                      :prefix-icon="User"
+                      placeholder="Nhập email hoặc số điện thoại"
+                      @input="hasError = false"
+                  />
                 </div>
 
-                <div class="form-group" :class="{'has-error': hasError}">
-
+                <div
+                    class="form-group"
+                    :class="{ 'has-error': hasError }"
+                >
                   <div class="password-header">
                     <label>Mật khẩu</label>
-
-                    <a href="#">
-                      Quên mật khẩu?
-                    </a>
+                    <a href="#" @click.prevent>Quên mật khẩu?</a>
                   </div>
 
-                  <el-input v-model="form.password" :prefix-icon="Lock" type="password" show-password
-                            placeholder="Nhập mật khẩu" @input="hasError = false" />
-
+                  <el-input
+                      v-model="form.password"
+                      :prefix-icon="Lock"
+                      type="password"
+                      show-password
+                      placeholder="Nhập mật khẩu"
+                      @input="hasError = false"
+                  />
                 </div>
 
-                <div v-if="loginFailures >= 10" class="captcha-container" style="margin-top: 15px; margin-bottom: 15px; display: flex; justify-content: center;">
-                   <vue-turnstile site-key="1x00000000000000000000AA" v-model="captchaToken" />
+                <div
+                    v-if="loginFailures >= 10"
+                    class="captcha-container"
+                >
+                  <VueTurnstile
+                      site-key="1x00000000000000000000AA"
+                      v-model="captchaToken"
+                  />
                 </div>
 
-                <el-button class="login-btn" :class="activeTab" :icon="Lock" native-type="submit">
+                <el-button
+                    class="login-btn"
+                    :class="activeTab"
+                    :icon="Lock"
+                    native-type="submit"
+                >
                   ĐĂNG NHẬP
                 </el-button>
-
               </form>
-
             </div>
-
           </div>
-
         </div>
       </div>
-    </div>
-  </Transition>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
@@ -180,7 +205,7 @@ const handleLogin = async () => {
     );
 
     if (response.data.success) {
-      
+
       loginFailures.value = 0; // Reset failures on success
 
       // Lưu thông tin user
@@ -194,7 +219,7 @@ const handleLogin = async () => {
           "token",
           response.data.token
       );
-      
+
       // Update session global state via custom event if needed
       window.dispatchEvent(new Event('session-updated'));
 

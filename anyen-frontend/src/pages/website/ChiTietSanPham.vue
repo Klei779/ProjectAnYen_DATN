@@ -1,1043 +1,2278 @@
 <template>
-  <div v-if="loading" class="loading-container">
-    <i class="fa-solid fa-spinner fa-spin"></i>
-    <span>Đang tải...</span>
+  <!-- LOADING -->
+  <div v-if="loading" class="page-state">
+    <div class="state-spinner">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+    </div>
+    <p>Đang tải thông tin sản phẩm...</p>
   </div>
 
-  <div v-else-if="product" class="product-detail-container">
-    <!-- BREADCRUMB -->
-    <div class="breadcrumb-bar">
-      <div class="sp-container">
-        <nav class="breadcrumb-nav">
-          <a href="/anyen-frontend/public">Trang chủ</a>
-          <span class="bc-sep"><i class="fa-solid fa-chevron-right"></i></span>
-          <a href="/anyen-frontend/public/san-pham">Sản phẩm</a>
-          <span class="bc-sep"><i class="fa-solid fa-chevron-right"></i></span>
-          <span class="bc-active">{{ product.name }}</span>
-        </nav>
-      </div>
+  <!-- NOT FOUND -->
+  <div v-else-if="!product" class="page-state">
+    <div class="state-icon">
+      <i class="fa-solid fa-box-open"></i>
     </div>
 
-    <!-- PRODUCT DETAIL SECTION -->
-    <section class="product-detail-section">
-      <div class="sp-container">
-        <div class="product-detail-layout">
-          
-          <!-- PRODUCT IMAGES -->
+    <h2>Không tìm thấy sản phẩm</h2>
+    <p>Sản phẩm không tồn tại hoặc đã ngừng kinh doanh.</p>
+
+    <button class="btn-primary" @click="router.push('/san-pham')">
+      <i class="fa-solid fa-arrow-left"></i>
+      Quay lại danh sách
+    </button>
+  </div>
+
+  <!-- PRODUCT DETAIL -->
+  <div v-else class="product-detail-page">
+    <!-- BREADCRUMB -->
+    <section class="breadcrumb-section">
+      <div class="page-container">
+        <nav class="breadcrumb-nav">
+          <router-link to="/">
+            <i class="fa-solid fa-house"></i>
+            Trang chủ
+          </router-link>
+
+          <i class="fa-solid fa-chevron-right breadcrumb-divider"></i>
+
+          <router-link to="/san-pham">
+            Sản phẩm
+          </router-link>
+
+          <i class="fa-solid fa-chevron-right breadcrumb-divider"></i>
+
+          <span>{{ product.name }}</span>
+        </nav>
+      </div>
+    </section>
+
+    <!-- TOP PRODUCT INFORMATION -->
+    <section class="product-overview-section">
+      <div class="page-container">
+        <div class="product-overview-layout">
+          <!-- GALLERY -->
           <div class="product-gallery">
-            <div class="main-image">
-              <img :src="getProductImage(product.image)" :alt="product.name" />
-            </div>
-          </div>
-
-          <!-- PRODUCT INFO -->
-          <div class="product-info-panel">
-            <h1 class="product-title">{{ product.name }}</h1>
-            
-            <div class="product-code">
-              <span>Mã sản phẩm: </span>
-              <strong>{{ product.code || 'SP00000' }}</strong>
-            </div>
-
-            <div class="product-price-section">
-              <div class="current-price">{{ formatPrice(product.price) }}</div>
-              <div v-if="product.oldPrice" class="old-price">{{ formatPrice(product.oldPrice) }}</div>
-              <div v-if="product.discount" class="discount-badge">
-                - {{ formatPrice(product.discount) }}
-              </div>
-            </div>
-
-            <div class="product-meta">
-              <div class="meta-row">
-                <span class="meta-label">Loại sản phẩm:</span>
-                <span class="meta-value">{{ product.loai || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Chất liệu:</span>
-                <span class="meta-value">{{ product.vatLieu || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Quy cách:</span>
-                <span class="meta-value">{{ product.quyCach || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Tôn giáo:</span>
-                <span class="meta-value">{{ product.tonGiao || 'Không phân biệt' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Màu sắc:</span>
-                <span class="meta-value">{{ product.mauSac || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Kích thước:</span>
-                <span class="meta-value">{{ product.kichThuoc || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Trọng lượng:</span>
-                <span class="meta-value">{{ product.trongLuong || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Nhà cung cấp:</span>
-                <span class="meta-value">{{ product.nhaCungCap || 'N/A' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Xuất xứ:</span>
-                <span class="meta-value">{{ product.xuatXu || 'Việt Nam' }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Số lượng:</span>
-                <span class="meta-value">{{ product.soLuong || 0 }} sản phẩm</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Trạng thái:</span>
-                <span class="meta-value status" :class="{ 'in-stock': product.trangThai === 'Đang bán' }">
-                  {{ product.trangThai || 'N/A' }}
-                </span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Cập nhật:</span>
-                <span class="meta-value">{{ product.ngayCapNhat || 'N/A' }}</span>
-              </div>
-            </div>
-
-            <div class="contact-form">
-              <div class="phone-input-group">
-                <input 
-                  v-model="phoneNumber" 
-                  type="tel" 
-                  class="phone-input" 
-                  placeholder="Nhập số điện thoại của bạn"
-                />
-                <button class="btn-contact">
-                  <i class="fa-solid fa-phone"></i>
-                  Liên hệ tư vấn
-                </button>
-              </div>
-              <button 
-                class="btn-favorite" 
-                :class="{ active: isWished }"
-                @click="toggleWish"
+            <div class="main-image-wrapper">
+              <span
+                  v-if="discountPercent > 0"
+                  class="image-discount-badge"
               >
-                <i :class="isWished ? 'fa-solid fa-heart' : 'fa-regular fa-heart'"></i>
-                Yêu thích
+                -{{ discountPercent }}%
+              </span>
+
+              <button
+                  class="main-wishlist-btn"
+                  :class="{ active: isWished }"
+                  type="button"
+                  aria-label="Thêm sản phẩm vào yêu thích"
+                  @click="toggleWish"
+              >
+                <i
+                    :class="
+                    isWished
+                      ? 'fa-solid fa-heart'
+                      : 'fa-regular fa-heart'
+                  "
+                ></i>
+              </button>
+
+              <img
+                  :src="selectedImage"
+                  :alt="product.name"
+                  @error="handleImageError"
+              />
+            </div>
+
+            <div
+                v-if="galleryImages.length > 1"
+                class="thumbnail-list"
+            >
+              <button
+                  v-for="(image, index) in galleryImages"
+                  :key="`${image}-${index}`"
+                  type="button"
+                  class="thumbnail-item"
+                  :class="{ active: selectedImage === image }"
+                  @click="selectedImage = image"
+              >
+                <img
+                    :src="image"
+                    :alt="`${product.name} - ảnh ${index + 1}`"
+                    @error="handleImageError"
+                />
               </button>
             </div>
+
+            <div class="gallery-note">
+              <i class="fa-solid fa-expand"></i>
+              <span>Hình ảnh sản phẩm mang tính minh họa thực tế</span>
+            </div>
           </div>
+
+          <!-- PRODUCT MAIN INFO -->
+          <div class="product-main-info">
+            <div class="product-category-label">
+              {{ product.loai || "SẢN PHẨM AN YÊN" }}
+            </div>
+
+            <h1 class="product-title">
+              {{ product.name }}
+            </h1>
+
+            <p class="product-subtitle">
+              {{
+                product.subname ||
+                product.moTaNgan ||
+                "Trang trọng – Chỉn chu – Tinh tế"
+              }}
+            </p>
+
+            <div class="product-code-row">
+              <span>
+                Mã sản phẩm:
+                <strong>{{ product.code || `SP${product.id}` }}</strong>
+              </span>
+
+              <span class="status-dot-row">
+                <span
+                    class="status-dot"
+                    :class="{ available: isAvailable }"
+                ></span>
+
+                {{
+                  isAvailable
+                      ? `Còn ${product.soLuong || 0} sản phẩm`
+                      : "Tạm hết hàng"
+                }}
+              </span>
+            </div>
+
+            <div class="lotus-divider">
+              <span></span>
+              <i class="fa-solid fa-spa"></i>
+              <span></span>
+            </div>
+
+            <div class="price-area">
+              <div class="price-label">Giá sản phẩm</div>
+
+              <div class="price-row">
+                <strong class="current-price">
+                  {{ formatPrice(product.price) }}
+                </strong>
+
+                <del v-if="product.oldPrice" class="old-price">
+                  {{ formatPrice(product.oldPrice) }}
+                </del>
+              </div>
+
+              <div
+                  v-if="discountAmount > 0"
+                  class="saving-text"
+              >
+                Tiết kiệm {{ formatPrice(discountAmount) }}
+              </div>
+            </div>
+
+            <div class="quick-features">
+              <div class="quick-feature">
+                <div class="quick-feature-icon">
+                  <i class="fa-solid fa-headset"></i>
+                </div>
+
+                <div>
+                  <strong>Tư vấn 24/7</strong>
+                  <span>Hỗ trợ tận tâm</span>
+                </div>
+              </div>
+
+              <div class="quick-feature">
+                <div class="quick-feature-icon">
+                  <i class="fa-regular fa-heart"></i>
+                </div>
+
+                <div>
+                  <strong>Phục vụ chu đáo</strong>
+                  <span>Đồng hành cùng gia đình</span>
+                </div>
+              </div>
+
+              <div class="quick-feature">
+                <div class="quick-feature-icon">
+                  <i class="fa-solid fa-receipt"></i>
+                </div>
+
+                <div>
+                  <strong>Chi phí minh bạch</strong>
+                  <span>Không phát sinh</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="product-spec-summary">
+              <div class="summary-item">
+                <span>Chất liệu</span>
+                <strong>{{ product.vatLieu || "Đang cập nhật" }}</strong>
+              </div>
+
+              <div class="summary-item">
+                <span>Màu sắc</span>
+                <strong>{{ product.mauSac || "Theo mẫu" }}</strong>
+              </div>
+
+              <div class="summary-item">
+                <span>Xuất xứ</span>
+                <strong>{{ product.xuatXu || "Việt Nam" }}</strong>
+              </div>
+
+              <div class="summary-item">
+                <span>Tôn giáo</span>
+                <strong>
+                  {{ product.tonGiao || "Không phân biệt" }}
+                </strong>
+              </div>
+            </div>
+
+            <div class="consult-inline-form">
+              <label for="phone">
+                Để lại số điện thoại để được tư vấn
+              </label>
+
+              <div class="phone-field">
+                <i class="fa-solid fa-phone"></i>
+
+                <input
+                    id="phone"
+                    v-model.trim="phoneNumber"
+                    type="tel"
+                    maxlength="11"
+                    placeholder="Nhập số điện thoại"
+                    @keyup.enter="requestConsultation"
+                />
+
+                <button
+                    type="button"
+                    @click="requestConsultation"
+                >
+                  Gửi yêu cầu
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUMMARY CARD -->
+          <aside class="product-summary-column">
+            <div class="summary-card">
+              <div class="summary-card-title">
+                TÓM TẮT SẢN PHẨM
+              </div>
+
+              <div class="summary-card-icon">
+                <i class="fa-solid fa-box-open"></i>
+              </div>
+
+              <h2>{{ product.name }}</h2>
+
+              <p>
+                {{
+                  product.subname ||
+                  product.loai ||
+                  "Sản phẩm được tuyển chọn kỹ lưỡng"
+                }}
+              </p>
+
+              <div class="summary-card-price">
+                <span>Giá từ</span>
+                <strong>{{ formatPrice(product.price) }}</strong>
+                <small>Giá đã bao gồm VAT nếu có</small>
+              </div>
+
+              <button
+                  class="summary-primary-btn"
+                  type="button"
+                  @click="requestConsultation"
+              >
+                <i class="fa-regular fa-calendar-check"></i>
+                ĐĂNG KÝ TƯ VẤN
+              </button>
+
+              <a class="summary-outline-btn" href="tel:19001234">
+                <i class="fa-solid fa-phone"></i>
+                LIÊN HỆ NGAY
+              </a>
+
+              <ul class="summary-benefits">
+                <li>
+                  <i class="fa-regular fa-clock"></i>
+                  Tư vấn miễn phí 24/7
+                </li>
+
+                <li>
+                  <i class="fa-solid fa-clipboard-check"></i>
+                  Khảo sát và báo giá nhanh chóng
+                </li>
+
+                <li>
+                  <i class="fa-solid fa-circle-dollar-to-slot"></i>
+                  Chi phí minh bạch, không phát sinh
+                </li>
+
+                <li>
+                  <i class="fa-regular fa-user"></i>
+                  Hỗ trợ tận tâm trong suốt quá trình
+                </li>
+              </ul>
+            </div>
+
+            <div class="support-card">
+              <span>CẦN HỖ TRỢ?</span>
+
+              <p>
+                Đội ngũ An Yên luôn sẵn sàng đồng hành và hỗ trợ gia đình.
+              </p>
+
+              <a href="tel:19001234">
+                <i class="fa-solid fa-phone"></i>
+
+                <span>
+                  <strong>1900 1234</strong>
+                  <small>Hotline hoạt động 24/7</small>
+                </span>
+              </a>
+            </div>
+          </aside>
         </div>
       </div>
     </section>
 
-    <!-- PRODUCT TABS -->
-    <section class="product-tabs-section">
-      <div class="sp-container">
-        <div class="tabs-container">
-          <div class="tabs-header">
-            <button 
-              v-for="tab in tabs" 
-              :key="tab.id"
-              class="tab-btn"
-              :class="{ active: activeTab === tab.id }"
-              @click="activeTab = tab.id"
-            >
-              {{ tab.label }}
+    <!-- DETAILS -->
+    <section class="product-content-section">
+      <div class="page-container content-layout">
+        <main class="detail-main-column">
+          <div class="content-heading">
+            <span></span>
+            <h2>CHI TIẾT SẢN PHẨM</h2>
+            <span></span>
+          </div>
+
+          <p class="content-intro">
+            {{
+              product.moTa ||
+              "Sản phẩm được An Yên tuyển chọn nhằm bảo đảm tính trang trọng, phù hợp với nhu cầu và nghi thức của từng gia đình."
+            }}
+          </p>
+
+          <div class="detail-feature-grid">
+            <article class="detail-feature-card">
+              <div class="detail-feature-icon">
+                <i class="fa-solid fa-ruler-combined"></i>
+              </div>
+
+              <h3>QUY CÁCH</h3>
+
+              <p>
+                {{
+                  product.quyCach ||
+                  "Sản phẩm được hoàn thiện theo tiêu chuẩn và yêu cầu thực tế."
+                }}
+              </p>
+            </article>
+
+            <article class="detail-feature-card">
+              <div class="detail-feature-icon">
+                <i class="fa-solid fa-layer-group"></i>
+              </div>
+
+              <h3>CHẤT LIỆU</h3>
+
+              <p>
+                {{
+                  product.vatLieu ||
+                  "Chất liệu được chọn lọc kỹ lưỡng, bền đẹp và trang trọng."
+                }}
+              </p>
+            </article>
+
+            <article class="detail-feature-card">
+              <div class="detail-feature-icon">
+                <i class="fa-solid fa-palette"></i>
+              </div>
+
+              <h3>THIẾT KẾ</h3>
+
+              <p>
+                {{
+                  product.thietKe ||
+                  "Thiết kế hài hòa, tinh tế và phù hợp với không gian tang lễ."
+                }}
+              </p>
+            </article>
+
+            <article class="detail-feature-card">
+              <div class="detail-feature-icon">
+                <i class="fa-solid fa-shield-heart"></i>
+              </div>
+
+              <h3>BẢO QUẢN</h3>
+
+              <p>
+                {{
+                  product.huongDanBaoQuan ||
+                  "Bảo quản tại nơi khô ráo, thoáng mát và tránh độ ẩm cao."
+                }}
+              </p>
+            </article>
+          </div>
+
+          <div class="specification-section">
+            <h3>Thông số sản phẩm</h3>
+
+            <div class="specification-table">
+              <div class="specification-row">
+                <span>Mã sản phẩm</span>
+                <strong>{{ product.code || `SP${product.id}` }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Loại sản phẩm</span>
+                <strong>{{ product.loai || "Đang cập nhật" }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Chất liệu</span>
+                <strong>{{ product.vatLieu || "Đang cập nhật" }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Kích thước</span>
+                <strong>{{ product.kichThuoc || "Theo mẫu" }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Trọng lượng</span>
+                <strong>{{ product.trongLuong || "Đang cập nhật" }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Công nghệ sản xuất</span>
+                <strong>{{ product.congNgheSX || "Tiêu chuẩn" }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Nhà cung cấp</span>
+                <strong>{{ product.nhaCungCap || "An Yên" }}</strong>
+              </div>
+
+              <div class="specification-row">
+                <span>Xuất xứ</span>
+                <strong>{{ product.xuatXu || "Việt Nam" }}</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="process-section">
+            <div class="content-heading">
+              <span></span>
+              <h2>QUY TRÌNH TƯ VẤN</h2>
+              <span></span>
+            </div>
+
+            <p class="content-intro">
+              An Yên đồng hành cùng gia đình trong từng bước, bảo đảm quá
+              trình lựa chọn sản phẩm diễn ra chu đáo và minh bạch.
+            </p>
+
+            <div class="process-list">
+              <div
+                  v-for="(step, index) in processSteps"
+                  :key="step.title"
+                  class="process-item"
+              >
+                <div class="process-icon">
+                  <i :class="step.icon"></i>
+                </div>
+
+                <span class="process-number">
+                  {{ index + 1 }}
+                </span>
+
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.description }}</p>
+
+                <i
+                    v-if="index < processSteps.length - 1"
+                    class="fa-solid fa-arrow-right process-arrow"
+                ></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="custom-support">
+            <div>
+              <span>HỖ TRỢ TÙY CHỈNH</span>
+
+              <h3>Sản phẩm có thể điều chỉnh theo nhu cầu gia đình</h3>
+
+              <p>
+                Màu sắc, kích thước, chất liệu và các chi tiết trang trí có
+                thể được tư vấn riêng để phù hợp với từng nghi thức.
+              </p>
+            </div>
+
+            <button type="button" @click="requestConsultation">
+              TƯ VẤN MIỄN PHÍ
             </button>
           </div>
-          
-          <div class="tabs-content">
-            <div v-if="activeTab === 'description'" class="tab-panel">
-              <div class="product-description">
-                <p>{{ product.moTa || 'Chưa có mô tả sản phẩm' }}</p>
-              </div>
-            </div>
-            
-            <div v-if="activeTab === 'specs'" class="tab-panel">
-              <div class="specs-table">
-                <div class="spec-row">
-                  <span class="spec-label">Mã sản phẩm</span>
-                  <span class="spec-value">{{ product.code || 'SP00000' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Loại sản phẩm</span>
-                  <span class="spec-value">{{ product.loai || 'N/A' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Chất liệu</span>
-                  <span class="spec-value">{{ product.vatLieu || 'N/A' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Quy cách</span>
-                  <span class="spec-value">{{ product.quyCach || 'N/A' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Kích thước</span>
-                  <span class="spec-value">{{ product.kichThuoc || 'N/A' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Trọng lượng</span>
-                  <span class="spec-value">{{ product.trongLuong || 'N/A' }}</span>
-                </div>
-                <div class="spec-row">
-                  <span class="spec-label">Xuất xứ</span>
-                  <span class="spec-value">{{ product.xuatXu || 'Việt Nam' }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div v-if="activeTab === 'partner'" class="tab-panel">
-              <div class="partner-info">
-                <div class="partner-row">
-                  <span class="partner-label">Nhà cung cấp:</span>
-                  <span class="partner-value">{{ product.nhaCungCap || 'N/A' }}</span>
-                </div>
-                <div class="partner-row">
-                  <span class="partner-label">Nhà sản xuất:</span>
-                  <span class="partner-value">{{ product.nhaSanXuat || 'N/A' }}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div v-if="activeTab === 'storage'" class="tab-panel">
-              <div class="storage-info">
-                <p>{{ product.huongDanBaoQuan || 'Sản phẩm nên được bảo quản ở nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp và độ ẩm cao.' }}</p>
-              </div>
-            </div>
+        </main>
+
+        <aside class="quote-card">
+          <i class="fa-solid fa-quote-left"></i>
+
+          <p>
+            An Yên trong tâm thức,<br />
+            trọn vẹn trong từng khoảnh khắc.
+          </p>
+
+          <div class="lotus-decoration">
+            <i class="fa-solid fa-spa"></i>
           </div>
-        </div>
+        </aside>
       </div>
     </section>
 
     <!-- RELATED PRODUCTS -->
-    <section class=" related-products-section">
-      <div class="sp-container">
-        <h2 class="section-title">Sản phẩm liên quan</h2>
-        <div class="related-products-grid">
-          <div 
-            v-for="item in relatedProducts" 
-            :key="item.id" 
-            class="related-product-card"
-            @click="goToProduct(item.id)"
+    <section
+        v-if="relatedProducts.length"
+        class="related-products-section"
+    >
+      <div class="page-container">
+        <div class="related-heading">
+          <span>SẢN PHẨM TƯƠNG TỰ</span>
+          <h2>Sản phẩm liên quan</h2>
+          <p>
+            Những sản phẩm được lựa chọn dựa trên cùng nhu cầu và danh mục.
+          </p>
+        </div>
+
+        <div class="related-product-grid">
+          <article
+              v-for="item in relatedProducts"
+              :key="item.id"
+              class="related-product-card"
+              @click="goToProduct(item.id)"
           >
             <div class="related-product-image">
-              <img :src="getProductImage(item.image)" :alt="item.name" />
+              <img
+                  :src="getProductImage(item)"
+                  :alt="item.name"
+                  loading="lazy"
+                  @error="handleImageError"
+              />
+
+              <button
+                  type="button"
+                  aria-label="Xem chi tiết sản phẩm"
+                  @click.stop="goToProduct(item.id)"
+              >
+                <i class="fa-solid fa-arrow-right"></i>
+              </button>
             </div>
+
             <div class="related-product-info">
-              <h4 class="related-product-name">{{ item.name }}</h4>
-              <p class="related-product-price">{{ formatPrice(item.price) }}</p>
+              <span>{{ item.loai || "Sản phẩm An Yên" }}</span>
+              <h3>{{ item.name }}</h3>
+
+              <div class="related-price-row">
+                <strong>{{ formatPrice(item.price) }}</strong>
+
+                <del v-if="item.oldPrice">
+                  {{ formatPrice(item.oldPrice) }}
+                </del>
+              </div>
             </div>
-          </div>
+          </article>
+        </div>
+
+        <div class="view-all-wrapper">
+          <button
+              type="button"
+              class="btn-outline-primary"
+              @click="router.push('/san-pham')"
+          >
+            XEM TẤT CẢ SẢN PHẨM
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
         </div>
       </div>
     </section>
   </div>
-
-  <div v-else class="error-container">
-    <i class="fa-solid fa-exclamation-circle"></i>
-    <p>Không tìm thấy sản phẩm</p>
-    <button class="btn-back" @click="$router.push('/san-pham')">Quay lại danh sách sản phẩm</button>
-  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { getProductById, getProducts } from '../../services/productService.js'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  ref,
+  watch
+} from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import {
+  getProductById,
+  getProducts
+} from "../../services/productService.js";
 
-const route = useRoute()
-const router = useRouter()
+const route = useRoute();
+const router = useRouter();
 
-const loading = ref(true)
-const product = ref(null)
-const relatedProducts = ref([])
-const isWished = ref(false)
-const phoneNumber = ref('')
+const loading = ref(true);
+const product = ref(null);
+const relatedProducts = ref([]);
+const selectedImage = ref("");
+const phoneNumber = ref("");
+const isWished = ref(false);
 
-const tabs = [
-  { id: 'description', label: 'MÔ TẢ SẢN PHẨM' },
-  { id: 'specs', label: 'THÔNG SỐ KỸ THUẬT' },
-  { id: 'partner', label: 'THÔNG TIN ĐỐI TÁC' },
-  { id: 'storage', label: 'HƯỚNG DẪN BẢO QUẢN' }
-]
-const activeTab = ref('description')
+const DEFAULT_IMAGE =
+    "data:image/svg+xml;charset=UTF-8," +
+    encodeURIComponent(`
+    <svg xmlns="http://www.w3.org/2000/svg" width="900" height="700">
+      <rect width="100%" height="100%" fill="#f4f0eb"/>
+      <circle cx="450" cy="300" r="75" fill="#e6ddd4"/>
+      <path d="M410 320l42-46 34 38 31-27 73 85H310z" fill="#c8b7a6"/>
+      <text
+        x="50%"
+        y="440"
+        text-anchor="middle"
+        font-family="Arial, sans-serif"
+        font-size="28"
+        fill="#8b7662"
+      >
+        Chưa có hình ảnh
+      </text>
+    </svg>
+  `);
 
-const formatPrice = (val) => {
-  if (val === null || val === undefined) return 'Liên hệ'
-  return Number(val).toLocaleString('vi-VN') + ' ₫'
-}
+const processSteps = [
+  {
+    icon: "fa-solid fa-phone",
+    title: "Tiếp nhận thông tin",
+    description: "Lắng nghe nhu cầu và tư vấn sản phẩm phù hợp."
+  },
+  {
+    icon: "fa-solid fa-file-signature",
+    title: "Xác nhận sản phẩm",
+    description: "Thống nhất mẫu mã, số lượng và chi phí."
+  },
+  {
+    icon: "fa-solid fa-box",
+    title: "Chuẩn bị sản phẩm",
+    description: "Kiểm tra kỹ sản phẩm trước khi bàn giao."
+  },
+  {
+    icon: "fa-solid fa-truck-fast",
+    title: "Giao hàng tận nơi",
+    description: "Giao đúng thời gian và địa điểm yêu cầu."
+  },
+  {
+    icon: "fa-solid fa-hand-holding-heart",
+    title: "Hỗ trợ sau giao",
+    description: "Tiếp tục đồng hành khi gia đình cần hỗ trợ."
+  }
+];
 
-const getProductImage = (image) => {
-  if (!image) return '/no-image.png'
-  if (image.startsWith('http') || image.startsWith('/') || image.startsWith('blob:')) return image
-  return `/images/${image}`
-}
+const formatPrice = (value) => {
+  if (
+      value === null ||
+      value === undefined ||
+      value === "" ||
+      Number.isNaN(Number(value))
+  ) {
+    return "Liên hệ";
+  }
+
+  return `${Number(value).toLocaleString("vi-VN")} ₫`;
+};
+
+const normalizeImage = (image) => {
+  if (!image) return null;
+
+  if (typeof image === "object") {
+    image =
+        image.url ||
+        image.Url ||
+        image.imageUrl ||
+        image.hinhAnh ||
+        image.hinhAnhUrl ||
+        image.duongDan ||
+        image.anh ||
+        null;
+  }
+
+  if (typeof image !== "string" || !image.trim()) {
+    return null;
+  }
+
+  const normalized = image.trim();
+
+  if (
+      normalized.startsWith("http://") ||
+      normalized.startsWith("https://") ||
+      normalized.startsWith("blob:") ||
+      normalized.startsWith("data:")
+  ) {
+    return normalized;
+  }
+
+  if (normalized.startsWith("/")) {
+    return normalized;
+  }
+
+  return `/images/${normalized}`;
+};
+
+const getProductImages = (item) => {
+  if (!item) return [DEFAULT_IMAGE];
+
+  const images = [];
+
+  const arraySources = [
+    item.images,
+    item.sanPhamAnh,
+    item.sanPhamAnhs,
+    item.danhSachAnh,
+    item.hinhAnhs,
+    item.anhSanPham
+  ];
+
+  arraySources.forEach((source) => {
+    if (Array.isArray(source)) {
+      source.forEach((image) => {
+        const normalized = normalizeImage(image);
+
+        if (normalized) {
+          images.push(normalized);
+        }
+      });
+    }
+  });
+
+  const singleSources = [
+    item.image,
+    item.hinhAnh,
+    item.anhDaiDien,
+    item.urlAnh,
+    item.imageUrl,
+    item.hinhAnhUrl
+  ];
+
+  singleSources.forEach((source) => {
+    const normalized = normalizeImage(source);
+
+    if (normalized) {
+      images.push(normalized);
+    }
+  });
+
+  const uniqueImages = [...new Set(images)];
+
+  return uniqueImages.length ? uniqueImages : [DEFAULT_IMAGE];
+};
+
+const getProductImage = (item) => {
+  return getProductImages(item)[0];
+};
+
+const galleryImages = computed(() => {
+  return getProductImages(product.value);
+});
+
+const discountAmount = computed(() => {
+  const price = Number(product.value?.price || 0);
+  const oldPrice = Number(product.value?.oldPrice || 0);
+
+  if (oldPrice > price) {
+    return oldPrice - price;
+  }
+
+  const discount = Number(product.value?.discount || 0);
+
+  return discount > 0 ? discount : 0;
+});
+
+const discountPercent = computed(() => {
+  const price = Number(product.value?.price || 0);
+  const oldPrice = Number(product.value?.oldPrice || 0);
+
+  if (oldPrice <= price || oldPrice <= 0) {
+    return 0;
+  }
+
+  return Math.round(((oldPrice - price) / oldPrice) * 100);
+});
+
+const isAvailable = computed(() => {
+  const status = String(product.value?.trangThai || "").toLowerCase();
+  const quantity = Number(product.value?.soLuong || 0);
+
+  return (
+      quantity > 0 &&
+      !status.includes("ngừng") &&
+      !status.includes("hết")
+  );
+});
+
+const handleImageError = (event) => {
+  const image = event.currentTarget;
+
+  if (image.dataset.fallbackApplied === "true") {
+    return;
+  }
+
+  image.dataset.fallbackApplied = "true";
+  image.src = DEFAULT_IMAGE;
+};
 
 const toggleWish = () => {
-  isWished.value = !isWished.value
-}
+  isWished.value = !isWished.value;
+
+  ElMessage({
+    type: "success",
+    message: isWished.value
+        ? "Đã thêm sản phẩm vào yêu thích"
+        : "Đã xóa sản phẩm khỏi danh sách yêu thích"
+  });
+};
+
+const requestConsultation = () => {
+  const normalizedPhone = phoneNumber.value.replace(/\s+/g, "");
+
+  if (!normalizedPhone) {
+    ElMessage.warning("Vui lòng nhập số điện thoại để được tư vấn");
+    return;
+  }
+
+  if (!/^(0|\+84)[0-9]{9,10}$/.test(normalizedPhone)) {
+    ElMessage.warning("Số điện thoại chưa đúng định dạng");
+    return;
+  }
+
+  ElMessage.success(
+      "An Yên đã tiếp nhận yêu cầu và sẽ liên hệ với bạn sớm nhất"
+  );
+
+  phoneNumber.value = "";
+};
 
 const goToProduct = (id) => {
-  router.push(`/san-pham/${id}`)
-}
+  router.push(`/san-pham/${id}`);
+};
 
-async function loadProduct() {
-  loading.value = true
+const loadRelatedProducts = async () => {
+  relatedProducts.value = [];
+
+  if (!product.value?.loai) {
+    return;
+  }
+
   try {
-    const productId = route.params.id
-    product.value = await getProductById(productId)
-    
-    // Load related products (same category)
-    if (product.value && product.value.loai) {
-      const { items } = await getProducts({
-        loai: product.value.loai,
-        pageSize: 4
-      })
-      relatedProducts.value = items.filter(item => item.id !== product.value.id).slice(0, 4)
+    const response = await getProducts({
+      loai: product.value.loai,
+      page: 1,
+      pageSize: 8
+    });
+
+    relatedProducts.value = (response.items || [])
+        .filter(
+            (item) =>
+                String(item.id) !== String(product.value.id)
+        )
+        .slice(0, 4);
+  } catch (error) {
+    console.error("Lỗi tải sản phẩm liên quan:", error);
+  }
+};
+
+const loadProduct = async () => {
+  loading.value = true;
+  product.value = null;
+
+  try {
+    const productId = route.params.id;
+    const result = await getProductById(productId);
+
+    product.value = result;
+
+    if (product.value) {
+      selectedImage.value = getProductImage(product.value);
+      await loadRelatedProducts();
     }
   } catch (error) {
-    console.error('Lỗi tải sản phẩm:', error)
-    product.value = null
+    console.error("Lỗi tải chi tiết sản phẩm:", error);
+    product.value = null;
   } finally {
-    loading.value = false
-  }
-}
+    loading.value = false;
 
-onMounted(() => {
-  loadProduct()
-})
+    await nextTick();
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    });
+  }
+};
+
+watch(
+    () => route.params.id,
+    (newId, oldId) => {
+      if (newId && newId !== oldId) {
+        loadProduct();
+      }
+    }
+);
+
+watch(galleryImages, (images) => {
+  if (
+      images.length &&
+      !images.includes(selectedImage.value)
+  ) {
+    selectedImage.value = images[0];
+  }
+});
+
+onMounted(loadProduct);
 </script>
 
 <style scoped>
-/* Color Variables */
-:root {
-  --primary-gold: #d4a017;
-  --primary-gold-dark: #b8860b;
-  --primary-gold-light: #f5d77a;
-  --text-dark: #1a1a1a;
-  --text-gray: #666666;
-  --text-light: #999999;
-  --bg-light: #f9f9f9;
-  --bg-white: #ffffff;
-  --border-color: #e8e8e8;
-  --success-green: #4caf50;
-  --error-red: #ff4444;
+.product-detail-page {
+  --primary: #a20c1b;
+  --primary-dark: #7d0713;
+  --primary-soft: #f8ebed;
+  --navy: #0e2b47;
+  --navy-light: #173d60;
+  --cream: #faf7f2;
+  --cream-dark: #f3ede6;
+  --white: #ffffff;
+  --text: #182536;
+  --text-soft: #66717e;
+  --border: #e7e0d8;
+  --success: #268256;
+  --shadow: 0 14px 40px rgba(44, 34, 28, 0.08);
+
+  background: var(--cream);
+  color: var(--text);
+  font-family: "Noto Sans", sans-serif;
 }
 
-/* Container */
-.sp-container {
-  max-width: 1320px;
+.page-container {
+  width: min(100% - 40px, 1380px);
   margin: 0 auto;
-  padding: 0 20px;
-  width: 100%;
 }
 
-/* Loading State */
-.loading-container {
+.page-state {
+  min-height: 620px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 500px;
-  gap: 20px;
-  font-size: 16px;
-  color: var(--text-gray);
-  font-family: 'Noto Sans', sans-serif;
-}
-
-.loading-container i {
-  font-size: 40px;
-  color: var(--primary-gold);
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* Error State */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 500px;
-  gap: 20px;
-  text-align: center;
+  gap: 15px;
   padding: 40px 20px;
+  text-align: center;
+  background: #faf7f2;
 }
 
-.error-container i {
-  font-size: 64px;
-  color: var(--text-light);
+.page-state h2 {
+  margin: 5px 0 0;
+  color: #0e2b47;
+  font-family: "Faustina", serif;
+  font-size: 30px;
 }
 
-.error-container p {
-  font-size: 18px;
-  color: var(--text-gray);
+.page-state p {
   margin: 0;
+  color: #6a737d;
 }
 
-.btn-back {
-  padding: 14px 32px;
-  background: var(--primary-gold);
-  color: white;
-  border: none;
-  border-radius: 8px;
+.state-spinner,
+.state-icon {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #ffffff;
+  color: #a20c1b;
+  box-shadow: 0 10px 30px rgba(44, 34, 28, 0.08);
+  font-size: 30px;
+}
+
+.btn-primary {
+  margin-top: 10px;
+  min-height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 7px;
+  background: #a20c1b;
+  color: #ffffff;
+  font-weight: 700;
   cursor: pointer;
-  font-size: 15px;
-  font-weight: 600;
-  font-family: 'Noto Sans', sans-serif;
-  transition: all 0.3s ease;
 }
 
-.btn-back:hover {
-  background: var(--primary-gold-dark);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(212, 160, 23, 0.3);
-}
-
-/* Breadcrumb */
-.breadcrumb-bar {
-  background: var(--bg-light);
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border-color);
+.breadcrumb-section {
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .breadcrumb-nav {
+  min-height: 62px;
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-family: 'Noto Sans', sans-serif;
+  gap: 12px;
+  overflow: hidden;
+  color: var(--text-soft);
+  font-size: 13px;
 }
 
 .breadcrumb-nav a {
-  color: var(--text-gray);
+  color: var(--text-soft);
   text-decoration: none;
   transition: color 0.2s ease;
-}
-
-.breadcrumb-nav a:hover {
-  color: var(--primary-gold);
-}
-
-.bc-sep {
-  color: var(--text-light);
-  font-size: 11px;
-}
-
-.bc-active {
-  color: var(--text-dark);
-  font-weight: 600;
-}
-
-/* Product Detail Section */
-.product-detail-section {
-  padding: 50px 0;
-  background: var(--bg-white);
-}
-
-.product-detail-layout {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 50px;
-  align-items: start;
-}
-
-/* Product Gallery */
-.product-gallery {
-  position: sticky;
-  top: 100px;
-}
-
-.main-image {
-  width: 100%;
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--bg-light);
-  aspect-ratio: 4/3;
-  max-height: 400px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  transition: transform 0.3s ease;
-}
-
-.main-image:hover {
-  transform: scale(1.02);
-}
-
-.main-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Product Info Panel */
-.product-info-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.product-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-dark);
-  margin: 0;
-  line-height: 1.3;
-  font-family: 'Faustina', serif;
-}
-
-.product-code {
-  font-size: 13px;
-  color: var(--text-gray);
-  font-family: 'Noto Sans', sans-serif;
-}
-
-.product-code strong {
-  color: var(--text-dark);
-  font-weight: 600;
-}
-
-/* Price Section */
-.product-price-section {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 0;
-  border-top: 2px solid var(--border-color);
-  border-bottom: 2px solid var(--border-color);
-}
-
-.current-price {
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--primary-gold);
-  font-family: 'Noto Sans', sans-serif;
-}
-
-.old-price {
-  font-size: 15px;
-  color: var(--text-light);
-  text-decoration: line-through;
-  font-weight: 500;
-}
-
-.discount-badge {
-  padding: 4px 10px;
-  background: var(--error-red);
-  color: white;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: 'Noto Sans', sans-serif;
-}
-
-/* Product Meta */
-.product-meta {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 24px;
-  background: var(--bg-light);
-  padding: 16px;
-  border-radius: 12px;
-}
-
-.meta-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  font-family: 'Noto Sans', sans-serif;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.meta-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.meta-label {
-  color: var(--text-gray);
-  font-weight: 500;
-}
-
-.meta-value {
-  color: var(--text-dark);
-  font-weight: 600;
-  text-align: right;
-}
-
-.meta-value.status {
-  color: var(--success-green);
-}
-
-.meta-value.status.in-stock {
-  color: var(--success-green);
-}
-
-/* Contact Form */
-.contact-form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.phone-input-group {
-  display: flex;
-  gap: 10px;
-}
-
-.phone-input {
-  flex: 1;
-  padding: 14px 16px;
-  border: 2px solid var(--border-color);
-  border-radius: 10px;
-  font-size: 14px;
-  font-family: 'Noto Sans', sans-serif;
-  outline: none;
-  transition: border-color 0.3s ease;
-}
-
-.phone-input:focus {
-  border-color: var(--primary-gold);
-}
-
-.phone-input::placeholder {
-  color: var(--text-light);
-}
-
-/* Action Buttons */
-.btn-contact {
-  padding: 14px 24px;
-  background: linear-gradient(135deg, var(--primary-gold) 0%, var(--primary-gold-dark) 100%);
-  color: white;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: 'Noto Sans', sans-serif;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(212, 160, 23, 0.3);
   white-space: nowrap;
 }
 
-.btn-contact:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 160, 23, 0.4);
+.breadcrumb-nav a:hover {
+  color: var(--primary);
 }
 
-.btn-contact:active {
-  transform: translateY(-1px);
-}
-
-.btn-favorite {
-  padding: 14px 24px;
-  background: white;
-  color: var(--text-dark);
-  border: 2px solid var(--border-color);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-family: 'Noto Sans', sans-serif;
-  transition: all 0.3s ease;
-}
-
-.btn-favorite:hover {
-  border-color: var(--primary-gold);
-  color: var(--primary-gold);
-  background: var(--bg-light);
-}
-
-.btn-favorite.active {
-  background: #fff5f5;
-  border-color: var(--error-red);
-  color: var(--error-red);
-}
-
-/* Tabs Section */
-.product-tabs-section {
-  padding: 50px 0;
-  background: var(--bg-light);
-}
-
-.tabs-container {
-  background: white;
-  border-radius: 12px;
+.breadcrumb-nav span {
   overflow: hidden;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-}
-
-.tabs-header {
-  display: flex;
-  border-bottom: 2px solid var(--border-color);
-  background: white;
-}
-
-.tab-btn {
-  flex: 1;
-  padding: 18px 24px;
-  background: white;
-  border: none;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-gray);
-  cursor: pointer;
-  border-bottom: 3px solid transparent;
-  font-family: 'Noto Sans', sans-serif;
-  transition: all 0.3s ease;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.tab-btn:hover {
-  color: var(--primary-gold);
-  background: var(--bg-light);
-}
-
-.tab-btn.active {
-  color: var(--primary-gold);
-  border-bottom-color: var(--primary-gold);
-  background: white;
-}
-
-.tabs-content {
-  padding: 40px;
-  min-height: 250px;
-}
-
-.tab-panel {
-  line-height: 1.8;
-}
-
-.product-description {
-  color: var(--text-dark);
-  font-size: 15px;
-  font-family: 'Noto Sans', sans-serif;
-}
-
-.specs-table {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.spec-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
-  font-family: 'Noto Sans', sans-serif;
-}
-
-.spec-row:last-child {
-  border-bottom: none;
-}
-
-.spec-label {
-  color: var(--text-gray);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.spec-value {
-  color: var(--text-dark);
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.partner-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-
-.partner-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
-  font-family: 'Noto Sans', sans-serif;
-}
-
-.partner-row:last-child {
-  border-bottom: none;
-}
-
-.partner-label {
-  color: var(--text-gray);
-  font-weight: 600;
-  font-size: 14px;
-}
-
-.partner-value {
-  color: var(--text-dark);
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.storage-info {
-  color: var(--text-dark);
-  font-size: 15px;
-  font-family: 'Noto Sans', sans-serif;
-  line-height: 1.8;
-}
-
-/* Related Products */
-.related-products-section {
-  padding: 50px 0;
-  background: var(--bg-white);
-}
-
-.section-title {
-  font-size: 28px;
+  color: var(--primary);
   font-weight: 700;
-  color: var(--text-dark);
-  margin-bottom: 32px;
-  font-family: 'Faustina', serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-divider {
+  flex: 0 0 auto;
+  color: #a9a29b;
+  font-size: 9px;
+}
+
+.product-overview-section {
+  padding: 42px 0 55px;
+  background: var(--white);
+}
+
+.product-overview-layout {
+  display: grid;
+  grid-template-columns:
+    minmax(390px, 1.08fr)
+    minmax(370px, 1fr)
+    minmax(290px, 0.7fr);
+  gap: 34px;
+  align-items: start;
+}
+
+.product-gallery {
+  min-width: 0;
+}
+
+.main-image-wrapper {
+  position: relative;
+  aspect-ratio: 1.13;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--cream-dark);
+}
+
+.main-image-wrapper > img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.main-image-wrapper:hover > img {
+  transform: scale(1.035);
+}
+
+.image-discount-badge {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  left: 16px;
+  min-width: 54px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 13px;
+  font-weight: 800;
   text-align: center;
 }
 
-.related-products-grid {
+.main-wishlist-btn {
+  position: absolute;
+  z-index: 2;
+  top: 16px;
+  right: 16px;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(162, 12, 27, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--navy);
+  cursor: pointer;
+  transition: 0.25s ease;
+}
+
+.main-wishlist-btn:hover,
+.main-wishlist-btn.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--white);
+}
+
+.thumbnail-list {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.thumbnail-item {
+  aspect-ratio: 1.2;
+  overflow: hidden;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  background: var(--cream-dark);
+  cursor: pointer;
+  transition: 0.22s ease;
+}
+
+.thumbnail-item:hover,
+.thumbnail-item.active {
+  border-color: var(--primary);
+}
+
+.thumbnail-item img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.gallery-note {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.product-main-info {
+  min-width: 0;
+  padding-top: 4px;
+}
+
+.product-category-label {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  padding: 0 12px;
+  border-radius: 4px;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.45px;
+  text-transform: uppercase;
+}
+
+.product-title {
+  margin: 12px 0 3px;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: clamp(32px, 3vw, 44px);
+  font-weight: 700;
+  line-height: 1.12;
+}
+
+.product-subtitle {
+  margin: 0;
+  color: var(--text);
+  font-family: "Faustina", serif;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.product-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px 20px;
+  margin-top: 18px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.product-code-row strong {
+  color: var(--navy);
+}
+
+.status-dot-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a9a9a9;
+}
+
+.status-dot.available {
+  background: var(--success);
+  box-shadow: 0 0 0 4px rgba(38, 130, 86, 0.12);
+}
+
+.lotus-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: var(--primary);
+}
+
+.lotus-divider span {
+  width: 90px;
+  height: 1px;
+  background: linear-gradient(
+      to right,
+      transparent,
+      rgba(162, 12, 27, 0.55)
+  );
+}
+
+.lotus-divider span:last-child {
+  background: linear-gradient(
+      to left,
+      transparent,
+      rgba(162, 12, 27, 0.55)
+  );
+}
+
+.price-label {
+  margin-bottom: 5px;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 13px;
+}
+
+.current-price {
+  color: var(--primary);
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.old-price {
+  color: #8d939a;
+  font-size: 14px;
+}
+
+.saving-text {
+  margin-top: 5px;
+  color: var(--success);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.quick-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin-top: 24px;
+  padding: 17px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.quick-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 14px;
+  border-right: 1px solid var(--border);
+}
+
+.quick-feature:first-child {
+  padding-left: 0;
+}
+
+.quick-feature:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.quick-feature-icon {
+  flex: 0 0 auto;
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(162, 12, 27, 0.2);
+  border-radius: 50%;
+  color: var(--primary);
+}
+
+.quick-feature strong,
+.quick-feature span {
+  display: block;
+}
+
+.quick-feature strong {
+  color: var(--navy);
+  font-size: 11px;
+}
+
+.quick-feature span {
+  margin-top: 2px;
+  color: var(--text-soft);
+  font-size: 9px;
+}
+
+.product-spec-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 9px 18px;
+  margin-top: 21px;
+}
+
+.summary-item {
+  min-width: 0;
+  padding-bottom: 9px;
+  border-bottom: 1px dashed var(--border);
+}
+
+.summary-item span,
+.summary-item strong {
+  display: block;
+}
+
+.summary-item span {
+  margin-bottom: 3px;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.summary-item strong {
+  overflow: hidden;
+  color: var(--navy);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.consult-inline-form {
+  margin-top: 22px;
+}
+
+.consult-inline-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.phone-field {
+  min-height: 50px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--white);
+}
+
+.phone-field > i {
+  margin-left: 16px;
+  color: var(--primary);
+}
+
+.phone-field input {
+  min-width: 0;
+  flex: 1;
+  height: 48px;
+  padding: 0 12px;
+  border: 0;
+  outline: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.phone-field button {
+  align-self: stretch;
+  padding: 0 20px;
+  border: 0;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.phone-field button:hover {
+  background: var(--primary-dark);
+}
+
+.product-summary-column {
+  position: sticky;
+  top: 100px;
+  display: grid;
+  gap: 18px;
+}
+
+.summary-card,
+.support-card {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--white);
+  box-shadow: 0 10px 30px rgba(37, 29, 24, 0.045);
+}
+
+.summary-card {
+  padding: 24px 22px;
+  text-align: center;
+}
+
+.summary-card-title {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.summary-card-icon {
+  width: 56px;
+  height: 56px;
+  display: grid;
+  place-items: center;
+  margin: 21px auto 11px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: var(--white);
+  font-size: 22px;
+}
+
+.summary-card h2 {
+  margin: 0;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 20px;
+}
+
+.summary-card > p {
+  margin: 5px 0 18px;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.summary-card-price {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
+}
+
+.summary-card-price span,
+.summary-card-price strong,
+.summary-card-price small {
+  display: block;
+}
+
+.summary-card-price span {
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.summary-card-price strong {
+  margin: 3px 0;
+  color: var(--primary);
+  font-size: 24px;
+}
+
+.summary-card-price small {
+  color: var(--text-soft);
+  font-size: 10px;
+}
+
+.summary-primary-btn,
+.summary-outline-btn {
+  width: 100%;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.summary-primary-btn {
+  margin-top: 4px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--white);
+}
+
+.summary-primary-btn:hover {
+  background: var(--primary-dark);
+}
+
+.summary-outline-btn {
+  margin-top: 10px;
+  border: 1px solid var(--primary);
+  background: var(--white);
+  color: var(--primary);
+}
+
+.summary-outline-btn:hover {
+  background: var(--primary-soft);
+}
+
+.summary-benefits {
+  display: grid;
+  gap: 12px;
+  margin: 21px 0 0;
+  padding: 19px 0 0;
+  border-top: 1px solid var(--border);
+  list-style: none;
+  text-align: left;
+}
+
+.summary-benefits li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-soft);
+  font-size: 11px;
+}
+
+.summary-benefits i {
+  width: 17px;
+  color: var(--navy);
+  text-align: center;
+}
+
+.support-card {
+  padding: 22px;
+}
+
+.support-card > span {
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.support-card > p {
+  margin: 12px 0 17px;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.support-card a {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.support-card a > i {
+  font-size: 23px;
+}
+
+.support-card a span {
+  display: grid;
+}
+
+.support-card a strong {
+  font-size: 21px;
+}
+
+.support-card a small {
+  color: var(--text-soft);
+  font-size: 10px;
+}
+
+.product-content-section {
+  padding: 45px 0 55px;
+  border-top: 1px solid var(--border);
+  background: var(--cream);
+}
+
+.content-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 32px;
+  align-items: start;
+}
+
+.detail-main-column {
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+}
+
+.content-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 17px;
+}
+
+.content-heading span {
+  width: 85px;
+  height: 1px;
+  background: rgba(162, 12, 27, 0.4);
+}
+
+.content-heading h2 {
+  margin: 0;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 22px;
+  text-align: center;
+}
+
+.content-intro {
+  max-width: 820px;
+  margin: 17px auto 31px;
+  color: var(--text-soft);
+  font-size: 13px;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.detail-feature-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 24px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.detail-feature-card {
+  min-width: 0;
+  padding: 27px 19px;
+  border-right: 1px solid var(--border);
+  text-align: center;
+}
+
+.detail-feature-card:last-child {
+  border-right: 0;
+}
+
+.detail-feature-icon {
+  width: 53px;
+  height: 53px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 13px;
+  color: var(--primary);
+  font-size: 27px;
+}
+
+.detail-feature-card h3 {
+  margin: 0 0 9px;
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.detail-feature-card p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.specification-section {
+  margin-top: 35px;
+}
+
+.specification-section h3 {
+  margin: 0 0 16px;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 20px;
+}
+
+.specification-table {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border: 1px solid var(--border);
+}
+
+.specification-row {
+  min-height: 50px;
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) 1.2fr;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.specification-row:nth-child(odd) {
+  border-right: 1px solid var(--border);
+}
+
+.specification-row:nth-last-child(-n + 2) {
+  border-bottom: 0;
+}
+
+.specification-row span,
+.specification-row strong {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 12px 15px;
+  font-size: 12px;
+}
+
+.specification-row span {
+  background: var(--cream);
+  color: var(--text-soft);
+}
+
+.specification-row strong {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.process-section {
+  margin-top: 45px;
+  padding-top: 36px;
+  border-top: 1px solid var(--border);
+}
+
+.process-list {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 18px;
+}
+
+.process-item {
+  position: relative;
+  text-align: center;
+}
+
+.process-icon {
+  width: 59px;
+  height: 59px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--white);
+  font-size: 22px;
+}
+
+.process-number {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.process-item h3 {
+  margin: 0 0 6px;
+  color: var(--navy);
+  font-size: 12px;
+}
+
+.process-item p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.process-arrow {
+  position: absolute;
+  top: 24px;
+  right: -17px;
+  color: rgba(162, 12, 27, 0.42);
+  font-size: 14px;
+}
+
+.custom-support {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  margin-top: 39px;
+  padding: 24px 26px;
+  border-left: 4px solid var(--primary);
+  background: var(--primary-soft);
+}
+
+.custom-support span {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.custom-support h3 {
+  margin: 5px 0 6px;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 19px;
+}
+
+.custom-support p {
+  max-width: 680px;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.custom-support button {
+  flex: 0 0 auto;
+  min-height: 43px;
+  padding: 0 20px;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  background: var(--white);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.custom-support button:hover {
+  background: var(--primary);
+  color: var(--white);
+}
+
+.quote-card {
+  position: sticky;
+  top: 100px;
+  min-height: 410px;
+  overflow: hidden;
+  padding: 35px 27px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+      radial-gradient(
+          circle at 75% 90%,
+          rgba(211, 151, 163, 0.4),
+          transparent 25%
+      ),
+      linear-gradient(145deg, #f8eceb, #f6f1e9);
+}
+
+.quote-card > i {
+  color: rgba(14, 43, 71, 0.44);
+  font-size: 27px;
+}
+
+.quote-card p {
+  margin: 45px 0 0;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 20px;
+  line-height: 1.65;
+}
+
+.lotus-decoration {
+  position: absolute;
+  right: -20px;
+  bottom: -25px;
+  color: rgba(162, 12, 27, 0.18);
+  font-size: 145px;
+}
+
+.related-products-section {
+  padding: 58px 0 70px;
+  background: var(--white);
+}
+
+.related-heading {
+  text-align: center;
+}
+
+.related-heading > span {
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.related-heading h2 {
+  margin: 7px 0;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 31px;
+}
+
+.related-heading p {
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+
+.related-product-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 21px;
+  margin-top: 31px;
 }
 
 .related-product-card {
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 12px;
   overflow: hidden;
-  background: white;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--white);
+  cursor: pointer;
+  transition: 0.3s ease;
 }
 
 .related-product-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  border-color: var(--primary-gold);
+  transform: translateY(-6px);
+  border-color: rgba(162, 12, 27, 0.4);
+  box-shadow: var(--shadow);
 }
 
 .related-product-image {
-  width: 100%;
-  aspect-ratio: 1;
+  position: relative;
+  aspect-ratio: 1.2;
   overflow: hidden;
-  background: var(--bg-light);
+  background: var(--cream-dark);
 }
 
 .related-product-image img {
   width: 100%;
   height: 100%;
+  display: block;
   object-fit: cover;
-  transition: transform 0.3s ease;
+  transition: transform 0.4s ease;
 }
 
 .related-product-card:hover .related-product-image img {
-  transform: scale(1.1);
+  transform: scale(1.05);
+}
+
+.related-product-image button {
+  position: absolute;
+  right: 13px;
+  bottom: 13px;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--primary);
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(33, 24, 19, 0.14);
 }
 
 .related-product-info {
-  padding: 16px;
+  padding: 17px;
+}
+
+.related-product-info > span {
+  color: var(--primary);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.related-product-info h3 {
+  min-height: 44px;
+  margin: 7px 0 11px;
+  color: var(--navy);
+  font-family: "Faustina", serif;
+  font-size: 18px;
+  line-height: 1.25;
+}
+
+.related-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.related-price-row strong {
+  color: var(--primary);
+  font-size: 17px;
+}
+
+.related-price-row del {
+  color: #939393;
+  font-size: 11px;
+}
+
+.view-all-wrapper {
+  margin-top: 31px;
   text-align: center;
 }
 
-.related-product-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-dark);
-  margin: 0 0 10px 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: 'Noto Sans', sans-serif;
-  line-height: 1.4;
-  min-height: 20px;
+.btn-outline-primary {
+  min-height: 45px;
+  padding: 0 22px;
+  border: 1px solid var(--primary);
+  border-radius: 4px;
+  background: var(--white);
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
-.related-product-price {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--primary-gold);
-  margin: 0;
-  font-family: 'Noto Sans', sans-serif;
+.btn-outline-primary:hover {
+  background: var(--primary);
+  color: var(--white);
 }
 
-/* Responsive Design */
-@media (max-width: 1024px) {
-  .product-detail-layout {
-    gap: 30px;
+@media (max-width: 1180px) {
+  .product-overview-layout {
+    grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
   }
-  
-  .related-products-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-  }
-  
-  .product-title {
-    font-size: 22px;
-  }
-  
-  .current-price {
-    font-size: 26px;
-  }
-  
-  .product-meta {
+
+  .product-summary-column {
+    position: static;
+    grid-column: 1 / -1;
     grid-template-columns: 1fr 1fr;
   }
+
+  .summary-card,
+  .support-card {
+    height: 100%;
+  }
+
+  .detail-feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .detail-feature-card:nth-child(2) {
+    border-right: 0;
+  }
+
+  .detail-feature-card:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .process-list {
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 30px;
+  }
+
+  .process-arrow {
+    display: none;
+  }
 }
 
-@media (max-width: 768px) {
-  .sp-container {
-    padding: 0 16px;
-  }
-  
-  .product-detail-layout {
+@media (max-width: 900px) {
+  .product-overview-layout,
+  .content-layout {
     grid-template-columns: 1fr;
-    gap: 30px;
   }
-  
-  .product-gallery {
+
+  .product-gallery,
+  .product-summary-column,
+  .quote-card {
     position: static;
   }
-  
-  .main-image {
-    max-height: 350px;
+
+  .product-summary-column {
+    grid-template-columns: 1fr 1fr;
   }
-  
-  .product-detail-section {
-    padding: 30px 0;
+
+  .quote-card {
+    min-height: 270px;
   }
-  
-  .product-tabs-section {
-    padding: 30px 0;
-  }
-  
-  .related-products-section {
-    padding: 30px 0;
-  }
-  
-  .product-title {
-    font-size: 20px;
-  }
-  
-  .current-price {
-    font-size: 24px;
-  }
-  
-  .old-price {
-    font-size: 14px;
-  }
-  
-  .product-price-section {
-    padding: 14px 0;
-    gap: 12px;
-  }
-  
-  .product-meta {
+
+  .specification-table {
     grid-template-columns: 1fr;
-    gap: 10px;
   }
-  
-  .phone-input-group {
-    flex-direction: column;
+
+  .specification-row:nth-child(odd) {
+    border-right: 0;
   }
-  
-  .btn-contact,
-  .btn-favorite {
-    width: 100%;
-    padding: 14px 20px;
+
+  .specification-row:nth-last-child(-n + 2) {
+    border-bottom: 1px solid var(--border);
   }
-  
-  .tabs-header {
-    flex-wrap: wrap;
+
+  .specification-row:last-child {
+    border-bottom: 0;
   }
-  
-  .tab-btn {
-    flex: 1 1 50%;
-    padding: 14px 16px;
-    font-size: 13px;
-  }
-  
-  .tabs-content {
-    padding: 24px;
-  }
-  
-  .related-products-grid {
+
+  .related-product-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-  }
-  
-  .section-title {
-    font-size: 24px;
-    margin-bottom: 24px;
-  }
-  
-  .breadcrumb-bar {
-    padding: 12px 0;
-  }
-  
-  .breadcrumb-nav {
-    font-size: 13px;
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 650px) {
+  .page-container {
+    width: min(100% - 28px, 1380px);
+  }
+
+  .breadcrumb-nav {
+    min-height: 52px;
+    font-size: 11px;
+  }
+
+  .product-overview-section {
+    padding: 22px 0 32px;
+  }
+
   .product-title {
-    font-size: 18px;
+    font-size: 30px;
   }
-  
-  .current-price {
-    font-size: 22px;
+
+  .product-subtitle {
+    font-size: 16px;
   }
-  
-  .old-price {
-    font-size: 13px;
-  }
-  
-  .product-meta {
-    padding: 14px;
-  }
-  
-  .meta-row {
-    font-size: 12px;
-  }
-  
-  .tab-btn {
-    flex: 1 1 100%;
-  }
-  
-  .related-products-grid {
+
+  .quick-features {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 13px;
   }
-  
-  .tabs-content {
-    padding: 20px;
+
+  .quick-feature {
+    padding: 0;
+    border-right: 0;
   }
-  
-  .section-title {
-    font-size: 22px;
+
+  .product-spec-summary {
+    grid-template-columns: 1fr;
   }
-  
-  .phone-input {
-    font-size: 13px;
-    padding: 12px 14px;
+
+  .phone-field {
+    flex-wrap: wrap;
+    padding-top: 3px;
   }
-  
-  .btn-contact,
-  .btn-favorite {
-    font-size: 13px;
-    padding: 12px 16px;
+
+  .phone-field input {
+    min-width: 180px;
+  }
+
+  .phone-field button {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .product-summary-column {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-main-column {
+    padding: 23px 16px;
+  }
+
+  .content-heading {
+    gap: 10px;
+  }
+
+  .content-heading span {
+    width: 40px;
+  }
+
+  .content-heading h2 {
+    font-size: 19px;
+  }
+
+  .detail-feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-feature-card {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-feature-card:last-child {
+    border-bottom: 0;
+  }
+
+  .process-list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .custom-support {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-support button {
+    width: 100%;
+  }
+
+  .related-product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .related-product-info {
+    padding: 13px;
+  }
+
+  .related-product-info h3 {
+    min-height: 39px;
+    font-size: 15px;
+  }
+
+  .related-price-row strong {
+    font-size: 14px;
+  }
+
+  .thumbnail-list {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 420px) {
+  .product-code-row {
+    flex-direction: column;
+  }
+
+  .price-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .process-list {
+    grid-template-columns: 1fr;
+  }
+
+  .related-product-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

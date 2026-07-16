@@ -93,13 +93,13 @@
           <a href="tel:19001234" class="contact-item">
             <i class="fas fa-phone"></i>
 
-            <span>1900 1234</span>
+            <span>0392 168 473</span>
           </a>
 
           <a href="mailto:info@anyen.vn" class="contact-item">
             <i class="fas fa-envelope"></i>
 
-            <span>info@anyen.vn</span>
+            <span>anyenservice@gmail.com</span>
           </a>
 
           <a
@@ -117,7 +117,7 @@
             <i class="fas fa-map-marker-alt"></i>
 
             <span>
-              Quận 12, Thành phố Hồ Chí Minh
+              123 Tô Ký, Phường Trung Mỹ Tây, Thành phố Hồ Chí Minh
             </span>
           </div>
         </div>

@@ -251,14 +251,14 @@
         <div class="footer-column footer-contact">
           <h2>Liên hệ</h2>
 
-          <a href="tel:19001234">
+          <a href="tel:0392168473">
             <i class="fa-solid fa-phone"></i>
-            <span>1900 1234</span>
+            <span>0392 168 473</span>
           </a>
 
-          <a href="mailto:info@anyen.vn">
+          <a href="mailto:anyenservice@gmail.com">
             <i class="fa-solid fa-envelope"></i>
-            <span>info@anyen.vn</span>
+            <span>anyenservice@gmail.com</span>
           </a>
 
           <a
@@ -274,8 +274,7 @@
             <i class="fa-solid fa-location-dot"></i>
 
             <span>
-              123 Đường An Lành,<br />
-              Phường Yên Hòa, Hà Nội
+              123 Tô Ký, Phường Trung Mỹ Tây, Thành phố Hồ Chí Minh
             </span>
           </p>
         </div>

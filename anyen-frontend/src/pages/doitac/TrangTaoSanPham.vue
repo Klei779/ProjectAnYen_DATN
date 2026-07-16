@@ -1077,6 +1077,7 @@ const cancelCreate = () => {
             <h2 class="tao-sp-section-title">
               1. Thông tin cơ bản
             </h2>
+          </div>
 
           <div class="tao-sp-grid">
             <div class="tao-sp-field">

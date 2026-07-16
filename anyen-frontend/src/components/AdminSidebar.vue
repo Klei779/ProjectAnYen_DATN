@@ -20,12 +20,12 @@
         <h6 class="mb-1">{{ user?.hoTen || 'Quản lý' }}</h6>
         <small>Admin An Yên</small>
       </div>
-
-      <UserProfileDropdown
-          v-if="showProfile"
-          :user="user"
-          icon-class="bi bi-shield-lock"
-          @logout="logout"
+      
+      <UserProfileDropdown 
+        v-if="showProfile" 
+        :user="user" 
+        icon-class="bi bi-shield-lock"
+        @logout="logout" 
       />
     </div>
 
@@ -34,7 +34,7 @@
         <i class="fa-solid fa-chart-pie menu-icon"></i>
         <span class="sidebar-text">Tổng quan</span>
       </RouterLink>
-
+      
       <RouterLink to="/admin/quan-ly-doi-tac" class="menu-item" title="Quản lý đối tác">
         <i class="fa-solid fa-handshake menu-icon"></i>
         <span class="sidebar-text">Quản lý đối tác</span>
@@ -43,7 +43,14 @@
         <i class="fa-solid fa-handshake menu-icon"></i>
         <span class="sidebar-text">Quản lý nhân viên</span>
       </RouterLink>
-
+      <RouterLink to="/admin/quan-ly-hop-dong" class="menu-item" title="Quản lý hợp đồng">
+        <i class="fa-solid fa-file-contract menu-icon"></i>
+        <span class="sidebar-text">Quản lý hợp đồng</span>
+      </RouterLink>
+      <RouterLink to="/admin/duyet-san-pham" class="menu-item" title="Quản lý sản phẩm">
+        <i class="fa-solid fa-file-contract menu-icon"></i>
+        <span class="sidebar-text">Quản lý sản phẩm</span>
+      </RouterLink>
       <RouterLink to="/admin/thong-bao" class="menu-item" title="Thông báo">
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>
@@ -59,14 +66,6 @@
       >
         <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
         <span class="sidebar-text">Quản lý hóa đơn</span>
-      </RouterLink>
-      <RouterLink
-          to="/admin/duyet-san-pham"
-          class="menu-item"
-          title="Quản lý sản phẩm"
-      >
-        <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
-        <span class="sidebar-text">Quản lý sản phẩm</span>
       </RouterLink>
       <RouterLink to="/admin/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
         <i class="fa-solid fa-user menu-icon"></i>

@@ -183,21 +183,6 @@ const completedCount = computed(() => {
 
 <template>
   <div class="partner-don-hang-page">
-    <!-- HEADER -->
-    <div class="page-header">
-      <div class="page-title-wrap">
-        <span class="page-subtitle">Đối tác An Yên</span>
-        <h2 class="page-title">Quản lý đơn hàng</h2>
-        <p class="page-desc">
-          Theo dõi các đơn hàng được gửi đến đối tác và xem chi tiết sản phẩm trong từng đơn.
-        </p>
-      </div>
-
-      <el-button class="reload-btn" @click="fetchDonHangs">
-        Làm mới
-      </el-button>
-    </div>
-
     <!-- SUMMARY -->
     <div class="summary-grid">
       <div class="summary-card">

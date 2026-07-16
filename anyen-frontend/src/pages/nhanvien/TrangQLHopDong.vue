@@ -14,7 +14,8 @@ import PopXemHopDong from "./PopChiTietHopDong.vue";
 
 import {
   getHopDongs,
-  cancelHopDong
+  cancelHopDong,
+  deleteHopDong
 } from "../../services/hopDongService.js";
 
 const keyword = ref("");
@@ -548,7 +549,7 @@ onMounted(() => {
               v-for="item in tableHopDongs"
               :key="item.maHopDong"
           >
-           
+
 
             <td>
               <strong>{{ getContractCode(item) }}</strong>

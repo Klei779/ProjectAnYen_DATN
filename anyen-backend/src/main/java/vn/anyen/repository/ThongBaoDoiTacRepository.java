@@ -13,19 +13,19 @@ public interface ThongBaoDoiTacRepository
             Integer maDoiTac
     );
 
-    // Loai đổi từ String → Integer để khớp với cột TINYINT trong DB
+    // Loai dùng String để khớp với cột VARCHAR trong DB
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
             Integer maDoiTac,
-            Integer loai,
-            Integer trangThaiThongBao
+            String loai,
+            String trangThaiThongBao
     );
 
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianXuLyDesc(
             Integer maDoiTac,
-            Integer loai,
-            Integer trangThaiThongBao
+            String loai,
+            String trangThaiThongBao
     );
 
     Optional<ThongBaoDoiTac> findByMaThongBaoAndDoiTac_MaDoiTac(
@@ -36,18 +36,18 @@ public interface ThongBaoDoiTacRepository
     boolean existsByDoiTac_MaDoiTacAndDonHang_MaDonHangAndLoai(
             Integer maDoiTac,
             Integer maDonHang,
-            Integer loai
+            String loai
     );
 
     Optional<ThongBaoDoiTac> findByDoiTac_MaDoiTacAndDonHang_MaDonHangAndLoai(
             Integer maDoiTac,
             Integer donHang,
-            Integer loai
+            String loai
     );
 
     List<ThongBaoDoiTac> findByDonHang_MaDonHangAndLoai(
             Integer donHang,
-            Integer loai
+            String loai
     );
 
     List<ThongBaoDoiTac> findByDonHang_MaDonHang(Integer maDonHang);

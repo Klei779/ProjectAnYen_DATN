@@ -13,7 +13,9 @@ public class ComBoChiTietResponse {
 
     private Integer comboChiTietId;
 
-    private String loai;
+    private Integer loai;
+
+    private Integer soLuong;
 
     private String noiDung;
 

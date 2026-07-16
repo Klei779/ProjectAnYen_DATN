@@ -21,10 +21,16 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     List<ThongBao> findByNguoiNhan(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     /**
+     * Lấy thông báo cho hotline: chỉ thông báo hệ thống, từ chối, và phản hồi công việc
+     */
+    @Query("SELECT t FROM ThongBao t WHERE t.nguoiNhanId = :nguoiNhanId AND (t.loaiThongBao = 'HE_THONG' OR t.loaiThongBao = 'TU_CHOI' OR t.loaiThongBao = 'CONG_VIEC') ORDER BY t.ngayTao DESC")
+    List<ThongBao> findHotlineNotifications(@Param("nguoiNhanId") Integer nguoiNhanId);
+
+    /**
      * Đếm thông báo chưa đọc
      */
     //test
-    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
+    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai IN (0, 4)")
     long countChuaDoc(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     @Modifying
@@ -42,9 +48,22 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     /**
      * Lấy danh sách thông báo duyệt sản phẩm đang chờ xác nhận
      */
-    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
+//    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
+//            String loaiThongBao,
+//            Integer trangThai
+//    );
+//
+//    /**
+//     * Tìm thông báo duyệt mới nhất theo mã sản phẩm
+//     */
+//    Optional<ThongBao> findFirstByMaSanPhamAndLoaiThongBaoOrderByNgayTaoDesc(
+//            Integer maSanPham,
+//            String loaiThongBao
+//    );
+
+    boolean existsByLoaiThongBaoAndNoiDungContainingAndTrangThai(
             String loaiThongBao,
+            String noiDung,
             Integer trangThai
     );
-
 }

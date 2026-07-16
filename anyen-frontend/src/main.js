@@ -12,6 +12,8 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import "./assets/styles/website/global.css";
 import "./assets/styles/website/design-system.css";
 
+import 'leaflet/dist/leaflet.css'
+
 createApp(App)
     .use(router)
     .use(ElementPlus)

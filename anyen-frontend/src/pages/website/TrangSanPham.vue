@@ -28,7 +28,7 @@
   <div class="breadcrumb-bar">
     <div class="sp-container">
       <nav class="breadcrumb-nav">
-        <a href="/anyen-frontend/public">Trang chủ</a>
+        <router-link to="/">Trang chủ</router-link>
         <span class="bc-sep"><i class="fa-solid fa-chevron-right"></i></span>
         <span class="bc-active">Sản phẩm</span>
       </nav>
@@ -183,22 +183,37 @@
                 <p>Không tìm thấy sản phẩm phù hợp</p>
               </div>
 
-              <div v-for="item in products" :key="item.id" class="product-card">
+              <div v-for="item in products" :key="item.id" class="product-card" @click="goToProductDetail(item.id)">
                 <div class="product-image">
-                  <img :src="item.image ? `/images/${item.image}` : '/no-image.png'" :alt="item.name" />
+                  <img
+                      :src="getProductImage(item)"
+                      :alt="item.name || 'Sản phẩm An Yên'"
+                      loading="lazy"
+                      @error="handleImageError"
+                  />
 
-                  <!-- BADGE -->
-                  <span v-if="item.badge" class="product-badge" :class="item.badge.type">
-                    {{ item.badge.label }}
-                  </span>
+                  <span
+                      v-if="item.badge"
+                      class="product-badge"
+                      :class="item.badge.type"
+                  >
+    {{ item.badge.label }}
+  </span>
 
-                  <!-- WISHLIST -->
                   <button
                       class="wishlist-btn"
                       :class="{ active: isWished(item.id) }"
-                      @click="toggleWish(item.id)"
+                      type="button"
+                      aria-label="Thêm vào yêu thích"
+                      @click.stop="toggleWish(item.id)"
                   >
-                    <i :class="isWished(item.id) ? 'fa-solid fa-heart' : 'fa-regular fa-heart'"></i>
+                    <i
+                        :class="
+        isWished(item.id)
+          ? 'fa-solid fa-heart'
+          : 'fa-regular fa-heart'
+      "
+                    ></i>
                   </button>
                 </div>
 
@@ -249,9 +264,13 @@
 
 <script setup>
 import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
 import flowerIcon from '../../assets/images/icon/flower_icon.png'
 import { getProducts, getFilterOptions } from '../../services/productService.js'
+import noImage from '../../assets/images/noimage.jpg'
+
+const router = useRouter()
 
 const isPriceOpen = ref(true)
 const isMaterialOpen = ref(true)
@@ -300,12 +319,78 @@ const formatPrice = (val) => {
   return Number(val).toLocaleString('vi-VN') + ' đ'
 }
 
-const getProductImage = (image) => {
-  if (!image) return '/no-image.png'
-  if (image.startsWith('http') || image.startsWith('/') || image.startsWith('blob:')) return image
+const DEFAULT_PRODUCT_IMAGE = noImage
+
+const getProductImage = (product) => {
+  if (!product) return DEFAULT_PRODUCT_IMAGE
+
+  let image =
+      product.image ||
+      product.hinhAnh ||
+      product.anhDaiDien ||
+      product.urlAnh ||
+      product.imageUrl ||
+      product.hinhAnhUrl ||
+      product.sanPhamAnh ||
+      product.sanPhamAnhs ||
+      product.danhSachAnh ||
+      product.images ||
+      null
+
+  // Trường hợp backend trả mảng ảnh
+  if (Array.isArray(image)) {
+    image = image[0]
+  }
+
+  // Trường hợp mỗi ảnh là một object
+  if (image && typeof image === 'object') {
+    image =
+        image.url ||
+        image.Url ||
+        image.imageUrl ||
+        image.hinhAnh ||
+        image.hinhAnhUrl ||
+        image.duongDan ||
+        null
+  }
+
+  if (typeof image !== 'string' || image.trim() === '') {
+    return DEFAULT_PRODUCT_IMAGE
+  }
+
+  image = image.trim()
+
+  if (
+      image.startsWith('http://') ||
+      image.startsWith('https://') ||
+      image.startsWith('blob:') ||
+      image.startsWith('data:')
+  ) {
+    return image
+  }
+
+  if (image.startsWith('/')) {
+    return image
+  }
+
   return `/images/${image}`
 }
 
+const handleImageError = (event) => {
+  const img = event.currentTarget
+
+  // Ngăn fallback lỗi chạy lặp gây chớp
+  if (img.dataset.fallbackApplied === 'true') {
+    return
+  }
+
+  img.dataset.fallbackApplied = 'true'
+  img.src = DEFAULT_PRODUCT_IMAGE
+}
+
+function searchProducts() {
+  queueLoad(true)
+}
 async function loadFilterOptions() {
   const options = await getFilterOptions()
 
@@ -385,6 +470,10 @@ function resetFilter() {
   ignoreAutoWatch = false
   clearTimeout(reloadTimer)
   loadProducts()
+}
+
+function goToProductDetail(productId) {
+  router.push(`/san-pham/${productId}`)
 }
 
 watch(keyword, () => queueLoad(true))

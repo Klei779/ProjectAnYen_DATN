@@ -27,7 +27,9 @@
             <th>Liên hệ</th>
             <th>Vai trò</th>
             <th>Trạng thái</th>
+            <th>Cập nhật</th>
             <th class="text-end pe-4">Hành động</th>
+
           </tr>
           </thead>
           <tbody>
@@ -40,7 +42,7 @@
               <div class="small text-muted">{{ nv.soDienThoai }}</div>
             </td>
             <td>
-              <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1.5">{{nhanvienhienthi(nv.vaiTro)}}</span>
+              <span class="badge bg-light text-dark border border-secondary-subtle px-2 py-1.5">{{nv.tenVaiTro}}</span>
             </td>
             <td>
                 <span
@@ -198,14 +200,8 @@ async function fetchDanhSachNhanVien() {
   }
 }
 
-const nhanvienhienthi = (vaiTro) => {
-  const role= {
-    1:"Quản lý",
-    2:"Nhân viên",
-    3:"Hotline",
-  };
-  return role[Number(vaiTro)] ||"không xác định";
-};
+
+
 // 3. CHỈNH SỬA: Gọi hàm fetch khi component vừa được render
 onMounted(() => {
   fetchDanhSachNhanVien();

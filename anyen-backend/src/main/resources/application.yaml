@@ -1,5 +1,10 @@
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
 
 spring:
   datasource:
@@ -9,10 +14,10 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   mail:
-    host: smtp.gmail.com
-    port: 587
-    username: intellijjava6@gmail.com
-    password: eysi edpk tpat wopl
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -21,11 +26,12 @@ spring:
             enable: true
 
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: none
       naming:
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
@@ -34,7 +40,20 @@ spring:
     init:
       mode: never
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 cloudinary:
-  cloud-name: dnj7xhvs1
-  api-key: 388776263683842
-  api-secret: juvH1fN2TZwjFMTXdxewks7MVmE
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+
+
+logging:
+  level:
+    vn.anyen.config.JwtAuthenticationFilter: ${JWT_LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
+    org.hibernate.orm.jdbc.bind: ${HIBERNATE_BIND_LOG_LEVEL:WARN}

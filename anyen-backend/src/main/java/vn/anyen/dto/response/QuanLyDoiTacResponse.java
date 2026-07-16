@@ -21,4 +21,5 @@ public class QuanLyDoiTacResponse {
     private String diaChi;
     private Integer trangThai;
     private LocalDateTime createdAt;
+    private Boolean coTheXoa;
 }

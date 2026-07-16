@@ -35,7 +35,7 @@
             class="status-badge"
             :class="{ inactive: account?.tenTrangThai !== 'Đang hoạt động' }"
         >
-          {{ account?.tenTrangThai || "Unknow" }}
+          {{ account?.tenTrangThai || "Nghi việc" }}
         </span>
 
         <div class="profile-summary">

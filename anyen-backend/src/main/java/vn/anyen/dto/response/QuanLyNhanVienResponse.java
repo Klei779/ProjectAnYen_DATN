@@ -19,4 +19,5 @@ public class QuanLyNhanVienResponse {
     private String email;
     private String diaChi;
     private String soDienThoai;
+    private String tenVaiTro;
 }

@@ -33,6 +33,13 @@ public class ComBo {
     @Column(name = "HinhAnh")
     private String hinhAnh;
 
+    @Column(name = "MaDoiTac")
+    private Integer maDoiTac;
+
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
+
+    public static final Integer TT_AN = 0;
+    public static final Integer TT_HOAT_DONG = 1;
+    public static final Integer TT_NGUNG_KINH_DOANH = 2;
 }

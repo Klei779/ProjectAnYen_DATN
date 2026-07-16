@@ -1,11 +1,6 @@
   <template>
   <div class="notification-page">
     <section class="notification-left">
-      <div class="page-title">
-        <h2>Thông báo</h2>
-        <p>Cập nhật các thông báo mới nhất từ hệ thống</p>
-      </div>
-
       <div class="tabs">
         <button
             v-for="tab in tabs"
@@ -205,10 +200,6 @@
           <i class="fa-solid fa-circle-info"></i>
           Thông báo này đã được xử lý.
         </p>
-        <p class="hint">
-          <i class="fa-solid fa-lock"></i>
-          Nếu bạn chấp nhận đơn hàng, hệ thống sẽ chuyển đơn sang Quản lý đơn hàng.
-        </p>
       </aside>
 
       <!-- FORM HỆ THỐNG -->
@@ -294,7 +285,7 @@ import {
   chapNhanThongBao,
   tuChoiThongBao
 } from "../../services/thongBaoDoiTacService.js";
-
+import "../../assets/styles/doitac/QLThongBao/TrangThongBaoDT.css";
 const fallbackImage =
     "data:image/svg+xml;utf8," +
     encodeURIComponent(`
@@ -525,4 +516,3 @@ const handleImageError = (event) => {
   event.target.src = fallbackImage;
 };
 </script>
-<style scoped src="../../assets/styles/doitac/QLThongBao/TrangThongBaoDT.css"></style>

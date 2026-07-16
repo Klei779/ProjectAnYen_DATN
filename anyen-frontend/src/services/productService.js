@@ -38,6 +38,11 @@ export async function getProducts(params = {}) {
   };
 }
 
+export async function getProductById(id) {
+  const response = await api.get(`${API_URL}/${id}`);
+  return response.data;
+}
+
 export async function getFilterOptions() {
   const response = await api.get(`${API_URL}/bo-loc`);
   const data = response.data || {};

@@ -11,12 +11,14 @@ import TrangThongKeDoanhThuNV from "../pages/nhanvien/TrangThongKeDoanhThuNV.vue
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
 import TrangSanPham from "../pages/website/TrangSanPham.vue";
+import ChiTietSanPham from "../pages/website/ChiTietSanPham.vue";
 import TrangDichVu from "../pages/website/TrangDichVu.vue";
 import DichVuChiTiet from "../pages/website/TrangDichVuChiTiet.vue";
 import TrangGioiThieu from "../pages/website/TrangGioiThieu.vue";
 import TrangLienHe from "../pages/website/TrangLienHe.vue";
 import XacNhanDoiTac from "../pages/website/XacNhanDoiTac.vue";
-
+import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
+import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
@@ -26,6 +28,8 @@ import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
 import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 import TrangTaoSanPham from "../pages/doitac/TrangTaoSanPham.vue";
 import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
+import TaoCombo from "../pages/doitac/TaoCombo.vue";
+import TrangQLCombo from "../pages/doitac/TrangQLCombo.vue";
 
 // Nhân viên
 import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
@@ -42,6 +46,7 @@ import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
+import ThongBaoHotline from "../pages/hotline/ThongBaoHotline.vue";
 
 const routes = [
     // WEBSITE
@@ -56,6 +61,11 @@ const routes = [
             {
                 path: "san-pham",
                 component: TrangSanPham,
+            },
+            {
+                path: "san-pham/:id",
+                name: "ChiTietSanPham",
+                component: ChiTietSanPham,
             },
             {
                 path: "dich-vu",
@@ -73,6 +83,17 @@ const routes = [
             {
                 path: "lien-he",
                 component: TrangLienHe,
+            },
+            {
+                path:"/tin-tuc",
+                name:"TinTuc",
+                component:TrangTinTuc
+            },
+
+            {
+                path:"/tin-tuc/:id",
+                name:"ChiTietTinTuc",
+                component:ChiTietTinTuc
             },
             {
                 path: "xac-nhan-doi-tac",
@@ -109,6 +130,14 @@ const routes = [
             {
                 path: "quan-ly-san-pham",
                 component: TrangQLSanPham,
+            },
+            {
+                path: "quan-ly-combo",
+                component: TrangQLCombo,
+            },
+            {
+                path: "tao-combo",
+                component: TaoCombo,
             },
             {
                 path: "tao-san-pham",
@@ -261,6 +290,14 @@ const routes = [
             {
                 path: "quan-ly-don-hang",
                 component: TrangQLDonHangHL,
+            },
+            {
+                path: "thong-bao",
+                component: ThongBaoHotline,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinNV,
             }
         ],
     },
@@ -271,7 +308,7 @@ const router = createRouter({
     routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to) => {
     const token = localStorage.getItem("token");
 
     const requiresAuth = to.matched.some(
@@ -284,14 +321,12 @@ router.beforeEach((to, from, next) => {
 
     // Route không cần đăng nhập thì cho qua
     if (!requiresAuth) {
-        next();
-        return;
+        return true;
     }
 
     // Route cần đăng nhập nhưng không có token
     if (!token) {
-        next("/");
-        return;
+        return "/";
     }
 
     let roleFromToken = null;
@@ -311,8 +346,7 @@ router.beforeEach((to, from, next) => {
             localStorage.removeItem("tenDangNhap");
             localStorage.removeItem("id");
 
-            next("/");
-            return;
+            return "/";
         }
 
     } catch (error) {
@@ -322,26 +356,24 @@ router.beforeEach((to, from, next) => {
         localStorage.removeItem("tenDangNhap");
         localStorage.removeItem("id");
 
-        next("/");
-        return;
+        return "/";
     }
 
     // Có token nhưng sai quyền
     if (requiredRole && roleFromToken !== requiredRole) {
         if (roleFromToken === "NHANVIEN") {
-            next("/nhan-vien/tong-quan");
+            return "/nhan-vien/tong-quan";
         } else if (roleFromToken === "DOITAC") {
-            next("/doi-tac/tong-quan");
+            return "/doi-tac/tong-quan";
         } else if (roleFromToken === "ADMIN") {
-            next("/admin/tong-quan");
+            return "/admin/tong-quan";
         } else if (roleFromToken === "HOTLINE") {
-            next("/hotline/quan-ly-cong-viec");
+            return "/hotline/quan-ly-cong-viec";
         } else {
-            next("/");
+            return "/";
         }
-        return;
     }
 
-    next();
+    return true;
 });
 export default router;

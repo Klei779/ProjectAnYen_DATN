@@ -88,7 +88,14 @@ public class HopDongService {
                         )
                 );
 
-        if ("Đã hủy".equalsIgnoreCase(hopDong.getTrangThai())) {
+        if (laHopDongChuaKy(hopDong.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Hợp đồng chưa ký không cần hủy. Bạn có thể xóa hợp đồng"
+            );
+        }
+
+        if (laHopDongDaHuy(hopDong.getTrangThai())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Hợp đồng này đã bị hủy trước đó"
@@ -101,7 +108,6 @@ public class HopDongService {
 
         return toResponse(saved);
     }
-
     public List<DonHangHopDongOptionResponse> getDonHangOptions() {
         return donHangRepository
                 .findAll(Sort.by(Sort.Direction.DESC, "maDonHang"))
@@ -552,5 +558,51 @@ public class HopDongService {
                 HttpStatus.BAD_REQUEST,
                 "Ngày giờ không hợp lệ: " + value
         );
+    }
+    private boolean laHopDongChuaKy(String trangThai) {
+        if (trangThai == null) {
+            return false;
+        }
+
+        String value = trangThai.trim();
+
+        return "Chờ ký".equalsIgnoreCase(value)
+                || "Mới tạo".equalsIgnoreCase(value)
+                || "Chưa ký".equalsIgnoreCase(value);
+    }
+
+    private boolean laHopDongDaHuy(String trangThai) {
+        return trangThai != null
+                && "Đã hủy".equalsIgnoreCase(trangThai.trim());
+    }
+
+    /**
+     * Chỉ xóa hợp đồng khi chưa ký.
+     * Không xóa đơn hàng, hóa đơn hoặc công nợ.
+     */
+    @Transactional
+    public void xoaHopDongChuaKy(Integer id) {
+        HopDong hopDong = hopDongRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Không tìm thấy hợp đồng"
+                        )
+                );
+
+        if (!laHopDongChuaKy(hopDong.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Hợp đồng đã ký không thể xóa. Bạn chỉ có thể hủy hợp đồng"
+            );
+        }
+
+        hDongCTRepository.deleteAll(
+                hDongCTRepository.findByHopDong_MaHopDong(
+                        hopDong.getMaHopDong()
+                )
+        );
+
+        hopDongRepository.delete(hopDong);
     }
 }

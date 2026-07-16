@@ -28,15 +28,12 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class SanPhamService {
 
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
     private final DoiTacThongBaoService doiTacThongBaoService;
 
-
-    @Transactional(readOnly = true)
     public SanPhamPageResponse getSanPham(
             String keyword,
             String loai,
@@ -57,11 +54,12 @@ public class SanPhamService {
         Specification<SanPham> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Chỉ hiển thị sản phẩm đang bán lên trang chủ công khai
+            // Chỉ load sản phẩm đã được duyệt (TRANG_THAI_DANG_BAN = 1)
             predicates.add(cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_DANG_BAN));
 
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";
+
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("tenSanPham")), kw),
                         cb.like(cb.lower(root.get("loai")), kw),
@@ -72,27 +70,43 @@ public class SanPhamService {
             }
 
             if (loai != null && !loai.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("loai")), loai.trim().toLowerCase()));
+                predicates.add(
+                        cb.equal(
+                                cb.lower(root.get("loai")),
+                                loai.trim().toLowerCase()
+                        )
+                );
             }
 
-            if (vatLieu != null && !vatLieu.isBlank()) {
-                predicates.add(buildMultiLikePredicate(root.get("vatLieu"), vatLieu, cb));
+            List<String> vatLieuList = splitParam(vatLieu);
+            if (!vatLieuList.isEmpty()) {
+                predicates.add(cb.lower(root.get("vatLieu")).in(vatLieuList));
             }
 
-            if (tonGiao != null && !tonGiao.isBlank()) {
-                predicates.add(buildMultiLikePredicate(root.get("tonGiao"), tonGiao, cb));
+            List<String> tonGiaoList = splitParam(tonGiao);
+            if (!tonGiaoList.isEmpty()) {
+                predicates.add(cb.lower(root.get("tonGiao")).in(tonGiaoList));
             }
 
             if (mauSac != null && !mauSac.isBlank()) {
-                predicates.add(cb.equal(cb.lower(root.get("mauSac")), mauSac.trim().toLowerCase()));
+                predicates.add(
+                        cb.equal(
+                                cb.lower(root.get("mauSac")),
+                                mauSac.trim().toLowerCase()
+                        )
+                );
             }
 
             if (minPrice != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice));
+                predicates.add(
+                        cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice)
+                );
             }
 
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice));
+                predicates.add(
+                        cb.lessThanOrEqualTo(root.get("giaTien"), maxPrice)
+                );
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -111,7 +125,6 @@ public class SanPhamService {
                 .build();
     }
 
-    @Transactional(readOnly = true)
     public SanPhamFilterResponse getBoLocSanPham() {
         return SanPhamFilterResponse.builder()
                 .categories(mapOptions(sanPhamRepository.countVisibleByLoai()))
@@ -119,6 +132,12 @@ public class SanPhamService {
                 .religions(mapOptions(sanPhamRepository.countVisibleByTonGiao()))
                 .colors(mapOptions(sanPhamRepository.countVisibleByMauSac()))
                 .build();
+    }
+
+    public SanPhamResponse getSanPhamById(Integer id) {
+        SanPham sp = sanPhamRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
+        return mapToResponse(sp);
     }
 
     public SanPhamResponse updateSanPham(Integer id, SanPhamRequest request) {
@@ -145,6 +164,7 @@ public class SanPhamService {
         sp.setCnsx(request.getCnsx());
 
         SanPham saved = sanPhamRepository.save(sp);
+
         return mapToResponse(saved);
     }
 
@@ -153,7 +173,9 @@ public class SanPhamService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy sản phẩm"));
 
         sp.setTrangThai(SanPham.TRANG_THAI_AN);
+
         SanPham saved = sanPhamRepository.save(sp);
+
         return mapToResponse(saved);
     }
 
@@ -216,9 +238,13 @@ public class SanPhamService {
         // 4. Trả về Response cho Frontend
         return mapToResponse(saved);
     }
-    @Transactional(readOnly = true)
+
+
+
+
     public List<SanPhamTaoDonHangResponse> getSanPhamTaoDonHangOptions() {
-        List<SanPham> sanPhams = sanPhamRepository.findAllVisibleForTaoDonHang();
+        List<SanPham> sanPhams =
+                sanPhamRepository.findAllVisibleForTaoDonHang();
 
         Map<Integer, DoiTac> doiTacMap = doiTacRepository.findAll()
                 .stream()
@@ -229,8 +255,7 @@ public class SanPhamService {
 
         return sanPhams.stream()
                 .map(sp -> {
-                    // Do maDoiTac là Integer nên lấy trực tiếp không sợ lỗi ép kiểu
-                    DoiTac doiTac = sp.getMaDoiTac() != null ? doiTacMap.get(sp.getMaDoiTac()) : null;
+                    DoiTac doiTac = doiTacMap.get(sp.getMaDoiTac());
 
                     return SanPhamTaoDonHangResponse.builder()
                             .maSanPham(sp.getMaSanPham())
@@ -239,26 +264,16 @@ public class SanPhamService {
                             .giaTien(sp.getGiaTien())
                             .tonKho(sp.getSoLuong() == null ? 0 : sp.getSoLuong())
                             .maDoiTac(sp.getMaDoiTac())
-                            .tenDoiTac(doiTac != null ? doiTac.getTenDoiTac() : "Không rõ đối tác")
+                            .tenDoiTac(
+                                    doiTac != null
+                                            ? doiTac.getTenDoiTac()
+                                            : "Không rõ đối tác"
+                            )
                             .hinhAnh(sp.getHinhAnh())
                             .trangThai(sp.getTrangThai())
                             .build();
                 })
                 .toList();
-    }
-
-    private Predicate buildMultiLikePredicate(
-            jakarta.persistence.criteria.Path<String> path,
-            String rawValue,
-            jakarta.persistence.criteria.CriteriaBuilder cb
-    ) {
-        List<Predicate> parts = new ArrayList<>();
-        for (String item : rawValue.split(",")) {
-            if (item != null && !item.isBlank()) {
-                parts.add(cb.like(cb.lower(path), "%" + item.trim().toLowerCase() + "%"));
-            }
-        }
-        return cb.or(parts.toArray(new Predicate[0]));
     }
 
     private List<SanPhamFilterOptionResponse> mapOptions(List<Object[]> rows) {
@@ -276,22 +291,36 @@ public class SanPhamService {
                 .toList();
     }
 
+    private List<String> splitParam(String value) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+
+        return Arrays.stream(value.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .map(String::toLowerCase)
+                .toList();
+    }
+
     private Sort buildSort(String sortBy) {
         if ("oldest".equals(sortBy)) {
             return Sort.by(Sort.Direction.ASC, "maSanPham");
         }
+
         if ("price_asc".equals(sortBy)) {
             return Sort.by(Sort.Direction.ASC, "giaTien");
         }
+
         if ("price_desc".equals(sortBy)) {
             return Sort.by(Sort.Direction.DESC, "giaTien");
         }
+
         return Sort.by(Sort.Direction.DESC, "maSanPham");
     }
 
     private SanPhamResponse mapToResponse(SanPham sp) {
         String tenDT = (sp.getMaDoiTac() != null) ? sanPhamRepository.findTenDoiTacByMaDoiTac(sp.getMaDoiTac()) : "Không rõ đối tác";
-
         return SanPhamResponse.builder()
                 .id(sp.getMaSanPham())
                 .name(sp.getTenSanPham())
@@ -303,10 +332,23 @@ public class SanPhamService {
                 .vatLieu(sp.getVatLieu())
                 .tonGiao(sp.getTonGiao())
                 .mauSac(sp.getMauSac())
-                .soLuong(sp.getSoLuong()) // Đã thêm để hiển thị lên Vue table
-                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM, sp.getTrangThai()))
                 .trangThai(sp.getTrangThai())
+                .code("SP" + String.format("%05d", sp.getMaSanPham()))
+                .quyCach(sp.getQuyCach())
+                .kichThuoc(sp.getKichThuoc())
+                .trongLuong(sp.getTrongLuong())
+                .xuatXu(sp.getXuatXu())
+                .nhaCungCap(sp.getMaDoiTac() != null ? "Đối tác #" + sp.getMaDoiTac() : "N/A")
+                .nhaSanXuat(sp.getCnsx())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM, sp.getTrangThai()))
                 .tenDoiTac(tenDT)
+                .soLuong(sp.getSoLuong())
+                .ngayCapNhat("N/A")
+                .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null 
+                    ? sp.getGiaTien().subtract(sp.getKhuyenMai()) 
+                    : null)
+                .moTa(sp.getGhiChu())
+                .huongDanBaoQuan("Sản phẩm nên được bảo quản ở nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp và độ ẩm cao.")
                 .build();
     }
 }

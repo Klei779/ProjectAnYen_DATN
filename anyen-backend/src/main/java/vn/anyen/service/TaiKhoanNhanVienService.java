@@ -60,6 +60,8 @@ public class TaiKhoanNhanVienService {
                         AppLabels.TRANG_THAI_NHAN_VIEN,
                         nv.getTrangThai()))
                 .trangThai(nv.getTrangThai())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_NHAN_VIEN,nv.getTrangThai()))
+                .tenVaiTro(AppLabels.getLabel(AppLabels.TEN_VAI_TRO,nv.getVaiTro()))
                 .build();
     }
 

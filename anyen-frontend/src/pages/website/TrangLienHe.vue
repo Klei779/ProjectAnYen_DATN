@@ -45,7 +45,7 @@
 
             <div>
               <h6>Liên hệ 24/7</h6>
-              <h5>0123 456 789</h5>
+              <h5>039 216 8473</h5>
               <small>Luôn sẵn sàng phục vụ mọi lúc mọi nơi</small>
             </div>
           </div>
@@ -57,7 +57,7 @@
 
             <div>
               <h6>Email</h6>
-              <h5>anyen@gmail.com</h5>
+              <h5>anyenservice@gmail.com</h5>
               <small>Phản hồi trong vòng 24 giờ</small>
             </div>
           </div>
@@ -70,7 +70,7 @@
             <div>
               <h6>Địa chỉ</h6>
               <h5>
-                123 Đường An Yên, TP.HCM
+                123 Đường Tô Ký,Trung Mỹ Tây, TP.HCM
               </h5>
               <small>Đón tiếp quý khách 24/7</small>
             </div>

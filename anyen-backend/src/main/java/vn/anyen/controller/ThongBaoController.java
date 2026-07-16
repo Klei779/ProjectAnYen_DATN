@@ -3,10 +3,17 @@ package vn.anyen.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vn.anyen.dto.request.GiaoCongViecRequest;
 import vn.anyen.dto.request.TuChoiRequest;
 import vn.anyen.dto.response.ThongBaoResponse;
+import vn.anyen.dto.response.GiaoCongViecResponse;
 import vn.anyen.service.JwtService;
 import vn.anyen.service.ThongBaoService;
+import vn.anyen.service.HotlineCongViecService;
+import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import vn.anyen.dto.request.TuChoiHoaDonRequest;
+import vn.anyen.service.HoaDonService;
 
 import java.util.HashMap;
 import java.util.List;
@@ -19,6 +26,8 @@ public class ThongBaoController {
 
     private final ThongBaoService thongBaoService;
     private final JwtService jwtService;
+    private final HoaDonService hoaDonService;
+    private final HotlineCongViecService hotlineCongViecService;
 
     /**
      * Lấy userId từ JWT token trong header Authorization
@@ -118,4 +127,81 @@ public class ThongBaoController {
         response.put("success", true);
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{maThongBao}/chap-nhan-huy-hoa-don")
+    public Map<String, Object> chapNhanHuyHoaDon(
+            @PathVariable Integer maThongBao,
+            Authentication authentication
+    ) {
+        return hoaDonService.chapNhanHuy(
+                maThongBao,
+                authentication.getName()
+        );
+    }
+
+    @PutMapping("/{maThongBao}/tu-choi-huy-hoa-don")
+    public Map<String, Object> tuChoiHuyHoaDon(
+            @PathVariable Integer maThongBao,
+            @Valid @RequestBody TuChoiHoaDonRequest request,
+            Authentication authentication
+    ) {
+        return hoaDonService.tuChoiHuy(
+                maThongBao,
+                authentication.getName(),
+                request
+        );
+    }
+
+    /**
+     * Test endpoint
+     */
+    @GetMapping("/test")
+    public ResponseEntity<?> test() {
+        System.out.println("=== TEST ENDPOINT CALLED ===");
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Test endpoint working");
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Giao công việc cho nhân viên (Hotline gửi)
+     */
+    @PostMapping("/giao-cong-viec")
+    public ResponseEntity<GiaoCongViecResponse> giaoCongViec(
+            Authentication authentication,
+            @Valid @RequestBody GiaoCongViecRequest request) {
+
+        // Giữ endpoint cũ để frontend cũ vẫn hoạt động, nhưng dùng chung một service
+        // với /api/nhan-vien/truc-tuyen/cong-viec để không tạo trùng khách hàng/thông báo.
+        return ResponseEntity.ok(hotlineCongViecService.giaoCongViec(authentication, request));
+    }
+
+    /**
+     * Lấy danh sách thông báo của hotline (chỉ các thông báo hệ thống, từ chối, phản hồi công việc)
+     */
+    @GetMapping("/hotline")
+    public List<ThongBaoResponse> getHotlineNotifications(
+            @RequestHeader("Authorization") String authHeader) {
+
+        Integer userId = getUserIdFromHeader(authHeader);
+        return thongBaoService.getThongBaoHotline(userId);
+    }
+
+    /**
+     * Đánh dấu tất cả đã đọc cho hotline
+     */
+    @PutMapping("/hotline/da-doc-tat-ca")
+    public ResponseEntity<?> markAllAsReadHotline(
+            @RequestHeader("Authorization") String authHeader) {
+
+        Integer userId = getUserIdFromHeader(authHeader);
+        thongBaoService.danhDauTatCaDaDoc(userId);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        return ResponseEntity.ok(response);
+    }
+
+
 }

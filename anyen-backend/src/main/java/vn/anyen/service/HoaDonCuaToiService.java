@@ -5,14 +5,20 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import vn.anyen.dto.response.HoaDonCuaToiResponse;
+import vn.anyen.entity.ChiTietDonHang;
+import vn.anyen.entity.DonHang;
+import vn.anyen.entity.HoaDon;
 import vn.anyen.entity.NhanVien;
+import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.HoaDonCuaToiRepository;
+import vn.anyen.repository.HoaDonRepository;
 import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.repository.projection.HoaDonCuaToiProjection;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -21,6 +27,9 @@ public class HoaDonCuaToiService {
 
     private final HoaDonCuaToiRepository hoaDonCuaToiRepository;
     private final NhanVienRepository nhanVienRepository;
+
+    private final HoaDonRepository hoaDonRepository;
+    private final ChiTietDonHangRepository chiTietDonHangRepository;
 
     public Map<String, Object> getHoaDonCuaToi(
             String tenDangNhap,
@@ -104,5 +113,113 @@ public class HoaDonCuaToiService {
         int vaiTro = nhanVien.getVaiTro();
 
         return vaiTro ==1;
+    }
+    public Map<String,Object> getChiTietHoaDon(Integer maHoaDon) {
+
+
+        HoaDon hoaDon = hoaDonRepository
+                .findById(maHoaDon)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Không tìm thấy hóa đơn"
+                        )
+                );
+
+
+        DonHang donHang = hoaDon.getDonHang();
+
+
+        List<ChiTietDonHang> chiTiet =
+                chiTietDonHangRepository
+                        .findByDonHang_MaDonHang(
+                                donHang.getMaDonHang()
+                        );
+
+
+        Map<String,Object> response = new HashMap<>();
+
+
+        response.put(
+                "maHoaDon",
+                formatCode(
+                        "HD",
+                        hoaDon.getMaHoaDon()
+                )
+        );
+
+
+        response.put(
+                "maDonHang",
+                formatCode(
+                        "DH",
+                        donHang.getMaDonHang()
+                )
+        );
+
+
+        response.put(
+                "ngayIn",
+                hoaDon.getNgayIn()
+        );
+
+
+        response.put(
+                "tongTien",
+                hoaDon.getTongTien()
+        );
+
+
+        response.put(
+                "trangThai",
+                hoaDon.getTrangThai()
+        );
+
+
+        response.put(
+                "khachHang",
+                Map.of(
+                        "ten",
+                        donHang.getKhachHang().getTenKhachHang(),
+
+                        "soDienThoai",
+                        donHang.getKhachHang().getSoDienThoai(),
+
+                        "email",
+                        donHang.getKhachHang().getEmail(),
+
+                        "diaChi",
+                        donHang.getKhachHang().getDiaChi()
+                )
+        );
+
+
+        response.put(
+                "nhanVien",
+                donHang.getNhanVien()
+                        .getHoTen()
+        );
+
+
+        response.put(
+                "chiTiet",
+                chiTiet.stream()
+                        .map(ct -> Map.of(
+
+                                "tenSanPham",
+                                ct.getSanPham()
+                                        .getTenSanPham(),
+
+                                "soLuong",
+                                ct.getSoLuong(),
+
+                                "giaTien",
+                                ct.getGiaTien()
+
+                        ))
+                        .toList()
+        );
+
+
+        return response;
     }
 }

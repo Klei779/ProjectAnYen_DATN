@@ -39,6 +39,7 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/geocoding/**").permitAll()
 
                         // CỰC QUAN TRỌNG: cho phép preflight OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
@@ -50,6 +51,7 @@ public class SecurityConfig {
 
                         // Public website
                         .requestMatchers(
+                                "/images/**",
                                 "/api/gioi-thieu",
                                 "/api/gioi-thieu/**",
                                 "/api/san-pham",
@@ -59,7 +61,9 @@ public class SecurityConfig {
                                 "/api/lien-he",
                                 "/api/lien-he/**",
                                 "/api/khach-hang",
-                                "/api/khach-hang/**"
+                                "/api/khach-hang/**",
+                                "/api/tin-tuc",
+                                "/api/tin-tuc/**"
                         )
                         .permitAll()
 
@@ -84,18 +88,34 @@ public class SecurityConfig {
                         )
                         .hasAuthority("ROLE_ADMIN")
 
+                        // Hotline được tìm nhân viên gần nhất
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/nhan-vien/don-hang/de-xuat-nhan-vien"
+                        )
+                        .hasAnyRole("HOTLINE", "NHANVIEN", "ADMIN")
+
+                        // Hotline được giao việc
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/nhan-vien/thong-bao/giao-cong-viec"
+                        )
+                        .hasAnyRole("HOTLINE", "ADMIN")
+
+                        // Hotline được xem thông báo
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/nhan-vien/thong-bao"
+                        )
+                        .hasAnyRole("NHANVIEN", "HOTLINE", "ADMIN")
+
                         // API đối tác
                         .requestMatchers("/api/doi-tac/**")
                         .hasAuthority("ROLE_DOITAC")
 
                         // API nhân viên còn lại
                         .requestMatchers("/api/nhan-vien/**")
-                        .hasAnyAuthority(
-                                "ROLE_ADMIN",
-                                "ROLE_HOTLINE",
-                                "ROLE_NHANVIEN"
-                        )
-
+                        .authenticated()
                         .anyRequest()
                         .authenticated()
                 )

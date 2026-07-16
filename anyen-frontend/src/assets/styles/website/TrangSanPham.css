@@ -854,6 +854,20 @@
    RESPONSIVE
    ============================================= */
 
+/* IMAGE ERROR*/
+
+.product-image {
+    overflow: hidden;
+    background: #f4f0eb;
+}
+
+.product-image img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+}
+
 /* HERO */
 .hero-section{
     min-height: clamp(250px, 35vw, 420px);

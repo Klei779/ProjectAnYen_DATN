@@ -40,13 +40,14 @@ public class DoiTacThongBaoService {
     private final ThongBaoService thongBaoService;
     private final SanPhamRepository sanPhamRepository;
 
-    // Loai dùng Integer để khớp TINYINT trong DB
-    private static final Integer LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
-    private static final Integer LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
+    // Loai dùng String để khớp VARCHAR trong DB
+    private static final String LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
+    private static final String LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
 
-    private static final Integer CHO_XAC_NHAN = 0;
-    private static final Integer DA_CHAP_NHAN = 1;
-    private static final Integer DA_TU_CHOI = 2;
+    // TrangThaiThongBao dùng String để khớp VARCHAR trong DB
+    private static final String CHO_XAC_NHAN = ThongBaoDoiTac.TRANG_THAI_CHO_XAC_NHAN;
+    private static final String DA_CHAP_NHAN = ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN;
+    private static final String DA_TU_CHOI = ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI;
 
     // Pattern để parse maSanPham từ NoiDung: [MASP:123]
     private static final Pattern MASP_PATTERN = Pattern.compile("\\[MASP:(\\d+)\\]");
@@ -651,33 +652,64 @@ public class DoiTacThongBaoService {
                 .build();
     }
     public void taoThongBaoTuChoiSanPham(SanPham sanPham, String lyDoTuChoi) {
+
         if (sanPham == null || sanPham.getMaDoiTac() == null) {
+
             return;
+
         }
 
+
+
         // Tìm đối tác sở hữu sản phẩm
+
         DoiTac doiTac = doiTacRepository.findById(sanPham.getMaDoiTac()).orElse(null);
+
         if (doiTac == null) {
+
             return;
+
         }
+
+
 
         String tieuDe = "Sản phẩm [" + sanPham.getTenSanPham() + "] bị từ chối duyệt";
 
+
+
         // Bắt buộc phải có format [MASP:ID] ở cuối để hàm mapToSanPhamThongBaoResponse parse được ảnh/thông tin sản phẩm
+
         String noiDung = "Lý do: " + lyDoTuChoi + " [MASP:" + sanPham.getMaSanPham() + "]";
 
+
+
         ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
+
                 .doiTac(doiTac)
+
                 .donHang(null) // Từ chối sản phẩm nên không có đơn hàng
+
                 .loai(ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM) // Loại = 1 (Duyệt sản phẩm)
+
                 .tieuDe(tieuDe)
+
                 .noiDung(noiDung)
+
                 .trangThaiThongBao(DA_TU_CHOI) // Trạng thái thông báo chuyển thẳng sang Đã từ chối (2)
+
                 .lyDoTuChoi(lyDoTuChoi)
+
                 .daDoc(false)
+
                 .thoiGianTao(LocalDateTime.now())
+
                 .build();
 
+
+
         thongBaoRepository.save(thongBao);
+
     }
+
+
 }

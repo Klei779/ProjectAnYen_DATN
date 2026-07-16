@@ -66,7 +66,7 @@
 
               <div
                   class="card-buttons"
-                  v-if="item.loaiThongBao === 'CONG_VIEC' && (item.trangThai === 0 || item.trangThai === 1)"
+                  v-if="item.loaiThongBao === 'CONG_VIEC' && canProcessNotification(item)"
               >
                 <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
                   Từ chối
@@ -79,7 +79,7 @@
 
               <div
                   class="card-buttons"
-                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && item.trangThai === 4"
+                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && canProcessNotification(item)"
               >
                 <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
                   Từ chối
@@ -93,7 +93,7 @@
                   class="card-buttons processed"
                   v-else-if="item.loaiThongBao === 'CONG_VIEC' || item.loaiThongBao === 'DUYET_SAN_PHAM'"
               >
-                <span class="text-success fw-bold" v-if="item.trangThai === 2"><i class="fa-solid fa-check"></i> Đã nhận</span>
+                <span class="text-success fw-bold" v-if="item.trangThai === 2"><i class="fa-solid fa-check"></i> {{ item.loaiThongBao === 'DUYET_SAN_PHAM' ? 'Đã duyệt' : 'Đã nhận' }}</span>
                 <span class="text-danger fw-bold" v-if="item.trangThai === 3"><i class="fa-solid fa-xmark"></i> Đã từ chối</span>
               </div>
             </div>
@@ -111,7 +111,7 @@
     >
       <div class="detail-sidebar" :class="{'slide-in': selectedNotification}">
         <div class="sidebar-header">
-          <h3>{{ selectedNotification.loaiThongBao === 'HE_THONG' ? 'Thông báo hệ thống' : 'Chi tiết khách hàng' }}</h3>
+          <h3>{{ detailTitle(selectedNotification) }}</h3>
           <button class="close-btn" @click="selectedNotification = null">
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -186,6 +186,34 @@
           </p>
         </div>
 
+        <!-- SIDEBAR BODY CHO DUYỆT SẢN PHẨM -->
+        <div class="sidebar-body" v-else-if="selectedNotification.loaiThongBao === 'DUYET_SAN_PHAM'">
+          <div class="system-noti-wrapper">
+            <div class="system-icon-large"><i class="fa-solid fa-box-open text-primary"></i></div>
+            <h4 class="text-center mt-3">{{ selectedNotification.tieuDe }}</h4>
+            <p class="text-center text-muted">Mã sản phẩm: #SP{{ selectedNotification.maSanPham || '—' }}</p>
+            <div class="system-content-box mt-4"><p>{{ selectedNotification.noiDung }}</p></div>
+            <div class="info-table-clean mt-4">
+              <div class="info-row">
+                <span class="label">Trạng thái</span>
+                <span class="value">
+                  <span v-if="canProcessNotification(selectedNotification)" class="status-pill warning">Chờ duyệt</span>
+                  <span v-else-if="selectedNotification.trangThai === 2" class="status-pill success">Đã duyệt</span>
+                  <span v-else-if="selectedNotification.trangThai === 3" class="status-pill error">Đã từ chối</span>
+                </span>
+              </div>
+              <div v-if="selectedNotification.lyDoTuChoi" class="info-row">
+                <span class="label">Lý do từ chối</span>
+                <span class="value text-danger">{{ selectedNotification.lyDoTuChoi }}</span>
+              </div>
+            </div>
+            <div class="sidebar-actions" v-if="canProcessNotification(selectedNotification)">
+              <button class="btn-outline-modal" @click="openRejectPopup(selectedNotification)" :disabled="actionLoading">Từ chối</button>
+              <button class="btn-primary-modal" @click="acceptCustomer(selectedNotification)" :disabled="actionLoading">Duyệt sản phẩm</button>
+            </div>
+          </div>
+        </div>
+
         <!-- SIDEBAR BODY CHO HỆ THỐNG -->
         <div class="sidebar-body" v-else>
           <div class="system-noti-wrapper">
@@ -211,14 +239,14 @@
     >
       <div class="custom-modal modal-small">
         <div class="modal-header">
-          <h3>Từ chối nhận việc</h3>
+          <h3>{{ itemToReject?.loaiThongBao === "DUYET_SAN_PHAM" ? "Từ chối sản phẩm" : "Từ chối nhận việc" }}</h3>
           <button class="close-btn" @click="closeRejectPopup">
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
 
         <div class="modal-body">
-          <p class="mb-3 text-muted">Vui lòng nhập lý do từ chối để chuyển lại cho bộ phận Hotline xử lý.</p>
+          <p class="mb-3 text-muted">{{ itemToReject?.loaiThongBao === "DUYET_SAN_PHAM" ? "Vui lòng nhập lý do để phản hồi cho đối tác." : "Vui lòng nhập lý do từ chối để chuyển lại cho bộ phận Hotline xử lý." }}</p>
           <div class="form-group">
             <label>Lý do từ chối <span class="text-danger">*</span></label>
             <textarea
@@ -254,6 +282,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import api from "../../api/api.js";
+import { ElMessage, ElMessageBox } from "element-plus";
 
 // Layout & State
 const activeTab = ref("all");
@@ -261,6 +290,121 @@ const selectedNotification = ref(null);
 const loading = ref(false);
 const actionLoading = ref(false);
 const itemToReject = ref(null);
+const showTuChoiHoaDonDialog = ref(false);
+const thongBaoTuChoiHoaDon = ref(null);
+const lyDoTuChoiHoaDon = ref("");
+const xuLyHoaDonLoading = ref(false);
+
+const parseYeuCauHuyHoaDon = (thongBao) => {
+  try {
+    return JSON.parse(thongBao?.noiDung || "{}");
+  } catch {
+    return {};
+  }
+};
+
+const laYeuCauHuyHoaDon = (thongBao) => {
+  return (
+      thongBao?.loaiThongBao === "YEU_CAU_HUY_HOA_DON"
+  );
+};
+
+const dangChoDuyetHuyHoaDon = (thongBao) => {
+  return (
+      laYeuCauHuyHoaDon(thongBao) &&
+      Number(thongBao?.trangThai) === 4
+  );
+};
+
+const chapNhanHuyHoaDon = async (thongBao) => {
+  try {
+    await ElMessageBox.confirm(
+        "Bạn có chắc chắn muốn chấp nhận hủy hóa đơn này?",
+        "Xác nhận hủy hóa đơn",
+        {
+          confirmButtonText: "Chấp nhận",
+          cancelButtonText: "Đóng",
+          type: "warning",
+        }
+    );
+
+    xuLyHoaDonLoading.value = true;
+
+    await api.put(
+        `/api/nhan-vien/thong-bao/${thongBao.maThongBao}/chap-nhan-huy-hoa-don`
+    );
+
+    ElMessage.success("Đã chấp nhận hủy hóa đơn");
+
+    await loadThongBao();
+  } catch (error) {
+    if (error === "cancel" || error === "close") return;
+
+    console.error(error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Chấp nhận hủy hóa đơn thất bại"
+    );
+  } finally {
+    xuLyHoaDonLoading.value = false;
+  }
+};
+
+const openTuChoiHuyHoaDon = (thongBao) => {
+  thongBaoTuChoiHoaDon.value = thongBao;
+  lyDoTuChoiHoaDon.value = "";
+  showTuChoiHoaDonDialog.value = true;
+};
+
+const closeTuChoiHuyHoaDon = () => {
+  showTuChoiHoaDonDialog.value = false;
+  thongBaoTuChoiHoaDon.value = null;
+  lyDoTuChoiHoaDon.value = "";
+};
+
+const tuChoiHuyHoaDon = async () => {
+  const lyDo = lyDoTuChoiHoaDon.value.trim();
+
+  if (lyDo.length < 4) {
+    ElMessage.warning("Lý do từ chối phải từ 4 ký tự");
+    return;
+  }
+
+  if (!thongBaoTuChoiHoaDon.value) {
+    ElMessage.error("Không tìm thấy yêu cầu cần từ chối");
+    return;
+  }
+
+  try {
+    xuLyHoaDonLoading.value = true;
+
+    await api.put(
+        `/api/nhan-vien/thong-bao/${thongBaoTuChoiHoaDon.value.maThongBao}/tu-choi-huy-hoa-don`,
+        {
+          lyDoTuChoi: lyDo,
+        }
+    );
+
+    ElMessage.success("Đã từ chối yêu cầu hủy hóa đơn");
+
+    closeTuChoiHuyHoaDon();
+    await loadThongBao();
+  } catch (error) {
+    console.error(error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Từ chối yêu cầu thất bại"
+    );
+  } finally {
+    xuLyHoaDonLoading.value = false;
+  }
+};
+
+
 
 // Bell & Mini Noti Dropdown
 const showMiniNoti = ref(false);
@@ -293,6 +437,24 @@ const TT_DA_DOC = 1;
 const TT_DA_CHAP_NHAN = 2;
 const TT_DA_TU_CHOI = 3;
 const TT_CHO_XAC_NHAN = 4;
+
+const canProcessNotification = (item) => {
+  const status = Number(item?.trangThai);
+  if (item?.loaiThongBao === "DUYET_SAN_PHAM") {
+    // Hỗ trợ cả dữ liệu cũ (0/1) và dữ liệu mới chuẩn hóa (4).
+    return [TT_CHUA_DOC, TT_DA_DOC, TT_CHO_XAC_NHAN].includes(status);
+  }
+  if (item?.loaiThongBao === "CONG_VIEC") {
+    return [TT_CHUA_DOC, TT_DA_DOC].includes(status);
+  }
+  return false;
+};
+
+const detailTitle = (item) => {
+  if (item?.loaiThongBao === "DUYET_SAN_PHAM") return "Chi tiết duyệt sản phẩm";
+  if (item?.loaiThongBao === "CONG_VIEC") return "Chi tiết khách hàng";
+  return "Thông báo hệ thống";
+};
 
 const tabs = [
   { key: "all", label: "Tất cả" },
@@ -387,8 +549,8 @@ const miniNotifications = computed(() => {
 });
 
 const unreadCount = computed(() => {
-  return notifications.value.filter(
-      item => Number(item.trangThai) === TT_CHUA_DOC
+  return notifications.value.filter(item =>
+      Number(item.trangThai) === TT_CHUA_DOC || Number(item.trangThai) === TT_CHO_XAC_NHAN
   ).length;
 });
 
@@ -421,7 +583,7 @@ const getMiniIconName = (item) => {
 const selectNotification = async (item) => {
   selectedNotification.value = item;
 
-  if (Number(item.trangThai) === TT_CHUA_DOC) {
+  if (Number(item.trangThai) === TT_CHUA_DOC && item.loaiThongBao !== "DUYET_SAN_PHAM") {
     try {
       await api.put(`${API_URL}/${item.maThongBao}/da-doc`);
 
@@ -530,7 +692,7 @@ const confirmReject = async () => {
     itemToReject.value.lyDoTuChoi = rejectReason.value.trim();
 
     if (itemToReject.value.loaiThongBao === "DUYET_SAN_PHAM") {
-      showToast("Đã từ chối và xóa sản phẩm khỏi database!", "success");
+      showToast("Đã từ chối sản phẩm và chuyển sản phẩm sang trạng thái ẩn.", "success");
     } else {
       showToast("Đã từ chối công việc!", "success");
     }

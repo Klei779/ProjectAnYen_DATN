@@ -79,6 +79,42 @@ public class SanPhamDoiTacService {
                 .build();
     }
 
+    @Transactional(readOnly = true)
+    public SanPhamDoiTacResponse getChiTietSanPham(
+            Authentication authentication,
+            Integer id
+    ) {
+        SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+        SanPhamDoiTacResponse response = toResponse(sanPham);
+
+        response.setChiTietList(
+                sanPhamChiTietRepository.findByMaSanPhamOrderByThuTuAsc(id)
+                        .stream()
+                        .map(chiTiet -> SanPhamDoiTacResponse.ChiTietSanPhamResponse.builder()
+                                .maChiTiet(chiTiet.getMaChiTiet())
+                                .loaiKhoi(chiTiet.getLoaiKhoi())
+                                .noiDung(chiTiet.getNoiDung())
+                                .thuTu(chiTiet.getThuTu())
+                                .build())
+                        .toList()
+        );
+
+        response.setHinhAnhList(
+                sanPhamHinhAnhRepository.findByMaSanPhamOrderByThuTuAsc(id)
+                        .stream()
+                        .map(hinhAnh -> SanPhamDoiTacResponse.HinhAnhSanPhamResponse.builder()
+                                .maHinhAnh(hinhAnh.getMaHinhAnh())
+                                .maChiTiet(hinhAnh.getMaChiTiet())
+                                .loaiHinhAnh(hinhAnh.getLoaiHinhAnh())
+                                .urlHinhAnh(hinhAnh.getUrlHinhAnh())
+                                .thuTu(hinhAnh.getThuTu())
+                                .build())
+                        .toList()
+        );
+
+        return response;
+    }
+
     public SanPhamDoiTacResponse createSanPham(Authentication authentication, SanPhamDoiTacRequest request) {
         Integer maDoiTac = getMaDoiTac(authentication);
         validateRequest(request, true);
@@ -109,8 +145,7 @@ public class SanPhamDoiTacService {
 
         // Tạo thông báo cho nhân viên duyệt sản phẩm.
         // NguoiNhanId = null nghĩa là tất cả nhân viên đều thấy.
-        // maSanPham được nhúng vào NoiDung với format [MASP:id] vì
-        // bảng thongbao không có cột MaSanPham trong DB mới.
+        // Lưu trực tiếp MaSanPham để giao diện duyệt không phải phân tích chuỗi nội dung.
         ThongBao thongBao = ThongBao.builder()
                 .tieuDe("Duyệt sản phẩm mới")
                 .noiDung(
@@ -124,7 +159,8 @@ public class SanPhamDoiTacService {
                 .nguoiGuiId(null)
                 .nguoiNhanId(null)
                 .maKhachHang(null)
-                .trangThai(0) // 0 là Chưa đọc
+                .maSanPham(savedSanPham.getMaSanPham())
+                .trangThai(4) // 4 là Chờ xác nhận
                 .lyDoTuChoi(null)
                 .build();
 
@@ -134,13 +170,40 @@ public class SanPhamDoiTacService {
         return toResponse(savedSanPham);
     }
     public SanPhamDoiTacResponse updateSanPham(Authentication authentication, Integer id, SanPhamDoiTacRequest request) {
-        validateRequest(request, false);
+        Integer maDoiTac = getMaDoiTac(authentication);
+        validateRequest(request, true);
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
-
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy đối tác"
+                ));
         applyRequest(sanPham, request);
+        sanPham.setTrangThai(SanPham.TRANG_THAI_CHO_XAC_NHAN);
 
+        if (sanPham.getSoLuong() == null) {
+            sanPham.setSoLuong(0);
+        }
         SanPham savedSanPham = sanPhamDoiTacRepository.save(sanPham);
+        ThongBao thongBao = ThongBao.builder()
+                .tieuDe("Duyệt sản phẩm mới")
+                .noiDung(
+                        "Đối tác " + doiTac.getTenDoiTac()
+                                + " vừa cập nhật sản phẩm: "
+                                + savedSanPham.getTenSanPham()
+                                + ". Vui lòng xác nhận hoặc từ chối để quyết định sản phẩm có được cập nhật hay không."
+                                + " [MASP:" + savedSanPham.getMaSanPham() + "]"
+                )
+                .loaiThongBao("DUYET_SAN_PHAM")
+                .nguoiGuiId(null)
+                .nguoiNhanId(null)
+                .maKhachHang(null)
+                .maSanPham(savedSanPham.getMaSanPham())
+                .trangThai(4) // 4 là Chờ xác nhận
+                .lyDoTuChoi(null)
+                .build();
 
+        thongBaoRepository.save(thongBao);
         sanPhamChiTietRepository.deleteByMaSanPham(id);
         sanPhamHinhAnhRepository.deleteByMaSanPham(id);
         saveChiTietVaHinhAnh(id, request);
@@ -159,21 +222,36 @@ public class SanPhamDoiTacService {
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    public SanPhamDoiTacResponse anSanPham(Authentication authentication, Integer id) {
+    public SanPhamDoiTacResponse anSanPham(
+            Authentication authentication,
+            Integer id
+    ) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
+
+        // Chỉ sản phẩm đang bán mới được ngưng bán
+        if (!SanPham.TRANG_THAI_DANG_BAN.equals(sanPham.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Chỉ sản phẩm đang bán mới có thể ngưng bán"
+            );
+        }
 
         sanPham.setTrangThai(SanPham.TRANG_THAI_AN);
 
         return toResponse(sanPhamDoiTacRepository.save(sanPham));
     }
 
-    public SanPhamDoiTacResponse hienSanPham(Authentication authentication, Integer id) {
+    public SanPhamDoiTacResponse hienSanPham(
+            Authentication authentication,
+            Integer id
+    ) {
         SanPham sanPham = getSanPhamCuaDoiTac(authentication, id);
 
-        if (SanPham.TRANG_THAI_CHO_XAC_NHAN.equals(sanPham.getTrangThai())) {
+        // Chỉ sản phẩm đã ngưng bán/ẩn mới được bán lại
+        if (!SanPham.TRANG_THAI_AN.equals(sanPham.getTrangThai())) {
             throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Sản phẩm đang chờ nhân viên duyệt, không thể tự chuyển sang đang bán"
+                    HttpStatus.CONFLICT,
+                    "Chỉ sản phẩm đã ngưng bán mới có thể bán lại"
             );
         }
 

@@ -47,6 +47,10 @@ public class ThongBao {
     @Column(name = "MaKhachHang")
     private Integer maKhachHang;
 
+    /** Liên kết sản phẩm (cho loại DUYET_SAN_PHAM). */
+    @Column(name = "MaSanPham")
+    private Integer maSanPham;
+
     /**
      * Trạng thái:
      * CHUA_DOC, DA_DOC, DA_CHAP_NHAN, DA_TU_CHOI

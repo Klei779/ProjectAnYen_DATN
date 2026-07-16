@@ -1,202 +1,449 @@
 <template>
-  <header class="header">
-
-    <!-- Mobile menu button -->
-    <button
-        class="mobile-menu-btn"
-        :class="{ active: mobileMenuOpen }"
-        @click="mobileMenuOpen = !mobileMenuOpen"
-    >
-      <span></span>
-      <span></span>
-      <span></span>
-    </button>
-
-    <!-- Logo -->
-    <div class="logo-wrapper">
-      <img
-          :src="logoAnYen"
-          alt="An Yên"
-          class="logo-img"
+  <header
+      class="site-header"
+      :class="{
+      'home-mode': isHomePage,
+      'inner-mode': !isHomePage,
+      'is-scrolled': isScrolled,
+      'menu-opened': mobileMenuOpen
+    }"
+  >
+    <div class="header-inner">
+      <!-- Logo -->
+      <RouterLink
+          to="/"
+          class="header-logo"
+          aria-label="Trang chủ An Yên"
+          @click="closeMobileMenu"
       >
-    </div>
-
-    <!-- Desktop Menu -->
-    <nav class="desktop-nav">
-      <RouterLink to="/">Trang chủ</RouterLink>
-
-      <RouterLink to="/san-pham">
-        Sản phẩm
+        <img
+            :src="logoAnYen"
+            alt="Logo An Yên"
+            class="header-logo-image"
+        />
       </RouterLink>
 
-      <RouterLink to="/dich-vu">
-        Dịch vụ
-      </RouterLink>
+      <!-- Desktop navigation -->
+      <nav class="desktop-nav" aria-label="Điều hướng chính">
+        <RouterLink
+            v-for="item in menuItems"
+            :key="item.path"
+            :to="item.path"
+            :class="{ active: isActiveRoute(item.path) }"
+        >
+          {{ item.name }}
+        </RouterLink>
+      </nav>
 
-      <RouterLink to="/gioi-thieu">
-        Giới thiệu
-      </RouterLink>
+      <!-- Desktop actions -->
+      <div class="desktop-actions">
+        <!-- Chưa đăng nhập -->
+        <el-button
+            v-if="!user"
+            class="login-button"
+            :icon="User"
+            @click="showLogin = true"
+        >
+          Đăng nhập
+        </el-button>
 
-      <RouterLink to="/lien-he">
-        Liên hệ
-      </RouterLink>
-    </nav>
+        <!-- Đã đăng nhập -->
+        <el-dropdown
+            v-else
+            trigger="click"
+            placement="bottom-end"
+        >
+          <button class="user-button" type="button">
+            <span class="user-avatar">
+              <i class="fa-solid fa-user"></i>
+            </span>
 
-    <!-- Desktop User -->
-    <div class="desktop-actions">
+            <span class="user-content">
+              <small>Xin chào</small>
+              <strong>{{ user.hoTen }}</strong>
+            </span>
 
-      <el-button
-          v-if="!user"
-          class="login-btn"
-          :icon="User"
-          @click="showLogin = true"
-      >
-        ĐĂNG NHẬP
-      </el-button>
+            <i class="fa-solid fa-chevron-down user-arrow"></i>
+          </button>
 
-      <el-dropdown v-else>
-      <span class="user-info">
-        Xin chào {{ user.hoTen }}
-      </span>
+          <template #dropdown>
+            <el-dropdown-menu class="header-dropdown">
+              <el-dropdown-item disabled>
+                <div class="dropdown-account">
+                  <strong>{{ user.hoTen }}</strong>
 
-        <template #dropdown>
-          <el-dropdown-menu>
+                  <span>
+                    {{ getAccountLabel(user.loaiTaiKhoan) }}
+                  </span>
+                </div>
+              </el-dropdown-item>
 
-            <el-dropdown-item disabled>
-              {{ user.loaiTaiKhoan }}
-            </el-dropdown-item>
-
-            <el-dropdown-item divided class="logout-dropdown-item">
-              <button
-                  class="btn btn-outline-danger btn-sm rounded-pill px-4 fw-bold"
-                  @click.stop="logout"
+              <el-dropdown-item
+                  divided
+                  class="logout-dropdown-item"
+                  @click="logout"
               >
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 Đăng xuất
-              </button>
-            </el-dropdown-item>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
 
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+        <!-- Hotline -->
+        <button
+            type="button"
+            class="hotline-button"
+            @click="openHotline"
+        >
+          <span class="hotline-icon">
+            <i class="fa-solid fa-phone-volume"></i>
+          </span>
 
-    </div>
+          <span class="hotline-content">
+            <small>Hotline miễn phí</small>
+            <strong>1900 1234</strong>
+          </span>
+        </button>
+      </div>
 
-    <!-- Hotline -->
-    <el-button
-        class="hotline-btn"
-        type="danger"
-        @click="showHotline = true"
-    >
-      ☎
-    </el-button>
-
-    <!-- Mobile Menu -->
-    <div
-        class="mobile-menu"
-        :class="{ active: mobileMenuOpen }"
-    >
-      <RouterLink to="/" @click="mobileMenuOpen=false">
-        Trang chủ
-      </RouterLink>
-
-      <RouterLink to="/san-pham" @click="mobileMenuOpen=false">
-        Sản phẩm
-      </RouterLink>
-
-      <RouterLink to="/dich-vu" @click="mobileMenuOpen=false">
-        Dịch vụ
-      </RouterLink>
-
-      <RouterLink to="/gioi-thieu" @click="mobileMenuOpen=false">
-        Giới thiệu
-      </RouterLink>
-
-      <RouterLink to="/lien-he" @click="mobileMenuOpen=false">
-        Liên hệ
-      </RouterLink>
-
-      <el-button
-          v-if="!user"
-          class="mobile-login-btn"
-          :icon="User"
-          @click="showLogin = true"
-      >
-        Đăng nhập
-      </el-button>
-
-      <div
-          v-if="user"
-          class="mobile-user"
-      >
-        <div class="mobile-user-name">
-          {{ user.hoTen }}
-        </div>
+      <!-- Mobile actions -->
+      <div class="mobile-actions">
+        <button
+            type="button"
+            class="mobile-hotline-button"
+            aria-label="Mở hỗ trợ hotline"
+            @click="openHotline"
+        >
+          <i class="fa-solid fa-phone"></i>
+        </button>
 
         <button
-            class="mobile-logout-btn"
-            @click="logout"
+            type="button"
+            class="mobile-menu-button"
+            :class="{ active: mobileMenuOpen }"
+            :aria-expanded="mobileMenuOpen"
+            aria-label="Mở menu"
+            @click="toggleMobileMenu"
         >
-          Đăng xuất
+          <span></span>
+          <span></span>
+          <span></span>
         </button>
       </div>
     </div>
 
+    <!-- Mobile navigation -->
+    <Transition name="mobile-navigation">
+      <div
+          v-if="mobileMenuOpen"
+          class="mobile-navigation-wrapper"
+      >
+        <nav
+            class="mobile-navigation"
+            aria-label="Điều hướng trên điện thoại"
+        >
+          <RouterLink
+              v-for="item in menuItems"
+              :key="item.path"
+              :to="item.path"
+              :class="{ active: isActiveRoute(item.path) }"
+              @click="closeMobileMenu"
+          >
+            <span>{{ item.name }}</span>
+            <i class="fa-solid fa-chevron-right"></i>
+          </RouterLink>
+        </nav>
+
+        <div class="mobile-account">
+          <!-- Chưa đăng nhập -->
+          <button
+              v-if="!user"
+              type="button"
+              class="mobile-login-button"
+              @click="openLogin"
+          >
+            <i class="fa-regular fa-user"></i>
+            Đăng nhập
+          </button>
+
+          <!-- Đã đăng nhập -->
+          <template v-else>
+            <div class="mobile-user-information">
+              <span class="mobile-user-avatar">
+                <i class="fa-solid fa-user"></i>
+              </span>
+
+              <div>
+                <small>Xin chào</small>
+
+                <strong>{{ user.hoTen }}</strong>
+
+                <p>
+                  {{ getAccountLabel(user.loaiTaiKhoan) }}
+                </p>
+              </div>
+            </div>
+
+            <button
+                type="button"
+                class="mobile-logout-button"
+                @click="logout"
+            >
+              <i class="fa-solid fa-arrow-right-from-bracket"></i>
+              Đăng xuất
+            </button>
+          </template>
+
+          <button
+              type="button"
+              class="mobile-hotline-full"
+              @click="openHotline"
+          >
+            <i class="fa-solid fa-phone-volume"></i>
+
+            <span>
+              <small>Hotline hỗ trợ 24/7</small>
+              <strong>1900 1234</strong>
+            </span>
+          </button>
+        </div>
+      </div>
+    </Transition>
+
+    <!-- Modal đăng nhập -->
     <LoginModal
         :show="showLogin"
         @close="showLogin = false"
         @login-success="handleLoginSuccess"
     />
 
+    <!-- Modal hotline -->
     <HotlineModal
         :show="showHotline"
         @close="showHotline = false"
     />
-
   </header>
 </template>
 
 <script setup>
-import {ref, computed} from "vue";
-import {useRouter} from "vue-router";
-import {User} from "@element-plus/icons-vue";
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch
+} from "vue";
+
+import { useRoute, useRouter } from "vue-router";
+import { User } from "@element-plus/icons-vue";
 
 import LoginModal from "./PopDangNhap.vue";
 import HotlineModal from "./PopLienHeHotline.vue";
+
 import logoAnYen from "../../assets/images/icon/logoAnYen.png";
 
+const route = useRoute();
 const router = useRouter();
-const mobileMenuOpen = ref(false)
+
+const mobileMenuOpen = ref(false);
 const showLogin = ref(false);
 const showHotline = ref(false);
+const isScrolled = ref(false);
 
-const user = ref(
-    JSON.parse(localStorage.getItem("user"))
-);
+let scrollFrame = null;
 
-const isNhanVien = computed(() =>
-    user.value?.loaiTaiKhoan === "NHAN_VIEN"
-);
+/* ==================================================
+   USER
+================================================== */
 
-const isDoiTac = computed(() =>
-    user.value?.loaiTaiKhoan === "DOI_TAC"
-);
+const getSavedUser = () => {
+  try {
+    const savedUser = localStorage.getItem("user");
+
+    return savedUser
+        ? JSON.parse(savedUser)
+        : null;
+  } catch (error) {
+    console.error(
+        "Không thể đọc thông tin đăng nhập:",
+        error
+    );
+
+    return null;
+  }
+};
+
+const user = ref(getSavedUser());
+
+/* ==================================================
+   MENU
+================================================== */
+
+const menuItems = [
+  {
+    name: "Trang chủ",
+    path: "/"
+  },
+  {
+    name: "Giới thiệu",
+    path: "/gioi-thieu"
+  },
+  {
+    name: "Sản phẩm",
+    path: "/san-pham"
+  },
+  {
+    name: "Dịch vụ",
+    path: "/dich-vu"
+  },
+  {
+    name: "Tin tức",
+    path: "/tin-tuc"
+  },
+  {
+    name: "Liên hệ",
+    path: "/lien-he"
+  }
+];
+
+const isHomePage = computed(() => {
+  return route.path === "/";
+});
+
+const isActiveRoute = (path) => {
+  if (path === "/") {
+    return route.path === "/";
+  }
+
+  return route.path.startsWith(path);
+};
+
+/* ==================================================
+   SCROLL HEADER
+================================================== */
+
+const updateScrollState = () => {
+  /*
+   * Tất cả các trang đều nhận class is-scrolled
+   * khi người dùng cuộn quá 25px.
+   */
+  isScrolled.value = window.scrollY > 25;
+};
+
+const handleScroll = () => {
+  if (scrollFrame) {
+    return;
+  }
+
+  scrollFrame = window.requestAnimationFrame(() => {
+    updateScrollState();
+    scrollFrame = null;
+  });
+};
+
+/* ==================================================
+   MOBILE MENU
+================================================== */
+
+const toggleMobileMenu = () => {
+  mobileMenuOpen.value = !mobileMenuOpen.value;
+};
+
+const closeMobileMenu = () => {
+  mobileMenuOpen.value = false;
+};
+
+const openLogin = () => {
+  closeMobileMenu();
+  showLogin.value = true;
+};
+
+const openHotline = () => {
+  closeMobileMenu();
+  showHotline.value = true;
+};
+
+/* ==================================================
+   ACCOUNT
+================================================== */
+
+const getAccountLabel = (accountType) => {
+  const labels = {
+    NHAN_VIEN: "Nhân viên",
+    NHANVIEN: "Nhân viên",
+
+    DOI_TAC: "Đối tác",
+    DOITAC: "Đối tác",
+
+    QUAN_LY: "Quản lý",
+    QUANLY: "Quản lý",
+
+    ADMIN: "Quản trị viên"
+  };
+
+  return labels[accountType]
+      || accountType
+      || "Tài khoản";
+};
 
 const handleLoginSuccess = (userData) => {
   user.value = userData;
 
-  // Lưu đủ dữ liệu để router guard kiểm tra
-  localStorage.setItem("user", JSON.stringify(userData));
-  localStorage.setItem("token", userData.token);
-  localStorage.setItem("loaiTaiKhoan", userData.loaiTaiKhoan);
-  localStorage.setItem("tenDangNhap", userData.tenDangNhap);
-  localStorage.setItem("id", userData.id);
+  localStorage.setItem(
+      "user",
+      JSON.stringify(userData)
+  );
+
+  if (userData.token) {
+    localStorage.setItem(
+        "token",
+        userData.token
+    );
+  }
+
+  if (userData.loaiTaiKhoan) {
+    localStorage.setItem(
+        "loaiTaiKhoan",
+        userData.loaiTaiKhoan
+    );
+  }
+
+  if (userData.tenDangNhap) {
+    localStorage.setItem(
+        "tenDangNhap",
+        userData.tenDangNhap
+    );
+  }
+
+  if (
+      userData.id !== undefined
+      && userData.id !== null
+  ) {
+    localStorage.setItem(
+        "id",
+        String(userData.id)
+    );
+  }
 
   showLogin.value = false;
+  closeMobileMenu();
 
-  // Điều hướng theo loại tài khoản
-  if (userData.loaiTaiKhoan === "NHAN_VIEN") {
+  const accountType = userData.loaiTaiKhoan;
+
+  if (
+      accountType === "NHAN_VIEN"
+      || accountType === "NHANVIEN"
+  ) {
     router.push("/nhan-vien/tong-quan");
-  } else if (userData.loaiTaiKhoan === "DOI_TAC") {
+    return;
+  }
+
+  if (
+      accountType === "DOI_TAC"
+      || accountType === "DOITAC"
+  ) {
     router.push("/doi-tac/tong-quan");
   }
 };
@@ -207,10 +454,68 @@ const logout = () => {
   localStorage.removeItem("loaiTaiKhoan");
   localStorage.removeItem("tenDangNhap");
   localStorage.removeItem("id");
-  user.value=null;
+
+  user.value = null;
+
+  closeMobileMenu();
 
   router.push("/");
 };
+
+/* ==================================================
+   WATCH
+================================================== */
+
+watch(
+    () => route.fullPath,
+    async () => {
+      closeMobileMenu();
+
+      await nextTick();
+
+      updateScrollState();
+    }
+);
+
+watch(mobileMenuOpen, (isOpen) => {
+  if (
+      isOpen
+      && window.innerWidth <= 992
+  ) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "";
+  }
+});
+
+/* ==================================================
+   LIFECYCLE
+================================================== */
+
+onMounted(() => {
+  updateScrollState();
+
+  window.addEventListener(
+      "scroll",
+      handleScroll,
+      {
+        passive: true
+      }
+  );
+});
+
+onUnmounted(() => {
+  window.removeEventListener(
+      "scroll",
+      handleScroll
+  );
+
+  if (scrollFrame) {
+    window.cancelAnimationFrame(scrollFrame);
+  }
+
+  document.body.style.overflow = "";
+});
 </script>
 
 <style src="../../assets/styles/components/Header.css"></style>

@@ -1,8 +1,11 @@
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import {ref, computed, watch, onMounted} from "vue";
 import api from "../../api/api.js";
+import { ElMessage } from "element-plus";
 
 const API_URL = "/api/doi-tac/san-pham";
+const NGUNG_BAN_API = (id) => `${API_URL}/${id}/an`;
+const BAN_LAI_API = (id) => `${API_URL}/${id}/hien`;
 
 const editingProduct = ref(null);
 const activeTab = ref("list");
@@ -16,7 +19,11 @@ const pageSize = 16;
 const loading = ref(false);
 const imagePreview = ref("");
 const products = ref([]);
+const stockDrafts = ref({});
+const savingStockId = ref(null);
 const total = ref(0);
+const selectedProductDetail = ref(null);
+const loadingProductDetail = ref(false);
 
 const emptyProduct = () => ({
   tenSanPham: "",
@@ -45,24 +52,30 @@ const newProduct = ref(emptyProduct());
 const getProductId = (sp) => sp.id ?? sp.maSanPham ?? sp.maSP;
 
 const getProductStatus = (sp) => {
-  const trangThai = sp.trangThai || sp.status || "";
-
-  if (trangThai === "Ẩn" || trangThai === "Đã ẩn") {
-    return "Ẩn";
-  }
-
-  if (trangThai === "Hết hàng") {
-    return "Hết hàng";
-  }
-
+  const approvalCode = Number(sp.trangThai ?? sp.status ?? 2);
+  if (approvalCode === 0) return "Ngưng bán";
+  if (approvalCode === 2) return "Chờ duyệt";
   const stock = Number(sp.stock ?? sp.soLuong ?? 0);
   return stock > 0 ? "Còn hàng" : "Hết hàng";
+};
+
+const getApprovalLabel = (code) => {
+  if (Number(code) === 1) return "Đã duyệt";
+  if (Number(code) === 2) return "Chờ duyệt";
+  return "Đang ẩn / Đã từ chối";
+};
+
+const getApprovalClass = (code) => {
+  if (Number(code) === 1) return "approved";
+  if (Number(code) === 2) return "pending";
+  return "hidden";
 };
 
 const normalizeProduct = (sp) => {
   const id = getProductId(sp);
   const stock = Number(sp.stock ?? sp.soLuong ?? 0);
   const status = getProductStatus(sp);
+  const trangThaiCode = Number(sp.trangThai ?? sp.status ?? 2);
 
   return {
     id,
@@ -93,10 +106,13 @@ const normalizeProduct = (sp) => {
     mauSac: sp.mauSac || "",
     hinhAnh: sp.hinhAnh || sp.image || "",
     vatLieu: sp.vatLieu || "",
-    trangThai: sp.trangThai || (status === "Ẩn" ? "Ẩn" : stock > 0 ? "Đang bán" : "Hết hàng"),
+    trangThaiCode,
+    trangThai: trangThaiCode === 1 ? "Đang bán" : trangThaiCode === 2 ? "Chờ duyệt" : "Ngưng bán",
     kichThuoc: sp.kichThuoc || "",
     trongLuong: sp.trongLuong || "",
     cnsx: sp.cnsx || sp.CNSX || "",
+    chiTietList: Array.isArray(sp.chiTietList) ? sp.chiTietList : [],
+    hinhAnhList: Array.isArray(sp.hinhAnhList) ? sp.hinhAnhList : [],
   };
 };
 
@@ -126,6 +142,9 @@ const loadProducts = async () => {
                     : [];
 
     products.value = items.map(normalizeProduct);
+    stockDrafts.value = Object.fromEntries(
+        products.value.map(product => [product.id, product.stock])
+    );
     total.value = data.total ?? data.totalElements ?? products.value.length;
   } catch (error) {
     console.error("Lỗi load sản phẩm đối tác:", error);
@@ -145,10 +164,6 @@ const loadProducts = async () => {
 onMounted(() => {
   loadProducts();
 });
-
-const isHiddenProduct = (product) => {
-  return product.status === "Ẩn" || product.trangThai === "Ẩn" || product.trangThai === "Đã ẩn";
-};
 
 const categories = computed(() => {
   const map = new Map();
@@ -177,20 +192,20 @@ const categories = computed(() => {
     id: index + 1,
     name: cate.name,
     total: cate.total,
-    status: cate.total > 0 && cate.hidden === cate.total ? "Đang ẩn" : "Đang hiển thị",
+    status: cate.total > 0 && cate.hidden === cate.total ? "Ngưng bán" : "Đang bán",
   }));
 });
 
 const availableProducts = computed(() =>
-    products.value.filter((p) => p.status === "Còn hàng" || p.trangThai === "Đang bán")
+    products.value.filter((p) => p.trangThaiCode === 1)
 );
 
 const outOfStockProducts = computed(() =>
     products.value.filter((p) => p.status === "Hết hàng")
 );
 
-const hiddenProducts = computed(() =>
-    products.value.filter((p) => p.status === "Ẩn" || p.trangThai === "Ẩn")
+const stoppedProducts = computed(() =>
+    products.value.filter(p => p.trangThaiCode === 0)
 );
 
 const filteredProducts = computed(() => {
@@ -216,8 +231,8 @@ const filteredProducts = computed(() => {
       matchStatus = p.status === "Hết hàng";
     }
 
-    if (selectedStatus.value === "an") {
-      matchStatus = p.status === "Ẩn" || p.trangThai === "Ẩn";
+    if (selectedStatus.value === "ngung-ban") {
+      matchStatus = p.trangThaiCode === 0;
     }
 
     return matchKeyword && matchCategory && matchStatus;
@@ -308,23 +323,6 @@ const buildPayload = () => ({
   cnsx: newProduct.value.cnsx,
 });
 
-const addProduct = async () => {
-  if (!validateProduct()) return;
-
-  try {
-    await api.post(API_URL, buildPayload());
-
-    alert("Đã tạo sản phẩm mới!");
-    resetForm();
-    activeTab.value = "list";
-    await loadProducts();
-    currentPage.value = totalPages.value;
-  } catch (error) {
-    console.error("Lỗi tạo sản phẩm:", error);
-    alert("Không thể tạo sản phẩm. Kiểm tra backend SanPhamDoiTac.");
-  }
-};
-
 const editProduct = (product) => {
   editingProduct.value = product;
 
@@ -370,79 +368,166 @@ const updateProduct = async () => {
   }
 };
 
-const increaseStock = (product) => {
-  product.stock += 1;
-  product.soLuong = product.stock;
-
-  if (product.status !== "Ẩn") {
-    product.status = product.stock > 0 ? "Còn hàng" : "Hết hàng";
-    product.trangThai = product.stock > 0 ? "Đang bán" : "Hết hàng";
-  }
-
-  alert("Thêm tồn kho thành công!");
+const getDraftStock = (product) => {
+  const value = stockDrafts.value[product.id];
+  return Math.max(0, Number(value ?? product.stock ?? 0));
 };
 
-const decreaseStock = (product) => {
-  if (product.stock <= 0) return;
+const isStockDirty = (product) => getDraftStock(product) !== Number(product.stock || 0);
 
-  product.stock -= 1;
-  product.soLuong = product.stock;
-
-  if (product.status !== "Ẩn") {
-    product.status = product.stock > 0 ? "Còn hàng" : "Hết hàng";
-    product.trangThai = product.stock > 0 ? "Đang bán" : "Hết hàng";
-  }
-
-  alert("Trừ tồn kho thành công!");
+const getDraftStockStatus = (product) => {
+  if (product.trangThaiCode === 0) return "Ngưng bán";
+  if (product.trangThaiCode === 2) return "Chờ duyệt";
+  return getDraftStock(product) > 0 ? "Còn hàng" : "Hết hàng";
 };
+
+const changeStockDraft = (product, delta) => {
+  stockDrafts.value = {
+    ...stockDrafts.value,
+    [product.id]: Math.max(0, getDraftStock(product) + delta),
+  };
+};
+
+const increaseStock = (product) => changeStockDraft(product, 1);
+const decreaseStock = (product) => changeStockDraft(product, -1);
 
 const saveStock = async (product) => {
+  if (!isStockDirty(product) || savingStockId.value === product.id) return;
+
   try {
-    // Backend SanPhamDoiTacController nhận @RequestBody { soLuong }
+    savingStockId.value = product.id;
     await api.patch(`${API_URL}/${product.id}/ton-kho`, {
-      soLuong: product.stock,
+      soLuong: getDraftStock(product),
     });
 
-    alert("Lưu tồn kho thành công!");
+    ElMessage.success("Đã lưu số lượng tồn kho");
     await loadProducts();
   } catch (error) {
     console.error("Lỗi lưu tồn kho:", error);
-    alert("Không thể lưu tồn kho.");
+    ElMessage.error(error?.response?.data?.message || "Không thể lưu tồn kho");
+  } finally {
+    savingStockId.value = null;
   }
 };
 
-const changeProductStatus = async (product, trangThai) => {
+const escapeExcelCell = (value) => String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+
+const exportProductsToExcel = () => {
+  const rows = filteredProducts.value;
+  if (!rows.length) {
+    ElMessage.warning("Không có sản phẩm để xuất");
+    return;
+  }
+
+  const headers = [
+    "STT", "Mã sản phẩm", "Tên sản phẩm", "Loại", "Giá bán", "Khuyến mãi",
+    "Tồn kho", "Trạng thái duyệt", "Trạng thái bán", "Vật liệu", "Màu sắc",
+    "Kích thước", "Xuất xứ", "CNSX", "Ghi chú"
+  ];
+  const bodyRows = rows.map((product, index) => [
+    index + 1,
+    product.sku,
+    product.name,
+    product.category,
+    Number(product.price || 0),
+    Number(product.khuyenMai || 0),
+    Number(product.stock || 0),
+    getApprovalLabel(product.trangThaiCode),
+    product.status,
+    product.vatLieu,
+    product.mauSac,
+    product.kichThuoc,
+    product.xuatXu,
+    product.cnsx,
+    product.ghiChu,
+  ]);
+
+  const table = `
+    <table border="1">
+      <thead><tr>${headers.map(header => `<th>${escapeExcelCell(header)}</th>`).join("")}</tr></thead>
+      <tbody>${bodyRows.map(row => `<tr>${row.map(cell => `<td>${escapeExcelCell(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
+    </table>`;
+  const workbook = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${table}</body></html>`;
+  const blob = new Blob(["\ufeff", workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `danh-sach-san-pham-${new Date().toISOString().slice(0, 10)}.xls`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  ElMessage.success(`Đã xuất ${rows.length} sản phẩm`);
+};
+
+const isHiddenProduct = (product) => {
+  return product.trangThaiCode === 0;
+};
+
+const ngungBanProduct = async (product) => {
+  if (!confirm(`Ngưng bán "${product.name}" ?`)) {
+    return;
+  }
+
   try {
-    // Backend SanPhamDoiTacController đang dùng /an và /hien
-    const action = trangThai === "Ẩn" ? "an" : "hien";
-    await api.patch(`${API_URL}/${product.id}/${action}`);
+    await api.patch(NGUNG_BAN_API(product.id));
 
-    alert(trangThai === "Ẩn" ? "Đã ẩn sản phẩm!" : "Đã hiện lại sản phẩm!");
+    alert("Ngưng bán thành công!");
+
     await loadProducts();
+  } catch (e) {
+    console.error(e);
+
+    alert(
+        e.response?.data ||
+        "Không thể ngưng bán sản phẩm."
+    );
+  }
+};
+
+const banLaiProduct = async (product) => {
+  try {
+    await api.patch(BAN_LAI_API(product.id));
+
+    alert("Đã bán lại sản phẩm.");
+
+    await loadProducts();
+  } catch (e) {
+    console.error(e);
+
+    alert(
+        e.response?.data ||
+        "Không thể bán lại."
+    );
+  }
+};
+
+const showDetail = async (product) => {
+  loadingProductDetail.value = true;
+  selectedProductDetail.value = product;
+
+  try {
+    const response = await api.get(`${API_URL}/${product.id}`);
+    selectedProductDetail.value = normalizeProduct(response.data || product);
   } catch (error) {
-    console.error("Lỗi cập nhật trạng thái sản phẩm:", error);
-    alert("Không thể cập nhật trạng thái sản phẩm.");
+    console.error("Lỗi tải chi tiết sản phẩm:", error);
+    alert(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Không thể tải chi tiết sản phẩm."
+    );
+    selectedProductDetail.value = null;
+  } finally {
+    loadingProductDetail.value = false;
   }
 };
 
-const hideProduct = (product) => {
-  if (confirm("Bạn có chắc muốn ẩn sản phẩm này không?")) {
-    changeProductStatus(product, "Ẩn");
-  }
-};
-
-const showProduct = (product) => {
-  changeProductStatus(product, Number(product.stock || 0) > 0 ? "Đang bán" : "Hết hàng");
-};
-
-const showDetail = (product) => {
-  alert(
-      `Tên sản phẩm: ${product.name}\n` +
-      `Loại: ${product.category}\n` +
-      `Giá: ${formatPrice(product.price)}\n` +
-      `Tồn kho: ${product.stock}\n` +
-      `Trạng thái: ${product.status}`
-  );
+const closeDetail = () => {
+  selectedProductDetail.value = null;
 };
 
 
@@ -465,7 +550,7 @@ const buildPayloadFromProduct = (product, overrides = {}) => ({
   mauSac: overrides.mauSac ?? product.mauSac ?? "",
   hinhAnh: overrides.hinhAnh ?? product.hinhAnh ?? product.image ?? "",
   vatLieu: overrides.vatLieu ?? product.vatLieu ?? "",
-  trangThai: overrides.trangThai ?? product.trangThai ?? "Đang bán",
+  trangThai: Number(overrides.trangThai ?? product.trangThaiCode ?? 1),
   kichThuoc: overrides.kichThuoc ?? product.kichThuoc ?? "",
   trongLuong: overrides.trongLuong ?? product.trongLuong ?? "",
   cnsx: overrides.cnsx ?? product.cnsx ?? "",
@@ -525,7 +610,7 @@ const hideCategory = async (cate) => {
   if (list.length === 0) return;
 
   try {
-    await Promise.all(list.map((product) => api.patch(`${API_URL}/${product.id}/an`)));
+    await Promise.all(list.map((product) => api.patch(NGUNG_BAN_API(product.id))));
     alert("Đã ẩn danh mục sản phẩm!");
     await loadProducts();
   } catch (error) {
@@ -542,7 +627,7 @@ const showCategory = async (cate) => {
   if (list.length === 0) return;
 
   try {
-    await Promise.all(list.map((product) => api.patch(`${API_URL}/${product.id}/hien`)));
+    await Promise.all(list.map((product) => api.patch(BAN_LAI_API(product.id))));
     alert("Đã hiện lại danh mục sản phẩm!");
     await loadProducts();
   } catch (error) {
@@ -563,20 +648,6 @@ const handleImageUpload = (event) => {
 <template>
   <div class="admin-layout">
     <section class="page-content">
-      <div class="title-box">
-        <h2>
-          {{
-            activeTab === "list"
-                ? "Danh sách sản phẩm"
-                : activeTab === "category"
-                    ? "Danh mục sản phẩm"
-                    : editingProduct
-                        ? "Cập nhật sản phẩm"
-                        : "Thêm sản phẩm mới"
-          }}
-        </h2>
-        <p>Quản lý sản phẩm trên website đối tác.</p>
-      </div>
 
       <div class="tabs">
         <button :class="{ active: activeTab === 'list' }" @click="changeTab('list')">
@@ -584,9 +655,6 @@ const handleImageUpload = (event) => {
         </button>
         <button :class="{ active: activeTab === 'category' }" @click="changeTab('category')">
           Danh mục sản phẩm
-        </button>
-        <button :class="{ active: activeTab === 'create' }" @click="changeTab('create')">
-          Tạo sản phẩm mới
         </button>
       </div>
 
@@ -601,7 +669,9 @@ const handleImageUpload = (event) => {
             <option value="">Tất cả trạng thái sản phẩm</option>
             <option value="con-hang">Còn hàng</option>
             <option value="het-hang">Hết hàng</option>
-            <option value="an">Đã ẩn</option>
+            <option value="ngung-ban">
+              Ngưng bán
+            </option>
           </select>
 
           <select v-model="selectedCategory">
@@ -612,11 +682,11 @@ const handleImageUpload = (event) => {
           </select>
 
           <div class="search-input">
-            <input v-model="keyword" placeholder="Tìm kiếm sản phẩm..." />
+            <input v-model="keyword" placeholder="Tìm kiếm sản phẩm..."/>
             <i class="fa-solid fa-magnifying-glass"></i>
           </div>
 
-          <button class="export-btn">
+          <button class="export-btn" type="button" @click="exportProductsToExcel">
             <i class="fa-solid fa-download"></i>
             Xuất danh sách
           </button>
@@ -658,8 +728,8 @@ const handleImageUpload = (event) => {
               <i class="fa-solid fa-list"></i>
             </div>
             <div>
-              <p>Sản phẩm đã ẩn</p>
-              <h3>{{ hiddenProducts.length }}</h3>
+              <p>Sản phẩm ngưng bán</p>
+              <h3>{{ stoppedProducts.length }}</h3>
             </div>
           </div>
         </div>
@@ -668,7 +738,11 @@ const handleImageUpload = (event) => {
 
         <div class="product-grid">
           <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
-            <img :src="product.image" :alt="product.name" />
+            <div class="approval-bar" :class="getApprovalClass(product.trangThaiCode)">
+              <i :class="product.trangThaiCode === 1 ? 'fa-solid fa-circle-check' : 'fa-regular fa-clock'"></i>
+              {{ getApprovalLabel(product.trangThaiCode) }}
+            </div>
+            <img :src="product.image" :alt="product.name"/>
 
             <div class="product-info">
               <h3>{{ product.name }}</h3>
@@ -679,24 +753,22 @@ const handleImageUpload = (event) => {
                 {{ formatPrice(product.price) }}
               </p>
 
-              <div class="stock-row">
-                <div>
-                  <p>Tồn kho</p>
-
+              <div class="stock-row" :class="{ dirty: isStockDirty(product) }">
+                <div class="stock-copy">
+                  <p class="stock-label">Tồn kho: <strong>{{ getDraftStock(product) }}</strong></p>
                   <span
                       class="status"
-                      :class="product.status === 'Còn hàng' || product.status === 'Đang bán' ? 'available' : 'empty'"
+                      :class="getDraftStockStatus(product) === 'Còn hàng' ? 'available' : 'empty'"
                   >
-                    {{ product.status }}
+                    {{ getDraftStockStatus(product) }}
                   </span>
+                  <small v-if="isStockDirty(product)" class="unsaved-stock">Chưa lưu</small>
                 </div>
 
                 <div class="stock-control">
-                  <button @click="decreaseStock(product)">−</button>
-
-                  <span>{{ product.stock }}</span>
-
-                  <button @click="increaseStock(product)">+</button>
+                  <button type="button" :disabled="getDraftStock(product) === 0" @click="decreaseStock(product)">−</button>
+                  <span>{{ getDraftStock(product) }}</span>
+                  <button type="button" @click="increaseStock(product)">+</button>
                 </div>
               </div>
             </div>
@@ -713,26 +785,31 @@ const handleImageUpload = (event) => {
               </button>
 
               <button
-                  v-if="product.status !== 'Ẩn'"
+                  v-if="product.trangThaiCode === 1"
                   class="hide-btn"
-                  @click="hideProduct(product)"
+                  @click="ngungBanProduct(product)"
               >
-                <i class="fa-regular fa-eye-slash"></i>
-                Ẩn
+                <i class="fa-solid fa-ban"></i>
+                Ngưng bán
               </button>
 
               <button
-                  v-else
+                  v-else-if="product.trangThaiCode === 0"
                   class="hide-btn"
-                  @click="showProduct(product)"
+                  @click="banLaiProduct(product)"
               >
-                <i class="fa-regular fa-eye"></i>
-                Hiện
+                <i class="fa-solid fa-play"></i>
+                Bán lại
               </button>
 
-              <button class="save-btn" @click="saveStock(product)">
+              <button
+                  class="save-btn"
+                  type="button"
+                  :disabled="!isStockDirty(product) || savingStockId === product.id"
+                  @click="saveStock(product)"
+              >
                 <i class="fa-regular fa-floppy-disk"></i>
-                Lưu
+                {{ savingStockId === product.id ? "Đang lưu" : "Lưu" }}
               </button>
             </div>
           </div>
@@ -792,7 +869,7 @@ const handleImageUpload = (event) => {
 
             <span
                 class="status category-status"
-                :class="cate.status === 'Đang hiển thị' ? 'available' : 'empty'"
+                :class="cate.status === 'Đang bán' ? 'available' : 'empty'"
             >
               {{ cate.status }}
             </span>
@@ -803,7 +880,7 @@ const handleImageUpload = (event) => {
               </button>
 
               <button
-                  v-if="cate.status === 'Đang hiển thị'"
+                  v-if="cate.status === 'Đang bán'"
                   title="Ẩn danh mục"
                   @click="hideCategory(cate)"
               >
@@ -826,133 +903,112 @@ const handleImageUpload = (event) => {
         </div>
       </template>
 
-      <template v-if="activeTab === 'create'">
-        <div class="create-form">
-          <h4>
-            {{ editingProduct ? "Cập nhật thông tin sản phẩm" : "Thông tin sản phẩm mới" }}
-          </h4>
 
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Tên sản phẩm</label>
-              <input v-model="newProduct.tenSanPham" placeholder="Nhập tên sản phẩm" />
-            </div>
-
-            <div class="form-group">
-              <label>Loại</label>
-              <input v-model="newProduct.loai" placeholder="VD: Quan tài, bình tro cốt..." />
-            </div>
-
-            <div class="form-group">
-              <label>Nội thất</label>
-              <input v-model="newProduct.noiThat" placeholder="Nhập nội thất" />
-            </div>
-
-            <div class="form-group">
-              <label>Quy cách</label>
-              <input v-model="newProduct.quyCach" placeholder="Nhập quy cách" />
-            </div>
-
-            <div class="form-group">
-              <label>Tôn giáo</label>
-              <select v-model="newProduct.tonGiao">
-                <option value="">Chọn tôn giáo</option>
-                <option>Phật giáo</option>
-                <option>Công giáo</option>
-                <option>Tin lành</option>
-                <option>Cao Đài</option>
-                <option>Không yêu cầu</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Giá tiền</label>
-              <input v-model="newProduct.giaTien" type="number" placeholder="Nhập giá tiền" />
-            </div>
-
-            <div class="form-group">
-              <label>Mã đối tác</label>
-              <input v-model="newProduct.maDoiTac" type="number" placeholder="Backend có thể tự lấy từ token" />
-            </div>
-
-            <div class="form-group">
-              <label>Số lượng</label>
-              <input v-model="newProduct.soLuong" type="number" placeholder="Nhập số lượng" />
-            </div>
-
-            <div class="form-group">
-              <label>Thiết kế</label>
-              <input v-model="newProduct.thietKe" placeholder="Nhập thiết kế" />
-            </div>
-
-            <div class="form-group">
-              <label>Xuất xứ</label>
-              <input v-model="newProduct.xuatXu" placeholder="Nhập xuất xứ" />
-            </div>
-
-            <div class="form-group">
-              <label>Khuyến mãi</label>
-              <input v-model="newProduct.khuyenMai" type="number" placeholder="Nhập khuyến mãi" />
-            </div>
-
-            <div class="form-group">
-              <label>Màu sắc</label>
-              <input v-model="newProduct.mauSac" placeholder="Nhập màu sắc" />
-            </div>
-
-            <div class="form-group">
-              <label>Hình ảnh</label>
-
-              <input type="file" accept="image/*" @change="handleImageUpload" />
-
-              <div v-if="imagePreview" class="image-preview">
-                <img :src="imagePreview" alt="Ảnh sản phẩm" />
+      <div v-if="selectedProductDetail" class="product-detail-overlay" @click.self="closeDetail">
+        <article class="product-detail-modal">
+          <button class="detail-close" type="button" @click="closeDetail"><i class="fa-solid fa-xmark"></i></button>
+          <div class="detail-image-wrap">
+            <img :src="selectedProductDetail.image" :alt="selectedProductDetail.name" />
+            <span class="approval-bar detail-status" :class="getApprovalClass(selectedProductDetail.trangThaiCode)">
+              {{ getApprovalLabel(selectedProductDetail.trangThaiCode) }}
+            </span>
+          </div>
+          <div class="detail-content">
+            <div v-if="loadingProductDetail" class="detail-loading">Đang tải chi tiết sản phẩm...</div>
+            <template v-else>
+              <div class="detail-heading-row">
+                <div>
+                  <p class="detail-eyebrow">SẢN PHẨM #{{ selectedProductDetail.id }}</p>
+                  <h2>{{ selectedProductDetail.name }}</h2>
+                </div>
+                <span class="detail-stock-pill" :class="selectedProductDetail.stock > 0 ? 'in-stock' : 'out-stock'">
+                  <i class="fa-solid fa-boxes-stacked"></i>
+                  Tồn kho {{ selectedProductDetail.stock }}
+                </span>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label>Vật liệu</label>
-              <input v-model="newProduct.vatLieu" placeholder="Nhập vật liệu" />
-            </div>
+              <div class="detail-price-row">
+                <p class="detail-price">{{ formatPrice(selectedProductDetail.price) }}</p>
+                <span v-if="Number(selectedProductDetail.khuyenMai || 0) > 0" class="detail-promotion">
+                  Khuyến mãi {{ formatPrice(selectedProductDetail.khuyenMai) }}
+                </span>
+              </div>
 
-            <div class="form-group">
-              <label>Trạng thái</label>
-              <select v-model="newProduct.trangThai">
-                <option>Đang bán</option>
-                <option>Ẩn</option>
-                <option>Hết hàng</option>
-              </select>
-            </div>
+              <div class="detail-grid">
+                <div><span>Loại sản phẩm</span><strong>{{ selectedProductDetail.category || '—' }}</strong></div>
+                <div><span>Vật liệu</span><strong>{{ selectedProductDetail.vatLieu || '—' }}</strong></div>
+                <div><span>Nội thất</span><strong>{{ selectedProductDetail.noiThat || '—' }}</strong></div>
+                <div><span>Màu sắc</span><strong>{{ selectedProductDetail.mauSac || '—' }}</strong></div>
+                <div><span>Kích thước</span><strong>{{ selectedProductDetail.kichThuoc || '—' }}</strong></div>
+                <div><span>Trọng lượng</span><strong>{{ selectedProductDetail.trongLuong || '—' }}</strong></div>
+                <div><span>Quy cách</span><strong>{{ selectedProductDetail.quyCach || '—' }}</strong></div>
+                <div><span>Thiết kế</span><strong>{{ selectedProductDetail.thietKe || '—' }}</strong></div>
+                <div><span>Tôn giáo</span><strong>{{ selectedProductDetail.tonGiao || '—' }}</strong></div>
+                <div><span>Xuất xứ / CNSX</span><strong>{{ selectedProductDetail.xuatXu || '—' }} / {{ selectedProductDetail.cnsx || '—' }}</strong></div>
+              </div>
 
-            <div class="form-group">
-              <label>Kích thước</label>
-              <input v-model="newProduct.kichThuoc" placeholder="VD: 120x60x80cm" />
-            </div>
+              <section class="database-detail-section">
+                <div class="detail-section-heading">
+                  <div>
+                    <h3>Chi tiết cấu tạo sản phẩm</h3>
+                  </div>
+                  <span class="detail-count">{{ selectedProductDetail.chiTietList.length }} mục</span>
+                </div>
 
-            <div class="form-group">
-              <label>Trọng lượng</label>
-              <input v-model="newProduct.trongLuong" placeholder="VD: 25kg" />
-            </div>
+                <div v-if="selectedProductDetail.chiTietList.length" class="database-detail-list">
+                  <article
+                      v-for="(chiTiet, index) in selectedProductDetail.chiTietList"
+                      :key="chiTiet.maChiTiet || index"
+                      class="database-detail-item"
+                  >
+                    <div class="detail-order">{{ chiTiet.thuTu ?? index + 1 }}</div>
+                    <div>
+                      <h4>{{ chiTiet.loaiKhoi || `Chi tiết ${index + 1}` }}</h4>
+                      <p>{{ chiTiet.noiDung || 'Chưa có nội dung.' }}</p>
 
-            <div class="form-group">
-              <label>CNSX</label>
-              <input v-model="newProduct.cnsx" placeholder="Nhập CNSX" />
-            </div>
+                      <div v-if="selectedProductDetail.hinhAnhList.some(img => img.maChiTiet === chiTiet.maChiTiet)" class="detail-image-gallery inline-gallery">
+                        <img
+                            v-for="image in selectedProductDetail.hinhAnhList.filter(img => img.maChiTiet === chiTiet.maChiTiet)"
+                            :key="image.maHinhAnh"
+                            :src="image.urlHinhAnh"
+                            :alt="image.loaiHinhAnh || chiTiet.loaiKhoi"
+                        />
+                      </div>
+                    </div>
+                  </article>
+                </div>
 
-            <div class="form-group full">
-              <label>Ghi chú</label>
-              <textarea v-model="newProduct.ghiChu" placeholder="Nhập ghi chú"></textarea>
-            </div>
+                <div v-else class="empty-database-detail">
+                  Sản phẩm này chưa có dữ liệu trong bảng sanphamchitiet.
+                </div>
+              </section>
+
+              <section v-if="selectedProductDetail.hinhAnhList.some(img => !img.maChiTiet)" class="database-detail-section image-section">
+                <div class="detail-section-heading">
+                  <div>
+                    <span class="detail-section-kicker">SANPHAMHINHANH</span>
+                    <h3>Hình ảnh bổ sung</h3>
+                  </div>
+                </div>
+                <div class="detail-image-gallery">
+                  <figure
+                      v-for="image in selectedProductDetail.hinhAnhList.filter(img => !img.maChiTiet)"
+                      :key="image.maHinhAnh"
+                  >
+                    <img :src="image.urlHinhAnh" :alt="image.loaiHinhAnh || selectedProductDetail.name" />
+                    <figcaption>{{ image.loaiHinhAnh || 'Hình ảnh sản phẩm' }}</figcaption>
+                  </figure>
+                </div>
+              </section>
+
+              <div class="detail-description">
+                <h4>Ghi chú</h4>
+                <p>{{ selectedProductDetail.ghiChu || 'Chưa có ghi chú cho sản phẩm.' }}</p>
+              </div>
+            </template>
           </div>
-
-          <div class="form-actions">
-            <button class="cancel-btn" @click="resetForm(); activeTab = 'list'">Hủy</button>
-            <button class="submit-btn" @click="editingProduct ? updateProduct() : addProduct()">
-              {{ editingProduct ? "Cập nhật sản phẩm" : "Tạo sản phẩm" }}
-            </button>
-          </div>
-        </div>
-      </template>
+        </article>
+      </div>
     </section>
   </div>
 </template>
@@ -1039,6 +1095,166 @@ const handleImageUpload = (event) => {
 
 .table-actions button:hover {
   color: #b91c1c;
+}
+
+
+.product-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.approval-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.product-card > .approval-bar {
+  position: absolute;
+  z-index: 2;
+  top: 12px;
+  left: 12px;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, .14);
+}
+
+.approval-bar.approved { background: #dcfce7; color: #166534; }
+.approval-bar.pending { background: #fef3c7; color: #92400e; }
+.approval-bar.hidden { background: #fee2e2; color: #991b1b; }
+
+.product-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, .72);
+  backdrop-filter: blur(8px);
+}
+
+.product-detail-modal {
+  position: relative;
+  width: min(1120px, 96vw);
+  height: min(760px, 92vh);
+  max-height: 92vh;
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(330px, 38%) minmax(0, 1fr);
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 38px 100px rgba(15, 23, 42, .44);
+}
+
+.detail-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 50%;
+  background: rgba(255,255,255,.94);
+  color: #334155;
+  cursor: pointer;
+  box-shadow: 0 7px 18px rgba(15, 23, 42, .13);
+}
+
+.detail-close:hover { color: #9f1239; transform: rotate(5deg); }
+.detail-image-wrap {
+  position: relative;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: radial-gradient(circle at 35% 20%, #fff7f8, #e9eef5 65%);
+}
+.detail-image-wrap::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(15,23,42,.42), transparent);
+  pointer-events: none;
+}
+.detail-image-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
+.detail-image-wrap:hover img { transform: scale(1.025); }
+.detail-status { position: absolute; z-index: 2; left: 22px; bottom: 22px; }
+.detail-content {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 42px 40px 36px;
+  background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
+}
+.detail-content::-webkit-scrollbar { width: 9px; }
+.detail-content::-webkit-scrollbar-track { background: #f1f5f9; }
+.detail-content::-webkit-scrollbar-thumb { border: 2px solid #f1f5f9; border-radius: 999px; background: #94a3b8; }
+.detail-content::-webkit-scrollbar-thumb:hover { background: #64748b; }
+.detail-heading-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-right: 26px; }
+.detail-eyebrow { margin: 0 0 7px; color: #9f1239; font-size: 11px; font-weight: 850; letter-spacing: .12em; }
+.detail-content h2 { margin: 0; color: #172033; font-size: clamp(25px, 3vw, 34px); line-height: 1.18; letter-spacing: -.025em; }
+.detail-stock-pill { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border-radius: 999px; font-size: 11px; font-weight: 800; }
+.detail-stock-pill.in-stock { background: #dcfce7; color: #166534; }
+.detail-stock-pill.out-stock { background: #fee2e2; color: #991b1b; }
+.detail-price-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0 23px; padding-bottom: 20px; border-bottom: 1px solid #e7ebf0; }
+.detail-price { margin: 0; color: #9f1239; font-size: 27px; font-weight: 850; }
+.detail-promotion { padding: 6px 9px; border-radius: 7px; background: #fff7ed; color: #c2410c; font-size: 11px; font-weight: 750; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.detail-grid div { min-height: 67px; padding: 12px 14px; border: 1px solid #e5eaf0; border-radius: 12px; background: #fff; box-shadow: 0 5px 14px rgba(15,23,42,.035); }
+.detail-grid span { display: block; margin-bottom: 5px; color: #7a8698; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.detail-grid strong { display: block; overflow: hidden; color: #263244; font-size: 13px; line-height: 1.4; text-overflow: ellipsis; }
+.detail-description { margin-top: 22px; padding: 18px; border: 1px solid #e5eaf0; border-radius: 13px; background: #fff; }
+.detail-description h4 { margin: 0 0 8px; color: #263244; }
+.detail-description p { margin: 0; color: #596579; line-height: 1.7; }
+.detail-loading { min-height: 420px; display: grid; place-items: center; color: #64748b; font-weight: 700; }
+.database-detail-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid #e5e7eb; }
+.detail-section-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
+.detail-section-heading h3 { margin: 3px 0 0; color: #1f2937; font-size: 18px; }
+.detail-section-kicker { color: #991b1b; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+.detail-count { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: #fef2f2; color: #991b1b; font-size: 12px; font-weight: 700; }
+.database-detail-list { display: grid; gap: 12px; }
+.database-detail-item { display: grid; grid-template-columns: 36px 1fr; gap: 13px; padding: 16px; border: 1px solid #e5eaf0; border-radius: 13px; background: #fff; box-shadow: 0 5px 14px rgba(15,23,42,.03); }
+.detail-order { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #9f1239; color: #fff; font-weight: 800; font-size: 12px; }
+.database-detail-item h4 { margin: 2px 0 7px; color: #1f2937; font-size: 15px; }
+.database-detail-item p { margin: 0; color: #4b5563; line-height: 1.65; white-space: pre-line; }
+.empty-database-detail { padding: 20px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; text-align: center; background: #f8fafc; }
+.detail-image-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.detail-image-gallery figure { margin: 0; }
+.detail-image-gallery img { width: 100%; height: 124px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; background: #f3f4f6; }
+.detail-image-gallery figcaption { margin-top: 5px; color: #64748b; font-size: 11px; }
+.inline-gallery { margin-top: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.inline-gallery img { height: 102px; }
+
+@media (max-width: 900px) {
+  .product-detail-modal {
+    height: auto;
+    max-height: 92vh;
+    grid-template-columns: 1fr;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  .detail-image-wrap { min-height: 300px; height: 320px; max-height: 360px; }
+  .detail-content { height: auto; min-height: auto; overflow: visible; padding: 32px 24px 28px; }
+}
+
+@media (max-width: 620px) {
+  .product-detail-overlay { padding: 10px; }
+  .product-detail-modal { width: 100%; height: auto; max-height: 96vh; border-radius: 17px; }
+  .detail-heading-row { display: grid; padding-right: 22px; }
+  .detail-grid { grid-template-columns: 1fr; }
+  .detail-image-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .detail-content { padding: 26px 17px 22px; }
 }
 </style>
 

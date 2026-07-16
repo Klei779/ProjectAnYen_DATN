@@ -80,6 +80,7 @@ public class ComBoServiceImpl implements ComBoService {
                 .map(item -> ComBoChiTietResponse.builder()
                         .comboChiTietId(item.getComboChiTietId())
                         .loai(item.getLoai())
+                        .soLuong(item.getSoLuong() == null || item.getSoLuong() <= 0 ? 1 : item.getSoLuong())
                         .noiDung(item.getNoiDung())
                         .hinhAnhs(
                                 hinhAnhMap.getOrDefault(

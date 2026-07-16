@@ -226,7 +226,7 @@ const grandTotalInWords = computed(() => {
         </div>
 
         <div class="mt-1 text-justify">
-          Địa chỉ: <strong>1 Tô Ký - Quận 12 - Thành phố Hồ Chí Minh</strong> &nbsp;&nbsp;&nbsp;&nbsp;Điện thoại: <strong>0325.713.045 - 0813.524.916 - 0392.168.473.</strong>
+          Địa chỉ: <strong>123 Tô Ký, Phường Trung Mỹ Tây, Thành phố Hồ Chí Minh</strong> &nbsp;&nbsp;&nbsp;&nbsp;Điện thoại: <strong>0826.772.109 - 0357.402.033 - 0392.168.473</strong>
         </div>
 
         <div class="mt-1 text-justify">

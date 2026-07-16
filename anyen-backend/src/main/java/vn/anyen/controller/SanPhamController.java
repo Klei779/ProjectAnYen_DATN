@@ -43,10 +43,14 @@ public class SanPhamController {
                 pageSize
         );
     }
-
     @GetMapping("/bo-loc")
     public SanPhamFilterResponse getBoLocSanPham() {
         return sanPhamService.getBoLocSanPham();
+    }
+
+    @GetMapping("/{id}")
+    public SanPhamResponse getSanPhamById(@PathVariable Integer id) {
+        return sanPhamService.getSanPhamById(id);
     }
 
     @PutMapping("/{id}")
@@ -62,29 +66,55 @@ public class SanPhamController {
         return sanPhamService.anSanPham(id);
     }
 
-
     @PutMapping("/{id}/duyet")
+
     public SanPhamResponse duyetSanPham(@PathVariable Integer id) {
+
         return sanPhamService.duyetSanPham(id);
+
     }
+
+
 
     @GetMapping("/cho-duyet")
+
     public SanPhamPageResponse getSanPhamChoDuyet(
+
             @RequestParam(value = "page", required = false) Integer page,
+
             @RequestParam(value = "pageSize", required = false) Integer pageSize
+
     ) {
+
         // Gọi đúng hàm, truyền đủ tham số và trả về đúng kiểu PageResponse
+
         return sanPhamService.getSanPhamChoDuyet(page, pageSize);
+
     }
-        @PutMapping("/{id}/tu-choi")
-        public SanPhamResponse tuChoiSanPham(
-                @PathVariable Integer id,
-                @RequestBody java.util.Map<String, String> payload // Sử dụng Map để hứng JSON Body gửi lên từ FE
-) {
-            String lyDoTuChoi = payload.get("lyDoTuChoi");
-            if (lyDoTuChoi == null || lyDoTuChoi.trim().isBlank()) {
-                throw new IllegalArgumentException("Lý do từ chối không được để trống");
-            }
-            return sanPhamService.tuChoiSanPham(id, lyDoTuChoi);
+
+    @PutMapping("/{id}/tu-choi")
+
+    public SanPhamResponse tuChoiSanPham(
+
+            @PathVariable Integer id,
+
+            @RequestBody java.util.Map<String, String> payload // Sử dụng Map để hứng JSON Body gửi lên từ FE
+
+    ) {
+
+        String lyDoTuChoi = payload.get("lyDoTuChoi");
+
+        if (lyDoTuChoi == null || lyDoTuChoi.trim().isBlank()) {
+
+            throw new IllegalArgumentException("Lý do từ chối không được để trống");
+
         }
+
+        return sanPhamService.tuChoiSanPham(id, lyDoTuChoi);
+
+    }
+
+
+
+
 }

@@ -70,9 +70,16 @@ public interface SanPhamRepository
      */
     List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(Integer trangThai);
     @Query("""
+
     SELECT dt.tenDoiTac 
+
     FROM DoiTac dt 
+
     WHERE dt.maDoiTac = :maDoiTac
+
 """)
+
     String findTenDoiTacByMaDoiTac(@Param("maDoiTac") Integer maDoiTac);
+
+
 }

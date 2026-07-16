@@ -1,25 +1,5 @@
 <template>
   <section class="create-combo-page">
-    <header class="page-header">
-      <div>
-        <p class="page-label">ĐỐI TÁC</p>
-
-        <h1>Tạo combo mới</h1>
-
-        <p class="page-description">
-          Combo chỉ sử dụng sản phẩm đã duyệt của tài khoản hiện tại
-          và có kiểm tra số lượng tồn kho.
-        </p>
-      </div>
-
-      <RouterLink
-          class="manage-link"
-          to="/doi-tac/quan-ly-combo"
-      >
-        Quản lý combo
-      </RouterLink>
-    </header>
-
     <form
         class="combo-form"
         @submit.prevent="submitCombo"

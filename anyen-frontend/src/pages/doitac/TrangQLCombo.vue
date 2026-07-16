@@ -1,13 +1,5 @@
 <template>
   <div class="combo-page">
-    <div class="page-header">
-      <div>
-        <p class="eyebrow">ĐỐI TÁC</p>
-        <h2>Quản lý combo sản phẩm</h2>
-        <p>Mỗi combo chỉ chứa sản phẩm của tài khoản hiện tại, kèm số lượng cụ thể.</p>
-      </div>
-    </div>
-
     <div class="summary-row">
       <div class="summary-card"><span>Tổng combo</span><strong>{{ combos.length }}</strong></div>
       <div class="summary-card"><span>Đang hoạt động</span><strong>{{ activeCount }}</strong></div>

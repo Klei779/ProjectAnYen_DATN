@@ -1,11 +1,6 @@
   <template>
   <div class="notification-page">
     <section class="notification-left">
-      <div class="page-title">
-        <h2>Thông báo</h2>
-        <p>Cập nhật các thông báo mới nhất từ hệ thống</p>
-      </div>
-
       <div class="tabs">
         <button
             v-for="tab in tabs"

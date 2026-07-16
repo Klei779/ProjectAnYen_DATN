@@ -648,20 +648,6 @@ const handleImageUpload = (event) => {
 <template>
   <div class="admin-layout">
     <section class="page-content">
-      <div class="title-box">
-        <h2>
-          {{
-            activeTab === "list"
-                ? "Danh sách sản phẩm"
-                : activeTab === "category"
-                    ? "Danh mục sản phẩm"
-                    : editingProduct
-                        ? "Cập nhật sản phẩm"
-                        : "Thêm sản phẩm mới"
-          }}
-        </h2>
-        <p>Quản lý sản phẩm trên website đối tác.</p>
-      </div>
 
       <div class="tabs">
         <button :class="{ active: activeTab === 'list' }" @click="changeTab('list')">

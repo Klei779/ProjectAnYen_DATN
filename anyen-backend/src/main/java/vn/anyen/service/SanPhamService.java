@@ -54,10 +54,8 @@ public class SanPhamService {
         Specification<SanPham> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            predicates.add(cb.or(
-                    cb.isNull(root.get("trangThai")),
-                    cb.notEqual(root.get("trangThai"), SanPham.TRANG_THAI_AN)
-            ));
+            // Chỉ load sản phẩm đã được duyệt (TRANG_THAI_DANG_BAN = 1)
+            predicates.add(cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_DANG_BAN));
 
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";

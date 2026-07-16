@@ -1,17 +1,5 @@
 <template>
   <div class="account-page">
-    <div class="page-header">
-      <div>
-        <h2>Thông tin tài khoản</h2>
-        <p>Quản lý và cập nhật thông tin cá nhân của đối tác</p>
-      </div>
-
-      <button class="btn-back" type="button" @click="closePage">
-        <i class="fa-solid fa-arrow-left"></i>
-        Quay lại
-      </button>
-    </div>
-
     <div v-if="loading" class="account-loading">
       <i class="fa-solid fa-spinner fa-spin"></i>
       Đang tải thông tin tài khoản...

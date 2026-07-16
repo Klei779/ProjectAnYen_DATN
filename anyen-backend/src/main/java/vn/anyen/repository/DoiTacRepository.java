@@ -8,7 +8,8 @@ import java.util.List;
 import java.util.Optional;
 
 import java.time.LocalDateTime;
-
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 @Repository
 public interface DoiTacRepository extends JpaRepository<DoiTac, Integer> {
 
@@ -38,4 +39,17 @@ public interface DoiTacRepository extends JpaRepository<DoiTac, Integer> {
     boolean existsBySoDienThoaiAndMaDoiTacNot(String soDienThoai, Integer maDoiTac);
 
     boolean existsByMaSoThueAndMaDoiTacNot(String maSoThue, Integer maDoiTac);
+    @Query(
+            value = """
+                SELECT COUNT(*)
+                FROM chitietdonhang ctdh
+                INNER JOIN sanpham sp
+                    ON sp.MaSanPham = ctdh.MaSanPham
+                WHERE sp.MaDoiTac = :maDoiTac
+                """,
+            nativeQuery = true
+    )
+    long countChiTietDonHangByMaDoiTac(
+            @Param("maDoiTac") Integer maDoiTac
+    );
 }

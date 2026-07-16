@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.SanPham;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SanPhamRepository
         extends JpaRepository<SanPham, Integer>, JpaSpecificationExecutor<SanPham> {
@@ -81,5 +82,13 @@ public interface SanPhamRepository
 
     String findTenDoiTacByMaDoiTac(@Param("maDoiTac") Integer maDoiTac);
 
+    /**
+     * Dùng để khôi phục liên kết sản phẩm cho các thông báo kết quả duyệt cũ
+     * chưa có marker [MASP:id] trong nội dung.
+     */
+    Optional<SanPham> findFirstByMaDoiTacAndTenSanPhamIgnoreCaseOrderByMaSanPhamDesc(
+            Integer maDoiTac,
+            String tenSanPham
+    );
 
 }

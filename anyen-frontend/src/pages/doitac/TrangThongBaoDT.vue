@@ -20,7 +20,16 @@
             :class="{ active: selectedNotification?.id === item.id }"
             @click="selectNotification(item)"
         >
-          <div class="noti-icon" :class="item.type">
+          <div
+              class="noti-icon"
+              :class="[
+                item.type,
+                {
+                  approved: item.category === 'product' && isProductApproved(item),
+                  rejected: item.category === 'product' && isProductRejected(item)
+                }
+              ]"
+          >
             <i :class="item.icon"></i>
           </div>
 
@@ -30,7 +39,7 @@
               <span v-if="item.isNew">Mới</span>
             </div>
 
-            <p>{{ item.desc }}</p>
+            <p>{{ cleanNotificationContent(item.desc) }}</p>
             <small>{{ item.time }}</small>
           </div>
 
@@ -202,6 +211,111 @@
         </p>
       </aside>
 
+      <!-- FORM KẾT QUẢ DUYỆT SẢN PHẨM -->
+      <aside
+          v-else-if="selectedNotification.category === 'product'"
+          class="order-detail"
+      >
+        <div class="detail-header">
+          <h3>Chi tiết duyệt sản phẩm</h3>
+          <button type="button" @click="closePopup">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div
+            class="alert-box product-result-alert"
+            :class="{
+              approved: isProductApproved(selectedNotification),
+              rejected: isProductRejected(selectedNotification)
+            }"
+        >
+          <i
+              :class="isProductApproved(selectedNotification)
+                ? 'fa-solid fa-circle-check'
+                : 'fa-solid fa-circle-xmark'"
+          ></i>
+          <div>
+            <strong>{{ selectedNotification.title }}</strong>
+            <p>{{ getProductResultMessage(selectedNotification) }}</p>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h4>Thông tin sản phẩm</h4>
+
+          <div class="product-line product-review-line">
+            <img
+                :src="getProductImage(selectedNotification.product?.image)"
+                :alt="selectedNotification.product?.name || 'Sản phẩm'"
+                @error="handleImageError"
+            />
+
+            <div>
+              <h5>{{ selectedNotification.product?.name || 'Không tìm thấy sản phẩm' }}</h5>
+              <p>{{ selectedNotification.product?.desc || 'Chưa có phân loại' }}</p>
+            </div>
+
+            <div class="product-price">
+              <span>
+                {{ selectedNotification.product?.id
+                  ? `#SP${selectedNotification.product.id}`
+                  : 'Chưa có mã' }}
+              </span>
+              <b>{{ formatPrice(selectedNotification.product?.price) }}</b>
+            </div>
+          </div>
+
+          <div class="info-row product-info-row">
+            <span>Số lượng tồn kho</span>
+            <b>{{ selectedNotification.product?.quantity ?? 0 }}</b>
+          </div>
+
+          <div class="info-row">
+            <span>Trạng thái duyệt</span>
+            <em
+                class="product-status-badge"
+                :class="{
+                  approved: isProductApproved(selectedNotification),
+                  rejected: isProductRejected(selectedNotification)
+                }"
+            >
+              {{ getTrangThaiThongBaoText(selectedNotification.trangThaiThongBao) }}
+            </em>
+          </div>
+        </div>
+
+        <div
+            v-if="isProductRejected(selectedNotification)"
+            class="detail-section rejection-section"
+        >
+          <h4>Lý do từ chối</h4>
+          <p class="note rejection-reason">
+            {{ selectedNotification.lyDoTuChoi
+              || selectedNotification.note
+              || 'Nhân viên chưa ghi lý do từ chối.' }}
+          </p>
+        </div>
+
+        <div class="detail-section">
+          <h4>Nội dung thông báo</h4>
+          <p class="note">
+            {{ cleanNotificationContent(selectedNotification.desc) }}
+          </p>
+        </div>
+
+        <div class="detail-actions">
+          <button class="accept-btn" type="button" @click="closePopup">
+            Đóng
+          </button>
+        </div>
+
+        <p class="hint">
+          <i class="fa-solid fa-circle-info"></i>
+          Sản phẩm vẫn được giữ trong Quản lý sản phẩm để đối tác theo dõi và chỉnh sửa.
+        </p>
+      </aside>
+
       <!-- FORM HỆ THỐNG -->
       <aside
           v-else-if="selectedNotification.category === 'system'"
@@ -308,26 +422,61 @@ const router = useRouter();
 const activeTab = ref("all");
 const selectedNotification = ref(null);
 const notifications = ref([]);
-const TT_DT_CHO_XAC_NHAN = 0;
-const TT_DT_DA_CHAP_NHAN = 1;
-const TT_DT_DA_TU_CHOI = 2;
+const TT_DT_CHO_XAC_NHAN = "CHO_XAC_NHAN";
+const TT_DT_DA_CHAP_NHAN = "DA_CHAP_NHAN";
+const TT_DT_DA_TU_CHOI = "DA_TU_CHOI";
 
-const isChoXacNhan = (item) => {
-  return Number(item?.trangThaiThongBao) === TT_DT_CHO_XAC_NHAN;
+const normalizeNotificationStatus = (status) => {
+  const raw = String(status ?? "").trim().toUpperCase();
+
+  const legacyStatusMap = {
+    "0": TT_DT_CHO_XAC_NHAN,
+    "1": TT_DT_DA_CHAP_NHAN,
+    "2": TT_DT_DA_TU_CHOI,
+  };
+
+  return legacyStatusMap[raw] || raw;
 };
+
+const isChoXacNhan = (item) =>
+    normalizeNotificationStatus(item?.trangThaiThongBao) === TT_DT_CHO_XAC_NHAN;
+
+const isProductApproved = (item) =>
+    normalizeNotificationStatus(item?.trangThaiThongBao) === TT_DT_DA_CHAP_NHAN;
+
+const isProductRejected = (item) =>
+    normalizeNotificationStatus(item?.trangThaiThongBao) === TT_DT_DA_TU_CHOI;
 
 const getTrangThaiThongBaoText = (status) => {
   const map = {
-    0: "Chờ xác nhận",
-    1: "Đã chấp nhận",
-    2: "Đã từ chối",
+    [TT_DT_CHO_XAC_NHAN]: "Chờ xác nhận",
+    [TT_DT_DA_CHAP_NHAN]: "Đã duyệt",
+    [TT_DT_DA_TU_CHOI]: "Đã từ chối",
   };
 
-  return map[Number(status)] || "Không xác định";
+  return map[normalizeNotificationStatus(status)] || "Không xác định";
+};
+
+const cleanNotificationContent = (content) =>
+    String(content ?? "")
+        .replace(/\s*\[MASP:\d+]/gi, "")
+        .trim();
+
+const getProductResultMessage = (item) => {
+  if (isProductApproved(item)) {
+    return "Sản phẩm đã được duyệt và có thể hiển thị trên hệ thống.";
+  }
+
+  if (isProductRejected(item)) {
+    return "Sản phẩm chưa được duyệt. Xem lý do bên dưới để chỉnh sửa và gửi duyệt lại.";
+  }
+
+  return "Thông báo liên quan đến quá trình duyệt sản phẩm.";
 };
 const tabs = [
   { key: "all", label: "Tất cả" },
   { key: "order", label: "Đơn hàng" },
+  { key: "product", label: "Sản phẩm" },
   { key: "system", label: "Hệ thống" },
 ];
 
@@ -365,7 +514,7 @@ const loadThongBao = async () => {
     const orderNotifications = Array.isArray(data)
         ? data.map(item => ({
           ...item,
-          trangThaiThongBao: Number(item.trangThaiThongBao),
+          trangThaiThongBao: normalizeNotificationStatus(item.trangThaiThongBao),
         }))
         : [];
 
@@ -404,6 +553,7 @@ const getCount = (key) => {
 };
 
 const selectNotification = (item) => {
+  item.isNew = false;
   selectedNotification.value = item;
 };
 

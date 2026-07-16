@@ -476,9 +476,9 @@ public class ThongBaoService {
                 + "\" đã bị nhân viên từ chối và được chuyển sang trạng thái ẩn."
                 + " Lý do: " + lyDoTuChoi;
 
-        if (duocDuyet) {
-            noiDung += " [MASP:" + sanPham.getMaSanPham() + "]";
-        }
+        // Luôn gắn mã sản phẩm cho cả trường hợp duyệt và từ chối.
+        // Trang thông báo đối tác cần mã này để tải ảnh, giá, tồn kho và tên sản phẩm.
+        noiDung += " [MASP:" + sanPham.getMaSanPham() + "]";
 
         ThongBaoDoiTac thongBaoDoiTac = ThongBaoDoiTac.builder()
                 .doiTac(doiTac)

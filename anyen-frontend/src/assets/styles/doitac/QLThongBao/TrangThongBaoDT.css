@@ -625,3 +625,75 @@
         text-align: left;
     }
 }
+/* ===============================
+   THÔNG BÁO DUYỆT SẢN PHẨM
+================================ */
+
+.noti-icon.product {
+    color: #7c3aed;
+    background: #f5f3ff;
+}
+
+.product-result-alert.approved {
+    color: #166534;
+    border-color: #bbf7d0;
+    background: #f0fdf4;
+}
+
+.product-result-alert.approved p {
+    color: #166534;
+}
+
+.product-result-alert.rejected {
+    color: #b91c1c;
+    border-color: #fecaca;
+    background: #fef2f2;
+}
+
+.product-result-alert.rejected p {
+    color: #7f1d1d;
+}
+
+.product-review-line {
+    margin-bottom: 18px;
+    padding-bottom: 18px;
+    border-bottom: 1px dashed #d1d5db;
+}
+
+.product-info-row {
+    margin-top: 4px;
+}
+
+.product-status-badge.approved {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.product-status-badge.rejected {
+    color: #b91c1c;
+    background: #fee2e2;
+}
+
+.rejection-section {
+    border-color: #fecaca;
+    background: #fffafa;
+}
+
+.rejection-reason {
+    padding: 13px 14px;
+    border-left: 4px solid #dc2626;
+    border-radius: 6px;
+    color: #7f1d1d;
+    background: #fef2f2;
+    font-weight: 600;
+}
+
+.noti-icon.product.approved {
+    color: #15803d;
+    background: #f0fdf4;
+}
+
+.noti-icon.product.rejected {
+    color: #dc2626;
+    background: #fef2f2;
+}

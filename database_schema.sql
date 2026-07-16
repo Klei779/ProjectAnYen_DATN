@@ -626,5 +626,310 @@ ORDER BY `ComboID`, `ComboChiTietId`;
 SHOW COLUMNS FROM `combo`;
 SHOW COLUMNS FROM `combochitiet`;
 SHOW COLUMNS FROM `thongbao`;
+SELECT
+    ComboId,
+    TenCombo,
+    MaDoiTac,
+    TrangThai
+FROM combo
+ORDER BY ComboId;
+-- ============================================================
+-- 1. QUAN TÀI GỖ HƯƠNG PHÚC AN – HOA TRẮNG TƯỞNG NIỆM
+-- ============================================================
+INSERT INTO sanpham (
+    tenSanPham, loai, noiThat, quyCach, tonGiao, giaTien,
+    MaDoiTac, SoLuong, thietKe, xuatXu, GhiChu, khuyenMai,
+    mauSac, HinhAnh, vatLieu, trangThai, kichThuoc, trongLuong, CNSX
+) VALUES (
+             'Quan tài gỗ hương Phúc An – Hoa trắng tưởng niệm',
+             'Quan tài',
+             'Lót nhung trắng cao cấp, gối đầu và đệm êm trang nghiêm',
+             'Dáng hộp truyền thống, nắp mở toàn phần, 6 tay cầm kim loại',
+             'Phật giáo, Công giáo và nghi lễ truyền thống',
+             28500000.00,
+             1,
+             6,
+             'Cổ điển trang nghiêm, đường nét cân đối',
+             'Việt Nam',
+             'Mẫu quan tài cao cấp dành cho gia đình đề cao sự chỉn chu, trang nghiêm và vẻ đẹp truyền thống. Sản phẩm có thể phối hoa trắng theo yêu cầu.',
+             1500000.00,
+             'Nâu gụ',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/quantai1_mzhy8f.jpg',
+             'Gỗ hương ghép thanh tuyển chọn, phụ kiện hợp kim chống oxy hóa',
+             1,
+             '210 x 72 x 58 cm',
+             'Khoảng 85 kg',
+             'Gỗ được sấy kiểm soát độ ẩm, xử lý chống cong vênh và hoàn thiện sơn PU nhiều lớp'
+         );
+SET @sp1 = LAST_INSERT_ID();
 
-select * from sanphamchitiet
+INSERT INTO sanphamchitiet (MaSanPham, LoaiKhoi, NoiDung, ThuTu, CreatedAt, UpdatedAt) VALUES
+                                                                                           (@sp1, 'TIEU_DE', 'Một lựa chọn trang nghiêm cho lời tiễn biệt trọn vẹn', 1, NOW(), NOW()),
+                                                                                           (@sp1, 'NOI_DUNG', 'Quan tài gỗ hương Phúc An được phát triển dành cho những gia đình mong muốn một nghi lễ chỉn chu, ấm áp và giàu tính tưởng niệm. Tông nâu gụ trầm tạo cảm giác vững chãi, kết hợp cùng cụm hoa trắng thanh khiết giúp tổng thể giữ được sự trang trọng mà không nặng nề. Mỗi đường nét đều được hoàn thiện theo tinh thần “an lành tiễn biệt”, để giây phút cuối cùng trở nên trang nghiêm, bình yên và đầy yêu thương.', 2, NOW(), NOW()),
+                                                                                           (@sp1, 'TIEU_DE', 'Chất liệu gỗ chọn lọc, kết cấu chắc chắn', 3, NOW(), NOW()),
+                                                                                           (@sp1, 'NOI_DUNG', 'Thân quan tài sử dụng gỗ hương ghép thanh tuyển chọn, được sấy kiểm soát độ ẩm trước khi gia công nhằm hạn chế co ngót và cong vênh. Hệ khung gia cường bên trong giúp sản phẩm ổn định trong quá trình di chuyển. Bề mặt được xử lý mịn, phủ sơn PU nhiều lớp để làm nổi bật vân gỗ tự nhiên, đồng thời tăng khả năng chống ẩm và giữ màu bền đẹp trong suốt thời gian tổ chức tang lễ.', 4, NOW(), NOW()),
+                                                                                           (@sp1, 'TIEU_DE', 'Không gian nội thất êm ái và tôn nghiêm', 5, NOW(), NOW()),
+                                                                                           (@sp1, 'NOI_DUNG', 'Phần nội thất được lót nhung trắng cao cấp, đi kèm đệm và gối đầu đồng bộ. Từng nếp vải được may gọn gàng, tạo cảm giác mềm mại, sạch sẽ và trang trọng. Thiết kế nắp mở toàn phần giúp gia đình thuận tiện thực hiện các nghi thức theo phong tục, tôn giáo hoặc nguyện vọng riêng của người đã khuất.', 6, NOW(), NOW()),
+                                                                                           (@sp1, 'TIEU_DE', 'Hoa trắng tưởng niệm – vẻ đẹp của sự thanh khiết', 7, NOW(), NOW()),
+                                                                                           (@sp1, 'NOI_DUNG', 'Cụm hoa trắng đặt trên nắp được phối theo phong cách thanh lịch với sắc trắng chủ đạo và điểm xanh tự nhiên. Gia đình có thể yêu cầu điều chỉnh loại hoa, mật độ hoa hoặc thêm dải băng tưởng niệm. Cách phối này phù hợp với nhiều không gian tang lễ, từ tư gia đến nhà tang lễ, đồng thời tạo nên một điểm nhấn trang nhã cho toàn bộ nghi thức.', 8, NOW(), NOW()),
+                                                                                           (@sp1, 'TIEU_DE', 'Dịch vụ đi kèm chu đáo', 9, NOW(), NOW()),
+                                                                                           (@sp1, 'NOI_DUNG', 'Sản phẩm được kiểm tra kỹ trước khi bàn giao, hỗ trợ vận chuyển đến địa điểm tổ chức và phối hợp cùng đội nghi lễ khi cần. An Yên tư vấn kích thước, cách trang trí và phương án bố trí phù hợp với không gian thực tế, giúp gia đình giảm bớt áp lực trong thời điểm cần sự bình tĩnh và sẻ chia.', 10, NOW(), NOW());
+
+INSERT INTO sanphamhinhanh (
+    MaSanPham, MaChiTiet, LoaiHinhAnh, UrlHinhAnh, ThuTu, CreatedAt
+) VALUES (
+             @sp1, NULL, 'Chính',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/quantai1_mzhy8f.jpg',
+             1, NOW()
+         );
+
+-- ============================================================
+-- 2. BỘ NẾN LY MINI AN TÂM 4 SẮC
+-- ============================================================
+INSERT INTO sanpham (
+    tenSanPham, loai, noiThat, quyCach, tonGiao, giaTien,
+    MaDoiTac, SoLuong, thietKe, xuatXu, GhiChu, khuyenMai,
+    mauSac, HinhAnh, vatLieu, trangThai, kichThuoc, trongLuong, CNSX
+) VALUES (
+             'Bộ nến ly mini An Tâm 4 sắc',
+             'Nến tang lễ',
+             'Bộ 4 nến thơm ly thủy tinh, tim cotton ít khói',
+             'Bộ 4 ly, mỗi ly cháy khoảng 16–20 giờ',
+             'Phù hợp mọi tôn giáo và không gian tưởng niệm',
+             450000.00,
+             2,
+             80,
+             'Tối giản hiện đại, dễ bố trí trên bàn tưởng niệm',
+             'Việt Nam',
+             'Bộ nến nhỏ gọn tạo ánh sáng ấm áp, phù hợp bàn thờ, bàn tưởng niệm, lễ cầu nguyện và không gian gia đình.',
+             50000.00,
+             'Đỏ, hồng, tím, xanh dịu',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/nentang2_d4ye5w.webp',
+             'Sáp thực vật phối sáp khoáng tinh luyện, ly thủy tinh chịu nhiệt, tim cotton',
+             1,
+             'Mỗi ly khoảng 7 x 7 cm',
+             'Khoảng 0.8 kg/bộ',
+             'Đổ sáp kiểm soát nhiệt độ, cân tim thủ công và kiểm tra cháy thử trước khi đóng gói'
+         );
+SET @sp2 = LAST_INSERT_ID();
+
+INSERT INTO sanphamchitiet (MaSanPham, LoaiKhoi, NoiDung, ThuTu, CreatedAt, UpdatedAt) VALUES
+                                                                                           (@sp2, 'TIEU_DE', 'Ánh nến dịu dàng cho không gian tưởng niệm', 1, NOW(), NOW()),
+                                                                                           (@sp2, 'NOI_DUNG', 'Bộ nến ly mini An Tâm được thiết kế để mang lại nguồn sáng ấm áp, nhẹ nhàng và gần gũi trong những khoảnh khắc tưởng nhớ. Bốn sắc nến thanh nhã giúp gia đình linh hoạt phối hợp với hoa, ảnh kỷ niệm và các vật phẩm trên bàn thờ. Kích thước nhỏ gọn nhưng thời gian cháy ổn định, phù hợp sử dụng trong lễ viếng, lễ cầu nguyện hoặc những buổi tưởng niệm riêng tư tại gia đình.', 2, NOW(), NOW()),
+                                                                                           (@sp2, 'TIEU_DE', 'Tim cotton ít khói, cháy đều và an toàn', 3, NOW(), NOW()),
+                                                                                           (@sp2, 'NOI_DUNG', 'Mỗi ly nến sử dụng tim cotton được căn chỉnh thủ công để ngọn lửa cháy vừa phải, hạn chế khói đen và giảm hiện tượng cháy lệch. Ly thủy tinh chịu nhiệt giúp bảo vệ bề mặt bàn, đồng thời giữ sáp gọn gàng trong quá trình sử dụng. Khi đặt nến, nên sử dụng trên mặt phẳng chắc chắn và tránh khu vực có gió mạnh để duy trì ngọn lửa ổn định.', 4, NOW(), NOW()),
+                                                                                           (@sp2, 'TIEU_DE', 'Bốn gam màu mang ý nghĩa bình an', 5, NOW(), NOW()),
+                                                                                           (@sp2, 'NOI_DUNG', 'Sắc đỏ đại diện cho tình thân, sắc hồng gợi sự dịu dàng, sắc tím mang nét trầm lắng và sắc xanh tạo cảm giác thanh tịnh. Bộ màu được lựa chọn theo hướng nhã nhặn, không quá rực, phù hợp với không khí trang nghiêm của lễ tưởng niệm. Gia đình có thể thắp đồng thời cả bốn ly hoặc sử dụng luân phiên theo từng thời điểm.', 6, NOW(), NOW()),
+                                                                                           (@sp2, 'TIEU_DE', 'Hương thơm nhẹ, không lấn át không gian nghi lễ', 7, NOW(), NOW()),
+                                                                                           (@sp2, 'NOI_DUNG', 'Nến có mùi hương dịu với cường độ vừa phải, giúp không gian bớt lạnh lẽo nhưng vẫn giữ được sự trang nghiêm. Công thức hương được định hướng thanh sạch, không quá ngọt và không gây cảm giác nồng khi sử dụng trong phòng kín. Đây là lựa chọn phù hợp cho gia đình yêu thích phong cách tưởng niệm hiện đại, tinh tế và tối giản.', 8, NOW(), NOW()),
+                                                                                           (@sp2, 'TIEU_DE', 'Đóng gói chỉn chu, thuận tiện sử dụng', 9, NOW(), NOW()),
+                                                                                           (@sp2, 'NOI_DUNG', 'Mỗi bộ gồm bốn ly nến được đóng gói chống va đập và kiểm tra ngoại quan trước khi giao. Sản phẩm có thể kết hợp cùng kệ hoa, khung ảnh, sổ tang hoặc bộ vật phẩm tưởng niệm để tạo thành một không gian đồng bộ. An Yên hỗ trợ tư vấn số lượng nến theo diện tích bàn thờ và thời gian tổ chức lễ.', 10, NOW(), NOW());
+
+INSERT INTO sanphamhinhanh (
+    MaSanPham, MaChiTiet, LoaiHinhAnh, UrlHinhAnh, ThuTu, CreatedAt
+) VALUES (
+             @sp2, NULL, 'Chính',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/nentang2_d4ye5w.webp',
+             1, NOW()
+         );
+
+-- ============================================================
+-- 3. QUAN TÀI NGHỆ THUẬT SMART MEMORIAL
+-- ============================================================
+INSERT INTO sanpham (
+    tenSanPham, loai, noiThat, quyCach, tonGiao, giaTien,
+    MaDoiTac, SoLuong, thietKe, xuatXu, GhiChu, khuyenMai,
+    mauSac, HinhAnh, vatLieu, trangThai, kichThuoc, trongLuong, CNSX
+) VALUES (
+             'Quan tài nghệ thuật Smart Memorial',
+             'Quan tài',
+             'Lót nỉ đen cao cấp, đệm định hình và gối đồng bộ',
+             'Dáng hộp hiện đại, nắp phẳng in đồ họa theo yêu cầu',
+             'Không phân biệt tôn giáo',
+             32000000.00,
+             1,
+             2,
+             'Cá nhân hóa hiện đại, phong cách công nghệ',
+             'Việt Nam',
+             'Mẫu quan tài nghệ thuật dành cho gia đình mong muốn lưu giữ dấu ấn riêng của người đã khuất thông qua hình ảnh và chủ đề cá nhân hóa.',
+             2000000.00,
+             'Đen, viền bạc',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/quantai2_vakurw.jpg',
+             'Gỗ công nghiệp chống ẩm phủ composite, viền hợp kim và lớp in bảo vệ',
+             1,
+             '205 x 70 x 55 cm',
+             'Khoảng 78 kg',
+             'Gia công CNC, phủ composite chống ẩm và in UV độ phân giải cao'
+         );
+SET @sp3 = LAST_INSERT_ID();
+
+INSERT INTO sanphamchitiet (MaSanPham, LoaiKhoi, NoiDung, ThuTu, CreatedAt, UpdatedAt) VALUES
+                                                                                           (@sp3, 'TIEU_DE', 'Lưu giữ cá tính riêng trong một thiết kế tưởng niệm hiện đại', 1, NOW(), NOW()),
+                                                                                           (@sp3, 'NOI_DUNG', 'Smart Memorial là mẫu quan tài nghệ thuật hướng đến sự cá nhân hóa, phù hợp với gia đình mong muốn kể lại một phần câu chuyện, sở thích hoặc dấu ấn đặc biệt của người đã khuất. Thiết kế lấy cảm hứng từ ngôn ngữ công nghệ hiện đại, sử dụng nền đen sang trọng cùng bề mặt đồ họa nổi bật. Sản phẩm mang đến một cách thể hiện mới mẻ nhưng vẫn giữ trọn sự tôn kính cần có trong nghi lễ tiễn biệt.', 2, NOW(), NOW()),
+                                                                                           (@sp3, 'TIEU_DE', 'Bề mặt in UV sắc nét và có lớp bảo vệ', 3, NOW(), NOW()),
+                                                                                           (@sp3, 'NOI_DUNG', 'Phần đồ họa trên nắp được thực hiện bằng công nghệ in UV độ phân giải cao, giúp hình ảnh rõ nét và màu sắc ổn định. Sau khi in, bề mặt được phủ lớp bảo vệ nhằm hạn chế trầy xước trong quá trình vận chuyển và bố trí nghi lễ. Gia đình có thể lựa chọn chủ đề hình ảnh, màu sắc, câu chữ ngắn hoặc biểu tượng mang ý nghĩa riêng.', 4, NOW(), NOW()),
+                                                                                           (@sp3, 'TIEU_DE', 'Kết cấu hiện đại, chắc chắn và gọn gàng', 5, NOW(), NOW()),
+                                                                                           (@sp3, 'NOI_DUNG', 'Thân sản phẩm sử dụng vật liệu gỗ công nghiệp chống ẩm kết hợp lớp phủ composite, tạo bề mặt đồng đều và giảm ảnh hưởng của thay đổi nhiệt độ, độ ẩm. Khung bên trong được gia cường tại các vị trí chịu lực, tay cầm bố trí cân đối giúp việc di chuyển thuận tiện. Các góc cạnh được bo và hoàn thiện kỹ để bảo đảm tính thẩm mỹ.', 6, NOW(), NOW()),
+                                                                                           (@sp3, 'TIEU_DE', 'Nội thất tối màu trang trọng', 7, NOW(), NOW()),
+                                                                                           (@sp3, 'NOI_DUNG', 'Khoang bên trong được lót nỉ đen cao cấp, kết hợp đệm định hình và gối đồng bộ. Tông màu trầm tạo sự thống nhất với ngoại thất, đồng thời mang lại cảm giác trang nghiêm, kín đáo. Gia đình có thể yêu cầu thay đổi màu lót hoặc bổ sung biểu tượng tôn giáo để phù hợp với nghi thức riêng.', 8, NOW(), NOW()),
+                                                                                           (@sp3, 'TIEU_DE', 'Dịch vụ cá nhân hóa theo yêu cầu gia đình', 9, NOW(), NOW()),
+                                                                                           (@sp3, 'NOI_DUNG', 'Đội ngũ thiết kế của An Yên tiếp nhận nội dung, hình ảnh và ý tưởng từ gia đình, sau đó dựng bản xem trước để xác nhận trước khi sản xuất. Quy trình này giúp kiểm soát bố cục, màu sắc và thông điệp tưởng niệm. Sản phẩm phù hợp với các nghi lễ hiện đại, lễ tiễn biệt cá nhân hóa hoặc những gia đình muốn lưu giữ một hình ảnh thật riêng biệt và đáng nhớ.', 10, NOW(), NOW());
+
+INSERT INTO sanphamhinhanh (
+    MaSanPham, MaChiTiet, LoaiHinhAnh, UrlHinhAnh, ThuTu, CreatedAt
+) VALUES (
+             @sp3, NULL, 'Chính',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/quantai2_vakurw.jpg',
+             1, NOW()
+         );
+
+-- ============================================================
+-- 4. KỆ HOA TANG LỄ VĨNH BIỆT THANH KHIẾT
+-- ============================================================
+INSERT INTO sanpham (
+    tenSanPham, loai, noiThat, quyCach, tonGiao, giaTien,
+    MaDoiTac, SoLuong, thietKe, xuatXu, GhiChu, khuyenMai,
+    mauSac, HinhAnh, vatLieu, trangThai, kichThuoc, trongLuong, CNSX
+) VALUES (
+             'Kệ hoa tang lễ Vĩnh Biệt Thanh Khiết',
+             'Hoa tang lễ',
+             'Ba vòng hoa kết tầng, điểm hoa ly và hoa trắng cao cấp',
+             'Kệ đứng 3 tầng, dáng dọc',
+             'Phù hợp mọi tôn giáo',
+             3800000.00,
+             2,
+             20,
+             'Thanh lịch, trang nghiêm, bố cục ba tầng',
+             'Việt Nam',
+             'Kệ hoa trắng cao cấp gửi gắm lời chia buồn chân thành, phù hợp lễ viếng tại tư gia, nhà tang lễ hoặc cơ quan.',
+             300000.00,
+             'Trắng, xanh lá nhạt',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/hoatang1_wqkucc.jpg',
+             'Hoa ly, hoa cúc, hoa hồng trắng, hoa phụ và lá trang trí',
+             1,
+             'Cao khoảng 180 cm, rộng khoảng 80 cm',
+             'Khoảng 18 kg',
+             'Cắm hoa thủ công trên khung gia cố, giữ ẩm bằng mút chuyên dụng'
+         );
+SET @sp4 = LAST_INSERT_ID();
+
+INSERT INTO sanphamchitiet (MaSanPham, LoaiKhoi, NoiDung, ThuTu, CreatedAt, UpdatedAt) VALUES
+                                                                                           (@sp4, 'TIEU_DE', 'Sắc trắng thanh khiết thay lời tiễn biệt', 1, NOW(), NOW()),
+                                                                                           (@sp4, 'NOI_DUNG', 'Kệ hoa Vĩnh Biệt Thanh Khiết sử dụng sắc trắng làm chủ đạo, tượng trưng cho sự tinh khôi, bình an và lòng thành kính. Bố cục ba tầng tạo chiều cao trang trọng, giúp kệ hoa nổi bật trong không gian lễ viếng nhưng vẫn giữ vẻ nhã nhặn. Đây là lựa chọn phù hợp để gia đình, bạn bè, đồng nghiệp hoặc tập thể gửi lời phân ưu chân thành đến người đã khuất.', 2, NOW(), NOW()),
+                                                                                           (@sp4, 'TIEU_DE', 'Bố cục ba tầng cân đối và giàu chiều sâu', 3, NOW(), NOW()),
+                                                                                           (@sp4, 'NOI_DUNG', 'Ba vòng hoa được kết nối theo trục dọc, tạo cảm giác liền mạch và hướng thượng. Hoa ly và hoa cúc được bố trí xen kẽ cùng hoa hồng trắng, hoa phụ và lá xanh nhằm tạo độ mềm mại tự nhiên. Phần chân kệ được hoàn thiện bằng nơ trắng, giúp tổng thể gọn gàng, trang nghiêm và phù hợp với nhiều phong cách tổ chức tang lễ.', 4, NOW(), NOW()),
+                                                                                           (@sp4, 'TIEU_DE', 'Hoa tươi được tuyển chọn trong ngày', 5, NOW(), NOW()),
+                                                                                           (@sp4, 'NOI_DUNG', 'Hoa được lựa chọn theo tiêu chí cánh khỏe, màu đồng đều và độ nở phù hợp với thời gian diễn ra lễ viếng. Mút giữ ẩm chuyên dụng giúp duy trì độ tươi trong suốt thời gian trưng bày. Tùy mùa, một số loại hoa có thể được thay thế bằng giống tương đương nhưng vẫn bảo đảm đúng tông màu, giá trị thẩm mỹ và tinh thần của mẫu thiết kế.', 6, NOW(), NOW()),
+                                                                                           (@sp4, 'TIEU_DE', 'Thông điệp chia buồn được thiết kế riêng', 7, NOW(), NOW()),
+                                                                                           (@sp4, 'NOI_DUNG', 'Gia đình hoặc đơn vị đặt hoa có thể cung cấp nội dung trên băng rôn, tên người gửi và lời tiễn biệt. Nội dung được trình bày rõ ràng, trang trọng, hạn chế lỗi chính tả và cân đối với tổng thể kệ hoa. An Yên hỗ trợ gợi ý câu chữ phù hợp trong trường hợp khách hàng chưa lựa chọn được thông điệp.', 8, NOW(), NOW()),
+                                                                                           (@sp4, 'TIEU_DE', 'Giao và bố trí tận nơi', 9, NOW(), NOW()),
+                                                                                           (@sp4, 'NOI_DUNG', 'Kệ hoa được vận chuyển bằng phương tiện phù hợp, hạn chế dập cánh và xô lệch bố cục. Nhân viên hỗ trợ đặt kệ đúng vị trí tại tư gia, nhà tang lễ hoặc địa điểm tổ chức, đồng thời kiểm tra lại băng rôn và dáng hoa trước khi bàn giao. Dịch vụ hướng đến sự đúng giờ, chỉn chu và tôn trọng tuyệt đối không gian nghi lễ.', 10, NOW(), NOW());
+
+INSERT INTO sanphamhinhanh (
+    MaSanPham, MaChiTiet, LoaiHinhAnh, UrlHinhAnh, ThuTu, CreatedAt
+) VALUES (
+             @sp4, NULL, 'Chính',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/hoatang1_wqkucc.jpg',
+             1, NOW()
+         );
+
+-- ============================================================
+-- 5. NẾN TƯỞNG NIỆM BẠCH LIÊN
+-- ============================================================
+INSERT INTO sanpham (
+    tenSanPham, loai, noiThat, quyCach, tonGiao, giaTien,
+    MaDoiTac, SoLuong, thietKe, xuatXu, GhiChu, khuyenMai,
+    mauSac, HinhAnh, vatLieu, trangThai, kichThuoc, trongLuong, CNSX
+) VALUES (
+             'Nến tưởng niệm Bạch Liên',
+             'Nến tang lễ',
+             'Nến trụ phối hoa hồng trắng và dải ruy băng tưởng niệm',
+             '01 nến trụ, 01 hoa trang trí và ruy băng đồng bộ',
+             'Phù hợp mọi tôn giáo',
+             350000.00,
+             2,
+             60,
+             'Trang nghiêm tối giản',
+             'Việt Nam',
+             'Mẫu nến tưởng niệm thanh lịch, phù hợp bàn thờ, bàn ký sổ tang, góc lưu niệm hoặc lễ cầu nguyện.',
+             30000.00,
+             'Trắng ngà, đen',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131155/nentang1_nnkq8y.jpg',
+             'Sáp paraffin tinh luyện phối sáp ong, tim cotton, hoa lụa cao cấp và ruy băng',
+             1,
+             'Nến cao khoảng 20 cm, đường kính 7 cm',
+             'Khoảng 0.6 kg',
+             'Đúc nến thủ công, căn tim chống lệch và hoàn thiện phụ kiện bằng tay'
+         );
+SET @sp5 = LAST_INSERT_ID();
+
+INSERT INTO sanphamchitiet (MaSanPham, LoaiKhoi, NoiDung, ThuTu, CreatedAt, UpdatedAt) VALUES
+                                                                                           (@sp5, 'TIEU_DE', 'Một ngọn nến nhỏ, một khoảng lặng đầy yêu thương', 1, NOW(), NOW()),
+                                                                                           (@sp5, 'NOI_DUNG', 'Nến tưởng niệm Bạch Liên được tạo nên dành cho những khoảnh khắc cần sự lắng đọng. Ánh nến vàng ấm nổi bật trên nền trắng và đen, tạo nên một góc tưởng niệm trang nghiêm, thanh sạch và gần gũi. Sản phẩm phù hợp đặt cạnh di ảnh, sổ tang, bình hoa hoặc những kỷ vật gắn bó với người đã khuất.', 2, NOW(), NOW()),
+                                                                                           (@sp5, 'TIEU_DE', 'Thiết kế trắng – đen tối giản và tinh tế', 3, NOW(), NOW()),
+                                                                                           (@sp5, 'NOI_DUNG', 'Nến trụ màu trắng ngà được kết hợp cùng hoa hồng trắng và dải ruy băng đen, tạo nên ngôn ngữ thị giác cân bằng giữa sự thanh khiết và nỗi tiếc thương. Kiểu dáng tối giản giúp sản phẩm dễ hòa hợp với nhiều không gian tưởng niệm, từ truyền thống đến hiện đại, mà không làm mất đi vẻ trang nghiêm cần thiết.', 4, NOW(), NOW()),
+                                                                                           (@sp5, 'TIEU_DE', 'Ngọn lửa ổn định, thời gian cháy lâu', 5, NOW(), NOW()),
+                                                                                           (@sp5, 'NOI_DUNG', 'Tim cotton được căn giữa giúp ngọn lửa cháy tương đối ổn định và hạn chế khói đen khi sử dụng đúng hướng dẫn. Thân nến được đúc đặc, phù hợp thắp trong nhiều giờ. Để bảo đảm an toàn, nên đặt nến trên đế chịu nhiệt, tránh rèm vải, giấy và khu vực có trẻ nhỏ hoặc vật nuôi.', 6, NOW(), NOW()),
+                                                                                           (@sp5, 'TIEU_DE', 'Phù hợp nhiều mục đích tưởng niệm', 7, NOW(), NOW()),
+                                                                                           (@sp5, 'NOI_DUNG', 'Ngoài sử dụng trong lễ tang, nến Bạch Liên còn phù hợp cho ngày giỗ, lễ cầu siêu, lễ tưởng niệm tập thể hoặc góc lưu niệm tại gia đình. Thiết kế gọn gàng giúp dễ bố trí trong không gian nhỏ. Khách hàng có thể yêu cầu thêm thẻ tên, ngày tháng hoặc một câu tưởng nhớ ngắn để tăng tính cá nhân hóa.', 8, NOW(), NOW()),
+                                                                                           (@sp5, 'TIEU_DE', 'Đóng gói bảo vệ và giao hàng cẩn trọng', 9, NOW(), NOW()),
+                                                                                           (@sp5, 'NOI_DUNG', 'Sản phẩm được bọc chống trầy, cố định hoa và ruy băng trước khi đặt vào hộp. Nhân viên kiểm tra bề mặt nến, tim nến và phụ kiện trước khi bàn giao. An Yên có thể phối hợp sản phẩm cùng hoa trắng, khung ảnh và vật phẩm tưởng niệm khác để tạo nên một bộ trang trí đồng nhất, trang nghiêm và giàu cảm xúc.', 10, NOW(), NOW());
+
+INSERT INTO sanphamhinhanh (
+    MaSanPham, MaChiTiet, LoaiHinhAnh, UrlHinhAnh, ThuTu, CreatedAt
+) VALUES (
+             @sp5, NULL, 'Chính',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131155/nentang1_nnkq8y.jpg',
+             1, NOW()
+         );
+
+-- ============================================================
+-- 6. KỆ HOA CHIA BUỒN HOÀNG ÂN
+-- ============================================================
+INSERT INTO sanpham (
+    tenSanPham, loai, noiThat, quyCach, tonGiao, giaTien,
+    MaDoiTac, SoLuong, thietKe, xuatXu, GhiChu, khuyenMai,
+    mauSac, HinhAnh, vatLieu, trangThai, kichThuoc, trongLuong, CNSX
+) VALUES (
+             'Kệ hoa chia buồn Hoàng Ân',
+             'Hoa tang lễ',
+             'Vòng hoa lớn kết tầng, chân hoa vàng và băng rôn chia buồn',
+             'Kệ đứng 2 tầng, vòng tròn trung tâm',
+             'Phù hợp mọi tôn giáo',
+             2900000.00,
+             2,
+             25,
+             'Trang trọng, nổi bật với sắc vàng chủ đạo',
+             'Việt Nam',
+             'Kệ hoa vàng thể hiện sự trân trọng, biết ơn và lời tiễn biệt chân thành. Phù hợp đặt tại nhà tang lễ, tư gia hoặc lễ viếng của cơ quan.',
+             200000.00,
+             'Vàng, xanh lá',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/hoatang2_dy55rt.jpg',
+             'Hoa cúc vàng, hoa hồng vàng, hoa lan, lá cọ và lá phụ',
+             1,
+             'Cao khoảng 170 cm, rộng khoảng 85 cm',
+             'Khoảng 16 kg',
+             'Cắm hoa thủ công trên khung đứng gia cố, sử dụng mút giữ ẩm chuyên dụng'
+         );
+SET @sp6 = LAST_INSERT_ID();
+
+INSERT INTO sanphamchitiet (MaSanPham, LoaiKhoi, NoiDung, ThuTu, CreatedAt, UpdatedAt) VALUES
+                                                                                           (@sp6, 'TIEU_DE', 'Sắc vàng của lòng biết ơn và sự trân trọng', 1, NOW(), NOW()),
+                                                                                           (@sp6, 'NOI_DUNG', 'Kệ hoa chia buồn Hoàng Ân mang sắc vàng chủ đạo, tượng trưng cho sự trân quý, lòng biết ơn và những ký ức tốt đẹp dành cho người đã khuất. Thiết kế vòng tròn trung tâm thể hiện sự trọn vẹn, kết hợp tầng hoa phía dưới tạo cảm giác vững chãi và trang trọng. Mẫu hoa phù hợp với lễ viếng của gia đình, bạn bè, đồng nghiệp hoặc đại diện cơ quan, tổ chức.', 2, NOW(), NOW()),
+                                                                                           (@sp6, 'TIEU_DE', 'Bố cục nổi bật nhưng vẫn giữ sự trang nghiêm', 3, NOW(), NOW()),
+                                                                                           (@sp6, 'NOI_DUNG', 'Vòng hoa lớn được kết từ hoa cúc và hoa hồng vàng, bao quanh bởi các lớp lá xanh tạo độ tương phản rõ ràng. Phần chân kệ sử dụng hoa vàng theo dáng hướng lên, giúp tổng thể cân đối và dễ nhìn từ xa. Nơ và băng rôn được bố trí gọn gàng, không che khuất hoa và bảo đảm nội dung chia buồn được thể hiện trang trọng.', 4, NOW(), NOW()),
+                                                                                           (@sp6, 'TIEU_DE', 'Hoa tươi, màu sắc đồng đều', 5, NOW(), NOW()),
+                                                                                           (@sp6, 'NOI_DUNG', 'Các cành hoa được tuyển chọn theo độ nở phù hợp, ưu tiên màu vàng tươi nhưng không quá chói. Mút giữ ẩm được bổ sung đầy đủ để duy trì độ tươi trong thời gian trưng bày. Trong trường hợp một loại hoa không có đúng mùa, An Yên sẽ chủ động trao đổi và thay thế bằng loại hoa tương đương, giữ nguyên tông màu và bố cục chính.', 6, NOW(), NOW()),
+                                                                                           (@sp6, 'TIEU_DE', 'Băng rôn được cá nhân hóa theo người gửi', 7, NOW(), NOW()),
+                                                                                           (@sp6, 'NOI_DUNG', 'Khách hàng có thể cung cấp tên người viếng, tên cơ quan và nội dung chia buồn. Đội ngũ thực hiện sẽ kiểm tra chính tả, cách xưng hô và độ dài câu chữ trước khi in. Với khách hàng cần giao gấp, An Yên hỗ trợ gợi ý mẫu nội dung ngắn gọn, lịch sự và phù hợp với mối quan hệ giữa người gửi và gia quyến.', 8, NOW(), NOW()),
+                                                                                           (@sp6, 'TIEU_DE', 'Giao đúng giờ, lắp đặt hoàn chỉnh', 9, NOW(), NOW()),
+                                                                                           (@sp6, 'NOI_DUNG', 'Kệ hoa được cố định chắc chắn trước khi vận chuyển, hạn chế nghiêng đổ và dập cánh. Nhân viên giao hoa hỗ trợ đặt đúng khu vực, chỉnh lại dáng hoa và xác nhận nội dung băng rôn tại địa điểm. Mỗi đơn hàng đều được ưu tiên về thời gian, bởi sự đúng giờ và chỉn chu là cách An Yên thể hiện sự tôn trọng đối với gia đình trong thời khắc quan trọng.', 10, NOW(), NOW());
+
+INSERT INTO sanphamhinhanh (
+    MaSanPham, MaChiTiet, LoaiHinhAnh, UrlHinhAnh, ThuTu, CreatedAt
+) VALUES (
+             @sp6, NULL, 'Chính',
+             'https://res.cloudinary.com/dnj7xhvs1/image/upload/v1784131156/hoatang2_dy55rt.jpg',
+             1, NOW()
+         );
+

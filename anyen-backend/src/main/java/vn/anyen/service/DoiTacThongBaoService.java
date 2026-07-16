@@ -51,6 +51,10 @@ public class DoiTacThongBaoService {
 
     // Pattern để parse maSanPham từ NoiDung: [MASP:123]
     private static final Pattern MASP_PATTERN = Pattern.compile("\\[MASP:(\\d+)\\]");
+    private static final Pattern TEN_SAN_PHAM_PATTERN = Pattern.compile(
+            "Sản phẩm\\s+\"([^\"]+)\"",
+            Pattern.CASE_INSENSITIVE
+    );
 
     @Transactional(readOnly = true)
     public List<DoiTacThongBaoResponse> getThongBao(Authentication authentication) {
@@ -378,6 +382,25 @@ public class DoiTacThongBaoService {
         return null;
     }
 
+    private String parseTenSanPhamFromNoiDung(String noiDung) {
+        if (noiDung == null || noiDung.isBlank()) {
+            return null;
+        }
+
+        Matcher matcher = TEN_SAN_PHAM_PATTERN.matcher(noiDung);
+        return matcher.find() ? matcher.group(1).trim() : null;
+    }
+
+    private String cleanNoiDungSanPham(String noiDung) {
+        if (noiDung == null) {
+            return "";
+        }
+
+        return MASP_PATTERN.matcher(noiDung)
+                .replaceAll("")
+                .trim();
+    }
+
     private DoiTacThongBaoResponse mapToThongBaoResponse(
             ThongBaoDoiTac thongBao,
             Integer maDoiTac
@@ -609,20 +632,45 @@ public class DoiTacThongBaoService {
     ) {
         Integer maSanPham = parseMaSanPhamFromNoiDung(thongBao.getNoiDung());
         SanPham sanPham = null;
+
         if (maSanPham != null) {
             sanPham = sanPhamRepository.findById(maSanPham).orElse(null);
+        }
+
+        // Tương thích dữ liệu cũ: thông báo từ chối trước đây chưa gắn [MASP:id].
+        // Khôi phục sản phẩm bằng tên nằm trong chuỗi: Sản phẩm "..." đã bị từ chối.
+        if (sanPham == null && thongBao.getDoiTac() != null) {
+            String tenSanPham = parseTenSanPhamFromNoiDung(thongBao.getNoiDung());
+
+            if (tenSanPham != null) {
+                sanPham = sanPhamRepository
+                        .findFirstByMaDoiTacAndTenSanPhamIgnoreCaseOrderByMaSanPhamDesc(
+                                thongBao.getDoiTac().getMaDoiTac(),
+                                tenSanPham
+                        )
+                        .orElse(null);
+
+                if (sanPham != null) {
+                    maSanPham = sanPham.getMaSanPham();
+                }
+            }
         }
 
         boolean daDuyet = DA_CHAP_NHAN.equals(thongBao.getTrangThaiThongBao());
         boolean daTuChoi = DA_TU_CHOI.equals(thongBao.getTrangThaiThongBao());
 
         String actionText;
+        String icon;
+
         if (daDuyet) {
-            actionText = "Sản phẩm đã được duyệt và đang bán";
+            actionText = "Xem sản phẩm đã được duyệt";
+            icon = "fa-solid fa-circle-check";
         } else if (daTuChoi) {
-            actionText = "Sản phẩm đã bị từ chối";
+            actionText = "Xem lý do từ chối";
+            icon = "fa-solid fa-circle-xmark";
         } else {
-            actionText = "Thông báo sản phẩm";
+            actionText = "Xem thông báo sản phẩm";
+            icon = "fa-regular fa-clock";
         }
 
         final SanPham sp = sanPham;
@@ -630,9 +678,9 @@ public class DoiTacThongBaoService {
                 .id(thongBao.getMaThongBao())
                 .category("product")
                 .type("product")
-                .icon(daDuyet ? "fa-solid fa-circle-check" : "fa-solid fa-circle-xmark")
+                .icon(icon)
                 .title(thongBao.getTieuDe())
-                .desc(thongBao.getNoiDung())
+                .desc(cleanNoiDungSanPham(thongBao.getNoiDung()))
                 .actionText(actionText)
                 .time(formatDateTime(thongBao.getThoiGianTao()))
                 .isNew(!Boolean.TRUE.equals(thongBao.getDaDoc()))
@@ -642,7 +690,7 @@ public class DoiTacThongBaoService {
                 .customer(null)
                 .product(DoiTacThongBaoResponse.ProductInfo.builder()
                         .id(sp != null ? sp.getMaSanPham() : maSanPham)
-                        .name(sp != null ? sp.getTenSanPham() : "Sản phẩm đã bị xóa")
+                        .name(sp != null ? sp.getTenSanPham() : "Không tìm thấy sản phẩm")
                         .desc(sp != null ? sp.getLoai() : "")
                         .quantity(sp != null && sp.getSoLuong() != null ? sp.getSoLuong() : 0)
                         .price(sp != null && sp.getGiaTien() != null ? sp.getGiaTien() : BigDecimal.ZERO)
@@ -651,6 +699,7 @@ public class DoiTacThongBaoService {
                 .note(thongBao.getLyDoTuChoi())
                 .build();
     }
+
     public void taoThongBaoTuChoiSanPham(SanPham sanPham, String lyDoTuChoi) {
 
         if (sanPham == null || sanPham.getMaDoiTac() == null) {

@@ -93,8 +93,13 @@ const isCancelReasonValid = computed(() => {
 });
 
 const canCancelOrder = (order) => {
-  const status = order?.trangThai || order?.TrangThai || "";
-  return status !== "Đã hủy" && status !== "Hoàn thành";
+  const status = order?.trangThai ?? order?.TrangThai ?? "";
+
+  return ![
+    "Đã hủy",
+    "Hoàn thành",
+    "Đối tác đã từ chối",
+  ].includes(status);
 };
 
 const openCancelDialog = (order) => {
@@ -259,8 +264,14 @@ const buildUpdateOrderPayload = (order) => {
     email: order?.emailKH || order?.email || "",
     diaChi: order?.diaChiKH || order?.diaChi || "",
     ghiChu: order?.GhiChu || order?.ghiChuNoiBo || order?.ghiChu || "",
-    phuongThucThanhToan: order?.phuongThucThanhToan || "Chưa chọn",
-    trangThaiThanhToan: order?.trangThaiThanhToan || "Chưa thanh toán",
+    phuongThucThanhToan:
+      order?.phuongThucThanhToanCode ??
+      order?.phuongThucThanhToan ??
+      0,
+    trangThaiThanhToan:
+      order?.trangThaiThanhToanCode ??
+      order?.trangThaiThanhToan ??
+      0,
     items: sanPhams.map((sp) => ({
       maSanPham: sp.MaSanPham || sp.maSanPham,
       soLuong: Number(sp.SoLuong || sp.soLuong || 1),
@@ -402,7 +413,10 @@ const trangThaiBadgeClass = (tt) => {
   if (tt === "Đang xử lý") return "badge-orange";
   if (tt === "Chờ thanh toán") return "badge-purple";
   if (tt === "Hoàn thành") return "badge-green";
-  if (tt === "Đã hủy") return "badge-red";
+  if (tt === "Đã hủy" || tt === "Đối tác đã từ chối") {
+    return "badge-red";
+  }
+
   return "badge-gray";
 };
 
@@ -546,6 +560,7 @@ const confirmCashPayment = async () => {
           <option>Chờ thanh toán</option>
           <option>Hoàn thành</option>
           <option>Đã hủy</option>
+          <option>Đối tác đã từ chối</option>
         </select>
       </div>
 

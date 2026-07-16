@@ -394,18 +394,38 @@ public class DonHangService {
         return tongTien;
     }
 
-    private String getTrangThaiString(Integer tt) {
-        if(tt == null) return "Khong xac dinh";
-        switch(tt) {
-            case 1: return "Mới tạo";
-            case 2: return "Chờ đối tác xác nhận";
-            case 3: return "Đã xác nhận";
-            case 4: return "Đang xử lý";
-            case 5: return "Chờ thanh toán";
-            case 6: return "Hoàn thành";
-            case 7: return "Đã hủy";
-            case 8: return "Đối tác đã từ chối";
-            default: return "Khong xac dinh";
+    private Integer chuanHoaTrangThaiDonHang(Integer trangThai) {
+        // Trạng thái 0 là dữ liệu cũ/không hợp lệ. Quy đổi về trạng thái đầu tiên
+        // để API không còn trả về 0 và đơn hàng vẫn có thể tiếp tục xử lý.
+        if (trangThai == null || trangThai == 0) {
+            return DonHang.TT_MOI_TAO;
+        }
+
+        return trangThai;
+    }
+
+    private String getTrangThaiString(Integer trangThai) {
+        Integer tt = chuanHoaTrangThaiDonHang(trangThai);
+
+        switch (tt) {
+            case 1:
+                return "Mới tạo";
+            case 2:
+                return "Chờ đối tác xác nhận";
+            case 3:
+                return "Đã xác nhận";
+            case 4:
+                return "Đang xử lý";
+            case 5:
+                return "Chờ thanh toán";
+            case 6:
+                return "Hoàn thành";
+            case 7:
+                return "Đã hủy";
+            case 8:
+                return "Đối tác đã từ chối";
+            default:
+                return "Không xác định";
         }
     }
 
@@ -440,7 +460,13 @@ public class DonHangService {
             throw new RuntimeException("Trạng thái không được để trống.");
         }
 
-        Integer trangThaiHienTai = donHang.getTrangThai();
+        Integer trangThaiHienTai = chuanHoaTrangThaiDonHang(
+                donHang.getTrangThai()
+        );
+
+        if (!trangThaiHienTai.equals(donHang.getTrangThai())) {
+            donHang.setTrangThai(trangThaiHienTai);
+        }
 
         if (DonHang.TT_DA_HUY.equals(trangThaiHienTai)) {
             throw new RuntimeException(
@@ -681,7 +707,7 @@ public class DonHangService {
 
                 .NgayTaoDon(donHang.getNgayTaoDon())
                 .tongTien(donHang.getTongTien())
-                .trangThai(donHang.getTrangThai())
+                .trangThai(chuanHoaTrangThaiDonHang(donHang.getTrangThai()))
                 .GhiChu(donHang.getGhiChu())
                 .phuongThucThanhToan(donHang.getPhuongThucThanhToan())
                 .trangThaiThanhToan(donHang.getTrangThaiThanhToan())

@@ -112,7 +112,7 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
                 FROM thongbaodoitac tbdt
                 WHERE tbdt.MaDonHang = :maDonHang
                   AND tbdt.Loai = 'DON_HANG'
-                  AND tbdt.TrangThaiThongBao = 1
+                  AND tbdt.TrangThaiThongBao = 'DA_CHAP_NHAN'
                 """,
             nativeQuery = true
     )
@@ -125,7 +125,7 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
                 FROM thongbaodoitac tbdt
                 WHERE tbdt.MaDonHang = :maDonHang
                   AND tbdt.Loai = 'DON_HANG'
-                  AND tbdt.TrangThaiThongBao = 2
+                  AND tbdt.TrangThaiThongBao = 'DA_TU_CHOI'
                 """,
             nativeQuery = true
     )

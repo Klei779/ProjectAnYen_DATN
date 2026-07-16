@@ -130,7 +130,7 @@ public class DoiTacThongBaoService {
         DonHang donHang = thongBao.getDonHang();
 
         if (donHang != null) {
-            donHang.setTrangThai(DonHang.TT_DA_HUY);
+            donHang.setTrangThai(DonHang.TT_DOI_TAC_TU_CHOI);
 
             String ghiChuCu = donHang.getGhiChu() == null
                     ? ""

@@ -933,3 +933,56 @@ INSERT INTO sanphamhinhanh (
              1, NOW()
          );
 
+SET @OLD_SQL_SAFE_UPDATES := @@SQL_SAFE_UPDATES;
+SET SQL_SAFE_UPDATES = 0;
+
+-- Xem dữ liệu lỗi trước khi sửa.
+SELECT
+    `MaDonHang`,
+    `TrangThai`,
+    `NgayTaoDon`,
+    `GhiChu`
+FROM `donhang`
+WHERE `TrangThai` IS NULL OR `TrangThai` = 0
+ORDER BY `MaDonHang`;
+
+-- Khôi phục trạng thái hợp lý nhất dựa trên thông báo đã gửi cho đối tác.
+-- Có đối tác từ chối             -> 8
+-- Tất cả đối tác đã chấp nhận    -> 3
+-- Đã gửi thông báo nhưng còn chờ -> 2
+-- Chưa có thông báo              -> 1
+UPDATE `donhang` AS dh
+    LEFT JOIN (
+        SELECT
+            `MaDonHang`,
+            COUNT(*) AS `SoThongBao`,
+            MAX(
+                    CASE
+                        WHEN `TrangThaiThongBao` = 'DA_TU_CHOI' THEN 1
+                        ELSE 0
+                        END
+            ) AS `CoTuChoi`,
+            MIN(
+                    CASE
+                        WHEN `TrangThaiThongBao` = 'DA_CHAP_NHAN' THEN 1
+                        ELSE 0
+                        END
+            ) AS `TatCaChapNhan`
+        FROM `thongbaodoitac`
+        WHERE `Loai` = 'DON_HANG'
+          AND `MaDonHang` IS NOT NULL
+        GROUP BY `MaDonHang`
+    ) AS tb ON tb.`MaDonHang` = dh.`MaDonHang`
+SET dh.`TrangThai` = CASE
+                         WHEN COALESCE(tb.`CoTuChoi`, 0) = 1 THEN 8
+                         WHEN COALESCE(tb.`SoThongBao`, 0) > 0
+                             AND COALESCE(tb.`TatCaChapNhan`, 0) = 1 THEN 3
+                         WHEN COALESCE(tb.`SoThongBao`, 0) > 0 THEN 2
+                         ELSE 1
+    END
+WHERE dh.`TrangThai` IS NULL OR dh.`TrangThai` = 0;
+
+-- Không cho bản ghi mới tiếp tục nhận NULL hoặc 0 do bỏ trống cột.
+ALTER TABLE `donhang`
+    MODIFY COLUMN `TrangThai` INT NOT NULL DEFAULT 1
+        COMMENT '1=Mới tạo, 2=Chờ đối tác xác nhận, 3=Đã xác nhận, 4=Đang xử lý, 5=Chờ thanh toán, 6=Hoàn thành, 7=Đã hủy, 8=Đối tác từ chối';

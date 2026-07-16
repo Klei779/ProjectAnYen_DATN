@@ -65,4 +65,25 @@ public class DonHang {
 
     @Column(name = "LyDoHuy")
     private String lyDoHuy;
+
+    @PrePersist
+    private void prePersist() {
+        if (ngayTaoDon == null) {
+            ngayTaoDon = LocalDate.now();
+        }
+
+        // Trạng thái đơn hàng hợp lệ bắt đầu từ 1.
+        // Dữ liệu 0 là dữ liệu cũ/không hợp lệ và không được tạo mới nữa.
+        if (trangThai == null || trangThai == 0) {
+            trangThai = TT_MOI_TAO;
+        }
+
+        if (phuongThucThanhToan == null) {
+            phuongThucThanhToan = PT_CHUA_CHON;
+        }
+
+        if (trangThaiThanhToan == null) {
+            trangThaiThanhToan = TTTT_CHUA_THANH_TOAN;
+        }
+    }
 }

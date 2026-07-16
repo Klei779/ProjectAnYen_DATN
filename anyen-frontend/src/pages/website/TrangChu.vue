@@ -287,15 +287,15 @@
         </span>
 
         <div class="footer-bottom-links">
-          <RouterLink to="/chinh-sach-bao-mat">
+          <a href="#" @click.prevent>
             Chính sách bảo mật
-          </RouterLink>
+          </a>
 
           <span class="footer-separator"></span>
 
-          <RouterLink to="/dieu-khoan-su-dung">
+          <a href="#" @click.prevent>
             Điều khoản sử dụng
-          </RouterLink>
+          </a>
         </div>
       </div>
     </footer>

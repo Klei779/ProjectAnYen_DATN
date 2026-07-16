@@ -47,4 +47,7 @@ public interface NhanVienRepository
             Integer vaiTro,
             Integer trangThai
     );
+
+    @Query("SELECT nv FROM NhanVien nv WHERE nv.latitude IS NOT NULL AND nv.longitude IS NOT NULL AND nv.trangThai = 1 AND nv.vaiTro = 2")
+    List<NhanVien> findNhanVienTrucTiepCoToaDoDangHoatDong();
 }

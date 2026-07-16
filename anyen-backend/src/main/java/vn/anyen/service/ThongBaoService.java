@@ -64,6 +64,18 @@ public class ThongBaoService {
     }
 
     /**
+     * Lấy danh sách thông báo cho hotline.
+     * Chỉ bao gồm: HE_THONG, TU_CHOI, CONG_VIEC
+     */
+    public List<ThongBaoResponse> getThongBaoHotline(Integer nguoiNhanId) {
+        List<ThongBao> list = thongBaoRepository.findHotlineNotifications(nguoiNhanId);
+
+        return list.stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Đếm thông báo chưa đọc.
      */
     public long countChuaDoc(Integer nguoiNhanId) {
@@ -182,6 +194,38 @@ public class ThongBaoService {
                 kh.setMaNhanVienPhuTrach(nguoiNhanId);
                 khachHangRepository.save(kh);
             }
+        }
+
+        // Gửi thông báo về hotline
+        if (thongBao.getNguoiGuiId() != null) {
+            String tenNhanVien = "Nhân viên";
+            NhanVien nv = nhanVienRepository.findById(nguoiNhanId).orElse(null);
+
+            if (nv != null) {
+                tenNhanVien = nv.getHoTen();
+            }
+
+            String tenKhachHang = "";
+            if (thongBao.getMaKhachHang() != null) {
+                KhachHang kh = khachHangRepository.findById(thongBao.getMaKhachHang()).orElse(null);
+                if (kh != null) {
+                    tenKhachHang = kh.getTenKhachHang();
+                }
+            }
+
+            ThongBao phanHoi = ThongBao.builder()
+                    .tieuDe("Đã tiếp nhận khách hàng")
+                    .noiDung(tenNhanVien + " đã tiếp nhận khách hàng " + tenKhachHang)
+                    .loaiThongBao("CONG_VIEC")
+                    .nguoiGuiId(nguoiNhanId)
+                    .nguoiNhanId(thongBao.getNguoiGuiId())
+                    .maKhachHang(thongBao.getMaKhachHang())
+                    .trangThai(TRANG_THAI_CHUA_DOC)
+                    .ngayTao(LocalDateTime.now())
+                    .ngayCapNhat(LocalDateTime.now())
+                    .build();
+
+            thongBaoRepository.save(phanHoi);
         }
     }
 
@@ -348,6 +392,7 @@ public class ThongBaoService {
                 .trangThai(tb.getTrangThai())
                 .lyDoTuChoi(tb.getLyDoTuChoi())
                 .nguoiGuiId(tb.getNguoiGuiId())
+                .nguoiNhanId(tb.getNguoiNhanId())
                 .maKhachHang(tb.getMaKhachHang());
 
         if (LOAI_DUYET_SAN_PHAM.equals(tb.getLoaiThongBao())) {
@@ -364,6 +409,15 @@ public class ThongBaoService {
 
             if (nguoiGui != null) {
                 builder.tenNguoiGui(nguoiGui.getHoTen());
+            }
+        }
+
+        if (tb.getNguoiNhanId() != null) {
+            NhanVien nguoiNhan = nhanVienRepository
+                    .findById(tb.getNguoiNhanId()).orElse(null);
+
+            if (nguoiNhan != null) {
+                builder.tenNguoiNhan(nguoiNhan.getHoTen());
             }
         }
 

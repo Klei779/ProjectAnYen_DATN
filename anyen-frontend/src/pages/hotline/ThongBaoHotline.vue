@@ -126,7 +126,7 @@
             </div>
             <div class="info-row">
               <span class="label">Nhân viên xử lý</span>
-              <span class="value fw-bold">{{ selectedNotification.tenNguoiNhan || '—' }}</span>
+              <span class="value fw-bold">{{ selectedNotification.tenNguoiNhan || selectedNotification.tenNguoiGui || '—' }}</span>
             </div>
           </div>
 

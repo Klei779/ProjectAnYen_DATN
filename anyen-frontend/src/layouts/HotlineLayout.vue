@@ -97,6 +97,7 @@ const showProfile = ref(false);
 const routeTitles = {
   "/hotline/quan-ly-cong-viec": "Quản lý công việc",
   "/hotline/quan-ly-don-hang": "Quản lý đơn hàng",
+  "/hotline/thong-bao": "Thông báo",
   "/hotline/thong-tin-tai-khoan": "Thông tin cá nhân",
 };
 
@@ -154,12 +155,12 @@ const markAllAsRead = async () => {
 
 const goToNotification = (item) => {
   showMiniNoti.value = false;
-  // router.push('/hotline/thong-bao');
+  router.push('/hotline/thong-bao');
 };
 
 const goToAllNotifications = () => {
   showMiniNoti.value = false;
-  // router.push('/hotline/thong-bao');
+  router.push('/hotline/thong-bao');
 };
 
 const getMiniIconClass = (item) => {

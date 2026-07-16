@@ -21,6 +21,12 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     List<ThongBao> findByNguoiNhan(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     /**
+     * Lấy thông báo cho hotline: chỉ thông báo hệ thống, từ chối, và phản hồi công việc
+     */
+    @Query("SELECT t FROM ThongBao t WHERE t.nguoiNhanId = :nguoiNhanId AND (t.loaiThongBao = 'HE_THONG' OR t.loaiThongBao = 'TU_CHOI' OR t.loaiThongBao = 'CONG_VIEC') ORDER BY t.ngayTao DESC")
+    List<ThongBao> findHotlineNotifications(@Param("nguoiNhanId") Integer nguoiNhanId);
+
+    /**
      * Đếm thông báo chưa đọc
      */
     //test

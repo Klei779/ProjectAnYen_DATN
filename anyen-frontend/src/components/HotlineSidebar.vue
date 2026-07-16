@@ -40,6 +40,11 @@
         <span class="sidebar-text">Quản lý đơn hàng</span>
       </RouterLink>
 
+      <RouterLink to="/hotline/thong-bao" class="menu-item" title="Thông báo">
+        <i class="fa-solid fa-bell menu-icon"></i>
+        <span class="sidebar-text">Thông báo</span>
+      </RouterLink>
+
       <RouterLink to="/hotline/thong-tin-tai-khoan" class="menu-item" title="Thông tin cá nhân">
         <i class="fa-solid fa-user-pen menu-icon"></i>
         <span class="sidebar-text">Thông tin cá nhân</span>

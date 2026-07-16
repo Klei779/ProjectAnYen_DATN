@@ -88,6 +88,27 @@ public class SecurityConfig {
                         )
                         .hasAuthority("ROLE_ADMIN")
 
+                        // Hotline được tìm nhân viên gần nhất
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/nhan-vien/don-hang/de-xuat-nhan-vien"
+                        )
+                        .hasAnyRole("HOTLINE", "NHANVIEN", "ADMIN")
+
+                        // Hotline được giao việc
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/nhan-vien/thong-bao/giao-cong-viec"
+                        )
+                        .hasAnyRole("HOTLINE", "ADMIN")
+
+                        // Hotline được xem thông báo
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/nhan-vien/thong-bao"
+                        )
+                        .hasAnyRole("NHANVIEN", "HOTLINE", "ADMIN")
+
                         // API đối tác
                         .requestMatchers("/api/doi-tac/**")
                         .hasAuthority("ROLE_DOITAC")

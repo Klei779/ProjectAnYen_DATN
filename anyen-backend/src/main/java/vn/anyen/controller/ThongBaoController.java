@@ -178,14 +178,14 @@ public class ThongBaoController {
     }
 
     /**
-     * Lấy danh sách thông báo của hotline (chỉ các thông báo gửi đến hotline)
+     * Lấy danh sách thông báo của hotline (chỉ các thông báo hệ thống, từ chối, phản hồi công việc)
      */
     @GetMapping("/hotline")
     public List<ThongBaoResponse> getHotlineNotifications(
             @RequestHeader("Authorization") String authHeader) {
 
         Integer userId = getUserIdFromHeader(authHeader);
-        return thongBaoService.getThongBaoByNguoiNhan(userId);
+        return thongBaoService.getThongBaoHotline(userId);
     }
 
     /**
@@ -202,4 +202,6 @@ public class ThongBaoController {
         response.put("success", true);
         return ResponseEntity.ok(response);
     }
+
+
 }

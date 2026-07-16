@@ -1,16 +1,12 @@
-import axios from "axios";
-
-const API = "http://localhost:8080/api/nhan-vien/don-hang";
+import api from "../api/api.js";
 
 export const getNhanVienDeXuat = (lat, lng) => {
-    const token = localStorage.getItem("token");
-
-    return axios.get(
-        `${API}/de-xuat-nhan-vien`,
+    return api.get(
+        "/api/nhan-vien/don-hang/de-xuat-nhan-vien",
         {
-            params: { lat, lng },
-            headers: {
-                Authorization: `Bearer ${token}`
+            params: {
+                lat,
+                lng
             }
         }
     );

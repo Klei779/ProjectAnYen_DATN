@@ -66,20 +66,20 @@ public class HotlineCongViecService {
         NhanVien nhanVien = nhanVienRepository.findById(request.getMaNhanVien())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        "Không tìm thấy nhân viên trực tiếp"
+                        "Không tìm thấy nhân viên được giao"
                 ));
 
         if (!VAI_TRO_NHAN_VIEN_TRUC_TIEP.equals(nhanVien.getVaiTro())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Chỉ được giao việc cho nhân viên trực tiếp"
+                    "Chỉ được giao việc cho nhân viên tư vấn trực tiếp"
             );
         }
 
         if (!NhanVien.TRANG_THAI_HOAT_DONG.equals(nhanVien.getTrangThai())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Nhân viên được chọn hiện không hoạt động"
+                    "Nhân viên hiện không hoạt động"
             );
         }
 

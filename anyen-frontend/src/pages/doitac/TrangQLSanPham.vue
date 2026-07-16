@@ -323,23 +323,6 @@ const buildPayload = () => ({
   cnsx: newProduct.value.cnsx,
 });
 
-const addProduct = async () => {
-  if (!validateProduct()) return;
-
-  try {
-    await api.post(API_URL, buildPayload());
-
-    alert("Đã tạo sản phẩm mới!");
-    resetForm();
-    activeTab.value = "list";
-    await loadProducts();
-    currentPage.value = totalPages.value;
-  } catch (error) {
-    console.error("Lỗi tạo sản phẩm:", error);
-    alert("Không thể tạo sản phẩm. Kiểm tra backend SanPhamDoiTac.");
-  }
-};
-
 const editProduct = (product) => {
   editingProduct.value = product;
 
@@ -687,9 +670,6 @@ const handleImageUpload = (event) => {
         <button :class="{ active: activeTab === 'category' }" @click="changeTab('category')">
           Danh mục sản phẩm
         </button>
-        <button :class="{ active: activeTab === 'create' }" @click="changeTab('create')">
-          Tạo sản phẩm mới
-        </button>
       </div>
 
       <template v-if="activeTab === 'list'">
@@ -937,133 +917,6 @@ const handleImageUpload = (event) => {
         </div>
       </template>
 
-      <template v-if="activeTab === 'create'">
-        <div class="create-form">
-          <h4>
-            {{ editingProduct ? "Cập nhật thông tin sản phẩm" : "Thông tin sản phẩm mới" }}
-          </h4>
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Tên sản phẩm</label>
-              <input v-model="newProduct.tenSanPham" placeholder="Nhập tên sản phẩm"/>
-            </div>
-
-            <div class="form-group">
-              <label>Loại</label>
-              <input v-model="newProduct.loai" placeholder="VD: Quan tài, bình tro cốt..."/>
-            </div>
-
-            <div class="form-group">
-              <label>Nội thất</label>
-              <input v-model="newProduct.noiThat" placeholder="Nhập nội thất"/>
-            </div>
-
-            <div class="form-group">
-              <label>Quy cách</label>
-              <input v-model="newProduct.quyCach" placeholder="Nhập quy cách"/>
-            </div>
-
-            <div class="form-group">
-              <label>Tôn giáo</label>
-              <select v-model="newProduct.tonGiao">
-                <option value="">Chọn tôn giáo</option>
-                <option>Phật giáo</option>
-                <option>Công giáo</option>
-                <option>Tin lành</option>
-                <option>Cao Đài</option>
-                <option>Không yêu cầu</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Giá tiền</label>
-              <input v-model="newProduct.giaTien" type="number" placeholder="Nhập giá tiền"/>
-            </div>
-
-            <div class="form-group">
-              <label>Mã đối tác</label>
-              <input v-model="newProduct.maDoiTac" type="number" placeholder="Backend có thể tự lấy từ token"/>
-            </div>
-
-            <div class="form-group">
-              <label>Số lượng</label>
-              <input v-model="newProduct.soLuong" type="number" placeholder="Nhập số lượng"/>
-            </div>
-
-            <div class="form-group">
-              <label>Thiết kế</label>
-              <input v-model="newProduct.thietKe" placeholder="Nhập thiết kế"/>
-            </div>
-
-            <div class="form-group">
-              <label>Xuất xứ</label>
-              <input v-model="newProduct.xuatXu" placeholder="Nhập xuất xứ"/>
-            </div>
-
-            <div class="form-group">
-              <label>Khuyến mãi</label>
-              <input v-model="newProduct.khuyenMai" type="number" placeholder="Nhập khuyến mãi"/>
-            </div>
-
-            <div class="form-group">
-              <label>Màu sắc</label>
-              <input v-model="newProduct.mauSac" placeholder="Nhập màu sắc"/>
-            </div>
-
-            <div class="form-group">
-              <label>Hình ảnh</label>
-
-              <input type="file" accept="image/*" @change="handleImageUpload"/>
-
-              <div v-if="imagePreview" class="image-preview">
-                <img :src="imagePreview" alt="Ảnh sản phẩm"/>
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label>Vật liệu</label>
-              <input v-model="newProduct.vatLieu" placeholder="Nhập vật liệu"/>
-            </div>
-
-            <div class="form-group">
-              <label>Trạng thái</label>
-              <select v-model="newProduct.trangThai">
-                <option>Đang bán</option>
-                <option>Ngưng bán</option>
-                <option>Hết hàng</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label>Kích thước</label>
-              <input v-model="newProduct.kichThuoc" placeholder="VD: 120x60x80cm"/>
-            </div>
-
-            <div class="form-group">
-              <label>Trọng lượng</label>
-              <input v-model="newProduct.trongLuong" placeholder="VD: 25kg"/>
-            </div>
-
-            <div class="form-group">
-              <label>CNSX</label>
-              <input v-model="newProduct.cnsx" placeholder="Nhập CNSX"/>
-            </div>
-
-            <div class="form-group full">
-              <label>Ghi chú</label>
-              <textarea v-model="newProduct.ghiChu" placeholder="Nhập ghi chú"></textarea>
-            </div>
-          </div>
-
-          <div class="form-actions">
-            <button class="cancel-btn" @click="resetForm(); activeTab = 'list'">Hủy</button>
-            <button class="submit-btn" @click="editingProduct ? updateProduct() : addProduct()">
-              {{ editingProduct ? "Cập nhật sản phẩm" : "Tạo sản phẩm" }}
-            </button>
-          </div>
-        </div>
-      </template>
 
       <div v-if="selectedProductDetail" class="product-detail-overlay" @click.self="closeDetail">
         <article class="product-detail-modal">

@@ -128,7 +128,7 @@ public class SanPhamDoiTacService {
         SanPham sanPham = new SanPham();
         applyRequest(sanPham, request);
 
-        sanPham.setMaDoiTac(maDoiTac);
+        doiTac.setMaDoiTac(maDoiTac);
 
         // QUAN TRỌNG:
         // Đối tác tạo sản phẩm thì KHÔNG được bán ngay.

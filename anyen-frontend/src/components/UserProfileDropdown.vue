@@ -6,7 +6,7 @@
       </div>
       <div class="user-info">
         <h5>{{ userName }}</h5>
-        <span class="role-badge">{{ userRoleDisplay }}</span>
+        <span class="role-badge">{{ vaitro }}</span>
       </div>
     </div>
     
@@ -44,7 +44,7 @@ const props = defineProps({
 });
 
 defineEmits(['logout']);
-
+const vaitro = computed(() => props.user?.tenVaiTro || 'bug');
 const userName = computed(() => props.user?.hoTen || props.user?.tenDangNhap || 'Người dùng');
 const userRoleDisplay = computed(() => {
   const role = props.user?.vaiTroChiTiet || props.user?.loaiTaiKhoan || '';

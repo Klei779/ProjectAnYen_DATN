@@ -67,7 +67,7 @@ public class SanPham {
     public static final Integer TRANG_THAI_AN = 0;
     public static final Integer TRANG_THAI_DANG_BAN = 1;
     public static final Integer TRANG_THAI_CHO_XAC_NHAN = 2;
-
+    public static final Integer TRANG_THAI_TU_CHOI_DUYET =3;
     @Column(name = "trangThai")
     private Integer trangThai;
 

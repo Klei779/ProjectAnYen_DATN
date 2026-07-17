@@ -285,17 +285,6 @@
           </div>
         </div>
 
-        <div
-            v-if="isProductRejected(selectedNotification)"
-            class="detail-section rejection-section"
-        >
-          <h4>Lý do từ chối</h4>
-          <p class="note rejection-reason">
-            {{ selectedNotification.lyDoTuChoi
-              || selectedNotification.note
-              || 'Nhân viên chưa ghi lý do từ chối.' }}
-          </p>
-        </div>
 
         <div class="detail-section">
           <h4>Nội dung thông báo</h4>

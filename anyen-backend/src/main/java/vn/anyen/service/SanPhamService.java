@@ -208,10 +208,18 @@ public class SanPhamService {
 
         sp.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
         SanPham saved = sanPhamRepository.save(sp);
+        try {
+            doiTacThongBaoService.taoThongBaoDuyetSanPham(saved);
+        } catch (Exception e) {
+            // Bao bọc trong try-catch để nếu lỗi gửi thông báo (ví dụ lỗi DB thông báo)
+            // thì hành động từ chối sản phẩm chính vẫn thành công, tránh nghẽn hệ thống.
+            System.err.println("Lỗi phát sinh khi tạo thông báo từ chối sản phẩm: " + e.getMessage());
+        }
+
+        // 4. Trả về Response cho Frontend
         return mapToResponse(saved);
     }
-// Giả định bạn đã inject ThongBaoService vào bằng @RequiredArgsConstructor ở đầu class
-// private final ThongBaoService thongBaoService;
+
 
     public SanPhamResponse tuChoiSanPham(Integer id, String lyDoTuChoi) {
         // 1. Tìm sản phẩm

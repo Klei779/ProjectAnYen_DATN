@@ -701,64 +701,54 @@ public class DoiTacThongBaoService {
     }
 
     public void taoThongBaoTuChoiSanPham(SanPham sanPham, String lyDoTuChoi) {
-
         if (sanPham == null || sanPham.getMaDoiTac() == null) {
-
             return;
-
         }
-
-
-
         // Tìm đối tác sở hữu sản phẩm
-
         DoiTac doiTac = doiTacRepository.findById(sanPham.getMaDoiTac()).orElse(null);
-
         if (doiTac == null) {
-
             return;
-
+        }
+        String tieuDe = "Sản phẩm: " + sanPham.getTenSanPham() + " bị từ chối duyệt" ;
+        // Bắt buộc phải có format [MASP:ID] ở cuối để hàm mapToSanPhamThongBaoResponse parse được ảnh/thông tin sản phẩm
+        String noiDung = "Lý do: " + lyDoTuChoi + "[MASP:" + sanPham.getMaSanPham() +"]";
+        ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
+                .doiTac(doiTac)
+                .donHang(null) // Từ chối sản phẩm nên không có đơn hàng
+                .loai(ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM) // Loại = 1 (Duyệt sản phẩm)
+                .tieuDe(tieuDe)
+                .noiDung(noiDung)
+                .trangThaiThongBao(DA_TU_CHOI) // Trạng thái thông báo chuyển thẳng sang Đã từ chối (2)
+                .lyDoTuChoi(lyDoTuChoi)
+                .daDoc(false)
+                .thoiGianTao(LocalDateTime.now())
+                .build();
+        thongBaoRepository.save(thongBao);
+    }
+    public void taoThongBaoDuyetSanPham(SanPham sanPham) {
+        if (sanPham == null || sanPham.getMaDoiTac() == null) {
+            return;
+        }
+        // Tìm đối tác sở hữu sản phẩm
+        DoiTac doiTac = doiTacRepository.findById(sanPham.getMaDoiTac()).orElse(null);
+        if (doiTac == null) {
+            return;
         }
 
-
-
-        String tieuDe = "Sản phẩm [" + sanPham.getTenSanPham() + "] bị từ chối duyệt";
-
-
-
+        String tieuDe = "Sản phẩm: " + sanPham.getTenSanPham() + " đã được duyệt và đang bán hiện tại";
         // Bắt buộc phải có format [MASP:ID] ở cuối để hàm mapToSanPhamThongBaoResponse parse được ảnh/thông tin sản phẩm
-
-        String noiDung = "Lý do: " + lyDoTuChoi + " [MASP:" + sanPham.getMaSanPham() + "]";
-
-
-
+        String noiDung = "[MASP:" + sanPham.getMaSanPham() +"]"+ "MASP: SP#" + sanPham.getMaSanPham() +  " Đã được đuyệt";
         ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
-
                 .doiTac(doiTac)
-
                 .donHang(null) // Từ chối sản phẩm nên không có đơn hàng
-
                 .loai(ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM) // Loại = 1 (Duyệt sản phẩm)
-
                 .tieuDe(tieuDe)
-
                 .noiDung(noiDung)
-
-                .trangThaiThongBao(DA_TU_CHOI) // Trạng thái thông báo chuyển thẳng sang Đã từ chối (2)
-
-                .lyDoTuChoi(lyDoTuChoi)
-
+                .trangThaiThongBao(DA_CHAP_NHAN)
                 .daDoc(false)
-
                 .thoiGianTao(LocalDateTime.now())
-
                 .build();
-
-
-
         thongBaoRepository.save(thongBao);
-
     }
-
 
 }

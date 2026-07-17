@@ -478,7 +478,7 @@ public class ThongBaoService {
 
         // Luôn gắn mã sản phẩm cho cả trường hợp duyệt và từ chối.
         // Trang thông báo đối tác cần mã này để tải ảnh, giá, tồn kho và tên sản phẩm.
-        noiDung += " [MASP:" + sanPham.getMaSanPham() + "]";
+        noiDung += " MASP:" + sanPham.getMaSanPham() + "";
 
         ThongBaoDoiTac thongBaoDoiTac = ThongBaoDoiTac.builder()
                 .doiTac(doiTac)

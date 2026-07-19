@@ -34,7 +34,7 @@ public class HopDongResponse {
 
     private BigDecimal giaTriHopDong;
 
-    private String trangThai;
+    private Integer trangThai;
 
     private Boolean an;
 
@@ -44,7 +44,7 @@ public class HopDongResponse {
     private String hoTenNguoiMat;
     private LocalDate ngayMat;
     private LocalDate ngaySinh;
-    private String gioiTinh;
+    private Boolean gioiTinh;
 
     private String soGiayBaoTu;
     private String noiCapGiayBaoTu;

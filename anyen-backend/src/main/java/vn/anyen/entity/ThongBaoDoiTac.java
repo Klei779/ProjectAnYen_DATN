@@ -19,9 +19,9 @@ public class ThongBaoDoiTac {
     public static final String LOAI_DUYET_SAN_PHAM = "DUYET_SAN_PHAM";
 
     /** TrangThaiThongBao: CHO_XAC_NHAN = Chờ xác nhận, DA_CHAP_NHAN = Đã chấp nhận, DA_TU_CHOI = Đã từ chối */
-    public static final String TRANG_THAI_CHO_XAC_NHAN = "CHO_XAC_NHAN";
-    public static final String TRANG_THAI_DA_CHAP_NHAN = "DA_CHAP_NHAN";
-    public static final String TRANG_THAI_DA_TU_CHOI = "DA_TU_CHOI";
+    public static final Integer TRANG_THAI_CHO_XAC_NHAN = 0;
+    public static final Integer TRANG_THAI_DA_CHAP_NHAN = 1;
+    public static final Integer TRANG_THAI_DA_TU_CHOI = 2;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,7 +51,7 @@ public class ThongBaoDoiTac {
     private String noiDung;
 
     @Column(name = "TrangThaiThongBao")
-    private String trangThaiThongBao;
+    private Integer trangThaiThongBao;
 
     @Column(name = "LyDoTuChoi", columnDefinition = "TEXT")
     private String lyDoTuChoi;

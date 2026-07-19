@@ -30,11 +30,11 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
      * Đếm thông báo chưa đọc
      */
     //test
-    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai IN (0, 4)")
+    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.daDoc = false")
     long countChuaDoc(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     @Modifying
-    @Query("UPDATE ThongBao t SET t.trangThai = 1 WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.trangThai = 0")
+    @Query("UPDATE ThongBao t SET t.daDoc = true WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.daDoc = false")
     void markAllAsRead(@Param("nguoiNhanId") Integer nguoiNhanId);
 
     boolean existsByMaKhachHangAndNguoiNhanIdAndTrangThai(

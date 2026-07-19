@@ -19,6 +19,7 @@ import TrangLienHe from "../pages/website/TrangLienHe.vue";
 import XacNhanDoiTac from "../pages/website/XacNhanDoiTac.vue";
 import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
 import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
+import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
@@ -47,6 +48,7 @@ import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
 import ThongBaoHotline from "../pages/hotline/ThongBaoHotline.vue";
+import TrangTroLyAi from "../pages/hotline/AiChatBox.vue";
 
 const routes = [
     // WEBSITE
@@ -62,6 +64,7 @@ const routes = [
                 path: "san-pham",
                 component: TrangSanPham,
             },
+
             {
                 path: "san-pham/:id",
                 name: "ChiTietSanPham",
@@ -288,6 +291,10 @@ const routes = [
                 component: TrangQLCongViec,
             },
             {
+                path:"nhan-tin",
+                component: TrangNhanTin,
+            },
+            {
                 path: "quan-ly-don-hang",
                 component: TrangQLDonHangHL,
             },
@@ -298,6 +305,10 @@ const routes = [
             {
                 path: "thong-tin-tai-khoan",
                 component: TrangThongTinNV,
+            },
+            {
+                path: "tro-ly-ai",
+                component: TrangTroLyAi
             }
         ],
     },

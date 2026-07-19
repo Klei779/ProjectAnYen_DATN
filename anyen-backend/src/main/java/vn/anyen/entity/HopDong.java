@@ -33,8 +33,12 @@ public class HopDong {
     private LocalDate thoiHanKetThuc;
 
     @Column(name = "TrangThai")
-    private String trangThai;
+    private Integer trangThai;
 
     @Column(name = "An")
     private Boolean an;
+    public static final Integer CHO_KY = 0;
+    public static final Integer DA_KY = 1;
+    public static final Integer DA_HUY = 2;
+
 }

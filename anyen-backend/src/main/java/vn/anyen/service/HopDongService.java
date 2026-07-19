@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
+
 @Service
 @RequiredArgsConstructor
 public class HopDongService {
@@ -37,10 +38,13 @@ public class HopDongService {
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final HDongCTRepository hDongCTRepository;
+    private static final Integer TRANG_THAI_CHO_KY = HopDong.CHO_KY;
+    private static final Integer TRANG_THAI_DA_HUY = HopDong.DA_HUY;
+    private static final Integer TRANG_THAI_DA_KY = HopDong.DA_KY;
 
     public HopDongPageResponse getHopDongs(
             String keyword,
-            String trangThai,
+            Integer trangThai,
             int page,
             int pageSize
     ) {
@@ -102,7 +106,7 @@ public class HopDongService {
             );
         }
 
-        hopDong.setTrangThai("Đã hủy");
+        hopDong.setTrangThai(TRANG_THAI_DA_HUY);
 
         HopDong saved = hopDongRepository.save(hopDong);
 
@@ -174,9 +178,8 @@ public class HopDongService {
                 .thoiHanKetThuc(thoiHanKetThuc)
                 .trangThai(
                         request.getTrangThai() != null
-                                && !request.getTrangThai().isBlank()
                                 ? request.getTrangThai()
-                                : "Chờ ký"
+                                : 1
                 )
                 .build();
 
@@ -516,7 +519,7 @@ public class HopDongService {
         return isNotBlank(request.getHoTenNguoiMat())
                 || isNotBlank(request.getNgayMat())
                 || isNotBlank(request.getNgaySinh())
-                || isNotBlank(request.getGioiTinh())
+                || request.getGioiTinh() == null
                 || isNotBlank(request.getSoGiayBaoTu())
                 || isNotBlank(request.getNoiCapGiayBaoTu())
                 || isNotBlank(request.getCoSoMaiTang())
@@ -559,21 +562,19 @@ public class HopDongService {
                 "Ngày giờ không hợp lệ: " + value
         );
     }
-    private boolean laHopDongChuaKy(String trangThai) {
+    private boolean laHopDongChuaKy(Integer trangThai) {
+
         if (trangThai == null) {
             return false;
         }
+return trangThai.equals(TRANG_THAI_CHO_KY);
 
-        String value = trangThai.trim();
 
-        return "Chờ ký".equalsIgnoreCase(value)
-                || "Mới tạo".equalsIgnoreCase(value)
-                || "Chưa ký".equalsIgnoreCase(value);
-    }
+}
 
-    private boolean laHopDongDaHuy(String trangThai) {
+    private boolean laHopDongDaHuy(Integer trangThai) {
         return trangThai != null
-                && "Đã hủy".equalsIgnoreCase(trangThai.trim());
+                && trangThai.equals(HopDong.DA_HUY);
     }
 
     /**

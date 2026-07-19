@@ -4,7 +4,6 @@
 
 <script setup>
 import { onMounted, onUnmounted } from 'vue';
-
 const logSession = () => {
   const token = localStorage.getItem("token");
   const userStr = localStorage.getItem("user");

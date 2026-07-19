@@ -9,8 +9,15 @@ api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem("token");
 
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+        const isPublicAiApi =
+            config.url === "/api/ai/chat" ||
+            config.url === "/api/ai/health";
+
+        if (token && !isPublicAiApi) {
+            config.headers.Authorization =
+                `Bearer ${token}`;
+        } else {
+            delete config.headers.Authorization;
         }
 
         return config;
@@ -23,10 +30,6 @@ api.interceptors.response.use(
     (error) => {
         const status = error.response?.status;
 
-        /*
-         * Chỉ xóa đăng nhập khi token không hợp lệ/hết hạn.
-         * 403 chỉ là không đủ quyền, không được logout.
-         */
         if (status === 401) {
             localStorage.removeItem("token");
             localStorage.removeItem("user");

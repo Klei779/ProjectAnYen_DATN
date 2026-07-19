@@ -24,7 +24,7 @@ public class HopDongController {
     @GetMapping
     public HopDongPageResponse getHopDongs(
             @RequestParam(defaultValue = "") String keyword,
-            @RequestParam(defaultValue = "Tất cả") String trangThai,
+            @RequestParam(defaultValue = "3") Integer trangThai,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize
     ) {

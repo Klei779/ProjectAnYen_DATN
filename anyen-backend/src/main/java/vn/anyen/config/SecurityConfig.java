@@ -49,6 +49,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**")
                         .permitAll()
 
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/ai/health"
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/ai/chat"
+                        )
+                        .permitAll()
+                        
                         // Public website
                         .requestMatchers(
                                 "/images/**",
@@ -118,6 +130,7 @@ public class SecurityConfig {
                         .authenticated()
                         .anyRequest()
                         .authenticated()
+
                 )
                 .addFilterBefore(
                         jwtAuthenticationFilter,

@@ -34,7 +34,7 @@ public class HDongCT {
     private LocalDate ngaySinh;
 
     @Column(name = "GioiTinh")
-    private String gioiTinh;
+    private Boolean gioiTinh;
 
     @Column(name = "SoGiayBaoTu")
     private String soGiayBaoTu;

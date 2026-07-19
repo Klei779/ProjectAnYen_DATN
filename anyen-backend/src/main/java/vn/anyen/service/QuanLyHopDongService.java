@@ -47,7 +47,7 @@ public class QuanLyHopDongService {
 
     public HopDongPageResponse getHopDongs(
             String keyword,
-            String trangThai,
+            Integer trangThai,
             boolean includeHidden,
             int page,
             int pageSize

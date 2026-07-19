@@ -492,7 +492,12 @@ textarea {
   align-items: center;
   justify-content: center;
   color: white;
-  background: var(--chat-primary);
+  background:  linear-gradient(
+      135deg,
+      #b51230 0%,
+      #8c091f 100%
+  );
+
   border: none;
   border-radius: 50%;
   box-shadow: 0 10px 30px rgba(112, 72, 45, 0.35);
@@ -503,7 +508,12 @@ textarea {
 }
 
 .chat-launcher:hover {
-  background: var(--chat-primary-dark);
+  background:  linear-gradient(
+      135deg,
+      #b51230 50%,
+      #8c091f 50%
+  );
+;
   transform: translateY(-3px);
 }
 

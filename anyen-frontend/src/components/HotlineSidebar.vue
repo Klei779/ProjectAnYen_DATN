@@ -73,7 +73,16 @@
           Quản lý đơn hàng
         </span>
       </RouterLink>
-
+      <RouterLink
+          to="/hotline/nhan-tin"
+          class="menu-item"
+          title="Nhắn tin khách hàng"
+      >
+        <i class="fa-solid fa-cart-shopping menu-icon"></i>
+        <span class="sidebar-text">
+Nhắn tin khách hàng
+        </span>
+      </RouterLink>
       <RouterLink
           to="/hotline/thong-bao"
           class="menu-item"

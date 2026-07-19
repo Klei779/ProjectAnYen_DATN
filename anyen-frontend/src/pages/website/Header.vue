@@ -224,6 +224,8 @@
         @close="showHotline = false"
     />
   </header>
+  <ChatBox/>
+
 </template>
 
 <script setup>
@@ -243,6 +245,7 @@ import LoginModal from "./PopDangNhap.vue";
 import HotlineModal from "./PopLienHeHotline.vue";
 
 import logoAnYen from "../../assets/images/icon/logoAnYen.png";
+import ChatBox from "./ChatBox.vue";
 
 const route = useRoute();
 const router = useRouter();

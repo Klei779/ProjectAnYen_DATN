@@ -1,11 +1,9 @@
 <template>
   <router-view />
-  <ChatBox/>
 </template>
 
 <script setup>
 import { onMounted, onUnmounted } from 'vue';
-import ChatBox from "./pages/website/ChatBox.vue"
 const logSession = () => {
   const token = localStorage.getItem("token");
   const userStr = localStorage.getItem("user");

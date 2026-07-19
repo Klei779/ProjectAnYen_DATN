@@ -236,31 +236,6 @@
               </svg>
             </button>
 
-            <button
-                type="button"
-                class="icon-button"
-                title="Gọi video"
-            >
-              <svg viewBox="0 0 24 24">
-                <rect
-                    x="3"
-                    y="6"
-                    width="13"
-                    height="12"
-                    rx="2"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                />
-                <path
-                    d="m16 10 5-3v10l-5-3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linejoin="round"
-                />
-              </svg>
-            </button>
 
             <button
                 type="button"

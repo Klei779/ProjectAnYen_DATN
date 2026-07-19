@@ -47,6 +47,7 @@ import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
 import ThongBaoHotline from "../pages/hotline/ThongBaoHotline.vue";
+import TrangTroLyAi from "../pages/hotline/AiChatBox.vue";
 
 const routes = [
     // WEBSITE
@@ -298,6 +299,10 @@ const routes = [
             {
                 path: "thong-tin-tai-khoan",
                 component: TrangThongTinNV,
+            },
+            {
+                path: "tro-ly-ai",
+                component: TrangTroLyAi
             }
         ],
     },

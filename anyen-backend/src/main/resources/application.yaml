@@ -57,3 +57,8 @@ logging:
     vn.anyen.config.JwtAuthenticationFilter: ${JWT_LOG_LEVEL:INFO}
     org.hibernate.SQL: ${HIBERNATE_SQL_LOG_LEVEL:WARN}
     org.hibernate.orm.jdbc.bind: ${HIBERNATE_BIND_LOG_LEVEL:WARN}
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  base-url: https://generativelanguage.googleapis.com
+  model: ${GEMINI_MODEL:gemini-3.5-flash}

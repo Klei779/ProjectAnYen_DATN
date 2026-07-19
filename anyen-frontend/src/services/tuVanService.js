@@ -35,3 +35,16 @@ export const sendStaffMessage = (maPhien, noiDung) =>
 
 export const closeStaffChatSession = (maPhien) =>
     api.patch(`${STAFF_BASE_URL}/phien/${maPhien}/dong`);
+/**
+ * Gửi tin nhắn sang AI để trích xuất thông tin
+ * và lấy câu trả lời tự động.
+ */
+export function phanTichTinNhanAi(tokenPhien, message) {
+    return api.post(
+        "/api/ai/yeu-cau-tu-van/phan-tich-tin-nhan",
+        {
+            tokenPhien,
+            message,
+        }
+    );
+}

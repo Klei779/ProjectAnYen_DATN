@@ -62,6 +62,10 @@ public class SecurityConfig {
                                 "/api/ai/chat"
                         )
                         .permitAll()
+
+                        .requestMatchers(
+                                "/api/ai/yeu-cau-tu-van/**"
+                        ).permitAll()
                         
                         // Public website
                         .requestMatchers(

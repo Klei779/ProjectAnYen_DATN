@@ -1,11 +1,10 @@
 <template>
   <div class="customer-chat">
-    <!-- Nút mở chat -->
     <button
         v-if="!isOpen"
         type="button"
         class="chat-launcher"
-        aria-label="Mở hộp thoại"
+        aria-label="Mở hộp thoại tư vấn"
         @click="openChat"
     >
       <svg viewBox="0 0 24 24">
@@ -18,34 +17,23 @@
         />
       </svg>
 
-      <span
-          v-if="unreadCount > 0"
-          class="launcher-badge"
-      >
+      <span v-if="unreadCount > 0" class="launcher-badge">
         {{ unreadCount > 9 ? "9+" : unreadCount }}
       </span>
     </button>
 
-    <!-- Khung chat -->
-    <section
-        v-else
-        class="chat-box"
-        :class="{ minimized: isMinimized }"
-    >
-      <!-- Header -->
+    <section v-else class="chat-box" :class="{ minimized: isMinimized }">
       <header class="chat-header">
         <div class="staff-avatar-wrapper">
-          <div class="staff-avatar">
-            NV
-          </div>
+          <div class="staff-avatar">NV</div>
           <span class="online-dot"></span>
         </div>
 
         <div class="staff-info">
-          <strong>Nhân viên hỗ trợ</strong>
+          <strong>{{ staffDisplayName }}</strong>
           <span>
             <span class="status-dot"></span>
-            Đang trực tuyến
+            {{ sessionStatusText }}
           </span>
         </div>
 
@@ -56,59 +44,24 @@
               :title="isMinimized ? 'Mở rộng' : 'Thu nhỏ'"
               @click="toggleMinimize"
           >
-            <svg
-                v-if="!isMinimized"
-                viewBox="0 0 24 24"
-            >
-              <path
-                  d="M6 12h12"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-              />
+            <svg v-if="!isMinimized" viewBox="0 0 24 24">
+              <path d="M6 12h12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-
-            <svg
-                v-else
-                viewBox="0 0 24 24"
-            >
-              <path
-                  d="m7 14 5-5 5 5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-              />
+            <svg v-else viewBox="0 0 24 24">
+              <path d="m7 14 5-5 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
           </button>
 
-          <button
-              type="button"
-              class="header-button"
-              title="Đóng"
-              @click="closeChat"
-          >
+          <button type="button" class="header-button" title="Đóng" @click="closeChat">
             <svg viewBox="0 0 24 24">
-              <path
-                  d="m7 7 10 10M17 7 7 17"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-              />
+              <path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
           </button>
         </div>
       </header>
 
       <template v-if="!isMinimized">
-        <!-- Nội dung tin nhắn -->
-        <main
-            ref="messageContainer"
-            class="message-container"
-        >
+        <main v-if="!sessionInfo" class="message-container customer-name-panel">
           <div class="welcome-message">
             <div class="welcome-icon">
               <svg viewBox="0 0 24 24">
@@ -121,126 +74,107 @@
                 />
               </svg>
             </div>
-
             <strong>An Yên xin chào!</strong>
-            <p>Chúng tôi có thể hỗ trợ gì cho bạn?</p>
+            <p>Vui lòng cho chúng tôi biết tên để nhân viên tư vấn đúng khách hàng.</p>
           </div>
 
-          <div class="date-divider">
-            Hôm nay
-          </div>
-
-          <div
-              v-for="message in messages"
-              :key="message.id"
-              class="message-row"
-              :class="message.sender === 'customer' ? 'sent' : 'received'"
-          >
-            <div
-                v-if="message.sender === 'staff'"
-                class="small-avatar"
-            >
-              NV
-            </div>
-
-            <div class="message-content">
-              <div class="message-bubble">
-                {{ message.content }}
-              </div>
-
-              <div class="message-time">
-                {{ formatTime(message.createdAt) }}
-
-                <span v-if="message.sender === 'customer'">
-                  · {{ message.seen ? "Đã xem" : "Đã gửi" }}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Nhân viên đang nhập -->
-          <div
-              v-if="staffTyping"
-              class="typing-row"
-          >
-            <div class="small-avatar">
-              NV
-            </div>
-
-            <div class="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
+          <form class="customer-name-form" @submit.prevent="startChatSession">
+            <label for="customer-chat-name">Tên của bạn</label>
+            <input
+                id="customer-chat-name"
+                ref="nameInput"
+                v-model.trim="customerName"
+                type="text"
+                maxlength="100"
+                autocomplete="name"
+                placeholder="Nhập họ và tên"
+                :disabled="creatingSession"
+            />
+            <p v-if="chatError" class="chat-error">{{ chatError }}</p>
+            <button type="submit" :disabled="creatingSession || customerName.trim().length < 2">
+              {{ creatingSession ? "Đang kết nối..." : "Bắt đầu tư vấn" }}
+            </button>
+          </form>
         </main>
 
-        <!-- Nhập tin nhắn -->
-        <footer class="chat-footer">
-          <div class="input-wrapper">
-            <textarea
-                ref="messageInput"
-                v-model="newMessage"
-                rows="1"
-                maxlength="1000"
-                placeholder="Nhập nội dung tin nhắn..."
-                @input="resizeTextarea"
-                @keydown.enter.exact.prevent="sendMessage"
-            ></textarea>
+        <template v-else>
+          <main ref="messageContainer" class="message-container">
+            <div class="welcome-message compact-welcome">
+              <strong>Xin chào {{ sessionInfo.tenKhachHang }}!</strong>
+              <p>Mã phiên #{{ sessionInfo.maPhien }} · {{ sessionInfo.tenTrangThai }}</p>
+            </div>
+
+            <div v-if="loadingMessages && messages.length === 0" class="chat-loading">
+              Đang tải tin nhắn...
+            </div>
+
+            <div v-else-if="messages.length === 0" class="empty-message-hint">
+              Bạn hãy gửi nội dung cần hỗ trợ. Nhân viên trực tuyến sẽ phản hồi tại đây.
+            </div>
+
+            <div
+                v-for="message in messages"
+                :key="message.id"
+                class="message-row"
+                :class="message.sender === 'customer' ? 'sent' : 'received'"
+            >
+              <div v-if="message.sender === 'staff'" class="small-avatar">NV</div>
+              <div class="message-content">
+                <div class="message-bubble">{{ message.content }}</div>
+                <div class="message-time">
+                  {{ formatTime(message.createdAt) }}
+                  <span v-if="message.sender === 'customer'">
+                    · {{ message.seen ? "Đã xem" : "Đã gửi" }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <p v-if="chatError" class="chat-error message-error">{{ chatError }}</p>
+
+            <div v-if="sessionInfo.trangThai === 2" class="closed-session-box">
+              <p>Phiên tư vấn này đã kết thúc.</p>
+              <button type="button" @click="resetChatSession">Bắt đầu phiên mới</button>
+            </div>
+          </main>
+
+          <footer v-if="sessionInfo.trangThai !== 2" class="chat-footer">
+            <div class="input-wrapper">
+              <textarea
+                  ref="messageInput"
+                  v-model="newMessage"
+                  rows="1"
+                  maxlength="2000"
+                  placeholder="Nhập nội dung tin nhắn..."
+                  :disabled="sendingMessage"
+                  @input="resizeTextarea"
+                  @keydown.enter.exact.prevent="sendMessage"
+              ></textarea>
+
+              <button type="button" class="emoji-button" title="Biểu tượng cảm xúc" @click="toggleEmoji">😊</button>
+              <div v-if="showEmoji" class="emoji-panel">
+                <button v-for="emoji in emojis" :key="emoji" type="button" @click="addEmoji(emoji)">
+                  {{ emoji }}
+                </button>
+              </div>
+            </div>
 
             <button
                 type="button"
-                class="emoji-button"
-                title="Biểu tượng cảm xúc"
-                @click="toggleEmoji"
+                class="send-button"
+                :disabled="sendingMessage || !newMessage.trim()"
+                title="Gửi tin nhắn"
+                @click="sendMessage"
             >
-              😊
+              <svg viewBox="0 0 24 24">
+                <path d="m4 4 17 8-17 8 3-8-3-8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+                <path d="M7 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
             </button>
+          </footer>
+        </template>
 
-            <div
-                v-if="showEmoji"
-                class="emoji-panel"
-            >
-              <button
-                  v-for="emoji in emojis"
-                  :key="emoji"
-                  type="button"
-                  @click="addEmoji(emoji)"
-              >
-                {{ emoji }}
-              </button>
-            </div>
-          </div>
-
-          <button
-              type="button"
-              class="send-button"
-              :disabled="!newMessage.trim()"
-              title="Gửi tin nhắn"
-              @click="sendMessage"
-          >
-            <svg viewBox="0 0 24 24">
-              <path
-                  d="m4 4 17 8-17 8 3-8-3-8Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linejoin="round"
-              />
-              <path
-                  d="M7 12h14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-              />
-            </svg>
-          </button>
-        </footer>
-
-        <div class="chat-note">
-          Thông tin của bạn được bảo mật
-        </div>
+        <div class="chat-note">Thông tin của bạn được bảo mật</div>
       </template>
     </section>
   </div>
@@ -248,54 +182,70 @@
 
 <script setup>
 import {
+  computed,
   nextTick,
   onMounted,
-  ref,
-  watch
+  onUnmounted,
+  ref
 } from "vue";
+
+import {
+  createCustomerChatSession,
+  getCustomerChatSession,
+  getCustomerMessages,
+  markCustomerMessagesRead,
+  sendCustomerMessage
+} from "../../services/tuVanService.js";
+
+const STORAGE_KEY = "anyen_customer_chat_session";
+const POLL_INTERVAL = 2500;
 
 const isOpen = ref(false);
 const isMinimized = ref(false);
-const unreadCount = ref(1);
+const unreadCount = ref(0);
 const newMessage = ref("");
 const showEmoji = ref(false);
-const staffTyping = ref(false);
+const customerName = ref("");
+const sessionInfo = ref(null);
+const messages = ref([]);
+const creatingSession = ref(false);
+const loadingMessages = ref(false);
+const sendingMessage = ref(false);
+const chatError = ref("");
 
 const messageContainer = ref(null);
 const messageInput = ref(null);
+const nameInput = ref(null);
 
-const emojis = [
-  "😀",
-  "😊",
-  "😂",
-  "😍",
-  "🥰",
-  "👍",
-  "❤️",
-  "🙏",
-  "🎉",
-  "✅"
-];
+let pollTimer = null;
+let polling = false;
+let knownMessageIds = new Set();
 
-const messages = ref([
-  {
-    id: 1,
-    sender: "staff",
-    content:
-        "Xin chào! Tôi là nhân viên hỗ trợ của An Yên. Bạn cần hỗ trợ vấn đề gì ạ?",
-    createdAt: new Date().toISOString(),
-    seen: true
-  }
-]);
+const emojis = ["😀", "😊", "😂", "😍", "🥰", "👍", "❤️", "🙏", "🎉", "✅"];
+
+const staffDisplayName = computed(() => "Nhân viên tư vấn");
+
+const sessionStatusText = computed(() => {
+  if (!sessionInfo.value) return "Sẵn sàng hỗ trợ";
+  if (sessionInfo.value.trangThai === 2) return "Phiên đã kết thúc";
+  if (sessionInfo.value.maNhanVienPhuTrach) return "Đang tư vấn";
+  return "Đang chờ nhân viên tiếp nhận";
+});
 
 function openChat() {
   isOpen.value = true;
   isMinimized.value = false;
   unreadCount.value = 0;
 
-  nextTick(() => {
-    scrollToBottom();
-    messageInput.value?.focus();
+  nextTick(async () => {
+    if (sessionInfo.value) {
+      await loadMessages();
+      await markVisibleMessagesRead();
+      messageInput.value?.focus();
+    } else {
+      nameInput.value?.focus();
+    }
+    await scrollToBottom();
   });
 }
 
@@ -310,70 +260,188 @@ function toggleMinimize() {
   showEmoji.value = false;
 
   if (!isMinimized.value) {
-    nextTick(() => {
-      scrollToBottom();
+    unreadCount.value = 0;
+    nextTick(async () => {
+      await markVisibleMessagesRead();
+      await scrollToBottom();
       messageInput.value?.focus();
     });
   }
 }
 
-async function sendMessage() {
-  const content = newMessage.value.trim();
+async function startChatSession() {
+  const name = customerName.value.trim();
+  if (name.length < 2) return;
 
-  if (!content) {
-    return;
+  creatingSession.value = true;
+  chatError.value = "";
+
+  try {
+    const response = await createCustomerChatSession(name);
+    sessionInfo.value = response.data;
+    saveSession(response.data);
+    messages.value = [];
+    knownMessageIds = new Set();
+    await loadMessages(true);
+    startPolling();
+
+    nextTick(() => messageInput.value?.focus());
+  } catch (error) {
+    chatError.value = getErrorMessage(error, "Không thể bắt đầu phiên tư vấn");
+  } finally {
+    creatingSession.value = false;
   }
-
-  const message = {
-    id: Date.now(),
-    sender: "customer",
-    content,
-    createdAt: new Date().toISOString(),
-    seen: false
-  };
-
-  messages.value.push(message);
-  newMessage.value = "";
-  showEmoji.value = false;
-
-  resetTextarea();
-  saveMessages();
-  await scrollToBottom();
-
-  // Xóa đoạn này khi kết nối WebSocket/backend thật.
-  simulateStaffReply();
 }
 
-function simulateStaffReply() {
-  staffTyping.value = true;
+async function sendMessage() {
+  const content = newMessage.value.trim();
+  const token = sessionInfo.value?.tokenPhien;
+  if (!content || !token || sendingMessage.value) return;
 
-  window.setTimeout(async () => {
-    staffTyping.value = false;
+  sendingMessage.value = true;
+  chatError.value = "";
 
-    const lastCustomerMessage = [...messages.value]
-        .reverse()
-        .find((message) => message.sender === "customer");
-
-    if (lastCustomerMessage) {
-      lastCustomerMessage.seen = true;
-    }
-
-    messages.value.push({
-      id: Date.now() + 1,
-      sender: "staff",
-      content:
-          "Cảm ơn bạn đã liên hệ. Nhân viên đang kiểm tra và sẽ hỗ trợ bạn ngay ạ.",
-      createdAt: new Date().toISOString(),
-      seen: true
-    });
-
-    saveMessages();
+  try {
+    await sendCustomerMessage(token, content);
+    newMessage.value = "";
+    showEmoji.value = false;
+    resetTextarea();
+    await loadMessages();
     await scrollToBottom();
+  } catch (error) {
+    chatError.value = getErrorMessage(error, "Không thể gửi tin nhắn");
+  } finally {
+    sendingMessage.value = false;
+  }
+}
 
-    if (!isOpen.value || isMinimized.value) {
-      unreadCount.value += 1;
+async function refreshSession() {
+  const token = sessionInfo.value?.tokenPhien;
+  if (!token) return;
+
+  const response = await getCustomerChatSession(token);
+  sessionInfo.value = response.data;
+  saveSession(response.data);
+}
+
+async function loadMessages(initialLoad = false) {
+  const token = sessionInfo.value?.tokenPhien;
+  if (!token || loadingMessages.value) return;
+
+  loadingMessages.value = true;
+  try {
+    const response = await getCustomerMessages(token);
+    const apiMessages = Array.isArray(response.data) ? response.data : [];
+
+    if (!initialLoad) {
+      const newStaffMessages = apiMessages.filter(message =>
+          message.nguoiGui === "NHAN_VIEN" && !knownMessageIds.has(message.maTinNhan)
+      );
+
+      if (newStaffMessages.length > 0 && (!isOpen.value || isMinimized.value)) {
+        unreadCount.value += newStaffMessages.length;
+      }
     }
-  }, 1200);
+
+    messages.value = apiMessages.map(message => ({
+      id: message.maTinNhan,
+      sender: message.nguoiGui === "KHACH_HANG" ? "customer" : "staff",
+      content: message.noiDung,
+      createdAt: message.createdAt,
+      seen: Boolean(message.daDoc)
+    }));
+
+    knownMessageIds = new Set(apiMessages.map(message => message.maTinNhan));
+
+    if (isOpen.value && !isMinimized.value) {
+      unreadCount.value = 0;
+      await markVisibleMessagesRead();
+    }
+  } catch (error) {
+    if (error?.response?.status === 404) {
+      resetChatSession();
+    } else {
+      chatError.value = getErrorMessage(error, "Mất kết nối với hệ thống tư vấn");
+    }
+  } finally {
+    loadingMessages.value = false;
+  }
+}
+
+async function pollChat() {
+  if (polling || !sessionInfo.value?.tokenPhien) return;
+  polling = true;
+
+  try {
+    await refreshSession();
+    await loadMessages();
+  } catch (error) {
+    console.error("Không thể cập nhật phiên tư vấn:", error);
+  } finally {
+    polling = false;
+  }
+}
+
+async function markVisibleMessagesRead() {
+  const token = sessionInfo.value?.tokenPhien;
+  if (!token || !isOpen.value || isMinimized.value) return;
+
+  try {
+    await markCustomerMessagesRead(token);
+    messages.value.forEach(message => {
+      if (message.sender === "staff") message.seen = true;
+    });
+  } catch (error) {
+    console.error("Không thể đánh dấu tin nhắn đã đọc:", error);
+  }
+}
+
+function saveSession(session) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+    tokenPhien: session.tokenPhien,
+    tenKhachHang: session.tenKhachHang
+  }));
+}
+
+async function restoreSession() {
+  try {
+    const stored = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || "null");
+    if (!stored?.tokenPhien) return;
+
+    customerName.value = stored.tenKhachHang || "";
+    const response = await getCustomerChatSession(stored.tokenPhien);
+    sessionInfo.value = response.data;
+    unreadCount.value = Number(response.data?.soTinNhanChuaDocKhach || 0);
+    await loadMessages(true);
+    startPolling();
+  } catch (error) {
+    sessionStorage.removeItem(STORAGE_KEY);
+    sessionInfo.value = null;
+  }
+}
+
+function resetChatSession() {
+  sessionStorage.removeItem(STORAGE_KEY);
+  sessionInfo.value = null;
+  messages.value = [];
+  knownMessageIds = new Set();
+  unreadCount.value = 0;
+  newMessage.value = "";
+  chatError.value = "";
+  stopPolling();
+  nextTick(() => nameInput.value?.focus());
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = window.setInterval(pollChat, POLL_INTERVAL);
+}
+
+function stopPolling() {
+  if (pollTimer) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
 }
 
 function toggleEmoji() {
@@ -383,7 +451,6 @@ function toggleEmoji() {
 function addEmoji(emoji) {
   newMessage.value += emoji;
   showEmoji.value = false;
-
   nextTick(() => {
     messageInput.value?.focus();
     resizeTextarea();
@@ -392,73 +459,41 @@ function addEmoji(emoji) {
 
 function resizeTextarea() {
   const textarea = messageInput.value;
-
-  if (!textarea) {
-    return;
-  }
-
+  if (!textarea) return;
   textarea.style.height = "auto";
   textarea.style.height = `${Math.min(textarea.scrollHeight, 90)}px`;
 }
 
 function resetTextarea() {
   nextTick(() => {
-    if (messageInput.value) {
-      messageInput.value.style.height = "auto";
-    }
+    if (messageInput.value) messageInput.value.style.height = "auto";
   });
 }
 
 async function scrollToBottom() {
   await nextTick();
-
   if (messageContainer.value) {
-    messageContainer.value.scrollTop =
-        messageContainer.value.scrollHeight;
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
   }
 }
 
 function formatTime(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(dateValue));
+  }).format(date);
 }
 
-function saveMessages() {
-  localStorage.setItem(
-      "customerChatMessages",
-      JSON.stringify(messages.value)
-  );
+function getErrorMessage(error, fallback) {
+  const data = error?.response?.data;
+  if (typeof data === "string") return data;
+  return data?.message || Object.values(data || {})[0] || fallback;
 }
 
-function loadMessages() {
-  try {
-    const savedMessages = localStorage.getItem(
-        "customerChatMessages"
-    );
-
-    if (savedMessages) {
-      const parsedMessages = JSON.parse(savedMessages);
-
-      if (Array.isArray(parsedMessages)) {
-        messages.value = parsedMessages;
-      }
-    }
-  } catch (error) {
-    console.error("Không thể đọc lịch sử tin nhắn:", error);
-  }
-}
-
-watch(isOpen, (value) => {
-  if (value) {
-    unreadCount.value = 0;
-  }
-});
-
-onMounted(() => {
-  loadMessages();
-});
+onMounted(restoreSession);
+onUnmounted(stopPolling);
 </script>
 
 <style scoped>
@@ -1009,5 +1044,97 @@ textarea {
     width: 56px;
     height: 56px;
   }
+}
+</style>
+
+<style scoped>
+.customer-name-panel {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+}
+
+.customer-name-form {
+  display: flex;
+  padding: 0 16px;
+  gap: 10px;
+  flex-direction: column;
+}
+
+.customer-name-form label {
+  color: var(--chat-text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.customer-name-form input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d7d7d7;
+  border-radius: 10px;
+  outline: none;
+}
+
+.customer-name-form input:focus {
+  border-color: var(--chat-primary);
+  box-shadow: 0 0 0 3px rgba(139, 94, 60, 0.12);
+}
+
+.customer-name-form button,
+.closed-session-box button {
+  padding: 11px 14px;
+  color: #fff;
+  background: var(--chat-primary);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.customer-name-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.compact-welcome {
+  margin-bottom: 8px;
+}
+
+.chat-loading,
+.empty-message-hint {
+  padding: 14px;
+  color: var(--chat-secondary);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.chat-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.message-error {
+  margin-top: 10px;
+  text-align: center;
+}
+
+.closed-session-box {
+  margin-top: 14px;
+  padding: 14px;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.closed-session-box p {
+  margin: 0 0 10px;
+  color: #9a3412;
+  font-size: 12px;
 }
 </style>

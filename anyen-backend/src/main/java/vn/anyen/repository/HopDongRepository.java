@@ -51,11 +51,10 @@ public interface HopDongRepository
                     OR CAST(dh.MaDonHang AS CHAR)
                         LIKE CONCAT('%', :keyword, '%')
                 )
-                AND (
+                    AND (
                     :trangThai IS NULL
-                    OR :trangThai = 3
                     OR hd.TrangThai = :trangThai
-                )
+                    )
                 """,
             countQuery = """
                 SELECT COUNT(*)
@@ -76,11 +75,10 @@ public interface HopDongRepository
                     OR CAST(dh.MaDonHang AS CHAR)
                         LIKE CONCAT('%', :keyword, '%')
                 )
-                AND (
+                    AND (
                     :trangThai IS NULL
-                    OR :trangThai = 3
                     OR hd.TrangThai = :trangThai
-                )
+                    )
                 """,
             nativeQuery = true
     )
@@ -140,11 +138,10 @@ public interface HopDongRepository
                     OR CAST(dh.MaDonHang AS CHAR)
                         LIKE CONCAT('%', :keyword, '%')
                 )
-                AND (
+                    AND (
                     :trangThai IS NULL
-                    OR :trangThai = 3
                     OR hd.TrangThai = :trangThai
-                )
+                    )
                 AND (
                     :includeHidden = TRUE
                     OR hd.An IS NULL

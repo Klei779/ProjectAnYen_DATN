@@ -15,7 +15,7 @@
           <button
               type="button"
               class="icon-button"
-              title="Tạo cuộc trò chuyện"
+              title="Làm mới danh sách"
               @click="createNewConversation"
           >
             <svg viewBox="0 0 24 24">
@@ -138,12 +138,12 @@
 
         <div class="current-user">
           <div class="avatar avatar-placeholder current-user-avatar">
-            NV
+            {{ currentUserInitials }}
           </div>
 
           <div class="current-user-info">
-            <strong>Nguyễn Văn A</strong>
-            <span>Đang hoạt động</span>
+            <strong>{{ currentUserName }}</strong>
+            <span>Đang trực tuyến</span>
           </div>
 
           <button
@@ -210,13 +210,7 @@
 
           <div class="chat-user-info">
             <strong>{{ selectedConversation.name }}</strong>
-            <span>
-              {{
-                selectedConversation.online
-                    ? "Đang hoạt động"
-                    : `Hoạt động ${selectedConversation.lastActive}`
-              }}
-            </span>
+            <span>{{ selectedConversation.assignmentText }}</span>
           </div>
 
           <div class="chat-actions">
@@ -373,56 +367,14 @@
         </section>
 
         <footer class="message-input-area">
-          <input
-              ref="fileInput"
-              type="file"
-              accept="image/*"
-              hidden
-              @change="handleImageUpload"
-          />
-
-          <button
-              type="button"
-              class="input-action-button"
-              title="Đính kèm hình ảnh"
-              @click="fileInput?.click()"
-          >
-            <svg viewBox="0 0 24 24">
-              <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="16"
-                  rx="2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-              />
-              <circle
-                  cx="8"
-                  cy="9"
-                  r="1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-              />
-              <path
-                  d="m4 17 5-5 4 4 2-2 5 4"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
           <div class="message-input-wrapper">
             <textarea
                 ref="messageInput"
                 v-model="newMessage"
                 rows="1"
                 maxlength="2000"
-                placeholder="Nhập tin nhắn..."
+                :placeholder="replyPlaceholder"
+                :disabled="!canReply || sendingMessage"
                 @input="resizeTextarea"
                 @keydown.enter.exact.prevent="sendMessage"
             ></textarea>
@@ -454,7 +406,7 @@
           <button
               type="button"
               class="send-button"
-              :disabled="!newMessage.trim()"
+              :disabled="!canReply || sendingMessage || !newMessage.trim()"
               title="Gửi tin nhắn"
               @click="sendMessage"
           >
@@ -509,331 +461,266 @@ import {
   computed,
   nextTick,
   onMounted,
+  onUnmounted,
   ref
 } from "vue";
+import { ElMessage } from "element-plus";
+import {
+  claimStaffChatSession,
+  getStaffChatSessions,
+  getStaffMessages,
+  sendStaffMessage
+} from "../../services/tuVanService.js";
+
+const POLL_INTERVAL = 2500;
+const AVATAR_COLORS = [
+  "linear-gradient(135deg, #7c3aed, #a855f7)",
+  "linear-gradient(135deg, #0f766e, #14b8a6)",
+  "linear-gradient(135deg, #b45309, #f59e0b)",
+  "linear-gradient(135deg, #be123c, #fb7185)",
+  "linear-gradient(135deg, #1d4ed8, #60a5fa)"
+];
+
+const currentUser = ref(readCurrentUser());
+const currentUserId = computed(() => Number(currentUser.value?.id || 0));
+const currentUserName = computed(() =>
+    currentUser.value?.hoTen || "Nhân viên trực tuyến"
+);
+const currentUserInitials = computed(() => getInitials(currentUserName.value));
 
 const searchKeyword = ref("");
 const newMessage = ref("");
 const selectedConversation = ref(null);
 const isMobileChatOpen = ref(false);
 const showEmojiPanel = ref(false);
+const conversations = ref([]);
+const loadingConversations = ref(false);
+const loadingMessages = ref(false);
+const sendingMessage = ref(false);
 
 const messageContainer = ref(null);
 const messageInput = ref(null);
-const fileInput = ref(null);
+
+let pollTimer = null;
+let refreshing = false;
 
 const emojis = [
-  "😀",
-  "😂",
-  "😍",
-  "🥰",
-  "😎",
-  "😭",
-  "👍",
-  "❤️",
-  "🎉",
-  "🔥",
-  "🙏",
-  "✅"
+  "😀", "😂", "😍", "🥰", "😎", "😭",
+  "👍", "❤️", "🎉", "🔥", "🙏", "✅"
 ];
-
-const conversations = ref([
-  {
-    id: 1,
-    name: "Trần Thị B",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #7c3aed, #a855f7)",
-    online: true,
-    lastActive: "vừa xong",
-    lastMessage: "Dạ, em đã nhận được thông tin rồi ạ.",
-    lastMessageTime: "08:25",
-    unread: 2,
-    typing: false,
-    messages: [
-      {
-        id: 101,
-        sender: "other",
-        content: "Chào anh, anh cần em hỗ trợ gì không ạ?",
-        createdAt: "2026-07-19T08:10:00",
-        status: "seen"
-      },
-      {
-        id: 102,
-        sender: "me",
-        content: "Em kiểm tra giúp anh thông tin đơn hàng mới nhé.",
-        createdAt: "2026-07-19T08:14:00",
-        status: "seen"
-      },
-      {
-        id: 103,
-        sender: "other",
-        content: "Dạ được ạ. Anh gửi mã đơn hàng cho em nhé.",
-        createdAt: "2026-07-19T08:18:00",
-        status: "seen"
-      },
-      {
-        id: 104,
-        sender: "me",
-        content: "Mã đơn hàng là DH000128.",
-        createdAt: "2026-07-19T08:20:00",
-        status: "seen"
-      },
-      {
-        id: 105,
-        sender: "other",
-        content: "Dạ, em đã nhận được thông tin rồi ạ.",
-        createdAt: "2026-07-19T08:25:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: "Nguyễn Văn C",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #0f766e, #14b8a6)",
-    online: false,
-    lastActive: "15 phút trước",
-    lastMessage: "Cảm ơn bạn đã hỗ trợ.",
-    lastMessageTime: "07:50",
-    unread: 0,
-    typing: false,
-    messages: [
-      {
-        id: 201,
-        sender: "other",
-        content: "Bạn đã cập nhật trạng thái hợp đồng chưa?",
-        createdAt: "2026-07-19T07:40:00",
-        status: "seen"
-      },
-      {
-        id: 202,
-        sender: "me",
-        content: "Mình đã cập nhật xong rồi nhé.",
-        createdAt: "2026-07-19T07:45:00",
-        status: "seen"
-      },
-      {
-        id: 203,
-        sender: "other",
-        content: "Cảm ơn bạn đã hỗ trợ.",
-        createdAt: "2026-07-19T07:50:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 3,
-    name: "Phạm Minh Anh",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #b45309, #f59e0b)",
-    online: true,
-    lastActive: "vừa xong",
-    lastMessage: "Bạn đã gửi một hình ảnh.",
-    lastMessageTime: "Hôm qua",
-    unread: 0,
-    typing: false,
-    messages: [
-      {
-        id: 301,
-        sender: "other",
-        content: "Đây là hình ảnh sản phẩm mới.",
-        createdAt: "2026-07-18T16:30:00",
-        status: "seen"
-      },
-      {
-        id: 302,
-        sender: "other",
-        content: "",
-        image: "https://placehold.co/600x400?text=Hinh+anh+san+pham",
-        createdAt: "2026-07-18T16:31:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 4,
-    name: "Bộ phận chăm sóc khách hàng",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #be123c, #fb7185)",
-    online: false,
-    lastActive: "1 giờ trước",
-    lastMessage: "Vui lòng kiểm tra yêu cầu mới.",
-    lastMessageTime: "Thứ 7",
-    unread: 5,
-    typing: false,
-    messages: [
-      {
-        id: 401,
-        sender: "other",
-        content: "Vui lòng kiểm tra yêu cầu mới từ khách hàng.",
-        createdAt: "2026-07-18T09:00:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 5,
-    name: "Lê Hoàng Nam",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #1d4ed8, #60a5fa)",
-    online: false,
-    lastActive: "2 giờ trước",
-    lastMessage: "Hẹn gặp bạn vào ngày mai.",
-    lastMessageTime: "Thứ 6",
-    unread: 0,
-    typing: false,
-    messages: [
-      {
-        id: 501,
-        sender: "me",
-        content: "Hẹn gặp bạn vào ngày mai.",
-        createdAt: "2026-07-17T17:20:00",
-        status: "seen"
-      }
-    ]
-  }
-]);
 
 const filteredConversations = computed(() => {
   const keyword = searchKeyword.value.toLowerCase();
+  if (!keyword) return conversations.value;
 
-  if (!keyword) {
-    return conversations.value;
-  }
-
-  return conversations.value.filter((conversation) => {
-    return (
-        conversation.name.toLowerCase().includes(keyword) ||
-        conversation.lastMessage.toLowerCase().includes(keyword)
-    );
-  });
+  return conversations.value.filter(conversation =>
+      conversation.name.toLowerCase().includes(keyword)
+      || (conversation.lastMessage || "").toLowerCase().includes(keyword)
+  );
 });
+
+const canReply = computed(() => {
+  const conversation = selectedConversation.value;
+  if (!conversation || conversation.status === 2) return false;
+  return Number(conversation.assignedEmployeeId || 0) === currentUserId.value;
+});
+
+const replyPlaceholder = computed(() => {
+  const conversation = selectedConversation.value;
+  if (!conversation) return "Chọn một cuộc trò chuyện";
+  if (conversation.status === 2) return "Phiên tư vấn đã kết thúc";
+  if (!conversation.assignedEmployeeId) return "Đang tiếp nhận phiên tư vấn...";
+  if (!canReply.value) return "Bạn không phụ trách phiên tư vấn này";
+  return "Nhập tin nhắn...";
+});
+
+function readCurrentUser() {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch (error) {
+    return null;
+  }
+}
 
 function getInitials(name) {
   if (!name) return "?";
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].charAt(0).toUpperCase();
+  return (
+      words[words.length - 2].charAt(0)
+      + words[words.length - 1].charAt(0)
+  ).toUpperCase();
+}
 
-  const words = name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+function mapSession(item, existing) {
+  const assignedToMe = Number(item.maNhanVienPhuTrach || 0) === currentUserId.value;
+  let assignmentText = item.tenTrangThai || "Chờ tiếp nhận";
 
-  if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+  if (item.maNhanVienPhuTrach) {
+    assignmentText = assignedToMe
+        ? "Bạn đang phụ trách khách hàng này"
+        : `${item.tenNhanVienPhuTrach || "Nhân viên khác"} đang phụ trách`;
   }
 
-  return (
-      words[words.length - 2].charAt(0) +
-      words[words.length - 1].charAt(0)
-  ).toUpperCase();
+  return {
+    id: item.maPhien,
+    name: item.tenKhachHang || "Khách hàng",
+    avatar: null,
+    avatarColor: AVATAR_COLORS[Number(item.maPhien || 0) % AVATAR_COLORS.length],
+    online: Number(item.trangThai) !== 2,
+    lastActive: item.tenTrangThai || "",
+    lastMessage: item.tinNhanCuoi || "Khách hàng vừa bắt đầu phiên tư vấn",
+    lastMessageTime: formatConversationTime(item.thoiGianTinNhanCuoi),
+    unread: Number(item.soTinNhanChuaDocNhanVien || 0),
+    typing: false,
+    messages: existing?.messages || [],
+    status: Number(item.trangThai),
+    assignedEmployeeId: item.maNhanVienPhuTrach,
+    assignedEmployeeName: item.tenNhanVienPhuTrach,
+    assignmentText
+  };
+}
+
+async function loadConversations() {
+  if (loadingConversations.value) return;
+  loadingConversations.value = true;
+
+  try {
+    const response = await getStaffChatSessions();
+    const data = Array.isArray(response.data) ? response.data : [];
+    const existingMap = new Map(
+        conversations.value.map(item => [item.id, item])
+    );
+
+    conversations.value = data.map(item =>
+        mapSession(item, existingMap.get(item.maPhien))
+    );
+
+    if (selectedConversation.value) {
+      const selected = conversations.value.find(
+          item => item.id === selectedConversation.value.id
+      );
+      selectedConversation.value = selected || null;
+    }
+  } catch (error) {
+    ElMessage.error(getErrorMessage(error, "Không tải được danh sách khách hàng đang nhắn tin"));
+  } finally {
+    loadingConversations.value = false;
+  }
 }
 
 async function selectConversation(conversation) {
   selectedConversation.value = conversation;
-  conversation.unread = 0;
   isMobileChatOpen.value = true;
   showEmojiPanel.value = false;
 
-  await scrollToBottom();
+  if (
+    conversation.status !== 2
+    && !conversation.assignedEmployeeId
+  ) {
+    try {
+      const response = await claimStaffChatSession(conversation.id);
+      Object.assign(conversation, mapSession(response.data, conversation));
+    } catch (error) {
+      if (error?.response?.status === 409 || error?.response?.status === 403) {
+        ElMessage.warning(getErrorMessage(error, "Phiên đã được nhân viên khác tiếp nhận"));
+        selectedConversation.value = null;
+        newMessage.value = "";
+        await loadConversations();
+        return;
+      }
 
-  nextTick(() => {
-    messageInput.value?.focus();
-  });
+      ElMessage.error(getErrorMessage(error, "Không thể tiếp nhận phiên tư vấn"));
+      return;
+    }
+  }
+
+  if (!canReply.value) {
+    selectedConversation.value = null;
+    newMessage.value = "";
+    await loadConversations();
+    return;
+  }
+
+  await loadMessages();
+  nextTick(() => messageInput.value?.focus());
+}
+
+async function loadMessages() {
+  const conversation = selectedConversation.value;
+  if (!conversation || loadingMessages.value) return;
+
+  loadingMessages.value = true;
+  try {
+    const response = await getStaffMessages(conversation.id);
+    const data = Array.isArray(response.data) ? response.data : [];
+    conversation.messages = data.map(message => ({
+      id: message.maTinNhan,
+      sender: message.nguoiGui === "NHAN_VIEN" ? "me" : "other",
+      content: message.noiDung,
+      createdAt: message.createdAt,
+      status: message.daDoc ? "seen" : "sent"
+    }));
+    conversation.unread = 0;
+    await scrollToBottom();
+  } catch (error) {
+    if (error?.response?.status === 403 || error?.response?.status === 409) {
+      ElMessage.warning(getErrorMessage(error, "Bạn không còn phụ trách phiên tư vấn này"));
+      selectedConversation.value = null;
+      newMessage.value = "";
+      await loadConversations();
+      return;
+    }
+    ElMessage.error(getErrorMessage(error, "Không tải được nội dung cuộc trò chuyện"));
+  } finally {
+    loadingMessages.value = false;
+  }
 }
 
 function closeMobileChat() {
   isMobileChatOpen.value = false;
 }
 
-function createNewConversation() {
-  window.alert("Bạn có thể mở popup chọn người nhận tại đây.");
+async function createNewConversation() {
+  await refreshAll();
+  ElMessage.success("Đã làm mới danh sách hội thoại");
 }
 
 async function sendMessage() {
   const content = newMessage.value.trim();
+  const conversation = selectedConversation.value;
+  if (!content || !conversation || !canReply.value || sendingMessage.value) return;
 
-  if (!content || !selectedConversation.value) {
-    return;
+  sendingMessage.value = true;
+  try {
+    await sendStaffMessage(conversation.id, content);
+    newMessage.value = "";
+    showEmojiPanel.value = false;
+    resetTextareaHeight();
+    await Promise.all([loadMessages(), loadConversations()]);
+  } catch (error) {
+    if (error?.response?.status === 403 || error?.response?.status === 409) {
+      ElMessage.warning(getErrorMessage(error, "Bạn không còn phụ trách phiên tư vấn này"));
+      selectedConversation.value = null;
+      newMessage.value = "";
+      await loadConversations();
+      return;
+    }
+    ElMessage.error(getErrorMessage(error, "Không thể gửi tin nhắn"));
+  } finally {
+    sendingMessage.value = false;
   }
-
-  const message = {
-    id: Date.now(),
-    sender: "me",
-    content,
-    createdAt: new Date().toISOString(),
-    status: "sent"
-  };
-
-  selectedConversation.value.messages.push(message);
-  selectedConversation.value.lastMessage = content;
-  selectedConversation.value.lastMessageTime = formatMessageTime(
-      message.createdAt
-  );
-
-  moveConversationToTop(selectedConversation.value.id);
-
-  newMessage.value = "";
-  showEmojiPanel.value = false;
-
-  resetTextareaHeight();
-  await scrollToBottom();
-
-  // Khi kết nối backend, gọi API tại đây.
-  // await messageService.sendMessage({
-  //   conversationId: selectedConversation.value.id,
-  //   content
-  // });
 }
 
-function moveConversationToTop(conversationId) {
-  const index = conversations.value.findIndex(
-      (item) => item.id === conversationId
-  );
-
-  if (index <= 0) {
-    return;
+async function refreshAll() {
+  if (refreshing) return;
+  refreshing = true;
+  try {
+    await loadConversations();
+    if (selectedConversation.value) await loadMessages();
+  } finally {
+    refreshing = false;
   }
-
-  const [conversation] = conversations.value.splice(index, 1);
-  conversations.value.unshift(conversation);
-}
-
-async function handleImageUpload(event) {
-  const file = event.target.files?.[0];
-
-  if (!file || !selectedConversation.value) {
-    return;
-  }
-
-  if (!file.type.startsWith("image/")) {
-    window.alert("Vui lòng chọn một file hình ảnh.");
-    event.target.value = "";
-    return;
-  }
-
-  const imageUrl = URL.createObjectURL(file);
-
-  const message = {
-    id: Date.now(),
-    sender: "me",
-    content: "",
-    image: imageUrl,
-    createdAt: new Date().toISOString(),
-    status: "sent"
-  };
-
-  selectedConversation.value.messages.push(message);
-  selectedConversation.value.lastMessage = "Bạn đã gửi một hình ảnh.";
-  selectedConversation.value.lastMessageTime = formatMessageTime(
-      message.createdAt
-  );
-
-  moveConversationToTop(selectedConversation.value.id);
-  event.target.value = "";
-
-  await scrollToBottom();
-
-  // Với backend thật, hãy upload file bằng FormData.
 }
 
 function toggleEmojiPanel() {
@@ -841,8 +728,8 @@ function toggleEmojiPanel() {
 }
 
 function addEmoji(emoji) {
+  if (!canReply.value) return;
   newMessage.value += emoji;
-
   nextTick(() => {
     messageInput.value?.focus();
     resizeTextarea();
@@ -851,53 +738,52 @@ function addEmoji(emoji) {
 
 function resizeTextarea() {
   const textarea = messageInput.value;
-
-  if (!textarea) {
-    return;
-  }
-
+  if (!textarea) return;
   textarea.style.height = "auto";
   textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
 }
 
 function resetTextareaHeight() {
   nextTick(() => {
-    if (messageInput.value) {
-      messageInput.value.style.height = "auto";
-    }
+    if (messageInput.value) messageInput.value.style.height = "auto";
   });
 }
 
 async function scrollToBottom() {
   await nextTick();
-
   if (messageContainer.value) {
-    messageContainer.value.scrollTop =
-        messageContainer.value.scrollHeight;
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
   }
 }
 
+function formatConversationTime(dateValue) {
+  if (!dateValue) return "";
+  const date = new Date(dateValue);
+  const today = new Date();
+  if (isSameDate(date, today)) return formatMessageTime(dateValue);
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit"
+  }).format(date);
+}
+
 function formatMessageTime(dateValue) {
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "";
   return new Intl.DateTimeFormat("vi-VN", {
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(dateValue));
+  }).format(date);
 }
 
 function formatDateLabel(dateValue) {
   const messageDate = new Date(dateValue);
   const today = new Date();
-
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
 
-  if (isSameDate(messageDate, today)) {
-    return "Hôm nay";
-  }
-
-  if (isSameDate(messageDate, yesterday)) {
-    return "Hôm qua";
-  }
+  if (isSameDate(messageDate, today)) return "Hôm nay";
+  if (isSameDate(messageDate, yesterday)) return "Hôm qua";
 
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
@@ -907,43 +793,68 @@ function formatDateLabel(dateValue) {
 }
 
 function isSameDate(dateA, dateB) {
-  return (
-      dateA.getFullYear() === dateB.getFullYear() &&
-      dateA.getMonth() === dateB.getMonth() &&
-      dateA.getDate() === dateB.getDate()
-  );
+  return dateA.getFullYear() === dateB.getFullYear()
+      && dateA.getMonth() === dateB.getMonth()
+      && dateA.getDate() === dateB.getDate();
 }
 
 function shouldShowDate(index) {
-  const messages = selectedConversation.value?.messages || [];
-
-  if (index === 0) {
-    return true;
-  }
-
-  const currentDate = new Date(messages[index].createdAt);
-  const previousDate = new Date(messages[index - 1].createdAt);
-
-  return !isSameDate(currentDate, previousDate);
-}
-
-function shouldShowAvatar(index) {
-  const messages = selectedConversation.value?.messages || [];
-  const currentMessage = messages[index];
-  const nextMessage = messages[index + 1];
-
-  return (
-      !nextMessage ||
-      nextMessage.sender !== currentMessage.sender
+  const items = selectedConversation.value?.messages || [];
+  if (index === 0) return true;
+  return !isSameDate(
+      new Date(items[index].createdAt),
+      new Date(items[index - 1].createdAt)
   );
 }
 
-onMounted(() => {
-  if (conversations.value.length > 0) {
-    selectedConversation.value = conversations.value[0];
-    selectedConversation.value.unread = 0;
-    scrollToBottom();
+function shouldShowAvatar(index) {
+  const items = selectedConversation.value?.messages || [];
+  const currentMessage = items[index];
+  const nextMessage = items[index + 1];
+  return !nextMessage || nextMessage.sender !== currentMessage.sender;
+}
+
+async function handleSessionUpdated() {
+  const previousUserId = currentUserId.value;
+  currentUser.value = readCurrentUser();
+
+  if (currentUserId.value === previousUserId) return;
+
+  selectedConversation.value = null;
+  conversations.value = [];
+  newMessage.value = "";
+  isMobileChatOpen.value = false;
+  showEmojiPanel.value = false;
+
+  if (currentUserId.value > 0) {
+    await loadConversations();
   }
+}
+
+function getErrorMessage(error, fallback) {
+  const data = error?.response?.data;
+  if (typeof data === "string") return data;
+  return data?.message || Object.values(data || {})[0] || fallback;
+}
+
+onMounted(async () => {
+  window.addEventListener("session-updated", handleSessionUpdated);
+
+  await loadConversations();
+  if (conversations.value.length > 0) {
+    const ownedConversation = conversations.value.find(item =>
+        Number(item.assignedEmployeeId || 0) === currentUserId.value
+    );
+    if (ownedConversation) {
+      await selectConversation(ownedConversation);
+    }
+  }
+  pollTimer = window.setInterval(refreshAll, POLL_INTERVAL);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("session-updated", handleSessionUpdated);
+  if (pollTimer) window.clearInterval(pollTimer);
 });
 </script>
 

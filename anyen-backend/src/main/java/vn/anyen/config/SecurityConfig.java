@@ -1,6 +1,5 @@
 package vn.anyen.config;
 import org.springframework.http.HttpMethod;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -12,10 +11,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 
 @Configuration
-@RequiredArgsConstructor
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -64,6 +66,8 @@ public class SecurityConfig {
                         // Public website
                         .requestMatchers(
                                 "/images/**",
+                                "/uploads/**",
+                                "/api/tu-van/**",
                                 "/api/gioi-thieu",
                                 "/api/gioi-thieu/**",
                                 "/api/san-pham",
@@ -120,6 +124,10 @@ public class SecurityConfig {
                                 "/api/nhan-vien/thong-bao"
                         )
                         .hasAnyRole("NHANVIEN", "HOTLINE", "ADMIN")
+
+                        // Nhân viên trực tuyến quản lý phiên tư vấn
+                        .requestMatchers("/api/nhan-vien/tu-van/**")
+                        .hasAnyRole("HOTLINE", "ADMIN")
 
                         // API đối tác
                         .requestMatchers("/api/doi-tac/**")

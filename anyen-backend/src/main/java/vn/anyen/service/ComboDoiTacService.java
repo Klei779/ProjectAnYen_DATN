@@ -1,6 +1,5 @@
 package vn.anyen.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -11,9 +10,11 @@ import vn.anyen.dto.response.ComboDoiTacResponse;
 import vn.anyen.dto.response.SanPhamComboDoiTacResponse;
 import vn.anyen.entity.ComBo;
 import vn.anyen.entity.ComBoChiTiet;
+import vn.anyen.entity.ComBoHinhAnh;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.SanPham;
 import vn.anyen.repository.ComBoChiTietRepository;
+import vn.anyen.repository.ComBoHinhAnhRepository;
 import vn.anyen.repository.ComBoRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamDoiTacRepository;
@@ -27,18 +28,35 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ComboDoiTacService {
 
     private final ComBoRepository comboRepository;
     private final ComBoChiTietRepository comboChiTietRepository;
+    private final ComBoHinhAnhRepository comboHinhAnhRepository;
     private final SanPhamDoiTacRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
     private final CloudinaryService cloudinaryService;
+
+    public ComboDoiTacService(
+            ComBoRepository comboRepository,
+            ComBoChiTietRepository comboChiTietRepository,
+            ComBoHinhAnhRepository comboHinhAnhRepository,
+            SanPhamDoiTacRepository sanPhamRepository,
+            DoiTacRepository doiTacRepository,
+            CloudinaryService cloudinaryService
+    ) {
+        this.comboRepository = comboRepository;
+        this.comboChiTietRepository = comboChiTietRepository;
+        this.comboHinhAnhRepository = comboHinhAnhRepository;
+        this.sanPhamRepository = sanPhamRepository;
+        this.doiTacRepository = doiTacRepository;
+        this.cloudinaryService = cloudinaryService;
+    }
 
     @Transactional(readOnly = true)
     public List<ComboDoiTacResponse> getCombos(Authentication authentication) {
@@ -86,12 +104,9 @@ public class ComboDoiTacService {
         List<String> imageUrls = uploadComboImages(files);
 
         if (!imageUrls.isEmpty()) {
-            /*
-             * Hiện tại bảng combo chỉ có một cột HinhAnh,
-             * nên tạm lưu URL ảnh đầu tiên.
-             */
             saved.setHinhAnh(imageUrls.get(0));
             saved = comboRepository.save(saved);
+            saveComboImages(saved, files, imageUrls);
         }
 
         saveDetails(saved, items);
@@ -164,8 +179,14 @@ public class ComboDoiTacService {
         List<ValidatedComboItem> items = validateProducts(doiTac, request);
         validateComboPrice(request.getGia(), items);
 
+        String previousImage = trimToNull(combo.getHinhAnh());
+        String requestedImage = trimToNull(request.getHinhAnh());
+
         applyRequest(combo, request);
         ComBo saved = comboRepository.save(combo);
+        if (!Objects.equals(previousImage, requestedImage)) {
+            syncLegacyImage(saved, requestedImage);
+        }
 
         comboChiTietRepository.deleteByComboId(comboId);
         comboChiTietRepository.flush();
@@ -339,18 +360,30 @@ public class ComboDoiTacService {
                 .map(item -> item.getThanhTien() == null ? BigDecimal.ZERO : item.getThanhTien())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        return ComboDoiTacResponse.builder()
-                .comboId(combo.getComboId())
-                .maDoiTac(combo.getMaDoiTac())
-                .tenCombo(combo.getTenCombo())
-                .gia(combo.getGia())
-                .tongGiaSanPham(totalProductPrice)
-                .moTa(combo.getMoTa())
-                .hinhAnh(combo.getHinhAnh())
-                .trangThai(combo.getTrangThai())
-                .tenTrangThai(statusLabel(combo.getTrangThai()))
-                .sanPhams(products)
-                .build();
+        List<String> imageUrls = comboHinhAnhRepository
+                .findByComboIdOrderByThuTuAscMaHinhAnhAsc(combo.getComboId())
+                .stream()
+                .map(ComBoHinhAnh::getHinhAnh)
+                .filter(url -> url != null && !url.isBlank())
+                .toList();
+
+        if (imageUrls.isEmpty() && combo.getHinhAnh() != null && !combo.getHinhAnh().isBlank()) {
+            imageUrls = List.of(combo.getHinhAnh());
+        }
+
+        return new ComboDoiTacResponse(
+                combo.getComboId(),
+                combo.getMaDoiTac(),
+                combo.getTenCombo(),
+                combo.getGia(),
+                totalProductPrice,
+                combo.getMoTa(),
+                combo.getHinhAnh(),
+                imageUrls,
+                combo.getTrangThai(),
+                statusLabel(combo.getTrangThai()),
+                products
+        );
     }
 
     private SanPhamComboDoiTacResponse toProductResponse(SanPham product, Integer quantityInCombo) {
@@ -441,14 +474,13 @@ public class ComboDoiTacService {
             }
 
             try {
-                String imageUrl = cloudinaryService.upload(file);
+                String imageUrl = cloudinaryService.upload(file, "combo");
                 imageUrls.add(imageUrl);
             } catch (IOException exception) {
                 throw new ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Không thể tải ảnh "
-                                + file.getOriginalFilename()
-                                + " lên Cloudinary",
+                        "Không thể lưu ảnh "
+                                + file.getOriginalFilename(),
                         exception
                 );
             }
@@ -456,4 +488,51 @@ public class ComboDoiTacService {
 
         return imageUrls;
     }
+    private void saveComboImages(
+            ComBo combo,
+            List<MultipartFile> files,
+            List<String> imageUrls
+    ) {
+        comboHinhAnhRepository.deleteByComboId(combo.getComboId());
+
+        List<MultipartFile> realFiles = files == null
+                ? List.of()
+                : files.stream()
+                        .filter(file -> file != null && !file.isEmpty())
+                        .toList();
+
+        List<ComBoHinhAnh> images = new ArrayList<>();
+        for (int index = 0; index < imageUrls.size(); index++) {
+            String originalName = index < realFiles.size()
+                    ? realFiles.get(index).getOriginalFilename()
+                    : null;
+
+            ComBoHinhAnh image = new ComBoHinhAnh();
+            image.setComboId(combo.getComboId());
+            image.setHinhAnh(imageUrls.get(index));
+            image.setTenHinhAnh(originalName);
+            image.setThuTu(index + 1);
+            images.add(image);
+        }
+
+        if (!images.isEmpty()) {
+            comboHinhAnhRepository.saveAll(images);
+            comboHinhAnhRepository.flush();
+        }
+    }
+
+    private void syncLegacyImage(ComBo combo, String imageUrl) {
+        String normalized = trimToNull(imageUrl);
+        comboHinhAnhRepository.deleteByComboId(combo.getComboId());
+
+        if (normalized != null) {
+            ComBoHinhAnh image = new ComBoHinhAnh();
+            image.setComboId(combo.getComboId());
+            image.setHinhAnh(normalized);
+            image.setTenHinhAnh("Ảnh combo");
+            image.setThuTu(1);
+            comboHinhAnhRepository.save(image);
+        }
+    }
+
 }

@@ -12,7 +12,7 @@ import {
 } from "../../services/quanLyHopDongService.js";
 
 const keyword = ref("");
-const trangThai = ref("Tất cả");
+const trangThai = ref(null);
 const includeHidden = ref(true);
 
 const showDetailModal = ref(false);
@@ -27,13 +27,22 @@ const total = ref(0);
 const loading = ref(false);
 
 const statusOptions = [
-  "Tất cả",
-  "Đang hiệu lực",
-  "Chờ ký",
-  "Chờ thanh toán",
-  "Đang thực hiện",
-  "Đã hoàn tất",
-  "Đã hủy",
+  {
+    label: "Tất cả",
+    value: null,
+  },
+  {
+    label: "Chờ ký",
+    value: 0,
+  },
+  {
+    label: "Đang hiệu lực",
+    value: 1,
+  },
+  {
+    label: "Đã hủy",
+    value: 2,
+  },
 ];
 
 const loadHopDongs = async () => {
@@ -41,15 +50,18 @@ const loadHopDongs = async () => {
     loading.value = true;
 
     const data = await getHopDongsAdmin({
-      keyword: keyword.value || "",
-      trangThai: trangThai.value || "Tất cả",
+      keyword: keyword.value?.trim() || "",
+      trangThai: trangThai.value,
       includeHidden: includeHidden.value,
-      page: page.value || 1,
-      pageSize: pageSize.value || 10,
+      page: page.value,
+      pageSize: pageSize.value,
     });
 
-    hopDongs.value = data.items || [];
-    total.value = data.total || 0;
+    hopDongs.value = Array.isArray(data?.items)
+        ? data.items
+        : [];
+
+    total.value = Number(data?.total) || 0;
   } catch (error) {
     console.error("Lỗi tải hợp đồng:", error);
 
@@ -200,23 +212,49 @@ const getEndDateRaw = (item) => {
 const getEndDate = (item) => {
   return formatDate(getEndDateRaw(item));
 };
-
 const displayStatus = (status) => {
-  if (!status) return "---";
+  if (
+      status === null ||
+      status === undefined ||
+      status === ""
+  ) {
+    return "---";
+  }
+
+  const numericStatus = Number(status);
+
+  if (!Number.isNaN(numericStatus)) {
+    switch (numericStatus) {
+      case 0:
+        return "Chờ ký";
+
+      case 1:
+        return "Đang hiệu lực";
+
+      case 2:
+        return "Đã hủy";
+
+      default:
+        return "Không xác định";
+    }
+  }
+
+  // Tương thích với dữ liệu String cũ nếu còn cache
+  const textStatus = String(status).trim();
 
   if (
-      status === "Đã ký" ||
-      status === "Đã ký / Hiệu lực" ||
-      status === "Đã hoàn tất"
+      textStatus === "Đã ký" ||
+      textStatus === "Đã ký / Hiệu lực" ||
+      textStatus === "Đã hoàn tất"
   ) {
     return "Đang hiệu lực";
   }
 
-  if (status === "Mới tạo") {
+  if (textStatus === "Mới tạo") {
     return "Chờ ký";
   }
 
-  return status;
+  return textStatus;
 };
 
 const statusClass = (status) => {
@@ -293,10 +331,10 @@ onMounted(() => {
         <select v-model="trangThai" @change="searchHopDong">
           <option
               v-for="item in statusOptions"
-              :key="item"
-              :value="item"
+              :key="item.label"
+              :value="item.value"
           >
-            {{ item }}
+            {{ item.label }}
           </option>
         </select>
       </div>

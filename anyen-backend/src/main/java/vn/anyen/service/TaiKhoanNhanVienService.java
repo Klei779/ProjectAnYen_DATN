@@ -54,7 +54,7 @@ public class TaiKhoanNhanVienService {
                 .diaChi(nv.getDiaChi())
                 .vaiTro(nv.getVaiTro())
                 .tenVaiTro(AppLabels.getLabel(
-                        AppLabels.ROLE_NHAN_VIEN,
+                        AppLabels.TEN_VAI_TRO,
                         nv.getVaiTro()))
                 .tenTrangThai(AppLabels.getLabel(
                         AppLabels.TRANG_THAI_NHAN_VIEN,

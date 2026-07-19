@@ -14,18 +14,18 @@ public interface ThongBaoDoiTacRepository
     );
 
     // Loai dùng String để khớp với cột VARCHAR trong DB
-    List<ThongBaoDoiTac>
-    findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
-            Integer maDoiTac,
-            String loai,
-            String trangThaiThongBao
-    );
+//    List<ThongBaoDoiTac>
+//    findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianTaoDesc(
+//            Integer maDoiTac,
+//            String loai,
+//            String trangThaiThongBao
+//    );
 
     List<ThongBaoDoiTac>
     findByDoiTac_MaDoiTacAndLoaiAndTrangThaiThongBaoOrderByThoiGianXuLyDesc(
             Integer maDoiTac,
             String loai,
-            String trangThaiThongBao
+            Integer trangThaiThongBao
     );
 
     Optional<ThongBaoDoiTac> findByMaThongBaoAndDoiTac_MaDoiTac(

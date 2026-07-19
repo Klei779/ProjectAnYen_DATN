@@ -2,6 +2,8 @@ package vn.anyen.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
@@ -25,8 +27,8 @@ public class TinTuc {
     @Column(name = "TomTat", nullable = false, length = 500)
     private String tomTat;
 
-    @Lob
-    @Column(name = "NoiDung", nullable = false)
+    @JdbcTypeCode(SqlTypes.LONGVARCHAR)
+    @Column(name = "NoiDung", columnDefinition = "LONGTEXT")
     private String noiDung;
 
     @Column(name = "AnhDaiDien", length = 255)

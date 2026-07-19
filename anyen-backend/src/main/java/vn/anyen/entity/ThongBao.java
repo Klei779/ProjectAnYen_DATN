@@ -58,7 +58,8 @@ public class ThongBao {
      */
     @Column(name = "TrangThai")
     private Integer trangThai;
-
+@Column(name="DaDoc")
+private Boolean daDoc;
     /** Lý do từ chối (khi từ chối) */
     @Column(name = "LyDoTuChoi", columnDefinition = "TEXT")
     private String lyDoTuChoi;

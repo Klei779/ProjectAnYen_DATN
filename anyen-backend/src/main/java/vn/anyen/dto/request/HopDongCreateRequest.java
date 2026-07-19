@@ -19,13 +19,13 @@ public class HopDongCreateRequest {
     private String thoiHanKetThuc;
     private String ngayKetThuc;
 
-    private String trangThai;
+    private Integer trangThai;
 
     // Dữ liệu lưu vào bảng hdongct
     private String hoTenNguoiMat;
     private String ngayMat;
     private String ngaySinh;
-    private String gioiTinh;
+    private Boolean gioiTinh;
 
     private String soGiayBaoTu;
     private String noiCapGiayBaoTu;

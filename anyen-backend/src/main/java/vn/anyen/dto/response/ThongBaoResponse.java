@@ -20,6 +20,7 @@ public class ThongBaoResponse {
     private Integer nguoiGuiId;
     private String tenNguoiGui;
     private Integer maSanPham;
+    private Boolean daDoc;
     // Thông tin người nhận
     private Integer nguoiNhanId;
     private String tenNguoiNhan;

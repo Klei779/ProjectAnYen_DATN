@@ -45,9 +45,9 @@ public class DoiTacThongBaoService {
     private static final String LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
 
     // TrangThaiThongBao dùng String để khớp VARCHAR trong DB
-    private static final String CHO_XAC_NHAN = ThongBaoDoiTac.TRANG_THAI_CHO_XAC_NHAN;
-    private static final String DA_CHAP_NHAN = ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN;
-    private static final String DA_TU_CHOI = ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI;
+    private static final Integer CHO_XAC_NHAN = ThongBaoDoiTac.TRANG_THAI_CHO_XAC_NHAN;
+    private static final Integer DA_CHAP_NHAN = ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN;
+    private static final Integer DA_TU_CHOI = ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI;
 
     // Pattern để parse maSanPham từ NoiDung: [MASP:123]
     private static final Pattern MASP_PATTERN = Pattern.compile("\\[MASP:(\\d+)\\]");

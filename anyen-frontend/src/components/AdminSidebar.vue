@@ -43,6 +43,14 @@
         <i class="fa-solid fa-handshake menu-icon"></i>
         <span class="sidebar-text">Quản lý nhân viên</span>
       </RouterLink>
+      <RouterLink
+          to="/admin/quan-ly-khach-hang"
+          class="menu-item"
+          title="Quản lý khách hàng"
+      >
+        <i class="fa-solid fa-users menu-icon"></i>
+        <span class="sidebar-text">Quản lý khách hàng</span>
+      </RouterLink>
       <RouterLink to="/admin/quan-ly-hop-dong" class="menu-item" title="Quản lý hợp đồng">
         <i class="fa-solid fa-file-contract menu-icon"></i>
         <span class="sidebar-text">Quản lý hợp đồng</span>

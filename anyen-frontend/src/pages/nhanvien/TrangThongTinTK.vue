@@ -5,11 +5,6 @@
         <h2>Thông tin tài khoản</h2>
         <p>Quản lý và cập nhật thông tin cá nhân của nhân viên</p>
       </div>
-
-      <button class="btn-back" type="button" @click="closePage">
-        <i class="fa-solid fa-arrow-left"></i>
-        Quay lại
-      </button>
     </div>
 
     <div v-if="loading" class="account-loading">
@@ -23,10 +18,6 @@
           <div class="avatar-main">
             {{ initials }}
           </div>
-
-          <button class="camera-btn" type="button" title="Ảnh đại diện">
-            <i class="fa-solid fa-camera"></i>
-          </button>
         </div>
 
         <h3>{{ account?.hoTen || "Nhân viên" }}</h3>
@@ -306,19 +297,6 @@ function syncLocalUser(data) {
   window.dispatchEvent(new Event("session-updated"));
 }
 
-function closePage() {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const role = user.vaiTroChiTiet || user.role || user.vaiTro;
-
-  if (role === "ADMIN") {
-    router.push("/admin/tong-quan");
-  } else if (role === "HOTLINE") {
-    router.push("/hotline/quan-ly-cong-viec");
-  } else {
-    router.push("/nhan-vien/tong-quan");
-  }
-}
-
 function getErrorMessage(error, fallback) {
   return error?.response?.data?.message ||
       error?.response?.data?.error ||
@@ -354,22 +332,6 @@ function getErrorMessage(error, fallback) {
   margin: 6px 0 0;
   color: #64748b;
   font-size: 14px;
-}
-
-.btn-back {
-  height: 40px;
-  padding: 0 16px;
-  border: 1px solid #dbe3ef;
-  border-radius: 10px;
-  background: #fff;
-  color: #0f274f;
-  font-size: 14px;
-  font-weight: 800;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
 }
 
 .account-loading {
@@ -425,20 +387,6 @@ function getErrorMessage(error, fallback) {
   color: #111827;
   font-size: 42px;
   font-weight: 800;
-}
-
-.camera-btn {
-  position: absolute;
-  right: 8px;
-  bottom: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  background: #fff;
-  color: #0f172a;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
-  cursor: default;
 }
 
 .profile-card h3 {
@@ -702,11 +650,6 @@ function getErrorMessage(error, fallback) {
   .page-header {
     flex-direction: column;
     align-items: stretch;
-  }
-
-  .btn-back {
-    width: 100%;
-    justify-content: center;
   }
 
   .info-card,

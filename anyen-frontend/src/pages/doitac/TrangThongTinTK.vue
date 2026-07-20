@@ -11,19 +11,19 @@
           <div class="avatar-main">
             {{ initials }}
           </div>
-
-          <button class="camera-btn" type="button" title="Ảnh đại diện">
-            <i class="fa-solid fa-camera"></i>
-          </button>
         </div>
 
-        <h3>{{ account?.tenDoiTac || "Đối tác" }}</h3>
+        <h3>
+          {{ account?.tenDoiTac || "Đối tác" }}
+        </h3>
 
         <span
             class="status-badge"
-            :class="{ inactive: account?.trangThai !== 'Đang hoạt động' }"
+            :class="{
+              inactive: !trangThaiDangHoatDong
+            }"
         >
-          {{ account?.trangThai || "Đang hoạt động" }}
+          {{ trangThaiDisplay }}
         </span>
 
         <div class="profile-summary">
@@ -34,12 +34,15 @@
 
           <div>
             <span>Tên đăng nhập</span>
-            <strong>{{ account?.tenDangNhap || "---" }}</strong>
+
+            <strong>
+              {{ account?.tenDangNhap || "---" }}
+            </strong>
           </div>
 
           <div>
             <span>Vai trò</span>
-            <strong>{{ account?.vaiTro || "---" }}</strong>
+            <strong>Đối tác</strong>
           </div>
         </div>
       </aside>
@@ -48,7 +51,11 @@
         <div class="card-header">
           <div>
             <h3>Thông tin cá nhân</h3>
-            <p>Chỉ cập nhật các thông tin có trong bảng đối tác</p>
+
+            <p>
+              Chỉ cập nhật các thông tin có trong
+              bảng đối tác
+            </p>
           </div>
 
           <div class="header-actions">
@@ -65,15 +72,27 @@
             <button
                 class="btn-password"
                 type="button"
-                @click="showDoiMatKhau = !showDoiMatKhau"
+                @click="
+                  showDoiMatKhau =
+                    !showDoiMatKhau
+                "
             >
               <i class="fa-solid fa-key"></i>
-              {{ showDoiMatKhau ? "Ẩn đổi mật khẩu" : "Đổi mật khẩu" }}
+
+              {{
+                showDoiMatKhau
+                    ? "Ẩn đổi mật khẩu"
+                    : "Đổi mật khẩu"
+              }}
             </button>
           </div>
         </div>
 
-        <form v-if="editMode" class="edit-form" @submit.prevent="submitUpdate">
+        <form
+            v-if="editMode"
+            class="edit-form"
+            @submit.prevent="submitUpdate"
+        >
           <div class="form-row">
             <label>Tên đối tác</label>
 
@@ -86,6 +105,7 @@
 
           <div class="form-row">
             <label>Tên doanh nghiệp</label>
+
             <input
                 v-model.trim="form.tenDoanhNghiep"
                 type="text"
@@ -95,6 +115,7 @@
 
           <div class="form-row">
             <label>Mã số thuế</label>
+
             <input
                 v-model.trim="form.maSoThue"
                 type="text"
@@ -104,6 +125,7 @@
 
           <div class="form-row">
             <label>Số điện thoại</label>
+
             <input
                 v-model.trim="form.soDienThoai"
                 type="text"
@@ -113,6 +135,7 @@
 
           <div class="form-row">
             <label>Email</label>
+
             <input
                 v-model.trim="form.email"
                 type="email"
@@ -122,6 +145,7 @@
 
           <div class="form-row">
             <label>Địa chỉ</label>
+
             <textarea
                 v-model.trim="form.diaChi"
                 rows="4"
@@ -130,13 +154,29 @@
           </div>
 
           <div class="action-row">
-            <button class="btn-outline" type="button" @click="cancelEdit">
+            <button
+                class="btn-outline"
+                type="button"
+                @click="cancelEdit"
+            >
               Hủy
             </button>
 
-            <button class="btn-save" type="submit" :disabled="saving">
-              <i v-if="saving" class="fa-solid fa-spinner fa-spin"></i>
-              <i v-else class="fa-solid fa-floppy-disk"></i>
+            <button
+                class="btn-save"
+                type="submit"
+                :disabled="saving"
+            >
+              <i
+                  v-if="saving"
+                  class="fa-solid fa-spinner fa-spin"
+              ></i>
+
+              <i
+                  v-else
+                  class="fa-solid fa-floppy-disk"
+              ></i>
+
               Lưu thay đổi
             </button>
           </div>
@@ -145,35 +185,75 @@
         <div v-else class="info-list">
           <div class="info-row">
             <span>Tên đối tác</span>
-            <strong>{{ account?.tenDoiTac || "Chưa cập nhật" }}</strong>
+
+            <strong>
+              {{
+                account?.tenDoiTac ||
+                "Chưa cập nhật"
+              }}
+            </strong>
           </div>
 
           <div class="info-row">
             <span>Tên doanh nghiệp</span>
-            <strong>{{ account?.tenDoanhNghiep || "Chưa cập nhật" }}</strong>
+
+            <strong>
+              {{
+                account?.tenDoanhNghiep ||
+                "Chưa cập nhật"
+              }}
+            </strong>
           </div>
 
           <div class="info-row">
             <span>Mã số thuế</span>
-            <strong>{{ account?.maSoThue || "Chưa cập nhật" }}</strong>
+
+            <strong>
+              {{
+                account?.maSoThue ||
+                "Chưa cập nhật"
+              }}
+            </strong>
           </div>
 
           <div class="info-row">
             <span>Số điện thoại</span>
-            <strong>{{ account?.soDienThoai || "Chưa cập nhật" }}</strong>
+
+            <strong>
+              {{
+                account?.soDienThoai ||
+                "Chưa cập nhật"
+              }}
+            </strong>
           </div>
 
           <div class="info-row">
             <span>Email</span>
-            <strong>{{ account?.email || "Chưa cập nhật" }}</strong>
+
+            <strong>
+              {{
+                account?.email ||
+                "Chưa cập nhật"
+              }}
+            </strong>
           </div>
 
           <div class="info-row">
             <span>Địa chỉ</span>
-            <strong>{{ account?.diaChi || "Chưa cập nhật" }}</strong>
+
+            <strong>
+              {{
+                account?.diaChi ||
+                "Chưa cập nhật"
+              }}
+            </strong>
           </div>
         </div>
-        <div v-if="showDoiMatKhau" class="password-section">
+
+        <div
+            v-if="showDoiMatKhau"
+            class="password-section"
+        >
           <DoiMatKhau/>
         </div>
       </main>
@@ -182,13 +262,16 @@
 </template>
 
 <script setup>
-import {computed, onMounted, reactive, ref} from "vue";
-import {useRouter} from "vue-router";
+import {
+  computed,
+  onMounted,
+  reactive,
+  ref
+} from "vue";
+
 import {ElMessage} from "element-plus";
 import api from "../../api/api.js";
 import DoiMatKhau from "../../components/DoiMatKhau.vue";
-
-const router = useRouter();
 
 const API_URL = "/api/doi-tac/tai-khoan";
 
@@ -208,144 +291,393 @@ const form = reactive({
   diaChi: ""
 });
 
+/**
+ * Tạo chữ viết tắt dùng cho ảnh đại diện.
+ *
+ * Ví dụ:
+ * Nguyễn Văn A -> NA
+ */
 const initials = computed(() => {
-  const name = account.value?.tenDoiTac || account.value?.tenDangNhap || "DT";
-  const parts = name.trim().split(/\s+/);
+  const name =
+      account.value?.tenDoiTac ||
+      account.value?.tenDangNhap ||
+      "DT";
+
+  const parts = name
+      .trim()
+      .split(/\s+/);
 
   if (parts.length === 1) {
-    return parts[0].substring(0, 2).toUpperCase();
+    return parts[0]
+        .substring(0, 2)
+        .toUpperCase();
   }
 
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return (
+      `${parts[0][0]}${parts[parts.length - 1][0]}`
+  ).toUpperCase();
 });
 
+/**
+ * Hiển thị mã đối tác.
+ *
+ * Ví dụ:
+ * 1 -> DT01
+ * 12 -> DT12
+ */
 const maDoiTacDisplay = computed(() => {
   const id = account.value?.maDoiTac;
 
-  if (!id) return "---";
+  if (
+      id === null ||
+      id === undefined ||
+      id === ""
+  ) {
+    return "---";
+  }
 
   return `DT${String(id).padStart(2, "0")}`;
+});
+
+/**
+ * Kiểm tra trạng thái hiện tại có đang hoạt động không.
+ *
+ * Backend hiện trả:
+ * 1 = đang hoạt động
+ * 0 = ngừng hoạt động
+ */
+const trangThaiDangHoatDong = computed(() => {
+  const trangThai =
+      account.value?.trangThai;
+
+  if (
+      trangThai === null ||
+      trangThai === undefined ||
+      trangThai === ""
+  ) {
+    return false;
+  }
+
+  if (Number(trangThai) === 1) {
+    return true;
+  }
+
+  const text = String(trangThai)
+      .trim()
+      .toLowerCase();
+
+  return (
+      text === "đang hoạt động" ||
+      text === "dang hoat dong" ||
+      text === "đang hợp tác" ||
+      text === "dang hop tac"
+  );
+});
+
+/**
+ * Chuyển trạng thái dạng số sang chữ
+ * để không còn hiển thị số 1 trên giao diện.
+ */
+const trangThaiDisplay = computed(() => {
+  const trangThai =
+      account.value?.trangThai;
+
+  if (
+      trangThai === null ||
+      trangThai === undefined ||
+      trangThai === ""
+  ) {
+    return "Chưa cập nhật";
+  }
+
+  const numericStatus =
+      Number(trangThai);
+
+  if (!Number.isNaN(numericStatus)) {
+    if (numericStatus === 1) {
+      return "Đang hoạt động";
+    }
+
+    if (numericStatus === 0) {
+      return "Ngừng hoạt động";
+    }
+  }
+
+  return String(trangThai);
 });
 
 onMounted(() => {
   loadAccount();
 });
 
+/**
+ * Lấy thông tin tài khoản đối tác đang đăng nhập.
+ */
 async function loadAccount() {
   loading.value = true;
 
   try {
-    const res = await api.get(`${API_URL}/me`);
-    account.value = res.data;
-    fillForm(res.data);
-    syncLocalUser(res.data);
+    const response = await api.get(
+        `${API_URL}/me`
+    );
+
+    account.value = response.data;
+
+    fillForm(response.data);
+    syncLocalUser(response.data);
   } catch (error) {
-    console.error("Lỗi tải thông tin tài khoản:", error);
-    ElMessage.error("Không tải được thông tin tài khoản");
+    console.error(
+        "Lỗi tải thông tin tài khoản:",
+        error
+    );
+
+    ElMessage.error(
+        getErrorMessage(
+            error,
+            "Không tải được thông tin tài khoản"
+        )
+    );
   } finally {
     loading.value = false;
   }
 }
 
+/**
+ * Đổ dữ liệu tài khoản vào form chỉnh sửa.
+ */
 function fillForm(data) {
-  form.tenDoiTac = data?.tenDoiTac || "";
-  form.tenDoanhNghiep = data?.tenDoanhNghiep || "";
-  form.maSoThue = data?.maSoThue || "";
-  form.email = data?.email || "";
-  form.soDienThoai = data?.soDienThoai || "";
-  form.diaChi = data?.diaChi || "";
+  form.tenDoiTac =
+      data?.tenDoiTac || "";
+
+  form.tenDoanhNghiep =
+      data?.tenDoanhNghiep || "";
+
+  form.maSoThue =
+      data?.maSoThue || "";
+
+  form.email =
+      data?.email || "";
+
+  form.soDienThoai =
+      data?.soDienThoai || "";
+
+  form.diaChi =
+      data?.diaChi || "";
 }
 
+/**
+ * Bắt đầu chỉnh sửa thông tin.
+ */
 function startEdit() {
   fillForm(account.value);
   editMode.value = true;
 }
 
+/**
+ * Hủy chỉnh sửa và khôi phục dữ liệu cũ.
+ */
 function cancelEdit() {
   fillForm(account.value);
   editMode.value = false;
 }
 
+/**
+ * Gửi yêu cầu cập nhật thông tin tài khoản.
+ */
 async function submitUpdate() {
   if (!form.tenDoiTac.trim()) {
-    ElMessage.warning("Vui lòng nhập họ và tên");
+    ElMessage.warning(
+        "Vui lòng nhập họ và tên"
+    );
+
     return;
   }
 
-  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    ElMessage.warning("Email không đúng định dạng");
+  if (
+      form.email &&
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+          form.email
+      )
+  ) {
+    ElMessage.warning(
+        "Email không đúng định dạng"
+    );
+
     return;
   }
 
-  if (form.soDienThoai && !/^[0-9]{9,20}$/.test(form.soDienThoai)) {
-    ElMessage.warning("Số điện thoại chỉ gồm 9 - 20 chữ số");
+  if (
+      form.soDienThoai &&
+      !/^[0-9]{9,20}$/.test(
+          form.soDienThoai
+      )
+  ) {
+    ElMessage.warning(
+        "Số điện thoại chỉ gồm 9 - 20 chữ số"
+    );
+
     return;
   }
 
   saving.value = true;
 
   try {
-    const res = await api.put(`${API_URL}/me`, {
-      tenDoiTac: form.tenDoiTac,
-      tenDoanhNghiep: form.tenDoanhNghiep,
-      maSoThue: form.maSoThue,
-      email: form.email,
-      soDienThoai: form.soDienThoai,
-      diaChi: form.diaChi
-    });
+    const response = await api.put(
+        `${API_URL}/me`,
+        {
+          tenDoiTac:
+          form.tenDoiTac,
 
-    account.value = res.data;
-    fillForm(res.data);
-    syncLocalUser(res.data);
+          tenDoanhNghiep:
+          form.tenDoanhNghiep,
+
+          maSoThue:
+          form.maSoThue,
+
+          email:
+          form.email,
+
+          soDienThoai:
+          form.soDienThoai,
+
+          diaChi:
+          form.diaChi
+        }
+    );
+
+    account.value = response.data;
+
+    fillForm(response.data);
+    syncLocalUser(response.data);
 
     editMode.value = false;
-    ElMessage.success("Cập nhật thông tin tài khoản thành công");
+
+    ElMessage.success(
+        "Cập nhật thông tin tài khoản thành công"
+    );
   } catch (error) {
-    console.error("Lỗi cập nhật tài khoản:", error);
-    ElMessage.error(getErrorMessage(error, "Cập nhật thông tin thất bại"));
+    console.error(
+        "Lỗi cập nhật tài khoản:",
+        error
+    );
+
+    ElMessage.error(
+        getErrorMessage(
+            error,
+            "Cập nhật thông tin thất bại"
+        )
+    );
   } finally {
     saving.value = false;
   }
 }
 
+/**
+ * Đồng bộ lại thông tin người dùng trong localStorage.
+ *
+ * API tài khoản đối tác không trả vaiTroChiTiet,
+ * nên không được gán vaiTro bằng undefined.
+ */
 function syncLocalUser(data) {
-  const oldUser = JSON.parse(localStorage.getItem("user") || "{}");
+  let oldUser = {};
+
+  try {
+    oldUser = JSON.parse(
+        localStorage.getItem("user") ||
+        "{}"
+    );
+  } catch (error) {
+    console.error(
+        "Không thể đọc dữ liệu người dùng trong localStorage:",
+        error
+    );
+  }
 
   const newUser = {
     ...oldUser,
-    id: data.maDoiTac,
-    tenDoiTac: data.tenDoiTac,
-    tenDoanhNghiep: data.tenDoanhNghiep,
-    maSoThue: data.maSoThue,
-    tenDangNhap: data.tenDangNhap,
-    email: data.email,
-    soDienThoai: data.soDienThoai,
-    diaChi: data.diaChi,
-    vaiTro: data.vaiTro,
-    trangThai: data.trangThai
+
+    id:
+        data?.maDoiTac ??
+        oldUser.id,
+
+    maDoiTac:
+        data?.maDoiTac ??
+        oldUser.maDoiTac,
+
+    // Header layout đang lấy hoTen,
+    // nên cập nhật lại khi đổi tên đối tác.
+    hoTen:
+        data?.tenDoiTac ||
+        oldUser.hoTen,
+
+    tenDoiTac:
+        data?.tenDoiTac ||
+        oldUser.tenDoiTac,
+
+    tenDoanhNghiep:
+        data?.tenDoanhNghiep ??
+        oldUser.tenDoanhNghiep,
+
+    maSoThue:
+        data?.maSoThue ??
+        oldUser.maSoThue,
+
+    tenDangNhap:
+        data?.tenDangNhap ||
+        oldUser.tenDangNhap,
+
+    email:
+        data?.email ??
+        oldUser.email,
+
+    soDienThoai:
+        data?.soDienThoai ??
+        oldUser.soDienThoai,
+
+    diaChi:
+        data?.diaChi ??
+        oldUser.diaChi,
+
+    trangThai:
+        data?.trangThai ??
+        oldUser.trangThai,
+
+    /*
+     * API tài khoản đối tác không trả quyền.
+     * Giữ quyền hiện tại để router không
+     * mất quyền truy cập trang đối tác.
+     */
+    loaiTaiKhoan:
+        oldUser.loaiTaiKhoan ||
+        "DOI_TAC",
+
+    vaiTroChiTiet:
+        oldUser.vaiTroChiTiet ||
+        "DOITAC"
   };
 
-  localStorage.setItem("user", JSON.stringify(newUser));
-  window.dispatchEvent(new Event("session-updated"));
+  localStorage.setItem(
+      "user",
+      JSON.stringify(newUser)
+  );
+
+  window.dispatchEvent(
+      new Event("session-updated")
+  );
 }
 
-function closePage() {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const role = user.vaiTroChiTiet || user.role || user.vaiTro;
-
-  if (role === "ADMIN") {
-    router.push("/admin/tong-quan");
-  } else if (role === "HOTLINE") {
-    router.push("/hotline/quan-ly-cong-viec");
-  } else {
-    router.push("/doi-tac/tong-quan");
-  }
-}
-
-function getErrorMessage(error, fallback) {
-  return error?.response?.data?.message ||
+/**
+ * Lấy thông báo lỗi từ backend.
+ */
+function getErrorMessage(
+    error,
+    fallback
+) {
+  return (
+      error?.response?.data?.message ||
       error?.response?.data?.error ||
-      fallback;
+      fallback
+  );
 }
 </script>
 
@@ -448,20 +780,6 @@ function getErrorMessage(error, fallback) {
   color: #111827;
   font-size: 42px;
   font-weight: 800;
-}
-
-.camera-btn {
-  position: absolute;
-  right: 8px;
-  bottom: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid #fff;
-  background: #fff;
-  color: #0f172a;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.18);
-  cursor: default;
 }
 
 .profile-card h3 {

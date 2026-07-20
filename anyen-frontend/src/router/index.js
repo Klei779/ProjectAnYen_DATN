@@ -20,6 +20,7 @@ import XacNhanDoiTac from "../pages/website/XacNhanDoiTac.vue";
 import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
 import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
+import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
@@ -241,6 +242,10 @@ const routes = [
             {
                 path: "quan-ly-nhan-vien",
                 component: TrangQLNhanVien,
+            },
+            {
+                path: "quan-ly-khach-hang",
+                component: TrangQLKhachHangAdmin,
             },
             {
                 path: "quan-ly-hop-dong",

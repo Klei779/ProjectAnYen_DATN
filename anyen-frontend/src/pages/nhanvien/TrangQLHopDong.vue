@@ -61,7 +61,7 @@ const loadHopDongs = async () => {
       keyword: keyword.value || "",
       // Luôn lấy tất cả từ backend.
       // Frontend tự lọc trạng thái sau, vì DB đang dùng nhiều tên trạng thái khác nhau.
-      trangThai: "Tất cả",
+      trangThai: null,
       page: page.value || 1,
       pageSize: pageSize.value || 10,
     });
@@ -222,21 +222,31 @@ const getEndDate = (item) => {
 };
 
 const displayStatus = (status) => {
-  if (!status) return "---";
+  if (status === null || status === undefined || status === "") {
+    return "---";
+  }
+
+  const numericStatus = Number(status);
+
+  if (numericStatus === 0 || status === "Mới tạo" || status === "Chờ ký") {
+    return "Chờ ký";
+  }
 
   if (
+      numericStatus === 1 ||
       status === "Đã ký" ||
       status === "Đã ký / Hiệu lực" ||
-      status === "Đã hoàn tất"
+      status === "Đã hoàn tất" ||
+      status === "Đang hiệu lực"
   ) {
     return "Đang hiệu lực";
   }
 
-  if (status === "Mới tạo") {
-    return "Chờ ký";
+  if (numericStatus === 2 || status === "Đã hủy") {
+    return "Đã hủy";
   }
 
-  return status;
+  return String(status);
 };
 
 const statusClass = (status) => {

@@ -95,17 +95,6 @@ Nhắn tin khách hàng
       </RouterLink>
 
       <RouterLink
-          to="/nhan-tin"
-          class="menu-item"
-          title="Tin nhắn"
-      >
-        <i class="fa-solid fa-comments menu-icon"></i>
-        <span class="sidebar-text">
-          Tin nhắn
-        </span>
-      </RouterLink>
-
-      <RouterLink
           to="/hotline/thong-tin-tai-khoan"
           class="menu-item"
           title="Thông tin cá nhân"

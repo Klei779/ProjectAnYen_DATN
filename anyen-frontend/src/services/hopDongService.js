@@ -3,13 +3,27 @@ import api from "../api/api.js";
 const API_URL = "/api/nhan-vien/hop-dong";
 
 export async function getHopDongs(params = {}) {
+    const requestParams = {
+        keyword: params.keyword?.trim() || "",
+        page: params.page ?? 1,
+        pageSize: params.pageSize ?? 10,
+    };
+
+    if (
+        params.trangThai !== null &&
+        params.trangThai !== undefined &&
+        params.trangThai !== "" &&
+        params.trangThai !== "Tất cả"
+    ) {
+        const statusValue = Number(params.trangThai);
+
+        if (Number.isInteger(statusValue)) {
+            requestParams.trangThai = statusValue;
+        }
+    }
+
     const response = await api.get(API_URL, {
-        params: {
-            keyword: params.keyword || "",
-            trangThai: params.trangThai || "Tất cả",
-            page: params.page || 1,
-            pageSize: params.pageSize || 10,
-        },
+        params: requestParams,
     });
 
     return response.data;

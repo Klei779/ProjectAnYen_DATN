@@ -15,66 +15,212 @@ const dateRange = ref([]);
 const kieuThongKe = ref("NGAY");
 
 const thongKe = ref({
+  tuNgay: "",
+  denNgay: "",
+  kieuThongKe: "NGAY",
+
   tongQuan: {
+    // Tổng giá trị đơn hàng 100%
     tongDoanhThu: 0,
+
+    // Doanh thu sau khi chia tỷ lệ
+    doanhThuThucNhan: 0,
+
+    // Đối tác 80, admin 20, nhân viên 100
+    tyLeDoanhThu: 0,
+
     tongHoaDon: 0,
     tongDonHang: 0,
     doanhThuTrungBinh: 0,
   },
+
   bieuDoDoanhThu: [],
   topSanPham: [],
   phuongThucThanhToan: [],
 });
 
-const isDoiTac = computed(() => props.loaiTaiKhoan === "DOI_TAC");
+const isDoiTac = computed(() => {
+  return props.loaiTaiKhoan === "DOI_TAC";
+});
+
+/**
+ * Lấy thông tin tài khoản đang đăng nhập.
+ * Dùng để phân biệt admin và nhân viên vì cả hai
+ * đang sử dụng cùng trang thống kê nhân viên.
+ */
+const currentUser = computed(() => {
+  try {
+    const userString = localStorage.getItem("user");
+
+    if (!userString) {
+      return {};
+    }
+
+    return JSON.parse(userString);
+  } catch (error) {
+    console.error("Không thể đọc thông tin người dùng:", error);
+    return {};
+  }
+});
+
+const currentRole = computed(() => {
+  const user = currentUser.value;
+
+  return String(
+      user.vaiTroChiTiet ||
+      user.loaiTaiKhoan ||
+      user.vaiTro ||
+      ""
+  )
+      .trim()
+      .toUpperCase();
+});
+
+const isAdmin = computed(() => {
+  return (
+      currentRole.value === "ADMIN" ||
+      currentRole.value === "QUAN_LY" ||
+      currentRole.value === "QUANLY"
+  );
+});
+
+/**
+ * Ưu tiên tỷ lệ do backend trả về.
+ *
+ * Nếu backend/service chưa trả tỷ lệ:
+ * - Đối tác: 80%
+ * - Admin: 20%
+ * - Nhân viên: 100%
+ */
+const tyLeDoanhThuHienThi = computed(() => {
+  const tyLeBackend = Number(
+      thongKe.value.tongQuan?.tyLeDoanhThu || 0
+  );
+
+  if (tyLeBackend > 0) {
+    return tyLeBackend;
+  }
+
+  if (isDoiTac.value) {
+    return 80;
+  }
+
+  if (isAdmin.value) {
+    return 20;
+  }
+
+  return 100;
+});
+
+/**
+ * Ưu tiên số tiền thực nhận do backend tính.
+ *
+ * Nếu service frontend chưa lấy trường doanhThuThucNhan
+ * thì tự tính từ tổng giá trị đơn hàng và tỷ lệ.
+ */
+const doanhThuThucNhanHienThi = computed(() => {
+  const tongGiaTriDonHang = Number(
+      thongKe.value.tongQuan?.tongDoanhThu || 0
+  );
+
+  const doanhThuBackend = Number(
+      thongKe.value.tongQuan?.doanhThuThucNhan || 0
+  );
+
+  if (doanhThuBackend > 0 || tongGiaTriDonHang === 0) {
+    return doanhThuBackend;
+  }
+
+  return (
+      tongGiaTriDonHang *
+      tyLeDoanhThuHienThi.value /
+      100
+  );
+});
 
 const pageInfo = computed(() => {
   if (isDoiTac.value) {
     return {
       subtitle: "Đối tác An Yên",
       title: "Thống kê doanh thu đối tác",
-      desc: "Theo dõi doanh thu từ các sản phẩm của đối tác đã phát sinh trong hóa đơn.",
-      note: "Doanh thu đối tác được tính theo sản phẩm thuộc đối tác trong từng hóa đơn.",
+      desc:
+          "Theo dõi tổng giá trị sản phẩm đã bán và doanh thu thực nhận của đối tác.",
+      note:
+          "Đối tác được nhận 80% tổng giá trị sản phẩm thuộc đối tác trong từng hóa đơn.",
+    };
+  }
+
+  if (isAdmin.value) {
+    return {
+      subtitle: "Quản trị viên An Yên",
+      title: "Thống kê doanh thu",
+      desc:
+          "Theo dõi tổng giá trị đơn hàng và phần doanh thu hệ thống thực nhận.",
+      note:
+          "Doanh thu admin thực nhận được tính bằng 20% tổng giá trị đơn hàng.",
     };
   }
 
   return {
     subtitle: "Nhân viên An Yên",
     title: "Thống kê doanh thu",
-    desc: "Theo dõi doanh thu theo hóa đơn, sản phẩm bán chạy và phương thức thanh toán.",
-    note: "Doanh thu nhân viên được tính theo tổng tiền hóa đơn đã lập.",
+    desc:
+        "Theo dõi doanh thu theo hóa đơn, sản phẩm bán chạy và phương thức thanh toán.",
+    note:
+        "Doanh thu nhân viên được tính theo tổng tiền hóa đơn đã lập.",
   };
 });
 
 const maxRevenue = computed(() => {
-  const values = thongKe.value.bieuDoDoanhThu.map((item) => item.doanhThu);
+  const values = thongKe.value.bieuDoDoanhThu.map((item) =>
+      Number(item.doanhThu || 0)
+  );
+
   return Math.max(...values, 0);
 });
 
-const hasChartData = computed(() => thongKe.value.bieuDoDoanhThu.length > 0);
+const hasChartData = computed(() => {
+  return thongKe.value.bieuDoDoanhThu.length > 0;
+});
 
 const chartRows = computed(() => {
-  return thongKe.value.bieuDoDoanhThu.map((item) => ({
-    ...item,
-    width: maxRevenue.value > 0
-        ? Math.max((item.doanhThu / maxRevenue.value) * 100, 4)
-        : 0,
-  }));
+  return thongKe.value.bieuDoDoanhThu.map((item) => {
+    const doanhThu = Number(item.doanhThu || 0);
+
+    return {
+      ...item,
+      doanhThu,
+      width:
+          maxRevenue.value > 0
+              ? Math.max(
+                  (doanhThu / maxRevenue.value) * 100,
+                  4
+              )
+              : 0,
+    };
+  });
 });
 
 const totalPaymentRevenue = computed(() => {
-  return thongKe.value.phuongThucThanhToan.reduce((sum, item) => {
-    return sum + Number(item.doanhThu || 0);
-  }, 0);
+  return thongKe.value.phuongThucThanhToan.reduce(
+      (sum, item) => {
+        return sum + Number(item.doanhThu || 0);
+      },
+      0
+  );
 });
 
-
 const formatMoney = (value) => {
-  return Number(value || 0).toLocaleString("vi-VN") + "đ";
+  return (
+      Number(value || 0).toLocaleString("vi-VN") +
+      "đ"
+  );
 };
 
 const formatDate = (value) => {
-  if (!value) return "---";
+  if (!value) {
+    return "---";
+  }
 
   const date = new Date(value);
 
@@ -86,7 +232,9 @@ const formatDate = (value) => {
 };
 
 const formatPeriod = (value) => {
-  if (!value) return "---";
+  if (!value) {
+    return "---";
+  }
 
   if (kieuThongKe.value === "NAM") {
     return `Năm ${value}`;
@@ -94,6 +242,7 @@ const formatPeriod = (value) => {
 
   if (kieuThongKe.value === "THANG") {
     const [year, month] = String(value).split("-");
+
     return `Tháng ${month}/${year}`;
   }
 
@@ -102,24 +251,53 @@ const formatPeriod = (value) => {
 
 const toDateString = (date) => {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+
+  const month = String(
+      date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+      date.getDate()
+  ).padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 };
 
 const setThisMonth = () => {
   const now = new Date();
-  const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-  dateRange.value = [toDateString(firstDay), toDateString(now)];
+
+  const firstDay = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+  );
+
+  dateRange.value = [
+    toDateString(firstDay),
+    toDateString(now),
+  ];
+
   kieuThongKe.value = "NGAY";
+
   loadThongKe();
 };
 
 const setThisYear = () => {
   const now = new Date();
-  const firstDay = new Date(now.getFullYear(), 0, 1);
-  dateRange.value = [toDateString(firstDay), toDateString(now)];
+
+  const firstDay = new Date(
+      now.getFullYear(),
+      0,
+      1
+  );
+
+  dateRange.value = [
+    toDateString(firstDay),
+    toDateString(now),
+  ];
+
   kieuThongKe.value = "THANG";
+
   loadThongKe();
 };
 
@@ -127,15 +305,72 @@ const loadThongKe = async () => {
   try {
     loading.value = true;
 
-    const data = await getThongKeDoanhThu(props.loaiTaiKhoan, {
-      tuNgay: dateRange.value?.[0],
-      denNgay: dateRange.value?.[1],
-      kieuThongKe: kieuThongKe.value,
-    });
+    const data = await getThongKeDoanhThu(
+        props.loaiTaiKhoan,
+        {
+          tuNgay: dateRange.value?.[0],
+          denNgay: dateRange.value?.[1],
+          kieuThongKe: kieuThongKe.value,
+        }
+    );
 
-    thongKe.value = data;
+    thongKe.value = {
+      tuNgay: data?.tuNgay || "",
+      denNgay: data?.denNgay || "",
+      kieuThongKe:
+          data?.kieuThongKe ||
+          kieuThongKe.value,
+
+      tongQuan: {
+        tongDoanhThu: Number(
+            data?.tongQuan?.tongDoanhThu || 0
+        ),
+
+        doanhThuThucNhan: Number(
+            data?.tongQuan?.doanhThuThucNhan || 0
+        ),
+
+        tyLeDoanhThu: Number(
+            data?.tongQuan?.tyLeDoanhThu || 0
+        ),
+
+        tongHoaDon: Number(
+            data?.tongQuan?.tongHoaDon || 0
+        ),
+
+        tongDonHang: Number(
+            data?.tongQuan?.tongDonHang || 0
+        ),
+
+        doanhThuTrungBinh: Number(
+            data?.tongQuan?.doanhThuTrungBinh || 0
+        ),
+      },
+
+      bieuDoDoanhThu: Array.isArray(
+          data?.bieuDoDoanhThu
+      )
+          ? data.bieuDoDoanhThu
+          : [],
+
+      topSanPham: Array.isArray(
+          data?.topSanPham
+      )
+          ? data.topSanPham
+          : [],
+
+      phuongThucThanhToan: Array.isArray(
+          data?.phuongThucThanhToan
+      )
+          ? data.phuongThucThanhToan
+          : [],
+    };
   } catch (error) {
-    console.error("Lỗi tải thống kê doanh thu:", error);
+    console.error(
+        "Lỗi tải thống kê doanh thu:",
+        error
+    );
+
     ElMessage.error(
         error.response?.data?.message ||
         error.response?.data ||
@@ -145,34 +380,57 @@ const loadThongKe = async () => {
     loading.value = false;
   }
 };
-  const formatPhuongThucThanhToan = (value) => {
-  const phuongThuc = String(value ?? "").trim().toUpperCase();
+
+const formatPhuongThucThanhToan = (value) => {
+  const phuongThuc = String(value ?? "")
+      .trim()
+      .toUpperCase();
 
   const danhSachPhuongThuc = {
-  "0": "Chưa chọn",
-  "1": "Tiền mặt",
-  "2": "Chuyển khoản",
-  TIEN_MAT: "Tiền mặt",
-  CHUYEN_KHOAN: "Chuyển khoản",
+    "0": "Chưa chọn",
+    "1": "Tiền mặt",
+    "2": "Chuyển khoản",
+    TIEN_MAT: "Tiền mặt",
+    CHUYEN_KHOAN: "Chuyển khoản",
+  };
+
+  return (
+      danhSachPhuongThuc[phuongThuc] ||
+      value ||
+      "Chưa xác định"
+  );
 };
 
-  return danhSachPhuongThuc[phuongThuc] || value || "Chưa xác định";
-};
+const paymentRows = computed(() => {
+  return thongKe.value.phuongThucThanhToan.map(
+      (item) => {
+        const doanhThu = Number(
+            item.doanhThu || 0
+        );
 
-  const paymentRows = computed(() => {
-  return thongKe.value.phuongThucThanhToan.map((item) => ({
-  ...item,
-  tenPhuongThucThanhToan: formatPhuongThucThanhToan(
-  item.phuongThucThanhToan
-  ),
-  percent:
-  totalPaymentRevenue.value > 0
-  ? Math.round(
-  (Number(item.doanhThu || 0) / totalPaymentRevenue.value) * 100
-  )
-  : 0,
-}));
+        return {
+          ...item,
+
+          doanhThu,
+
+          tenPhuongThucThanhToan:
+              formatPhuongThucThanhToan(
+                  item.phuongThucThanhToan
+              ),
+
+          percent:
+              totalPaymentRevenue.value > 0
+                  ? Math.round(
+                      doanhThu /
+                      totalPaymentRevenue.value *
+                      100
+                  )
+                  : 0,
+        };
+      }
+  );
 });
+
 onMounted(() => {
   setThisMonth();
 });
@@ -182,12 +440,24 @@ onMounted(() => {
   <div class="thong-ke-page">
     <div class="page-header">
       <div>
-        <span class="page-subtitle">{{ pageInfo.subtitle }}</span>
-        <h2 class="page-title">{{ pageInfo.title }}</h2>
-        <p class="page-desc">{{ pageInfo.desc }}</p>
+        <span class="page-subtitle">
+          {{ pageInfo.subtitle }}
+        </span>
+
+        <h2 class="page-title">
+          {{ pageInfo.title }}
+        </h2>
+
+        <p class="page-desc">
+          {{ pageInfo.desc }}
+        </p>
       </div>
 
-      <button class="btn-refresh" :disabled="loading" @click="loadThongKe">
+      <button
+          class="btn-refresh"
+          :disabled="loading"
+          @click="loadThongKe"
+      >
         <i class="fa-solid fa-rotate-right"></i>
         Làm mới
       </button>
@@ -196,6 +466,7 @@ onMounted(() => {
     <div class="filter-card">
       <div class="filter-group">
         <label>Khoảng thời gian</label>
+
         <el-date-picker
             v-model="dateRange"
             type="daterange"
@@ -210,17 +481,48 @@ onMounted(() => {
 
       <div class="filter-group small">
         <label>Hiển thị theo</label>
-        <el-select v-model="kieuThongKe" class="select-type">
-          <el-option label="Theo ngày" value="NGAY" />
-          <el-option label="Theo tháng" value="THANG" />
-          <el-option label="Theo năm" value="NAM" />
+
+        <el-select
+            v-model="kieuThongKe"
+            class="select-type"
+        >
+          <el-option
+              label="Theo ngày"
+              value="NGAY"
+          />
+
+          <el-option
+              label="Theo tháng"
+              value="THANG"
+          />
+
+          <el-option
+              label="Theo năm"
+              value="NAM"
+          />
         </el-select>
       </div>
 
       <div class="filter-actions">
-        <button class="btn-soft" @click="setThisMonth">Tháng này</button>
-        <button class="btn-soft" @click="setThisYear">Năm này</button>
-        <button class="btn-primary" :disabled="loading" @click="loadThongKe">
+        <button
+            class="btn-soft"
+            @click="setThisMonth"
+        >
+          Tháng này
+        </button>
+
+        <button
+            class="btn-soft"
+            @click="setThisYear"
+        >
+          Năm này
+        </button>
+
+        <button
+            class="btn-primary"
+            :disabled="loading"
+            @click="loadThongKe"
+        >
           <i class="fa-solid fa-filter"></i>
           Lọc doanh thu
         </button>
@@ -229,112 +531,243 @@ onMounted(() => {
 
     <div class="range-note">
       <i class="fa-solid fa-circle-info"></i>
-      {{ pageInfo.note }} Khoảng lọc:
-      <strong>{{ formatDate(thongKe.tuNgay) }}</strong>
+
+      {{ pageInfo.note }}
+
+      Khoảng lọc:
+
+      <strong>
+        {{ formatDate(thongKe.tuNgay) }}
+      </strong>
+
       đến
-      <strong>{{ formatDate(thongKe.denNgay) }}</strong>
+
+      <strong>
+        {{ formatDate(thongKe.denNgay) }}
+      </strong>
     </div>
 
-    <div class="summary-grid" v-loading="loading">
+    <div
+        class="summary-grid"
+        v-loading="loading"
+    >
+      <!-- Tổng giá trị đơn hàng giữ nguyên 100% -->
       <div class="summary-card revenue">
         <div class="summary-icon">
           <i class="fa-solid fa-sack-dollar"></i>
         </div>
-        <p>Tổng doanh thu</p>
-        <h3>{{ formatMoney(thongKe.tongQuan.tongDoanhThu) }}</h3>
+
+        <p>Tổng giá trị đơn hàng</p>
+
+        <h3>
+          {{
+            formatMoney(
+                thongKe.tongQuan.tongDoanhThu
+            )
+          }}
+        </h3>
+      </div>
+
+      <!-- Doanh thu thực nhận theo tỷ lệ -->
+      <div class="summary-card average">
+        <div class="summary-icon">
+          <i class="fa-solid fa-hand-holding-dollar"></i>
+        </div>
+
+        <p>
+          Doanh thu thực nhận
+          ({{ tyLeDoanhThuHienThi }}%)
+        </p>
+
+        <h3>
+          {{
+            formatMoney(
+                doanhThuThucNhanHienThi
+            )
+          }}
+        </h3>
       </div>
 
       <div class="summary-card">
         <div class="summary-icon">
           <i class="fa-solid fa-file-invoice"></i>
         </div>
+
         <p>Tổng hóa đơn</p>
-        <h3>{{ thongKe.tongQuan.tongHoaDon }}</h3>
+
+        <h3>
+          {{ thongKe.tongQuan.tongHoaDon }}
+        </h3>
       </div>
 
       <div class="summary-card">
         <div class="summary-icon">
           <i class="fa-solid fa-cart-shopping"></i>
         </div>
+
         <p>Tổng đơn hàng</p>
-        <h3>{{ thongKe.tongQuan.tongDonHang }}</h3>
+
+        <h3>
+          {{ thongKe.tongQuan.tongDonHang }}
+        </h3>
       </div>
 
       <div class="summary-card average">
         <div class="summary-icon">
           <i class="fa-solid fa-chart-line"></i>
         </div>
-        <p>Trung bình/đơn</p>
-        <h3>{{ formatMoney(thongKe.tongQuan.doanhThuTrungBinh) }}</h3>
+
+        <p>Giá trị trung bình/đơn</p>
+
+        <h3>
+          {{
+            formatMoney(
+                thongKe.tongQuan
+                    .doanhThuTrungBinh
+            )
+          }}
+        </h3>
       </div>
     </div>
 
     <div class="content-grid">
-      <div class="panel chart-panel" v-loading="loading">
+      <div
+          class="panel chart-panel"
+          v-loading="loading"
+      >
         <div class="panel-header">
           <div>
             <h3>Biểu đồ doanh thu</h3>
-            <p>Doanh thu được nhóm theo ngày, tháng hoặc năm</p>
+
+            <p>
+              Tổng giá trị đơn hàng được nhóm theo
+              ngày, tháng hoặc năm
+            </p>
           </div>
         </div>
 
-        <div v-if="!hasChartData" class="empty-state">
-          Không có dữ liệu doanh thu trong khoảng thời gian này.
+        <div
+            v-if="!hasChartData"
+            class="empty-state"
+        >
+          Không có dữ liệu doanh thu trong
+          khoảng thời gian này.
         </div>
 
-        <div v-else class="bar-chart">
-          <div v-for="item in chartRows" :key="item.thoiGian" class="bar-row">
-            <div class="bar-label">{{ formatPeriod(item.thoiGian) }}</div>
-            <div class="bar-track">
-              <div class="bar-fill" :style="{ width: item.width + '%' }"></div>
+        <div
+            v-else
+            class="bar-chart"
+        >
+          <div
+              v-for="item in chartRows"
+              :key="item.thoiGian"
+              class="bar-row"
+          >
+            <div class="bar-label">
+              {{ formatPeriod(item.thoiGian) }}
             </div>
+
+            <div class="bar-track">
+              <div
+                  class="bar-fill"
+                  :style="{
+                    width: item.width + '%',
+                  }"
+              ></div>
+            </div>
+
             <div class="bar-value">
-              <strong>{{ formatMoney(item.doanhThu) }}</strong>
-              <span>{{ item.soDonHang }} đơn</span>
+              <strong>
+                {{ formatMoney(item.doanhThu) }}
+              </strong>
+
+              <span>
+                {{ item.soDonHang }} đơn
+              </span>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="panel" v-loading="loading">
+      <div
+          class="panel"
+          v-loading="loading"
+      >
         <div class="panel-header">
           <div>
             <h3>Phương thức thanh toán</h3>
-            <p>Tỷ trọng doanh thu theo hình thức thanh toán</p>
+
+            <p>
+              Tỷ trọng tổng giá trị theo hình thức
+              thanh toán
+            </p>
           </div>
         </div>
 
-        <div v-if="paymentRows.length === 0" class="empty-state small-empty">
+        <div
+            v-if="paymentRows.length === 0"
+            class="empty-state small-empty"
+        >
           Chưa có dữ liệu thanh toán.
         </div>
 
-        <div v-else class="payment-list">
+        <div
+            v-else
+            class="payment-list"
+        >
           <div
               v-for="item in paymentRows"
               :key="item.phuongThucThanhToan"
               class="payment-item"
           >
             <div class="payment-top">
-              <strong>{{ item.tenPhuongThucThanhToan }}</strong>
-              <span>{{ item.percent }}%</span>
+              <strong>
+                {{ item.tenPhuongThucThanhToan }}
+              </strong>
+
+              <span>
+                {{ item.percent }}%
+              </span>
             </div>
+
             <div class="payment-track">
-              <div class="payment-fill" :style="{ width: item.percent + '%' }"></div>
+              <div
+                  class="payment-fill"
+                  :style="{
+                    width: item.percent + '%',
+                  }"
+              ></div>
             </div>
+
             <div class="payment-bottom">
-              <span>{{ item.soHoaDon }} hóa đơn</span>
-              <b>{{ formatMoney(item.doanhThu) }}</b>
+              <span>
+                {{ item.soHoaDon }} hóa đơn
+              </span>
+
+              <b>
+                {{ formatMoney(item.doanhThu) }}
+              </b>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="panel table-panel" v-loading="loading">
+    <div
+        class="panel table-panel"
+        v-loading="loading"
+    >
       <div class="panel-header">
         <div>
           <h3>Top sản phẩm có doanh thu cao</h3>
-          <p>{{ isDoiTac ? 'Chỉ hiển thị sản phẩm thuộc đối tác đang đăng nhập' : 'Tính theo chi tiết sản phẩm trong các hóa đơn' }}</p>
+
+          <p>
+            {{
+              isDoiTac
+                  ? "Chỉ hiển thị sản phẩm thuộc đối tác đang đăng nhập"
+                  : "Tính theo chi tiết sản phẩm trong các hóa đơn"
+            }}
+          </p>
         </div>
       </div>
 
@@ -345,25 +778,61 @@ onMounted(() => {
             <th>#</th>
             <th>Sản phẩm</th>
             <th>Số lượng bán</th>
-            <th>Doanh thu</th>
+            <th>Tổng giá trị bán</th>
           </tr>
           </thead>
 
           <tbody>
-          <tr v-if="thongKe.topSanPham.length === 0">
-            <td colspan="4" class="empty-cell">Không có dữ liệu sản phẩm.</td>
+          <tr
+              v-if="
+                  thongKe.topSanPham.length === 0
+                "
+          >
+            <td
+                colspan="4"
+                class="empty-cell"
+            >
+              Không có dữ liệu sản phẩm.
+            </td>
           </tr>
 
-          <tr v-for="(item, index) in thongKe.topSanPham" :key="item.maSanPham || item.tenSanPham">
+          <tr
+              v-for="(
+                  item,
+                  index
+                ) in thongKe.topSanPham"
+              :key="
+                  item.maSanPham ||
+                  item.tenSanPham
+                "
+          >
             <td>
-              <span class="rank-badge">{{ index + 1 }}</span>
+                <span class="rank-badge">
+                  {{ index + 1 }}
+                </span>
             </td>
+
             <td>
-              <div class="product-name">{{ item.tenSanPham }}</div>
-              <small>SP{{ String(item.maSanPham || 0).padStart(4, '0') }}</small>
+              <div class="product-name">
+                {{ item.tenSanPham }}
+              </div>
+
+              <small>
+                SP{{
+                  String(
+                      item.maSanPham || 0
+                  ).padStart(4, "0")
+                }}
+              </small>
             </td>
-            <td>{{ item.soLuongBan }}</td>
-            <td class="money-cell">{{ formatMoney(item.doanhThu) }}</td>
+
+            <td>
+              {{ item.soLuongBan }}
+            </td>
+
+            <td class="money-cell">
+              {{ formatMoney(item.doanhThu) }}
+            </td>
           </tr>
           </tbody>
         </table>
@@ -372,4 +841,7 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped src="../assets/styles/thongke/ThongKeDoanhThu.css"></style>
+<style
+    scoped
+    src="../assets/styles/thongke/ThongKeDoanhThu.css"
+></style>

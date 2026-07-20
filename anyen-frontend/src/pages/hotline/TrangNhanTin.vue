@@ -219,74 +219,7 @@
             </span>
           </div>
 
-          <div class="chat-actions">
-            <button
-                type="button"
-                class="icon-button"
-                title="Gọi thoại"
-            >
-              <svg viewBox="0 0 24 24">
-                <path
-                    d="M7.2 3.5 10 7.2 8.4 9.4c1.1 2.3 2.8 4 5.1 5.1l2.2-1.6 3.7 2.8c.5.4.7 1 .5 1.6-.5 1.7-2.1 3-4 3-6.8 0-12.3-5.5-12.3-12.3 0-1.9 1.3-3.5 3-4 .6-.2 1.2 0 1.6.5Z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linejoin="round"
-                />
-              </svg>
-            </button>
 
-            <button
-                type="button"
-                class="icon-button"
-                title="Gọi video"
-            >
-              <svg viewBox="0 0 24 24">
-                <rect
-                    x="3"
-                    y="6"
-                    width="13"
-                    height="12"
-                    rx="2"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                />
-                <path
-                    d="m16 10 5-3v10l-5-3"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linejoin="round"
-                />
-              </svg>
-            </button>
-
-            <button
-                type="button"
-                class="icon-button"
-                title="Thông tin cuộc trò chuyện"
-            >
-              <svg viewBox="0 0 24 24">
-                <circle
-                    cx="12"
-                    cy="12"
-                    r="9"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                />
-                <path
-                    d="M12 11v5"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                    stroke-linecap="round"
-                />
-                <circle cx="12" cy="8" r="1" />
-              </svg>
-            </button>
-          </div>
         </header>
 
         <section

@@ -11,4 +11,5 @@ public interface KhachHangRepository extends JpaRepository<KhachHang, Integer> {
      * Lấy danh sách khách hàng theo nhân viên phụ trách
      */
     List<KhachHang> findByMaNhanVienPhuTrach(Integer maNhanVienPhuTrach);
+    List<KhachHang> findAll();
 }

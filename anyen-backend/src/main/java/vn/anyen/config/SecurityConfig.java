@@ -90,23 +90,21 @@ public class SecurityConfig {
                         // ADMIN quản lý đối tác
                         .requestMatchers(
                                 "/api/nhan-vien/quanlydoitac",
-                                "/api/nhan-vien/quanlydoitac/**"
+                                "/api/nhan-vien/quanlydoitac/**",
+                                "/api/nhan-vien/quanlynhanvien",
+                                "/api/nhan-vien/quanlynhanvien/**",
+                                "/api/nhan-vien/quanlyhopdong",
+                                "/api/nhan-vien/quanlyhopdong/**",
+                                "/api/nhan-vien/quan-ly-khach-hang",
+                                "/api/nhan-vien/quan-ly-khach-hang/**"
                         )
                         .hasAuthority("ROLE_ADMIN")
 
                         // ADMIN quản lý nhân viên
-                        .requestMatchers(
-                                "/api/nhan-vien/quanlynhanvien",
-                                "/api/nhan-vien/quanlynhanvien/**"
-                        )
-                        .hasAuthority("ROLE_ADMIN")
+
 
                         // ADMIN quản lý hợp đồng
-                        .requestMatchers(
-                                "/api/nhan-vien/quanlyhopdong",
-                                "/api/nhan-vien/quanlyhopdong/**"
-                        )
-                        .hasAuthority("ROLE_ADMIN")
+
 
                         // Hotline được tìm nhân viên gần nhất
                         .requestMatchers(

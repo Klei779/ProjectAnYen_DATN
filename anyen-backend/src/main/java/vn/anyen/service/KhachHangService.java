@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.anyen.dto.request.KhachHangRequest;
 import vn.anyen.dto.response.KhachHangLichSuResponse;
 import vn.anyen.dto.response.KhachHangResponse;
+import vn.anyen.entity.NhanVien;
+import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.entity.HoaDon;
 import vn.anyen.entity.HopDong;
 import vn.anyen.entity.KhachHang;
@@ -34,6 +36,7 @@ public class KhachHangService {
     private final HopDongRepository hopDongRepository;
     private final HoaDonRepository hoaDonRepository;
     private final ThongBaoRepository thongBaoRepository;
+    private final NhanVienRepository nhanVienRepository;
 
     private static final String STATUS_PREFIX = "[[TRANG_THAI_LAM_VIEC=";
     private static final String STATUS_SUFFIX = "]]";
@@ -44,9 +47,23 @@ public class KhachHangService {
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm");
+    @Transactional(readOnly = true)
+    public List<KhachHangResponse> getAll() {
+        List<KhachHang> danhSachKhachHang = khachHangRepository.findAll();
 
-    public List<KhachHang> getAll() {
-        return khachHangRepository.findAll();
+        return danhSachKhachHang.stream()
+                .map(khachHang -> {
+                    NhanVien nhanVien = null;
+
+                    if (khachHang.getMaNhanVienPhuTrach() != null) {
+                        nhanVien = nhanVienRepository
+                                .findById(khachHang.getMaNhanVienPhuTrach())
+                                .orElse(null);
+                    }
+
+                    return toQuanLyResponse(khachHang, nhanVien);
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -396,5 +413,48 @@ public class KhachHangService {
             String loai,
             String trangThai
     ) {
+    }
+    private KhachHangResponse toQuanLyResponse(
+            KhachHang khachHang,
+            NhanVien nhanVien
+    ) {
+        Integer maNhanVien = khachHang.getMaNhanVienPhuTrach();
+
+        String giaiDoan = getGiaiDoanHienTai(khachHang, maNhanVien);
+        String trangThai = getTrangThaiHienTai(khachHang, giaiDoan);
+
+        return KhachHangResponse.builder()
+                .maKhachHang(khachHang.getMaKhachHang())
+                .tenKhachHang(khachHang.getTenKhachHang())
+                .cccd(khachHang.getCccd())
+                .diaChi(khachHang.getDiaChi())
+                .email(khachHang.getEmail())
+                .soDienThoai(khachHang.getSoDienThoai())
+
+                .maNhanVienPhuTrach(maNhanVien)
+                .tenNhanVienPhuTrach(
+                        nhanVien != null
+                                ? nhanVien.getHoTen()
+                                : "Chưa phân công"
+                )
+                .emailNhanVienPhuTrach(
+                        nhanVien != null
+                                ? nhanVien.getEmail()
+                                : null
+                )
+                .soDienThoaiNhanVienPhuTrach(
+                        nhanVien != null
+                                ? nhanVien.getSoDienThoai()
+                                : null
+                )
+
+                .ngayDangKy(formatDateTime(khachHang.getNgayDangKy()))
+                .nguonDangKy(khachHang.getNguonDangKy())
+                .nhuCauHoTro(khachHang.getNhuCauHoTro())
+                .ghiChu(cleanGhiChu(khachHang.getGhiChu()))
+                .trangThaiHienTai(trangThai)
+                .giaiDoanHienTai(giaiDoan)
+                .avatar(getAvatar(khachHang.getTenKhachHang()))
+                .build();
     }
 }

@@ -78,7 +78,7 @@
           class="menu-item"
           title="Nhắn tin khách hàng"
       >
-        <i class="fa-solid fa-cart-shopping menu-icon"></i>
+        <i class="fa-solid fa-comments menu-icon"></i>
         <span class="sidebar-text">
 Nhắn tin khách hàng
         </span>

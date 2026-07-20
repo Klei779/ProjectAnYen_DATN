@@ -24,4 +24,7 @@ public class KhachHangResponse {
     private String trangThaiHienTai;
     private String giaiDoanHienTai;
     private String avatar;
+    private String tenNhanVienPhuTrach;
+    private String emailNhanVienPhuTrach;
+    private String soDienThoaiNhanVienPhuTrach;
 }

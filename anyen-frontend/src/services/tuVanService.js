@@ -70,6 +70,9 @@ export function phanTichTinNhanAi(tokenPhien, message) {
             tokenPhien,
             message,
         },
-        guestConfig()
+        {
+            ...guestConfig(),
+            timeout: 180000
+        }
     );
 }

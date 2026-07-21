@@ -1,5 +1,6 @@
 package vn.anyen.service;
 
+import org.springframework.web.client.HttpServerErrorException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -867,6 +868,22 @@ public class GeminiService {
                     e
             );
 
+        } catch (HttpServerErrorException.ServiceUnavailable e) {
+            throw new RuntimeException(
+                    "Gemini đang quá tải tạm thời. "
+                            + "Hệ thống sẽ chuyển sang Ollama.",
+                    e
+            );
+
+        } catch (HttpServerErrorException e) {
+            throw new RuntimeException(
+                    "Gemini gặp lỗi máy chủ HTTP "
+                            + e.getStatusCode().value()
+                            + ": "
+                            + getServerErrorMessage(e),
+                    e
+            );
+
         } catch (RestClientException e) {
             throw new RuntimeException(
                     "Không thể kết nối đến Gemini API. "
@@ -876,7 +893,28 @@ public class GeminiService {
         }
     }
 
+private String getServerErrorMessage(
+        HttpServerErrorException exception
+) {
+    String body = exception.getResponseBodyAsString();
+
+    if (body == null || body.isBlank()) {
+        return exception.getMessage();
+    }
+
+    return body;
+}
+
     private void validateConfiguration() {
+        System.out.println(
+                "Gemini API key tồn tại: "
+                        + (apiKey != null && !apiKey.isBlank())
+        );
+
+        System.out.println(
+                "Gemini model đang dùng: " + model
+        );
+
         if (apiKey == null || apiKey.isBlank()) {
             throw new IllegalStateException(
                     "Chưa cấu hình biến môi trường "

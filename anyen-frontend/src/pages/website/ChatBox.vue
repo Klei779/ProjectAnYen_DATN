@@ -605,7 +605,26 @@ async function sendMessage() {
     if (!employeeHasTakenOver && !customerConfirmed.value && !sessionClosed) {
       aiThinking.value = true;
 
-      const aiResponse = await phanTichTinNhanAi(token, content);
+      let aiResponse;
+      try {
+        aiResponse = await phanTichTinNhanAi(token, content);
+      } catch (error) {
+        console.error(
+          "Lỗi phân tích tin nhắn AI:",
+          error.response?.data || error.message
+        )
+
+        if (
+          error.code === "ECONNABORTED" ||
+          error.message?.includes("timeout")
+        ) {
+          throw new Error(
+            "AI đang xử lý lâu hơn dự kiến. Anh/chị vui lòng chờ và thử lại."
+          )
+        }
+
+        throw error;
+      }
       const aiData = aiResponse?.data?.data;
 
       if (!aiData) {

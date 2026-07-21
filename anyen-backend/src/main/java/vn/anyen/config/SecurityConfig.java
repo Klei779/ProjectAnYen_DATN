@@ -66,6 +66,12 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/ai/yeu-cau-tu-van/**"
                         ).permitAll()
+
+                        .requestMatchers(
+                                "/api/ollama/health",
+                                "/api/ollama/test",
+                                "/api/ollama/test-json"
+                        ).permitAll()
                         
                         // Public website
                         .requestMatchers(

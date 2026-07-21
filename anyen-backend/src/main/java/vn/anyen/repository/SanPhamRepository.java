@@ -70,6 +70,8 @@ public interface SanPhamRepository
      * Entity SanPham không có createdAt nên sắp xếp theo maSanPham DESC.
      */
     List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(Integer trangThai);
+
+    List<SanPham> findByTrangThai(Integer trangThai);
     @Query("""
 
     SELECT dt.tenDoiTac 

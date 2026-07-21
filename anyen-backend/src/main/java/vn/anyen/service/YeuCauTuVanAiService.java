@@ -35,7 +35,7 @@ public class YeuCauTuVanAiService {
     private final PhienTuVanRepository
             phienTuVanRepository;
 
-    private final GeminiService geminiService;
+    private final AiProviderService aiProviderService;
 
     private final ThongBaoRepository
             thongBaoRepository;
@@ -58,7 +58,7 @@ public class YeuCauTuVanAiService {
     public YeuCauTuVanAiService(
             YeuCauTuVanAiRepository yeuCauTuVanAiRepository,
             PhienTuVanRepository phienTuVanRepository,
-            GeminiService geminiService,
+            AiProviderService aiProviderService,
             ThongBaoRepository thongBaoRepository,
             NhanVienRepository nhanVienRepository,
             TinNhanTuVanRepository tinNhanTuVanRepository,
@@ -68,7 +68,7 @@ public class YeuCauTuVanAiService {
     ) {
         this.yeuCauTuVanAiRepository = yeuCauTuVanAiRepository;
         this.phienTuVanRepository = phienTuVanRepository;
-        this.geminiService = geminiService;
+        this.aiProviderService = aiProviderService;
         this.thongBaoRepository = thongBaoRepository;
         this.nhanVienRepository = nhanVienRepository;
         this.tinNhanTuVanRepository = tinNhanTuVanRepository;
@@ -76,7 +76,6 @@ public class YeuCauTuVanAiService {
         this.chatRedisService = chatRedisService;
         this.transactionManager = transactionManager;
     }
-
     /**
      * Lấy phiếu yêu cầu AI theo token.
      * Nếu chưa có thì tự tạo một phiếu mới.
@@ -233,7 +232,7 @@ public class YeuCauTuVanAiService {
 
         YeuCauTuVanAi requestSnapshot = layHoacTaoTheoToken(token);
 
-        AiTrichXuatKhachHangResult geminiResult = geminiService
+        AiTrichXuatKhachHangResult aiResult = aiProviderService
                 .trichXuatThongTinKhachHang(
                         sessionSnapshot.getTenKhachHang(),
                         requestSnapshot,
@@ -247,7 +246,7 @@ public class YeuCauTuVanAiService {
                 status -> hoanTatPhanTichTrongTransaction(
                         token,
                         normalizedMessage,
-                        geminiResult
+                        aiResult
                 )
         );
 

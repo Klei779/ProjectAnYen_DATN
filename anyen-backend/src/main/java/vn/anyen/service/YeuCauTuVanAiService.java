@@ -1,26 +1,32 @@
 package vn.anyen.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import vn.anyen.dto.request.CapNhatYeuCauTuVanAiRequest;
 import vn.anyen.dto.response.AiTrichXuatKhachHangResult;
 import vn.anyen.entity.NhanVien;
 import vn.anyen.entity.PhienTuVan;
 import vn.anyen.entity.ThongBao;
+import vn.anyen.entity.TinNhanTuVan;
 import vn.anyen.entity.YeuCauTuVanAi;
 import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.repository.PhienTuVanRepository;
 import vn.anyen.repository.ThongBaoRepository;
+import vn.anyen.repository.TinNhanTuVanRepository;
 import vn.anyen.repository.YeuCauTuVanAiRepository;
 
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 
 @Service
-@RequiredArgsConstructor
 public class YeuCauTuVanAiService {
 
     private final YeuCauTuVanAiRepository
@@ -36,6 +42,40 @@ public class YeuCauTuVanAiService {
 
     private final NhanVienRepository
             nhanVienRepository;
+
+    private final TinNhanTuVanRepository
+            tinNhanTuVanRepository;
+
+    private final PhanCongTuVanService
+            phanCongTuVanService;
+
+    private final ChatRedisService
+            chatRedisService;
+
+    private final PlatformTransactionManager
+            transactionManager;
+
+    public YeuCauTuVanAiService(
+            YeuCauTuVanAiRepository yeuCauTuVanAiRepository,
+            PhienTuVanRepository phienTuVanRepository,
+            GeminiService geminiService,
+            ThongBaoRepository thongBaoRepository,
+            NhanVienRepository nhanVienRepository,
+            TinNhanTuVanRepository tinNhanTuVanRepository,
+            PhanCongTuVanService phanCongTuVanService,
+            ChatRedisService chatRedisService,
+            PlatformTransactionManager transactionManager
+    ) {
+        this.yeuCauTuVanAiRepository = yeuCauTuVanAiRepository;
+        this.phienTuVanRepository = phienTuVanRepository;
+        this.geminiService = geminiService;
+        this.thongBaoRepository = thongBaoRepository;
+        this.nhanVienRepository = nhanVienRepository;
+        this.tinNhanTuVanRepository = tinNhanTuVanRepository;
+        this.phanCongTuVanService = phanCongTuVanService;
+        this.chatRedisService = chatRedisService;
+        this.transactionManager = transactionManager;
+    }
 
     /**
      * Lấy phiếu yêu cầu AI theo token.
@@ -152,178 +192,218 @@ public class YeuCauTuVanAiService {
     }
 
     /**
-     * Nhận tin nhắn khách, gọi Gemini phân tích,
-     * cập nhật thông tin và tự gửi Hotline khi khách xác nhận.
+     * Gọi Gemini ngoài transaction để nhân viên vẫn có thể tiếp quản phiên
+     * trong lúc AI đang xử lý. Trước khi lưu câu trả lời, backend khóa lại
+     * phiên và kiểm tra lần cuối; nếu nhân viên đã trả lời thì kết quả AI bị bỏ.
      */
-    @Transactional
-    public AiTrichXuatKhachHangResult
-    phanTichTinNhan(
+    public AiTrichXuatKhachHangResult phanTichTinNhan(
             String tokenPhien,
             String message
     ) {
         if (message == null || message.isBlank()) {
-            throw new RuntimeException(
-                    "Tin nhắn không được để trống"
-            );
+            throw new RuntimeException("Tin nhắn không được để trống");
+        }
+        if (tokenPhien == null || tokenPhien.isBlank()) {
+            throw new RuntimeException("Token phiên tư vấn không được để trống");
         }
 
-        PhienTuVan phienTuVan =
-                phienTuVanRepository
-                        .findByTokenPhien(
-                                tokenPhien.trim()
-                        )
-                        .orElseThrow(
-                                () -> new RuntimeException(
-                                        "Không tìm thấy phiên tư vấn"
-                                )
-                        );
+        String token = tokenPhien.trim();
+        String normalizedMessage = message.trim();
 
-        YeuCauTuVanAi yeuCau =
-                layHoacTaoTheoToken(tokenPhien);
+        PhienTuVan sessionSnapshot = phienTuVanRepository
+                .findByTokenPhien(token)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy phiên tư vấn"
+                ));
 
-        AiTrichXuatKhachHangResult result =
-                geminiService
-                        .trichXuatThongTinKhachHang(
-                                phienTuVan
-                                        .getTenKhachHang(),
-                                yeuCau,
-                                message.trim()
-                        );
+        if (sessionSnapshot.getHetHanLuc() == null
+                || sessionSnapshot.getHetHanLuc().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Phiên tư vấn đã hết hạn");
+        }
+
+        if (PhienTuVan.TRANG_THAI_DA_DONG.equals(
+                sessionSnapshot.getTrangThai()
+        )) {
+            throw new RuntimeException("Phiên tư vấn đã kết thúc");
+        }
+
+        if (daChuyenSangNhanVien(sessionSnapshot)) {
+            return taoKetQuaNhanVienDaTiepQuan();
+        }
+
+        YeuCauTuVanAi requestSnapshot = layHoacTaoTheoToken(token);
+
+        AiTrichXuatKhachHangResult geminiResult = geminiService
+                .trichXuatThongTinKhachHang(
+                        sessionSnapshot.getTenKhachHang(),
+                        requestSnapshot,
+                        normalizedMessage
+                );
+
+        TransactionTemplate transactionTemplate =
+                new TransactionTemplate(transactionManager);
+
+        AiTrichXuatKhachHangResult finalized = transactionTemplate.execute(
+                status -> hoanTatPhanTichTrongTransaction(
+                        token,
+                        normalizedMessage,
+                        geminiResult
+                )
+        );
+
+        if (finalized == null) {
+            throw new RuntimeException("Không thể hoàn tất xử lý tin nhắn AI");
+        }
+        return finalized;
+    }
+
+    private AiTrichXuatKhachHangResult hoanTatPhanTichTrongTransaction(
+            String tokenPhien,
+            String message,
+            AiTrichXuatKhachHangResult result
+    ) {
+        PhienTuVan phienTuVan = phienTuVanRepository
+                .findByTokenPhienForUpdate(tokenPhien)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy phiên tư vấn"
+                ));
+
+        if (PhienTuVan.TRANG_THAI_DA_DONG.equals(phienTuVan.getTrangThai())) {
+            throw new RuntimeException("Phiên tư vấn đã kết thúc");
+        }
+
+        /*
+         * Đây là chốt chống race condition: nhân viên có thể gửi tin trong
+         * thời gian Gemini đang chạy. Khi đó không lưu và không trả thêm tin AI.
+         */
+        if (daChuyenSangNhanVien(phienTuVan)) {
+            return taoKetQuaNhanVienDaTiepQuan();
+        }
+
+        YeuCauTuVanAi yeuCau = yeuCauTuVanAiRepository
+                .findByMaPhien(phienTuVan.getMaPhien())
+                .orElseGet(() -> {
+                    YeuCauTuVanAi newRequest = new YeuCauTuVanAi();
+                    newRequest.setMaPhien(phienTuVan.getMaPhien());
+                    newRequest.setHoTen(phienTuVan.getTenKhachHang());
+                    return newRequest;
+                });
 
         AiTrichXuatKhachHangResult.CustomerInfo info =
                 result.getCustomerInfo();
 
         if (info != null) {
-            capNhatNeuCo(
-                    info.getHoTen(),
-                    yeuCau::setHoTen
-            );
-
-            capNhatNeuCo(
-                    info.getSoDienThoai(),
-                    yeuCau::setSoDienThoai
-            );
-
-            capNhatNeuCo(
-                    info.getDiaChi(),
-                    yeuCau::setDiaChi
-            );
-
-            capNhatNeuCo(
-                    info.getNhuCau(),
-                    yeuCau::setNhuCau
-            );
-
+            capNhatNeuCo(info.getHoTen(), yeuCau::setHoTen);
+            capNhatNeuCo(info.getSoDienThoai(), yeuCau::setSoDienThoai);
+            capNhatNeuCo(info.getDiaChi(), yeuCau::setDiaChi);
+            capNhatNeuCo(info.getNhuCau(), yeuCau::setNhuCau);
             capNhatNeuCo(
                     info.getThoiGianMongMuon(),
                     yeuCau::setThoiGianMongMuon
             );
-
-            capNhatNeuCo(
-                    info.getGhiChu(),
-                    yeuCau::setGhiChu
-            );
+            capNhatNeuCo(info.getGhiChu(), yeuCau::setGhiChu);
 
             if (info.getNganSachDuKien() != null) {
-                yeuCau.setNganSachDuKien(
-                        info.getNganSachDuKien()
-                );
+                yeuCau.setNganSachDuKien(info.getNganSachDuKien());
             }
         }
 
-        boolean duThongTin =
-                daDuThongTinBatBuoc(yeuCau);
+        boolean duThongTin = daDuThongTinBatBuoc(yeuCau);
+        result.setReadyForHotline(duThongTin);
 
-        result.setReadyForHotline(
-                duThongTin
-        );
-
-        /*
-         * Chưa đủ thông tin:
-         * trạng thái 0 = đang thu thập.
-         *
-         * Đủ thông tin nhưng chưa xác nhận:
-         * trạng thái 1 = chờ khách xác nhận.
-         */
         if (!duThongTin) {
             yeuCau.setTrangThai(0);
-        } else if (!Boolean.TRUE.equals(
-                yeuCau.getDaXacNhan()
-        )) {
+        } else if (!Boolean.TRUE.equals(yeuCau.getDaXacNhan())) {
             yeuCau.setTrangThai(1);
         }
 
         yeuCauTuVanAiRepository.save(yeuCau);
 
-        /*
-         * Chỉ tự xác nhận và gửi Hotline khi:
-         * - AI nhận ra khách đã xác nhận.
-         * - Dữ liệu bắt buộc đã đủ.
-         */
-        boolean khachVuaXacNhan =
-                Boolean.TRUE.equals(
-                        result.getCustomerConfirmed()
-                );
+        boolean khachVuaXacNhan = Boolean.TRUE.equals(
+                result.getCustomerConfirmed()
+        );
+        boolean khachYeuCauNhanVien = laYeuCauNhanVienTrucTiep(message);
 
-        if (khachVuaXacNhan && duThongTin) {
+        if (khachYeuCauNhanVien) {
+            if (!Boolean.TRUE.equals(yeuCau.getDaGuiHotline())) {
+                taoThongBaoChoHotline(yeuCau);
+                yeuCau.setDaGuiHotline(true);
+                yeuCau.setTrangThai(3);
+                yeuCauTuVanAiRepository.save(yeuCau);
+            }
 
-            if (!soDienThoaiHopLe(
-                    yeuCau.getSoDienThoai()
-            )) {
+            phienTuVan.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
+            phienTuVan.setUpdatedAt(LocalDateTime.now());
+            phienTuVanRepository.save(phienTuVan);
+
+            result.setReadyForHotline(true);
+            result.setCustomerConfirmed(true);
+            result.setHumanTakeover(true);
+            result.setReply(
+                    "An Yên đã chuyển toàn bộ cuộc trò chuyện này "
+                            + "đến nhân viên tư vấn. "
+                            + "Anh/chị có thể tiếp tục nhắn ngay tại đây."
+            );
+        } else if (khachVuaXacNhan && duThongTin) {
+            if (!soDienThoaiHopLe(yeuCau.getSoDienThoai())) {
                 result.setCustomerConfirmed(false);
-
                 result.setReply(
-                        "Số điện thoại anh/chị cung cấp "
-                                + "có vẻ chưa hợp lệ. "
-                                + "Anh/chị vui lòng kiểm tra "
-                                + "và gửi lại giúp An Yên."
+                        "Số điện thoại anh/chị cung cấp có vẻ chưa hợp lệ. "
+                                + "Anh/chị vui lòng kiểm tra và gửi lại giúp An Yên."
                 );
-
+                luuTinNhanAi(phienTuVan, result.getReply());
                 return result;
             }
 
-            /*
-             * Đánh dấu khách đã xác nhận.
-             */
-            if (!Boolean.TRUE.equals(
-                    yeuCau.getDaXacNhan()
-            )) {
+            if (!Boolean.TRUE.equals(yeuCau.getDaXacNhan())) {
                 yeuCau.setDaXacNhan(true);
                 yeuCau.setTrangThai(2);
-
-                yeuCauTuVanAiRepository
-                        .save(yeuCau);
+                yeuCauTuVanAiRepository.save(yeuCau);
             }
 
-            /*
-             * Chỉ gửi thông báo nếu chưa từng gửi.
-             */
-            if (!Boolean.TRUE.equals(
-                    yeuCau.getDaGuiHotline()
-            )) {
+            if (!Boolean.TRUE.equals(yeuCau.getDaGuiHotline())) {
                 taoThongBaoChoHotline(yeuCau);
-
                 yeuCau.setDaGuiHotline(true);
                 yeuCau.setTrangThai(3);
-
-                yeuCauTuVanAiRepository
-                        .save(yeuCau);
+                yeuCauTuVanAiRepository.save(yeuCau);
 
                 result.setReply(
-                        "An Yên đã ghi nhận xác nhận "
-                                + "của anh/chị và đã chuyển "
+                        "An Yên đã ghi nhận xác nhận của anh/chị và đã chuyển "
                                 + "thông tin đến nhân viên Hotline."
                 );
             } else {
                 result.setReply(
-                        "Thông tin của anh/chị đã được "
-                                + "chuyển đến nhân viên Hotline. "
-                                + "An Yên sẽ hỗ trợ anh/chị "
-                                + "trong thời gian sớm nhất."
+                        "Thông tin của anh/chị đã được chuyển đến nhân viên Hotline. "
+                                + "An Yên sẽ hỗ trợ anh/chị trong thời gian sớm nhất."
                 );
             }
+
+            phienTuVan.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
+            phienTuVan.setUpdatedAt(LocalDateTime.now());
+            phienTuVanRepository.save(phienTuVan);
+            result.setHumanTakeover(true);
         }
 
+        luuTinNhanAi(phienTuVan, result.getReply());
+        return result;
+    }
+
+    private boolean daChuyenSangNhanVien(PhienTuVan phienTuVan) {
+        return PhienTuVan.TRANG_THAI_DANG_TU_VAN.equals(
+                phienTuVan.getTrangThai()
+        ) || tinNhanTuVanRepository.existsByMaPhienAndNguoiGui(
+                phienTuVan.getMaPhien(),
+                TinNhanTuVan.NGUOI_GUI_NHAN_VIEN
+        );
+    }
+
+    private AiTrichXuatKhachHangResult taoKetQuaNhanVienDaTiepQuan() {
+        AiTrichXuatKhachHangResult result =
+                new AiTrichXuatKhachHangResult();
+        result.setReply(null);
+        result.setReadyForHotline(true);
+        result.setCustomerConfirmed(true);
+        result.setHumanTakeover(true);
         return result;
     }
 
@@ -395,31 +475,73 @@ public class YeuCauTuVanAiService {
         yeuCau.setDaGuiHotline(true);
         yeuCau.setTrangThai(3);
 
+        PhienTuVan phienTuVan = phienTuVanRepository
+                .findByIdForUpdate(yeuCau.getMaPhien())
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy phiên tư vấn"
+                ));
+        phienTuVan.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
+        phienTuVan.setUpdatedAt(LocalDateTime.now());
+        phienTuVanRepository.save(phienTuVan);
+
         return yeuCauTuVanAiRepository
                 .save(yeuCau);
     }
 
     /**
-     * Tạo thông báo cho tất cả nhân viên Hotline đang hoạt động.
+     * Gán phiên cho một nhân viên đang online rồi chỉ gửi thông báo
+     * cho người đó. Nếu chưa có ai online, phiên vẫn nằm trong hàng chờ
+     * và thông báo được gửi cho các tài khoản tư vấn/Hotline hoạt động.
      */
     private void taoThongBaoChoHotline(
             YeuCauTuVanAi yeuCau
     ) {
-        List<NhanVien> danhSachHotline =
-                nhanVienRepository
-                        .findByVaiTroAndTrangThai(
-                                4,
-                                1
-                        );
+        PhienTuVan phienTuVan = phienTuVanRepository
+                .findByIdForUpdate(yeuCau.getMaPhien())
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy phiên tư vấn"
+                ));
 
-        if (danhSachHotline.isEmpty()) {
+        NhanVien assignedEmployee =
+                phanCongTuVanService.tuDongGanNeuCo(phienTuVan);
+
+        List<NhanVien> recipients = new ArrayList<>();
+        if (assignedEmployee != null) {
+            recipients.add(assignedEmployee);
+        } else {
+            Map<Integer, NhanVien> uniqueEmployees = new LinkedHashMap<>();
+
+            nhanVienRepository.findByVaiTroAndTrangThai(
+                    NhanVien.VAI_TRO_TU_VAN,
+                    NhanVien.TRANG_THAI_HOAT_DONG
+            ).forEach(employee -> uniqueEmployees.put(
+                    employee.getMaNhanVien(), employee
+            ));
+
+            nhanVienRepository.findByVaiTroAndTrangThai(
+                    NhanVien.VAI_TRO_HOTLINE,
+                    NhanVien.TRANG_THAI_HOAT_DONG
+            ).forEach(employee -> uniqueEmployees.put(
+                    employee.getMaNhanVien(), employee
+            ));
+
+            recipients.addAll(uniqueEmployees.values());
+        }
+
+        if (recipients.isEmpty()) {
             throw new RuntimeException(
-                    "Hiện không có nhân viên Hotline hoạt động."
+                    "Hiện không có nhân viên tư vấn/Hotline hoạt động."
             );
         }
 
+        String assignedText = assignedEmployee == null
+                ? "Phiên đang chờ một nhân viên online tiếp nhận."
+                : "Phiên đã tự động giao cho: " + assignedEmployee.getHoTen() + ".";
+
         String noiDung = """
-                Khách hàng %s đã cung cấp đủ thông tin.
+                Khách hàng %s đã cung cấp thông tin và cần nhân viên hỗ trợ.
+                Mã phiên: %s
+                %s
 
                 Số điện thoại: %s
                 Địa chỉ: %s
@@ -430,51 +552,88 @@ public class YeuCauTuVanAiService {
                 Ghi chú: %s
                 """.formatted(
                 safeText(yeuCau.getHoTen()),
+                yeuCau.getMaPhien(),
+                assignedText,
                 safeText(yeuCau.getSoDienThoai()),
                 safeText(yeuCau.getDiaChi()),
                 safeText(yeuCau.getNhuCau()),
-                safeText(
-                        yeuCau.getThoiGianMongMuon()
-                ),
-                safeMoney(
-                        yeuCau.getNganSachDuKien()
-                ),
-                safeMoney(
-                        yeuCau.getTongTienThamKhao()
-                ),
+                safeText(yeuCau.getThoiGianMongMuon()),
+                safeMoney(yeuCau.getNganSachDuKien()),
+                safeMoney(yeuCau.getTongTienThamKhao()),
                 safeText(yeuCau.getGhiChu())
         );
 
-        LocalDateTime now =
-                LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
 
-        for (NhanVien hotline : danhSachHotline) {
-            ThongBao thongBao =
-                    new ThongBao();
-
-            thongBao.setTieuDe(
-                    "Khách hàng đã đủ thông tin lên đơn"
-            );
-
+        for (NhanVien recipient : recipients) {
+            ThongBao thongBao = new ThongBao();
+            thongBao.setTieuDe("Khách hàng cần tiếp tục tư vấn từ chatbot");
             thongBao.setNoiDung(noiDung);
-
-            thongBao.setLoaiThongBao(
-                    "AI_DU_THONG_TIN"
-            );
-
+            thongBao.setLoaiThongBao("AI_DU_THONG_TIN");
             thongBao.setNguoiGuiId(null);
-
-            thongBao.setNguoiNhanId(
-                    hotline.getMaNhanVien()
-            );
-
+            thongBao.setNguoiNhanId(recipient.getMaNhanVien());
             thongBao.setTrangThai(0);
             thongBao.setDaDoc(false);
             thongBao.setNgayTao(now);
             thongBao.setNgayCapNhat(now);
-
             thongBaoRepository.save(thongBao);
         }
+    }
+
+    /**
+     * Câu trả lời AI phải được lưu chung bảng tin nhắn để nhân viên
+     * nhìn thấy toàn bộ lịch sử và tiếp tục đúng cuộc trò chuyện đó.
+     */
+    private void luuTinNhanAi(
+            PhienTuVan phienTuVan,
+            String reply
+    ) {
+        if (reply == null || reply.isBlank()) {
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        String content = reply.trim();
+
+        TinNhanTuVan message = new TinNhanTuVan();
+        message.setMaPhien(phienTuVan.getMaPhien());
+        message.setNguoiGui(TinNhanTuVan.NGUOI_GUI_AI);
+        message.setMaNhanVien(null);
+        message.setNoiDung(content);
+        message.setDaDoc(true);
+        message.setCreatedAt(now);
+        tinNhanTuVanRepository.save(message);
+
+        phienTuVan.setTinNhanCuoi(
+                content.length() <= 500
+                        ? content
+                        : content.substring(0, 497) + "..."
+        );
+        phienTuVan.setThoiGianTinNhanCuoi(now);
+        phienTuVan.setUpdatedAt(now);
+        phienTuVanRepository.save(phienTuVan);
+        chatRedisService.evictMessages(phienTuVan.getTokenPhien());
+    }
+
+    private boolean laYeuCauNhanVienTrucTiep(String message) {
+        if (message == null || message.isBlank()) {
+            return false;
+        }
+
+        String normalized = Normalizer
+                .normalize(message.toLowerCase(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd');
+
+        return normalized.contains("gap nhan vien")
+                || normalized.contains("can nhan vien")
+                || normalized.contains("chuyen nhan vien")
+                || normalized.contains("noi chuyen voi nhan vien")
+                || normalized.contains("gap tu van vien")
+                || normalized.contains("can tu van vien")
+                || normalized.contains("goi hotline")
+                || normalized.contains("ho tro truc tiep")
+                || normalized.contains("nguoi that");
     }
 
     private boolean daDuThongTinBatBuoc(

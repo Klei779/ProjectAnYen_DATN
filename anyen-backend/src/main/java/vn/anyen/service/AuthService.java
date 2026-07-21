@@ -20,6 +20,8 @@ public class AuthService {
     private final DoiTacRepository doiTacRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final NhanVienOnlineService nhanVienOnlineService;
+    private final PhanCongTuVanService phanCongTuVanService;
 
     // Turnstile test secret key (always passes with test sitekey)
     // Replace with real secret key in production
@@ -91,6 +93,11 @@ public class AuthService {
                     response.setLoaiTaiKhoan("NHAN_VIEN");
                     response.setVaiTroChiTiet(specificRole);
                     response.setToken(token);
+
+                    if ("HOTLINE".equals(specificRole)) {
+                        nhanVienOnlineService.markOnline(nv);
+                        phanCongTuVanService.phanCongCacPhienDangCho();
+                    }
                 }
             }
         }

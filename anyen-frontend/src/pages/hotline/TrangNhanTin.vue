@@ -1,464 +1,177 @@
 <template>
-  <div class="messenger-page">
-    <div class="messenger-container">
-      <!-- Danh sách hội thoại -->
-      <aside
-          class="conversation-sidebar"
-          :class="{ 'mobile-hidden': selectedConversation && isMobileChatOpen }"
-      >
-        <div class="sidebar-header">
-          <div>
-            <p class="sidebar-label">Trò chuyện</p>
-            <h1>Tin nhắn</h1>
-          </div>
-
-          <button
-              type="button"
-              class="icon-button"
-              title="Tạo cuộc trò chuyện"
-              @click="createNewConversation"
-          >
-            <svg viewBox="0 0 24 24">
-              <path
-                  d="M12 5v14M5 12h14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-              />
-            </svg>
-          </button>
+  <div class="chat-page">
+    <aside class="session-panel">
+      <div class="panel-header">
+        <div>
+          <span class="eyebrow">TƯ VẤN TRỰC TUYẾN</span>
+          <h1>Hội thoại khách hàng</h1>
         </div>
 
-        <div class="search-box">
-          <svg viewBox="0 0 24 24">
-            <circle
-                cx="11"
-                cy="11"
-                r="7"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-            />
-            <path
-                d="m16 16 4 4"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-            />
-          </svg>
+        <button class="refresh-button" type="button" @click="refreshAll" :disabled="loadingSessions">
+          <i class="fa-solid fa-rotate-right"></i>
+        </button>
+      </div>
 
-          <input
-              v-model.trim="searchKeyword"
-              type="text"
-              placeholder="Tìm kiếm cuộc trò chuyện..."
-          />
-
-          <button
-              v-if="searchKeyword"
-              type="button"
-              class="clear-search"
-              @click="searchKeyword = ''"
-          >
-            ×
-          </button>
+      <div class="online-box">
+        <span class="online-dot"></span>
+        <div>
+          <strong>{{ currentUser?.hoTen || "Nhân viên tư vấn" }}</strong>
+          <small>Đang online và sẵn sàng nhận phiên</small>
         </div>
+      </div>
 
-        <div class="conversation-list">
-          <button
-              v-for="conversation in filteredConversations"
-              :key="conversation.id"
-              type="button"
-              class="conversation-item"
-              :class="{
-              active: selectedConversation?.id === conversation.id
-            }"
-              @click="selectConversation(conversation)"
-          >
-            <div class="avatar-wrapper">
-              <img
-                  v-if="conversation.avatar"
-                  :src="conversation.avatar"
-                  :alt="conversation.name"
-                  class="avatar"
-              />
+      <div class="search-box">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input v-model.trim="searchKeyword" placeholder="Tìm theo tên hoặc nội dung..." />
+      </div>
 
-              <div
-                  v-else
-                  class="avatar avatar-placeholder"
-                  :style="{ background: conversation.avatarColor }"
-              >
-                {{ getInitials(conversation.name) }}
-              </div>
+      <p v-if="pageError" class="error-box">{{ pageError }}</p>
 
-              <span
-                  v-if="conversation.online"
-                  class="online-indicator"
-              ></span>
-            </div>
-
-            <div class="conversation-content">
-              <div class="conversation-row">
-                <span class="conversation-name">
-                  {{ conversation.name }}
-                </span>
-
-                <span class="conversation-time">
-                  {{ conversation.lastMessageTime }}
-                </span>
-              </div>
-
-              <div class="conversation-row">
-                <span
-                    class="conversation-preview"
-                    :class="{ unread: conversation.unread > 0 }"
-                >
-                  {{ conversation.lastMessage }}
-                </span>
-
-                <span
-                    v-if="conversation.unread > 0"
-                    class="unread-badge"
-                >
-                  {{ conversation.unread > 99 ? "99+" : conversation.unread }}
-                </span>
-              </div>
-            </div>
-          </button>
-
-          <div
-              v-if="filteredConversations.length === 0"
-              class="empty-conversation"
-          >
-            <div class="empty-icon">💬</div>
-            <p>Không tìm thấy cuộc trò chuyện</p>
-          </div>
-        </div>
-
-        <div class="current-user">
-          <div class="avatar avatar-placeholder current-user-avatar">
-            NV
-          </div>
-
-          <div class="current-user-info">
-            <strong>Nguyễn Văn A</strong>
-            <span>Đang hoạt động</span>
-          </div>
-
-          <button
-              type="button"
-              class="icon-button"
-              title="Cài đặt"
-          >
-            <svg viewBox="0 0 24 24">
-              <circle cx="5" cy="12" r="1.7" />
-              <circle cx="12" cy="12" r="1.7" />
-              <circle cx="19" cy="12" r="1.7" />
-            </svg>
-          </button>
-        </div>
-      </aside>
-
-      <!-- Nội dung chat -->
-      <main
-          v-if="selectedConversation"
-          class="chat-section"
-          :class="{ 'mobile-visible': isMobileChatOpen }"
-      >
-        <header class="chat-header">
-          <button
-              type="button"
-              class="back-button"
-              @click="closeMobileChat"
-          >
-            <svg viewBox="0 0 24 24">
-              <path
-                  d="m15 18-6-6 6-6"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
-          <div class="avatar-wrapper">
-            <img
-                v-if="selectedConversation.avatar"
-                :src="selectedConversation.avatar"
-                :alt="selectedConversation.name"
-                class="avatar"
-            />
-
-            <div
-                v-else
-                class="avatar avatar-placeholder"
-                :style="{
-                background: selectedConversation.avatarColor
-              }"
-            >
-              {{ getInitials(selectedConversation.name) }}
-            </div>
-
-            <span
-                v-if="selectedConversation.online"
-                class="online-indicator"
-            ></span>
-          </div>
-
-          <div class="chat-user-info">
-            <strong>{{ selectedConversation.name }}</strong>
-            <span>
-              {{
-                selectedConversation.online
-                    ? "Đang hoạt động"
-                    : `Hoạt động ${selectedConversation.lastActive}`
-              }}
-            </span>
-          </div>
-
-
-        </header>
-
-        <section
-            ref="messageContainer"
-            class="message-container"
+      <div class="session-list">
+        <button
+          v-for="session in filteredSessions"
+          :key="session.id"
+          type="button"
+          class="session-item"
+          :class="{ active: selectedSession?.id === session.id }"
+          @click="selectSession(session)"
         >
-          <div class="conversation-start">
-            <div
-                class="avatar avatar-placeholder large-avatar"
-                :style="{
-                background: selectedConversation.avatarColor
-              }"
-            >
-              {{ getInitials(selectedConversation.name) }}
+          <div class="avatar">{{ getInitials(session.name) }}</div>
+
+          <div class="session-main">
+            <div class="session-topline">
+              <strong>{{ session.name }}</strong>
+              <time>{{ formatSessionTime(session.lastMessageAt) }}</time>
             </div>
 
-            <h2>{{ selectedConversation.name }}</h2>
+            <div class="session-preview-row">
+              <span class="session-preview">{{ session.lastMessage || "Chưa có tin nhắn" }}</span>
+              <span v-if="session.unread > 0" class="unread-badge">{{ session.unread }}</span>
+            </div>
 
+            <div class="session-meta">
+              <span class="status-pill" :class="`status-${session.status}`">
+                {{ session.statusLabel }}
+              </span>
+              <small v-if="session.ownerName">{{ session.ownerName }}</small>
+              <small v-else>Chưa có người nhận</small>
+            </div>
+          </div>
+        </button>
+
+        <div v-if="!loadingSessions && filteredSessions.length === 0" class="empty-list">
+          <i class="fa-regular fa-comments"></i>
+          <p>Chưa có phiên tư vấn phù hợp.</p>
+        </div>
+      </div>
+    </aside>
+
+    <main v-if="selectedSession" class="conversation-panel">
+      <header class="conversation-header">
+        <div class="customer-info">
+          <div class="avatar large">{{ getInitials(selectedSession.name) }}</div>
+          <div>
+            <h2>{{ selectedSession.name }}</h2>
             <p>
-              Đây là phần bắt đầu cuộc trò chuyện của bạn với
-              {{ selectedConversation.name }}.
+              {{ selectedSession.statusLabel }}
+              <span v-if="selectedSession.ownerName"> · {{ selectedSession.ownerName }}</span>
             </p>
           </div>
+        </div>
 
-          <template
-              v-for="(message, index) in selectedConversation.messages"
-              :key="message.id"
+        <div class="header-actions">
+          <button
+            v-if="!selectedSession.ownerId && selectedSession.status !== 2"
+            type="button"
+            class="claim-button"
+            :disabled="claiming"
+            @click="claimSelectedSession"
           >
-            <div
-                v-if="shouldShowDate(index)"
-                class="message-date"
-            >
+            {{ claiming ? "Đang nhận..." : "Nhận tư vấn" }}
+          </button>
+
+          <button
+            v-if="selectedSession.ownerId === currentEmployeeId && selectedSession.status !== 2"
+            type="button"
+            class="close-session-button"
+            :disabled="closingSession"
+            @click="closeSelectedSession"
+          >
+            Kết thúc phiên
+          </button>
+        </div>
+      </header>
+
+      <section ref="messageContainer" class="message-list">
+        <div class="handoff-note">
+          <i class="fa-solid fa-robot"></i>
+          <span>Phần hội thoại với chatbot và phần nhân viên tiếp tục đều được lưu chung tại đây.</span>
+        </div>
+
+        <div v-if="loadingMessages" class="loading-text">Đang tải hội thoại...</div>
+
+        <template v-else>
+          <div
+            v-for="(message, index) in selectedSession.messages"
+            :key="message.id"
+            class="message-group"
+          >
+            <div v-if="shouldShowDate(index)" class="date-divider">
               {{ formatDateLabel(message.createdAt) }}
             </div>
 
-            <div
-                class="message-row"
-                :class="{
-                'message-sent': message.sender === 'me',
-                'message-received': message.sender !== 'me'
-              }"
-            >
-              <div
-                  v-if="message.sender !== 'me'"
-                  class="message-avatar-space"
-              >
-                <div
-                    v-if="shouldShowAvatar(index)"
-                    class="avatar avatar-placeholder message-avatar"
-                    :style="{
-                    background: selectedConversation.avatarColor
-                  }"
-                >
-                  {{ getInitials(selectedConversation.name) }}
-                </div>
+            <div class="message-row" :class="message.sender">
+              <div v-if="message.sender !== 'me'" class="sender-avatar" :class="message.sender">
+                {{ message.sender === "ai" ? "AI" : getInitials(selectedSession.name) }}
               </div>
 
-              <div class="message-wrapper">
-                <div
-                    v-if="message.image"
-                    class="message-image"
-                >
-                  <img
-                      :src="message.image"
-                      alt="Hình ảnh trong tin nhắn"
-                  />
-                </div>
-
-                <div
-                    v-if="message.content"
-                    class="message-bubble"
-                >
-                  {{ message.content }}
-                </div>
-
-                <div class="message-meta">
-                  <span>{{ formatMessageTime(message.createdAt) }}</span>
-
-                  <span
-                      v-if="message.sender === 'me'"
-                      class="message-status"
-                  >
-                    {{ message.status === "seen" ? "Đã xem" : "Đã gửi" }}
-                  </span>
+              <div class="bubble-wrap">
+                <small v-if="message.sender !== 'me'" class="sender-name">
+                  {{ message.sender === "ai" ? "Trợ lý AI An Yên" : selectedSession.name }}
+                </small>
+                <div class="message-bubble">{{ message.content }}</div>
+                <div class="message-time">
+                  {{ formatMessageTime(message.createdAt) }}
+                  <span v-if="message.sender === 'me'"> · {{ message.seen ? "Đã xem" : "Đã gửi" }}</span>
                 </div>
               </div>
             </div>
-          </template>
-
-          <div
-              v-if="selectedConversation.typing"
-              class="typing-row"
-          >
-            <div
-                class="avatar avatar-placeholder message-avatar"
-                :style="{
-                background: selectedConversation.avatarColor
-              }"
-            >
-              {{ getInitials(selectedConversation.name) }}
-            </div>
-
-            <div class="typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
-            </div>
-          </div>
-        </section>
-
-        <footer class="message-input-area">
-          <input
-              ref="fileInput"
-              type="file"
-              accept="image/*"
-              hidden
-              @change="handleImageUpload"
-          />
-
-          <button
-              type="button"
-              class="input-action-button"
-              title="Đính kèm hình ảnh"
-              @click="fileInput?.click()"
-          >
-            <svg viewBox="0 0 24 24">
-              <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="16"
-                  rx="2"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-              />
-              <circle
-                  cx="8"
-                  cy="9"
-                  r="1.5"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-              />
-              <path
-                  d="m4 17 5-5 4 4 2-2 5 4"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-
-          <div class="message-input-wrapper">
-            <textarea
-                ref="messageInput"
-                v-model="newMessage"
-                rows="1"
-                maxlength="2000"
-                placeholder="Nhập tin nhắn..."
-                @input="resizeTextarea"
-                @keydown.enter.exact.prevent="sendMessage"
-            ></textarea>
-
-            <button
-                type="button"
-                class="emoji-button"
-                title="Biểu tượng cảm xúc"
-                @click="toggleEmojiPanel"
-            >
-              😊
-            </button>
-
-            <div
-                v-if="showEmojiPanel"
-                class="emoji-panel"
-            >
-              <button
-                  v-for="emoji in emojis"
-                  :key="emoji"
-                  type="button"
-                  @click="addEmoji(emoji)"
-              >
-                {{ emoji }}
-              </button>
-            </div>
           </div>
 
-          <button
-              type="button"
-              class="send-button"
-              :disabled="!newMessage.trim()"
-              title="Gửi tin nhắn"
-              @click="sendMessage"
-          >
-            <svg viewBox="0 0 24 24">
-              <path
-                  d="m4 4 17 8-17 8 3-8-3-8Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linejoin="round"
-              />
-              <path
-                  d="M7 12h14"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.8"
-                  stroke-linecap="round"
-              />
-            </svg>
-          </button>
-        </footer>
-      </main>
-
-      <!-- Chưa chọn hội thoại -->
-      <main
-          v-else
-          class="empty-chat-section"
-      >
-        <div class="empty-chat-content">
-          <div class="empty-chat-icon">
-            <svg viewBox="0 0 24 24">
-              <path
-                  d="M20 11.5a7.5 7.5 0 0 1-8 7.5 9.5 9.5 0 0 1-3.7-.7L4 20l1.2-3.6A7.2 7.2 0 0 1 4 12.5 7.5 7.5 0 0 1 12 5a7.5 7.5 0 0 1 8 6.5Z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  stroke-linejoin="round"
-              />
-            </svg>
+          <div v-if="selectedSession.messages.length === 0" class="empty-messages">
+            Chưa có nội dung hội thoại.
           </div>
+        </template>
+      </section>
 
-          <h2>Tin nhắn của bạn</h2>
-          <p>Chọn một cuộc trò chuyện để bắt đầu nhắn tin.</p>
-        </div>
-      </main>
-    </div>
+      <footer class="composer">
+        <textarea
+          ref="messageInput"
+          v-model="newMessage"
+          rows="1"
+          maxlength="2000"
+          :disabled="!canReply || sendingMessage"
+          :placeholder="composerPlaceholder"
+          @input="resizeTextarea"
+          @keydown.enter.exact.prevent="sendMessage"
+        ></textarea>
+
+        <button
+          type="button"
+          class="send-button"
+          :disabled="!canReply || sendingMessage || !newMessage.trim()"
+          @click="sendMessage"
+        >
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </footer>
+    </main>
+
+    <main v-else class="empty-conversation">
+      <i class="fa-regular fa-comments"></i>
+      <h2>Chọn một phiên tư vấn</h2>
+      <p>Nhân viên sẽ thấy đầy đủ tin nhắn của khách, chatbot và nhân viên trong cùng một luồng.</p>
+    </main>
   </div>
 </template>
 
@@ -467,345 +180,694 @@ import {
   computed,
   nextTick,
   onMounted,
-  ref
+  onUnmounted,
+  ref,
 } from "vue";
 
+import {
+  claimStaffChatSession,
+  closeStaffChatSession,
+  getStaffChatSessions,
+  getStaffMessages,
+  heartbeatStaffChat,
+  sendStaffMessage,
+} from "../../services/tuVanService.js";
+
+const POLL_INTERVAL = 2500;
+const HEARTBEAT_INTERVAL = 20000;
+
 const searchKeyword = ref("");
+const sessions = ref([]);
+const selectedSession = ref(null);
 const newMessage = ref("");
-const selectedConversation = ref(null);
-const isMobileChatOpen = ref(false);
-const showEmojiPanel = ref(false);
+
+const loadingSessions = ref(false);
+const loadingMessages = ref(false);
+const sendingMessage = ref(false);
+const claiming = ref(false);
+const closingSession = ref(false);
+
+const pageError = ref("");
 
 const messageContainer = ref(null);
 const messageInput = ref(null);
-const fileInput = ref(null);
 
-const emojis = [
-  "😀",
-  "😂",
-  "😍",
-  "🥰",
-  "😎",
-  "😭",
-  "👍",
-  "❤️",
-  "🎉",
-  "🔥",
-  "🙏",
-  "✅"
-];
+let pollTimer = null;
+let heartbeatTimer = null;
+let pollRunning = false;
+let sessionsRequestRunning = false;
+let visibleMessageRequestCount = 0;
 
-const conversations = ref([
-  {
-    id: 1,
-    name: "Trần Thị B",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #7c3aed, #a855f7)",
-    online: true,
-    lastActive: "vừa xong",
-    lastMessage: "Dạ, em đã nhận được thông tin rồi ạ.",
-    lastMessageTime: "08:25",
-    unread: 2,
-    typing: false,
-    messages: [
-      {
-        id: 101,
-        sender: "other",
-        content: "Chào anh, anh cần em hỗ trợ gì không ạ?",
-        createdAt: "2026-07-19T08:10:00",
-        status: "seen"
-      },
-      {
-        id: 102,
-        sender: "me",
-        content: "Em kiểm tra giúp anh thông tin đơn hàng mới nhé.",
-        createdAt: "2026-07-19T08:14:00",
-        status: "seen"
-      },
-      {
-        id: 103,
-        sender: "other",
-        content: "Dạ được ạ. Anh gửi mã đơn hàng cho em nhé.",
-        createdAt: "2026-07-19T08:18:00",
-        status: "seen"
-      },
-      {
-        id: 104,
-        sender: "me",
-        content: "Mã đơn hàng là DH000128.",
-        createdAt: "2026-07-19T08:20:00",
-        status: "seen"
-      },
-      {
-        id: 105,
-        sender: "other",
-        content: "Dạ, em đã nhận được thông tin rồi ạ.",
-        createdAt: "2026-07-19T08:25:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: "Nguyễn Văn C",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #0f766e, #14b8a6)",
-    online: false,
-    lastActive: "15 phút trước",
-    lastMessage: "Cảm ơn bạn đã hỗ trợ.",
-    lastMessageTime: "07:50",
-    unread: 0,
-    typing: false,
-    messages: [
-      {
-        id: 201,
-        sender: "other",
-        content: "Bạn đã cập nhật trạng thái hợp đồng chưa?",
-        createdAt: "2026-07-19T07:40:00",
-        status: "seen"
-      },
-      {
-        id: 202,
-        sender: "me",
-        content: "Mình đã cập nhật xong rồi nhé.",
-        createdAt: "2026-07-19T07:45:00",
-        status: "seen"
-      },
-      {
-        id: 203,
-        sender: "other",
-        content: "Cảm ơn bạn đã hỗ trợ.",
-        createdAt: "2026-07-19T07:50:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 3,
-    name: "Phạm Minh Anh",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #b45309, #f59e0b)",
-    online: true,
-    lastActive: "vừa xong",
-    lastMessage: "Bạn đã gửi một hình ảnh.",
-    lastMessageTime: "Hôm qua",
-    unread: 0,
-    typing: false,
-    messages: [
-      {
-        id: 301,
-        sender: "other",
-        content: "Đây là hình ảnh sản phẩm mới.",
-        createdAt: "2026-07-18T16:30:00",
-        status: "seen"
-      },
-      {
-        id: 302,
-        sender: "other",
-        content: "",
-        image: "https://placehold.co/600x400?text=Hinh+anh+san+pham",
-        createdAt: "2026-07-18T16:31:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 4,
-    name: "Bộ phận chăm sóc khách hàng",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #be123c, #fb7185)",
-    online: false,
-    lastActive: "1 giờ trước",
-    lastMessage: "Vui lòng kiểm tra yêu cầu mới.",
-    lastMessageTime: "Thứ 7",
-    unread: 5,
-    typing: false,
-    messages: [
-      {
-        id: 401,
-        sender: "other",
-        content: "Vui lòng kiểm tra yêu cầu mới từ khách hàng.",
-        createdAt: "2026-07-18T09:00:00",
-        status: "seen"
-      }
-    ]
-  },
-  {
-    id: 5,
-    name: "Lê Hoàng Nam",
-    avatar: null,
-    avatarColor: "linear-gradient(135deg, #1d4ed8, #60a5fa)",
-    online: false,
-    lastActive: "2 giờ trước",
-    lastMessage: "Hẹn gặp bạn vào ngày mai.",
-    lastMessageTime: "Thứ 6",
-    unread: 0,
-    typing: false,
-    messages: [
-      {
-        id: 501,
-        sender: "me",
-        content: "Hẹn gặp bạn vào ngày mai.",
-        createdAt: "2026-07-17T17:20:00",
-        status: "seen"
-      }
-    ]
+/*
+ * Không cho cùng một phiên gửi nhiều request tải tin nhắn
+ * trong cùng một thời điểm.
+ */
+const messageRequests = new Set();
+
+const currentUser = computed(() => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    return null;
   }
-]);
+});
 
-const filteredConversations = computed(() => {
-  const keyword = searchKeyword.value.toLowerCase();
+const currentEmployeeId = computed(() =>
+    Number(currentUser.value?.id || 0)
+);
+
+const filteredSessions = computed(() => {
+  const keyword = searchKeyword.value
+      .toLowerCase()
+      .trim();
 
   if (!keyword) {
-    return conversations.value;
+    return sessions.value;
   }
 
-  return conversations.value.filter((conversation) => {
+  return sessions.value.filter((session) => {
+    const customerName = String(
+        session.name || ""
+    ).toLowerCase();
+
+    const lastMessage = String(
+        session.lastMessage || ""
+    ).toLowerCase();
+
     return (
-        conversation.name.toLowerCase().includes(keyword) ||
-        conversation.lastMessage.toLowerCase().includes(keyword)
+        customerName.includes(keyword) ||
+        lastMessage.includes(keyword)
     );
   });
 });
 
-function getInitials(name) {
-  if (!name) return "?";
+const canReply = computed(() => {
+  const session = selectedSession.value;
 
-  const words = name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean);
+  return Boolean(
+      session &&
+      session.ownerId === currentEmployeeId.value &&
+      session.status !== 2
+  );
+});
 
-  if (words.length === 1) {
-    return words[0].charAt(0).toUpperCase();
+const composerPlaceholder = computed(() => {
+  const session = selectedSession.value;
+
+  if (!session) {
+    return "Chọn một phiên tư vấn";
   }
 
-  return (
-      words[words.length - 2].charAt(0) +
-      words[words.length - 1].charAt(0)
-  ).toUpperCase();
+  if (session.status === 2) {
+    return "Phiên tư vấn đã kết thúc";
+  }
+
+  if (!session.ownerId) {
+    return "Nhấn “Nhận tư vấn” để trả lời";
+  }
+
+  if (session.ownerId !== currentEmployeeId.value) {
+    return "Phiên đang do nhân viên khác phụ trách";
+  }
+
+  return "Nhập nội dung để tiếp tục cuộc trò chuyện...";
+});
+
+/* =========================================================
+ * REFRESH THỦ CÔNG
+ * ========================================================= */
+
+async function refreshAll() {
+  await heartbeat();
+  await loadSessions(false);
+
+  const session = selectedSession.value;
+
+  if (
+      session &&
+      session.ownerId === currentEmployeeId.value
+  ) {
+    await loadMessages(
+        session.id,
+        false,
+        true
+    );
+  }
 }
 
-async function selectConversation(conversation) {
-  selectedConversation.value = conversation;
-  conversation.unread = 0;
-  isMobileChatOpen.value = true;
-  showEmojiPanel.value = false;
+/* =========================================================
+ * HEARTBEAT
+ * Chỉ khai báo duy nhất một lần.
+ * ========================================================= */
 
-  await scrollToBottom();
-
-  nextTick(() => {
-    messageInput.value?.focus();
-  });
+async function heartbeat() {
+  try {
+    await heartbeatStaffChat();
+  } catch (error) {
+    console.error(
+        "Không thể cập nhật trạng thái online:",
+        error
+    );
+  }
 }
 
-function closeMobileChat() {
-  isMobileChatOpen.value = false;
+/* =========================================================
+ * TẢI DANH SÁCH PHIÊN
+ * silent = true: polling âm thầm, không nhấp nháy loading.
+ * ========================================================= */
+
+async function loadSessions(silent = false) {
+  if (sessionsRequestRunning) {
+    return;
+  }
+
+  sessionsRequestRunning = true;
+
+  if (!silent) {
+    loadingSessions.value = true;
+  }
+
+  try {
+    const response = await getStaffChatSessions();
+
+    const incoming = Array.isArray(response.data)
+        ? response.data
+        : [];
+
+    const selectedId = selectedSession.value?.id;
+
+    /*
+     * Giữ lại object phiên cũ để Vue không render lại toàn bộ
+     * danh sách và khu vực hội thoại sau mỗi lần polling.
+     */
+    const oldSessionsById = new Map(
+        sessions.value.map((session) => [
+          session.id,
+          session,
+        ])
+    );
+
+    const nextSessions = incoming.map((rawSession) => {
+      const id = Number(rawSession.maPhien);
+
+      const ownerId =
+          rawSession.maNhanVienPhuTrach == null
+              ? null
+              : Number(rawSession.maNhanVienPhuTrach);
+
+      const normalizedSession = {
+        id,
+        name: rawSession.tenKhachHang,
+        ownerId,
+        ownerName: rawSession.tenNhanVienPhuTrach,
+        status: Number(rawSession.trangThai),
+        statusLabel: rawSession.tenTrangThai,
+        lastMessage: rawSession.tinNhanCuoi,
+        lastMessageAt: rawSession.thoiGianTinNhanCuoi,
+        unread: Number(
+            rawSession.soTinNhanChuaDocNhanVien || 0
+        ),
+      };
+
+      const oldSession = oldSessionsById.get(id);
+
+      if (oldSession) {
+        /*
+         * Cập nhật trực tiếp object cũ.
+         * Mảng messages vẫn được giữ nguyên.
+         */
+        Object.assign(
+            oldSession,
+            normalizedSession
+        );
+
+        return oldSession;
+      }
+
+      return {
+        ...normalizedSession,
+        messages: [],
+      };
+    });
+
+    sessions.value = nextSessions;
+
+    if (selectedId != null) {
+      selectedSession.value =
+          nextSessions.find(
+              (session) => session.id === selectedId
+          ) || null;
+    }
+
+    pageError.value = "";
+  } catch (error) {
+    pageError.value = getErrorMessage(
+        error,
+        "Không thể tải danh sách phiên tư vấn"
+    );
+  } finally {
+    sessionsRequestRunning = false;
+
+    if (!silent) {
+      loadingSessions.value = false;
+    }
+  }
 }
 
-function createNewConversation() {
-  window.alert("Bạn có thể mở popup chọn người nhận tại đây.");
+/* =========================================================
+ * CHỌN PHIÊN
+ * ========================================================= */
+
+async function selectSession(session) {
+  selectedSession.value = session;
+  pageError.value = "";
+
+  if (
+      !session.ownerId &&
+      session.status !== 2
+  ) {
+    await claimSelectedSession();
+    return;
+  }
+
+  if (
+      session.ownerId === currentEmployeeId.value
+  ) {
+    await loadMessages(
+        session.id,
+        true,
+        false
+    );
+  } else {
+    /*
+     * Không cho nhân viên khác xem nội dung phiên
+     * đang thuộc người khác.
+     */
+    session.messages = [];
+  }
 }
+
+/* =========================================================
+ * NHẬN PHIÊN
+ * ========================================================= */
+
+async function claimSelectedSession() {
+  const session = selectedSession.value;
+
+  if (!session || claiming.value) {
+    return;
+  }
+
+  const sessionId = session.id;
+
+  claiming.value = true;
+  pageError.value = "";
+
+  try {
+    const response =
+        await claimStaffChatSession(sessionId);
+
+    const claimed = response.data;
+
+    session.ownerId =
+        claimed.maNhanVienPhuTrach == null
+            ? null
+            : Number(claimed.maNhanVienPhuTrach);
+
+    session.ownerName =
+        claimed.tenNhanVienPhuTrach;
+
+    session.status =
+        Number(claimed.trangThai);
+
+    session.statusLabel =
+        claimed.tenTrangThai;
+
+    await loadSessions(true);
+
+    await loadMessages(
+        sessionId,
+        true,
+        false
+    );
+  } catch (error) {
+    pageError.value = getErrorMessage(
+        error,
+        "Phiên này vừa được một nhân viên khác tiếp nhận"
+    );
+
+    await loadSessions(true);
+  } finally {
+    claiming.value = false;
+  }
+}
+
+/* =========================================================
+ * TẢI TIN NHẮN
+ *
+ * focusInput:
+ *   true  = cuộn xuống cuối và focus input.
+ *
+ * silent:
+ *   true  = polling âm thầm, không hiện loading.
+ * ========================================================= */
+
+async function loadMessages(
+    sessionId,
+    focusInput = false,
+    silent = false
+) {
+  if (!sessionId) {
+    return;
+  }
+
+  /*
+   * Không tải trùng cùng một phiên.
+   */
+  if (messageRequests.has(sessionId)) {
+    return;
+  }
+
+  messageRequests.add(sessionId);
+
+  const shouldStickToBottom =
+      focusInput ||
+      isMessageListNearBottom();
+
+  if (!silent) {
+    visibleMessageRequestCount += 1;
+    loadingMessages.value = true;
+  }
+
+  try {
+    const response =
+        await getStaffMessages(sessionId);
+
+    const data = Array.isArray(response.data)
+        ? response.data
+        : [];
+
+    const target = sessions.value.find(
+        (session) => session.id === sessionId
+    );
+
+    if (!target) {
+      return;
+    }
+
+    const incomingMessages = data.map(
+        (message) => ({
+          id: message.maTinNhan,
+
+          sender:
+              message.nguoiGui === "NHAN_VIEN"
+                  ? "me"
+                  : message.nguoiGui === "AI"
+                      ? "ai"
+                      : "customer",
+
+          content: message.noiDung,
+          createdAt: message.createdAt,
+          seen: Boolean(message.daDoc),
+        })
+    );
+
+    /*
+     * Chỉ cập nhật mảng khi nội dung thực sự thay đổi.
+     * Polling không còn render lại toàn bộ hội thoại.
+     */
+    const messagesChanged =
+        haveMessagesChanged(
+            target.messages,
+            incomingMessages
+        );
+
+    if (messagesChanged) {
+      target.messages = incomingMessages;
+    }
+
+    target.unread = 0;
+
+    const isStillSelected =
+        selectedSession.value?.id === sessionId;
+
+    if (isStillSelected) {
+      selectedSession.value = target;
+    }
+
+    /*
+     * Chỉ cuộn khi:
+     * - Đây vẫn là phiên đang mở.
+     * - Có tin nhắn mới và người dùng đang gần cuối.
+     * - Hoặc nhân viên vừa gửi/chọn phiên.
+     */
+    if (
+        isStillSelected &&
+        (
+            focusInput ||
+            (
+                messagesChanged &&
+                shouldStickToBottom
+            )
+        )
+    ) {
+      await scrollToBottom();
+    }
+
+    if (
+        isStillSelected &&
+        focusInput
+    ) {
+      focusComposerWithoutPageScroll();
+    }
+  } catch (error) {
+    if (
+        [403, 409].includes(
+            error?.response?.status
+        )
+    ) {
+      await loadSessions(true);
+    } else {
+      pageError.value = getErrorMessage(
+          error,
+          "Không thể tải nội dung hội thoại"
+      );
+    }
+  } finally {
+    messageRequests.delete(sessionId);
+
+    if (!silent) {
+      visibleMessageRequestCount = Math.max(
+          0,
+          visibleMessageRequestCount - 1
+      );
+
+      loadingMessages.value =
+          visibleMessageRequestCount > 0;
+    }
+  }
+}
+
+/* =========================================================
+ * KIỂM TRA TIN NHẮN CÓ THAY ĐỔI KHÔNG
+ * ========================================================= */
+
+function haveMessagesChanged(
+    oldMessages = [],
+    newMessages = []
+) {
+  if (
+      oldMessages.length !==
+      newMessages.length
+  ) {
+    return true;
+  }
+
+  return newMessages.some(
+      (newMessageItem, index) => {
+        const oldMessageItem =
+            oldMessages[index];
+
+        return (
+            !oldMessageItem ||
+            oldMessageItem.id !==
+            newMessageItem.id ||
+            oldMessageItem.content !==
+            newMessageItem.content ||
+            oldMessageItem.sender !==
+            newMessageItem.sender ||
+            oldMessageItem.seen !==
+            newMessageItem.seen ||
+            oldMessageItem.createdAt !==
+            newMessageItem.createdAt
+        );
+      }
+  );
+}
+
+/* =========================================================
+ * GỬI TIN NHẮN
+ * ========================================================= */
 
 async function sendMessage() {
   const content = newMessage.value.trim();
+  const session = selectedSession.value;
 
-  if (!content || !selectedConversation.value) {
+  if (
+      !content ||
+      !session ||
+      !canReply.value ||
+      sendingMessage.value
+  ) {
     return;
   }
 
-  const message = {
-    id: Date.now(),
-    sender: "me",
-    content,
-    createdAt: new Date().toISOString(),
-    status: "sent"
-  };
+  const sessionId = session.id;
 
-  selectedConversation.value.messages.push(message);
-  selectedConversation.value.lastMessage = content;
-  selectedConversation.value.lastMessageTime = formatMessageTime(
-      message.createdAt
+  sendingMessage.value = true;
+  pageError.value = "";
+
+  try {
+    await sendStaffMessage(
+        sessionId,
+        content
+    );
+
+    newMessage.value = "";
+    resetTextarea();
+
+    /*
+     * Nhân viên vừa gửi nên chủ động cuộn xuống cuối.
+     */
+    await loadMessages(
+        sessionId,
+        true,
+        false
+    );
+
+    await loadSessions(true);
+  } catch (error) {
+    pageError.value = getErrorMessage(
+        error,
+        "Không thể gửi tin nhắn"
+    );
+  } finally {
+    sendingMessage.value = false;
+  }
+}
+
+/* =========================================================
+ * KẾT THÚC PHIÊN
+ * ========================================================= */
+
+async function closeSelectedSession() {
+  const session = selectedSession.value;
+
+  if (
+      !session ||
+      closingSession.value
+  ) {
+    return;
+  }
+
+  const confirmed = window.confirm(
+      "Kết thúc phiên tư vấn này?"
   );
 
-  moveConversationToTop(selectedConversation.value.id);
+  if (!confirmed) {
+    return;
+  }
 
-  newMessage.value = "";
-  showEmojiPanel.value = false;
+  closingSession.value = true;
+  pageError.value = "";
 
-  resetTextareaHeight();
-  await scrollToBottom();
+  try {
+    await closeStaffChatSession(
+        session.id
+    );
 
-  // Khi kết nối backend, gọi API tại đây.
-  // await messageService.sendMessage({
-  //   conversationId: selectedConversation.value.id,
-  //   content
-  // });
+    await loadSessions(true);
+  } catch (error) {
+    pageError.value = getErrorMessage(
+        error,
+        "Không thể kết thúc phiên tư vấn"
+    );
+  } finally {
+    closingSession.value = false;
+  }
 }
 
-function moveConversationToTop(conversationId) {
-  const index = conversations.value.findIndex(
-      (item) => item.id === conversationId
+/* =========================================================
+ * POLLING
+ * Không hiện loading và không cuộn khi không có tin mới.
+ * ========================================================= */
+
+async function poll() {
+  if (pollRunning) {
+    return;
+  }
+
+  pollRunning = true;
+
+  try {
+    await loadSessions(true);
+
+    const session = selectedSession.value;
+
+    if (
+        session &&
+        session.ownerId ===
+        currentEmployeeId.value
+    ) {
+      await loadMessages(
+          session.id,
+          false,
+          true
+      );
+    }
+  } catch (error) {
+    console.error(
+        "Lỗi polling hội thoại:",
+        error
+    );
+  } finally {
+    pollRunning = false;
+  }
+}
+
+/* =========================================================
+ * TIMER
+ * ========================================================= */
+
+function startTimers() {
+  stopTimers();
+
+  pollTimer = window.setInterval(
+      poll,
+      POLL_INTERVAL
   );
 
-  if (index <= 0) {
-    return;
-  }
-
-  const [conversation] = conversations.value.splice(index, 1);
-  conversations.value.unshift(conversation);
-}
-
-async function handleImageUpload(event) {
-  const file = event.target.files?.[0];
-
-  if (!file || !selectedConversation.value) {
-    return;
-  }
-
-  if (!file.type.startsWith("image/")) {
-    window.alert("Vui lòng chọn một file hình ảnh.");
-    event.target.value = "";
-    return;
-  }
-
-  const imageUrl = URL.createObjectURL(file);
-
-  const message = {
-    id: Date.now(),
-    sender: "me",
-    content: "",
-    image: imageUrl,
-    createdAt: new Date().toISOString(),
-    status: "sent"
-  };
-
-  selectedConversation.value.messages.push(message);
-  selectedConversation.value.lastMessage = "Bạn đã gửi một hình ảnh.";
-  selectedConversation.value.lastMessageTime = formatMessageTime(
-      message.createdAt
+  heartbeatTimer = window.setInterval(
+      heartbeat,
+      HEARTBEAT_INTERVAL
   );
-
-  moveConversationToTop(selectedConversation.value.id);
-  event.target.value = "";
-
-  await scrollToBottom();
-
-  // Với backend thật, hãy upload file bằng FormData.
 }
 
-function toggleEmojiPanel() {
-  showEmojiPanel.value = !showEmojiPanel.value;
+function stopTimers() {
+  if (pollTimer) {
+    window.clearInterval(pollTimer);
+    pollTimer = null;
+  }
+
+  if (heartbeatTimer) {
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
 }
 
-function addEmoji(emoji) {
-  newMessage.value += emoji;
-
-  nextTick(() => {
-    messageInput.value?.focus();
-    resizeTextarea();
-  });
-}
+/* =========================================================
+ * TEXTAREA
+ * ========================================================= */
 
 function resizeTextarea() {
   const textarea = messageInput.value;
@@ -815,972 +877,674 @@ function resizeTextarea() {
   }
 
   textarea.style.height = "auto";
-  textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
+
+  textarea.style.height =
+      `${Math.min(
+          textarea.scrollHeight,
+          120
+      )}px`;
 }
 
-function resetTextareaHeight() {
+function resetTextarea() {
   nextTick(() => {
-    if (messageInput.value) {
-      messageInput.value.style.height = "auto";
+    const textarea = messageInput.value;
+
+    if (textarea) {
+      textarea.style.height = "auto";
     }
   });
+}
+
+/* =========================================================
+ * SCROLL
+ * ========================================================= */
+
+function isMessageListNearBottom(
+    threshold = 120
+) {
+  const container =
+      messageContainer.value;
+
+  if (!container) {
+    return true;
+  }
+
+  const remaining =
+      container.scrollHeight -
+      container.scrollTop -
+      container.clientHeight;
+
+  return remaining <= threshold;
 }
 
 async function scrollToBottom() {
   await nextTick();
 
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop =
-        messageContainer.value.scrollHeight;
+  const container =
+      messageContainer.value;
+
+  if (!container) {
+    return;
   }
+
+  /*
+   * Chỉ cuộn container tin nhắn,
+   * không cuộn toàn bộ trang web.
+   */
+  container.scrollTop =
+      container.scrollHeight;
 }
 
-function formatMessageTime(dateValue) {
-  return new Intl.DateTimeFormat("vi-VN", {
-    hour: "2-digit",
-    minute: "2-digit"
-  }).format(new Date(dateValue));
+function focusComposerWithoutPageScroll() {
+  nextTick(() => {
+    const input = messageInput.value;
+
+    if (!input) {
+      return;
+    }
+
+    try {
+      input.focus({
+        preventScroll: true,
+      });
+    } catch {
+      /*
+       * Trình duyệt cũ không hỗ trợ preventScroll.
+       */
+      input.focus();
+    }
+  });
 }
 
-function formatDateLabel(dateValue) {
-  const messageDate = new Date(dateValue);
+/* =========================================================
+ * FORMAT GIAO DIỆN
+ * ========================================================= */
+
+function getInitials(name) {
+  const words = String(name || "?")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  if (words.length === 0) {
+    return "?";
+  }
+
+  if (words.length === 1) {
+    return words[0]
+        .charAt(0)
+        .toUpperCase();
+  }
+
+  return (
+      words[words.length - 2].charAt(0) +
+      words[words.length - 1].charAt(0)
+  ).toUpperCase();
+}
+
+function formatMessageTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  return new Intl.DateTimeFormat(
+      "vi-VN",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+  ).format(date);
+}
+
+function formatSessionTime(value) {
+  if (!value) {
+    return "";
+  }
+
+  const date = new Date(value);
+  const today = new Date();
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  if (isSameDate(date, today)) {
+    return formatMessageTime(value);
+  }
+
+  return new Intl.DateTimeFormat(
+      "vi-VN",
+      {
+        day: "2-digit",
+        month: "2-digit",
+      }
+  ).format(date);
+}
+
+function formatDateLabel(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
   const today = new Date();
 
   const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  yesterday.setDate(
+      today.getDate() - 1
+  );
 
-  if (isSameDate(messageDate, today)) {
+  if (isSameDate(date, today)) {
     return "Hôm nay";
   }
 
-  if (isSameDate(messageDate, yesterday)) {
+  if (isSameDate(date, yesterday)) {
     return "Hôm qua";
   }
 
-  return new Intl.DateTimeFormat("vi-VN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric"
-  }).format(messageDate);
-}
-
-function isSameDate(dateA, dateB) {
-  return (
-      dateA.getFullYear() === dateB.getFullYear() &&
-      dateA.getMonth() === dateB.getMonth() &&
-      dateA.getDate() === dateB.getDate()
-  );
+  return new Intl.DateTimeFormat(
+      "vi-VN",
+      {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }
+  ).format(date);
 }
 
 function shouldShowDate(index) {
-  const messages = selectedConversation.value?.messages || [];
+  const messages =
+      selectedSession.value?.messages || [];
 
   if (index === 0) {
     return true;
   }
 
-  const currentDate = new Date(messages[index].createdAt);
-  const previousDate = new Date(messages[index - 1].createdAt);
+  const currentDate = new Date(
+      messages[index].createdAt
+  );
 
-  return !isSameDate(currentDate, previousDate);
-}
+  const previousDate = new Date(
+      messages[index - 1].createdAt
+  );
 
-function shouldShowAvatar(index) {
-  const messages = selectedConversation.value?.messages || [];
-  const currentMessage = messages[index];
-  const nextMessage = messages[index + 1];
-
-  return (
-      !nextMessage ||
-      nextMessage.sender !== currentMessage.sender
+  return !isSameDate(
+      currentDate,
+      previousDate
   );
 }
 
-onMounted(() => {
-  if (conversations.value.length > 0) {
-    selectedConversation.value = conversations.value[0];
-    selectedConversation.value.unread = 0;
-    scrollToBottom();
+function isSameDate(first, second) {
+  if (
+      !(first instanceof Date) ||
+      !(second instanceof Date) ||
+      Number.isNaN(first.getTime()) ||
+      Number.isNaN(second.getTime())
+  ) {
+    return false;
   }
+
+  return (
+      first.getFullYear() ===
+      second.getFullYear() &&
+      first.getMonth() ===
+      second.getMonth() &&
+      first.getDate() ===
+      second.getDate()
+  );
+}
+
+function getErrorMessage(
+    error,
+    fallback
+) {
+  return (
+      error?.response?.data?.detail ||
+      error?.response?.data?.message ||
+      error?.message ||
+      fallback
+  );
+}
+
+/* =========================================================
+ * LIFECYCLE
+ * ========================================================= */
+
+onMounted(async () => {
+  await heartbeat();
+  await loadSessions(false);
+  startTimers();
+});
+
+onUnmounted(() => {
+  stopTimers();
 });
 </script>
 
 <style scoped>
-* {
-  box-sizing: border-box;
-}
-
-button,
-input,
-textarea {
-  font: inherit;
-}
-
-button {
-  border: none;
-}
-
-.messenger-page {
-  --primary-color: #8b5e3c;
-  --primary-dark: #6f472b;
-  --primary-light: #f1e8e0;
-  --border-color: #e8e8e8;
-  --text-primary: #252525;
-  --text-secondary: #777;
-  --background-light: #f7f7f8;
-
-  min-height: 100vh;
-  padding: 24px;
-  background:
-      radial-gradient(circle at top left, #f8eee6 0, transparent 32%),
-      #f5f5f5;
-  color: var(--text-primary);
-}
-
-.messenger-container {
-  display: flex;
-  width: min(1400px, 100%);
-  height: calc(100vh - 48px);
-  min-height: 620px;
-  margin: 0 auto;
+.chat-page {
+  height: calc(100dvh - 76px);
+  min-height: 0;
+  display: grid;
   overflow: hidden;
-  background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  border-radius: 22px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.08);
+  grid-template-columns: 370px minmax(0, 1fr);
+  background: #f5f7fb;
+  color: #243044;
 }
 
-.conversation-sidebar {
+.session-panel {
   display: flex;
-  flex: 0 0 370px;
-  flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  flex-direction: column;
+  border-right: 1px solid #e5e9f0;
   background: #fff;
-  border-right: 1px solid var(--border-color);
 }
 
-.sidebar-header {
+.panel-header,
+.conversation-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24px 22px 14px;
+  gap: 16px;
+  padding: 22px;
+  border-bottom: 1px solid #edf0f5;
 }
 
-.sidebar-label {
-  margin: 0 0 4px;
-  color: var(--primary-color);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
+.panel-header h1,
+.conversation-header h2 {
+  margin: 3px 0 0;
+  font-size: 22px;
 }
 
-.sidebar-header h1 {
-  margin: 0;
-  font-size: 27px;
-  line-height: 1.2;
+.eyebrow {
+  color: #8c1731;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
 }
 
-.icon-button {
-  display: inline-flex;
-  width: 42px;
-  height: 42px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #555;
-  background: #f5f5f5;
-  border-radius: 50%;
+.refresh-button,
+.claim-button,
+.close-session-button,
+.send-button {
+  border: 0;
   cursor: pointer;
-  transition:
-      color 0.2s,
-      background 0.2s,
-      transform 0.2s;
 }
 
-.icon-button:hover {
-  color: var(--primary-color);
-  background: var(--primary-light);
-  transform: translateY(-1px);
+.refresh-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #f3f5f8;
+  color: #526078;
 }
 
-.icon-button svg {
-  width: 21px;
-  height: 21px;
+.online-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 18px 8px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #eefaf3;
+}
+
+.online-box div {
+  display: flex;
+  flex-direction: column;
+}
+
+.online-box small {
+  margin-top: 2px;
+  color: #557064;
+}
+
+.online-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #22a45a;
+  box-shadow: 0 0 0 4px rgba(34, 164, 90, 0.14);
 }
 
 .search-box {
-  position: relative;
-  margin: 0 18px 14px;
-}
-
-.search-box > svg {
-  position: absolute;
-  top: 50%;
-  left: 14px;
-  width: 19px;
-  height: 19px;
-  color: #999;
-  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 18px 14px;
+  padding: 11px 13px;
+  border: 1px solid #e2e7ef;
+  border-radius: 12px;
+  background: #f8fafc;
 }
 
 .search-box input {
   width: 100%;
-  height: 46px;
-  padding: 0 42px;
-  color: var(--text-primary);
-  background: var(--background-light);
-  border: 1px solid transparent;
-  border-radius: 14px;
-  outline: none;
-  transition:
-      border-color 0.2s,
-      background 0.2s,
-      box-shadow 0.2s;
-}
-
-.search-box input:focus {
-  background: #fff;
-  border-color: rgba(139, 94, 60, 0.4);
-  box-shadow: 0 0 0 4px rgba(139, 94, 60, 0.08);
-}
-
-.clear-search {
-  position: absolute;
-  top: 50%;
-  right: 13px;
-  color: #999;
+  border: 0;
+  outline: 0;
   background: transparent;
-  font-size: 22px;
-  cursor: pointer;
-  transform: translateY(-52%);
 }
 
-.conversation-list {
-  flex: 1;
+.error-box {
+  margin: 0 18px 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff0f2;
+  color: #a21834;
+  font-size: 13px;
+}
+
+.session-list {
   min-height: 0;
-  padding: 0 10px;
+  flex: 1;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 10px 14px;
 }
 
-.conversation-item {
-  display: flex;
+.session-item {
   width: 100%;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  color: inherit;
-  text-align: left;
-  background: transparent;
-  border-radius: 16px;
-  cursor: pointer;
-  transition:
-      background 0.2s,
-      transform 0.2s;
-}
-
-.conversation-item:hover {
-  background: #f8f6f4;
-}
-
-.conversation-item.active {
-  background: var(--primary-light);
-}
-
-.avatar-wrapper {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.avatar {
   display: flex;
+  gap: 12px;
+  padding: 14px 11px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.session-item:hover,
+.session-item.active {
+  background: #f5f0f2;
+}
+
+.avatar,
+.sender-avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #86152e, #b84059);
+  color: #fff;
+  font-weight: 800;
+}
+
+.avatar.large {
   width: 50px;
   height: 50px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  object-fit: cover;
 }
 
-.avatar-placeholder {
-  color: #fff;
-  background: linear-gradient(135deg, #8b5e3c, #bd8b66);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.online-indicator {
-  position: absolute;
-  right: 1px;
-  bottom: 1px;
-  width: 13px;
-  height: 13px;
-  background: #22c55e;
-  border: 2px solid #fff;
-  border-radius: 50%;
-}
-
-.conversation-content {
+.session-main {
   min-width: 0;
   flex: 1;
 }
 
-.conversation-row {
+.session-topline,
+.session-preview-row,
+.session-meta {
   display: flex;
-  min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-}
-
-.conversation-row + .conversation-row {
-  margin-top: 5px;
-}
-
-.conversation-name {
-  overflow: hidden;
-  font-size: 15px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.conversation-time {
-  flex-shrink: 0;
-  color: #aaa;
-  font-size: 11px;
-}
-
-.conversation-preview {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-secondary);
-  font-size: 13px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.conversation-preview.unread {
-  color: var(--text-primary);
-  font-weight: 700;
-}
-
-.unread-badge {
-  display: flex;
-  min-width: 21px;
-  height: 21px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0 6px;
-  color: #fff;
-  background: var(--primary-color);
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.empty-conversation {
-  padding: 50px 20px;
-  color: var(--text-secondary);
-  text-align: center;
-}
-
-.empty-conversation p {
-  margin: 10px 0 0;
-}
-
-.empty-icon {
-  font-size: 35px;
-}
-
-.current-user {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 15px 18px;
-  border-top: 1px solid var(--border-color);
-}
-
-.current-user-avatar {
-  width: 43px;
-  height: 43px;
-  background: linear-gradient(135deg, #3f3f46, #71717a);
-  font-size: 13px;
-}
-
-.current-user-info {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-.current-user-info strong {
-  overflow: hidden;
-  font-size: 14px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.current-user-info span {
-  margin-top: 3px;
-  color: #22a35a;
-  font-size: 12px;
-}
-
-.current-user .icon-button {
-  width: 37px;
-  height: 37px;
-}
-
-.chat-section {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-  background: #fff;
-}
-
-.chat-header {
-  display: flex;
-  min-height: 78px;
-  align-items: center;
-  gap: 13px;
-  padding: 13px 22px;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.chat-user-info {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  flex-direction: column;
-}
-
-.chat-user-info strong {
-  overflow: hidden;
-  font-size: 16px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.chat-user-info span {
-  margin-top: 4px;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.chat-actions {
-  display: flex;
   gap: 8px;
 }
 
-.back-button {
-  display: none;
-  width: 39px;
-  height: 39px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #555;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
+.session-topline time,
+.session-meta small,
+.message-time {
+  color: #8892a4;
+  font-size: 11px;
 }
 
-.back-button:hover {
-  background: #f2f2f2;
-}
-
-.back-button svg {
-  width: 23px;
-  height: 23px;
-}
-
-.message-container {
-  flex: 1;
-  min-height: 0;
-  padding: 24px 30px;
-  overflow-y: auto;
-  background:
-      linear-gradient(rgba(255, 255, 255, 0.91), rgba(255, 255, 255, 0.91)),
-      radial-gradient(circle at 20% 20%, #f0e4da 0, transparent 30%),
-      radial-gradient(circle at 80% 80%, #ebe7e4 0, transparent 35%);
-  scroll-behavior: smooth;
-}
-
-.conversation-start {
-  max-width: 420px;
-  margin: 10px auto 34px;
-  text-align: center;
-}
-
-.large-avatar {
-  width: 74px;
-  height: 74px;
-  margin: 0 auto 13px;
-  font-size: 21px;
-}
-
-.conversation-start h2 {
-  margin: 0;
-  font-size: 19px;
-}
-
-.conversation-start p {
-  margin: 8px 0 0;
-  color: var(--text-secondary);
+.session-preview {
+  min-width: 0;
+  overflow: hidden;
+  color: #657087;
   font-size: 13px;
-  line-height: 1.6;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.message-date {
+.unread-badge {
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #8c1731;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.session-meta {
+  justify-content: flex-start;
+  margin-top: 7px;
+}
+
+.status-pill {
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.status-0 { background: #fff4d8; color: #8b5a00; }
+.status-1 { background: #e8f7ee; color: #167744; }
+.status-2 { background: #edf0f4; color: #657087; }
+
+.conversation-panel {
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  background: #fff;
+}
+
+.customer-info {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin: 25px 0 18px;
-  color: #999;
-  font-size: 11px;
-  font-weight: 600;
+  gap: 13px;
 }
 
-.message-date::before,
-.message-date::after {
-  width: 40px;
-  height: 1px;
-  margin: 0 9px;
-  background: #e6e6e6;
-  content: "";
+.customer-info p {
+  margin: 4px 0 0;
+  color: #778197;
+  font-size: 13px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.claim-button,
+.close-session-button {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.claim-button {
+  background: #8c1731;
+  color: #fff;
+}
+
+.close-session-button {
+  background: #fff0f2;
+  color: #9d1f3a;
+}
+
+.message-list {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 6%;
+  background: #f8fafc;
+}
+
+.handoff-note {
+  max-width: 740px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 auto 22px;
+  padding: 11px 14px;
+  border: 1px solid #e3d8dc;
+  border-radius: 12px;
+  background: #fff;
+  color: #6f4b57;
+  font-size: 13px;
+}
+
+.date-divider {
+  margin: 20px 0 14px;
+  color: #929bad;
+  font-size: 12px;
+  text-align: center;
 }
 
 .message-row {
   display: flex;
-  width: 100%;
   align-items: flex-end;
-  margin: 5px 0;
+  gap: 9px;
+  margin: 8px 0;
 }
 
-.message-sent {
+.message-row.me {
   justify-content: flex-end;
 }
 
-.message-received {
-  justify-content: flex-start;
+.sender-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
 }
 
-.message-avatar-space {
-  width: 39px;
-  margin-right: 8px;
-  flex-shrink: 0;
+.sender-avatar.ai {
+  background: linear-gradient(135deg, #3858a6, #6280cf);
 }
 
-.message-avatar {
-  width: 34px;
-  height: 34px;
-  font-size: 10px;
+.bubble-wrap {
+  max-width: min(72%, 720px);
 }
 
-.message-wrapper {
-  display: flex;
-  max-width: min(70%, 620px);
-  flex-direction: column;
-}
-
-.message-sent .message-wrapper {
-  align-items: flex-end;
-}
-
-.message-received .message-wrapper {
-  align-items: flex-start;
+.sender-name {
+  display: block;
+  margin: 0 0 4px 3px;
+  color: #68738a;
 }
 
 .message-bubble {
-  padding: 11px 15px;
+  padding: 11px 14px;
+  border: 1px solid #e3e7ed;
+  border-radius: 16px 16px 16px 4px;
+  background: #fff;
   line-height: 1.5;
-  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 
-.message-sent .message-bubble {
+.message-row.ai .message-bubble {
+  border-color: #dbe3f6;
+  background: #f0f4ff;
+}
+
+.message-row.me .message-bubble {
+  border-color: #8c1731;
+  border-radius: 16px 16px 4px 16px;
+  background: #8c1731;
   color: #fff;
-  background: var(--primary-color);
-  border-radius: 17px 17px 4px 17px;
 }
 
-.message-received .message-bubble {
-  color: var(--text-primary);
-  background: #f0f0f1;
-  border-radius: 17px 17px 17px 4px;
-}
-
-.message-image {
-  max-width: 360px;
-  overflow: hidden;
-  border-radius: 15px;
-}
-
-.message-image img {
-  display: block;
-  width: 100%;
-  max-height: 420px;
-  object-fit: cover;
-}
-
-.message-meta {
-  display: flex;
-  gap: 7px;
+.message-time {
   margin-top: 4px;
-  padding: 0 5px;
-  color: #aaa;
-  font-size: 10px;
+  text-align: right;
 }
 
-.message-status {
-  color: var(--primary-color);
-}
-
-.typing-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.typing-indicator {
-  display: flex;
-  height: 39px;
-  align-items: center;
-  gap: 4px;
-  padding: 0 15px;
-  background: #efeff0;
-  border-radius: 17px 17px 17px 4px;
-}
-
-.typing-indicator span {
-  width: 6px;
-  height: 6px;
-  background: #969696;
-  border-radius: 50%;
-  animation: typing 1.3s infinite ease-in-out;
-}
-
-.typing-indicator span:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.typing-indicator span:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes typing {
-  0%,
-  60%,
-  100% {
-    opacity: 0.4;
-    transform: translateY(0);
-  }
-
-  30% {
-    opacity: 1;
-    transform: translateY(-4px);
-  }
-}
-
-.message-input-area {
-  display: flex;
-  align-items: flex-end;
-  gap: 10px;
-  padding: 14px 20px;
-  background: #fff;
-  border-top: 1px solid var(--border-color);
-}
-
-.input-action-button,
-.send-button {
-  display: flex;
-  width: 44px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.input-action-button {
-  color: var(--primary-color);
-  background: var(--primary-light);
-}
-
-.input-action-button:hover {
-  background: #e9dbcf;
-}
-
-.input-action-button svg,
-.send-button svg {
-  width: 21px;
-  height: 21px;
-}
-
-.message-input-wrapper {
+.composer {
   position: relative;
+  z-index: 2;
   display: flex;
-  min-height: 44px;
-  flex: 1;
+  flex: 0 0 auto;
   align-items: flex-end;
-  background: #f3f3f4;
-  border: 1px solid transparent;
-  border-radius: 22px;
-  transition:
-      background 0.2s,
-      border-color 0.2s;
-}
-
-.message-input-wrapper:focus-within {
+  gap: 12px;
+  padding: 16px 22px;
+  border-top: 1px solid #e8ebf0;
   background: #fff;
-  border-color: rgba(139, 94, 60, 0.4);
 }
 
-.message-input-wrapper textarea {
-  width: 100%;
+.composer textarea {
+  flex: 1;
+  min-height: 46px;
   max-height: 120px;
-  min-height: 42px;
-  padding: 11px 44px 10px 17px;
-  overflow-y: auto;
-  color: var(--text-primary);
-  background: transparent;
-  border: none;
-  outline: none;
   resize: none;
-  line-height: 1.45;
+  border: 1px solid #dce2ea;
+  border-radius: 14px;
+  outline: 0;
+  padding: 12px 14px;
+  font: inherit;
 }
 
-.emoji-button {
-  position: absolute;
-  right: 6px;
-  bottom: 5px;
-  display: flex;
-  width: 34px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.emoji-button:hover {
-  background: #e5e5e5;
-}
-
-.emoji-panel {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 10px);
-  display: grid;
-  width: 230px;
-  padding: 12px;
-  background: #fff;
-  border: 1px solid var(--border-color);
-  border-radius: 15px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.13);
-  grid-template-columns: repeat(6, 1fr);
-  z-index: 10;
-}
-
-.emoji-panel button {
-  display: flex;
-  width: 33px;
-  height: 33px;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 19px;
-}
-
-.emoji-panel button:hover {
-  background: #f0f0f0;
+.composer textarea:focus {
+  border-color: #a5455a;
+  box-shadow: 0 0 0 3px rgba(140, 23, 49, 0.09);
 }
 
 .send-button {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: #8c1731;
   color: #fff;
-  background: var(--primary-color);
-  transition:
-      background 0.2s,
-      transform 0.2s,
-      opacity 0.2s;
 }
 
-.send-button:hover:not(:disabled) {
-  background: var(--primary-dark);
-  transform: translateY(-1px);
-}
-
-.send-button:disabled {
+button:disabled,
+textarea:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
-.empty-chat-section {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: center;
-  background:
-      radial-gradient(circle at center, #faf6f2 0, #fff 65%);
-}
-
-.empty-chat-content {
-  padding: 30px;
+.empty-conversation,
+.empty-list,
+.empty-messages,
+.loading-text {
+  display: grid;
+  place-items: center;
+  color: #7f899b;
   text-align: center;
 }
 
-.empty-chat-icon {
-  display: flex;
-  width: 82px;
-  height: 82px;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 18px;
-  color: var(--primary-color);
-  background: var(--primary-light);
-  border-radius: 50%;
+.empty-conversation {
+  padding: 40px;
 }
 
-.empty-chat-icon svg {
-  width: 42px;
-  height: 42px;
-}
-
-.empty-chat-content h2 {
-  margin: 0 0 8px;
-  font-size: 22px;
-}
-
-.empty-chat-content p {
-  margin: 0;
-  color: var(--text-secondary);
-}
-
-.conversation-list::-webkit-scrollbar,
-.message-container::-webkit-scrollbar,
-.message-input-wrapper textarea::-webkit-scrollbar {
-  width: 6px;
-}
-
-.conversation-list::-webkit-scrollbar-thumb,
-.message-container::-webkit-scrollbar-thumb,
-.message-input-wrapper textarea::-webkit-scrollbar-thumb {
-  background: #d5d5d5;
-  border-radius: 20px;
+.empty-conversation i,
+.empty-list i {
+  font-size: 48px;
+  color: #c5cbd5;
 }
 
 @media (max-width: 900px) {
-  .messenger-page {
-    padding: 0;
+  .chat-page {
+    grid-template-columns: 310px minmax(0, 1fr);
   }
 
-  .messenger-container {
-    height: 100vh;
-    min-height: 100vh;
-    border: none;
-    border-radius: 0;
-  }
-
-  .conversation-sidebar {
-    flex-basis: 320px;
-  }
-
-  .message-wrapper {
-    max-width: 80%;
-  }
-}
-
-@media (max-width: 700px) {
-  .conversation-sidebar {
-    width: 100%;
-    flex-basis: 100%;
-    border-right: none;
-  }
-
-  .conversation-sidebar.mobile-hidden {
-    display: none;
-  }
-
-  .chat-section {
-    display: none;
-    width: 100%;
-  }
-
-  .chat-section.mobile-visible {
-    display: flex;
-  }
-
-  .back-button {
-    display: flex;
-  }
-
-  .chat-header {
-    min-height: 68px;
-    padding: 10px 12px;
-  }
-
-  .chat-header .avatar {
-    width: 43px;
-    height: 43px;
-  }
-
-  .chat-actions .icon-button {
-    width: 37px;
-    height: 37px;
-  }
-
-  .chat-actions .icon-button:nth-child(1),
-  .chat-actions .icon-button:nth-child(2) {
-    display: none;
-  }
-
-  .message-container {
-    padding: 18px 12px;
-  }
-
-  .conversation-start {
-    margin-bottom: 25px;
-  }
-
-  .message-wrapper {
-    max-width: 82%;
-  }
-
-  .message-input-area {
-    gap: 7px;
-    padding: 10px;
-  }
-
-  .input-action-button,
-  .send-button {
-    width: 41px;
-    height: 41px;
-  }
-
-  .message-avatar-space {
-    width: 31px;
-    margin-right: 5px;
-  }
-
-  .message-avatar {
-    width: 29px;
-    height: 29px;
-    font-size: 9px;
-  }
-
-  .emoji-panel {
-    right: -50px;
+  .message-list {
+    padding-inline: 20px;
   }
 }
 </style>

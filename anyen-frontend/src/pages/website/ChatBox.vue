@@ -401,13 +401,13 @@ import {
   createCustomerChatSession,
   getCustomerChatSession,
   getCustomerMessages,
+  getAiConsultationRequest,
   markCustomerMessagesRead,
   phanTichTinNhanAi,
   sendCustomerMessage,
 } from "../../services/tuVanService.js";
 
 const STORAGE_KEY = "anyen_customer_chat_session";
-const AI_MESSAGES_KEY = "anyen_customer_ai_messages";
 const POLL_INTERVAL = 2500;
 
 const isOpen = ref(false);
@@ -450,7 +450,10 @@ const emojis = [
 ];
 
 const staffDisplayName = computed(() => {
-  if (sessionInfo.value?.maNhanVienPhuTrach) {
+  if (
+    sessionInfo.value?.trangThai === 1 ||
+    customerConfirmed.value
+  ) {
     return "Nhân viên tư vấn An Yên";
   }
 
@@ -466,7 +469,7 @@ const sessionStatusText = computed(() => {
     return "Phiên đã kết thúc";
   }
 
-  if (sessionInfo.value.maNhanVienPhuTrach) {
+  if (sessionInfo.value.trangThai === 1) {
     return "Nhân viên đang tư vấn";
   }
 
@@ -486,7 +489,7 @@ function openChat() {
     if (sessionInfo.value) {
       await loadMessages();
       await markVisibleMessagesRead();
-      messageInput.value?.focus();
+      focusMessageInputWithoutPageScroll();
     } else {
       nameInput.value?.focus();
     }
@@ -511,7 +514,7 @@ function toggleMinimize() {
     nextTick(async () => {
       await markVisibleMessagesRead();
       await scrollToBottom();
-      messageInput.value?.focus();
+      focusMessageInputWithoutPageScroll();
     });
   }
 }
@@ -540,14 +543,6 @@ async function startChatSession() {
     readyForHotline.value = false;
     customerConfirmed.value = false;
 
-    clearLocalAiMessages();
-
-    addAiMessage(
-        `Xin chào ${name}. An Yên có thể hỗ trợ anh/chị ` +
-        "tư vấn nhu cầu, ngân sách và tiếp nhận thông tin " +
-        "để chuyển đến nhân viên Hotline."
-    );
-
     await loadMessages(true);
 
     startPolling();
@@ -555,7 +550,7 @@ async function startChatSession() {
     await scrollToBottom();
 
     nextTick(() => {
-      messageInput.value?.focus();
+      focusMessageInputWithoutPageScroll();
     });
   } catch (error) {
     chatError.value = getErrorMessage(
@@ -571,100 +566,74 @@ async function sendMessage() {
   const content = newMessage.value.trim();
   const token = sessionInfo.value?.tokenPhien;
 
-  if (
-      !content ||
-      !token ||
-      sendingMessage.value ||
-      aiThinking.value
-  ) {
+  if (!content || !token || sendingMessage.value) {
     return;
   }
 
   sendingMessage.value = true;
-  aiThinking.value = true;
+  aiThinking.value = false;
   chatError.value = "";
 
-  /*
-   * Hiển thị ngay tin nhắn của khách để giao diện
-   * không phải chờ API tải lại.
-   */
-  const temporaryCustomerMessage = {
+  messages.value.push({
     id: `customer-temp-${Date.now()}`,
     sender: "customer",
     content,
     createdAt: new Date().toISOString(),
     seen: false,
     local: true,
-  };
-
-  messages.value.push(temporaryCustomerMessage);
+  });
 
   newMessage.value = "";
   showEmoji.value = false;
-
   resetTextarea();
-
   await scrollToBottom();
 
   try {
-    /*
-     * Bước 1: lưu tin nhắn khách vào bảng tinnhantuvan.
-     */
     await sendCustomerMessage(token, content);
 
     /*
-     * Bước 2: gửi cùng nội dung sang AI.
+     * Luôn kiểm tra lại phiên sau khi lưu tin khách. Nếu nhân viên đã
+     * tiếp nhận trong lúc khách đang gõ, chatbot phải dừng ngay để tránh
+     * AI và nhân viên cùng trả lời một câu.
      */
-    const aiResponse =
-        await phanTichTinNhanAi(token, content);
+    await refreshSession();
 
-    const aiData = aiResponse?.data?.data;
+    const employeeHasTakenOver =
+        sessionInfo.value?.trangThai === 1;
+    const sessionClosed = sessionInfo.value?.trangThai === 2;
 
-    if (!aiData) {
-      throw new Error(
-          "API AI không trả về dữ liệu"
-      );
+    if (!employeeHasTakenOver && !customerConfirmed.value && !sessionClosed) {
+      aiThinking.value = true;
+
+      const aiResponse = await phanTichTinNhanAi(token, content);
+      const aiData = aiResponse?.data?.data;
+
+      if (!aiData) {
+        throw new Error("API AI không trả về dữ liệu");
+      }
+
+      readyForHotline.value = Boolean(aiData.readyForHotline);
+      customerConfirmed.value = Boolean(aiData.customerConfirmed);
+
+      /*
+       * Backend là chốt cuối cùng. Nếu nhân viên tiếp quản trong lúc Gemini
+       * đang xử lý, humanTakeover=true và câu trả lời AI bị hủy.
+       */
+      if (aiData.humanTakeover) {
+        customerConfirmed.value = true;
+      }
+
+      await refreshSession();
     }
 
-    readyForHotline.value =
-        Boolean(aiData.readyForHotline);
-
-    customerConfirmed.value =
-        Boolean(aiData.customerConfirmed);
-
-    const aiReply =
-        aiData.reply ||
-        "An Yên đã ghi nhận thông tin của anh/chị.";
-
-    /*
-     * Hiện câu trả lời AI trong hộp chat.
-     */
-    addAiMessage(aiReply);
-
-    /*
-     * Lưu tạm câu AI vào sessionStorage.
-     * Câu AI vẫn còn khi khách chuyển trang hoặc reload.
-     */
-    saveLocalAiMessages();
-
-    /*
-     * Tải lại tin nhắn thật từ backend.
-     */
     await loadMessages();
-
     await scrollToBottom();
   } catch (error) {
-    /*
-     * Xóa tin nhắn tạm nếu lưu tin khách thất bại.
-     * Nếu tin đã lưu nhưng AI lỗi thì loadMessages()
-     * vẫn lấy lại được tin khách từ backend.
-     */
     await loadMessages();
 
     chatError.value = getErrorMessage(
         error,
-        "Trợ lý AI hiện chưa thể phản hồi. " +
-        "Anh/chị vui lòng thử lại."
+        "Không thể gửi tin nhắn. Anh/chị vui lòng thử lại."
     );
   } finally {
     sendingMessage.value = false;
@@ -673,32 +642,9 @@ async function sendMessage() {
     await scrollToBottom();
 
     nextTick(() => {
-      messageInput.value?.focus();
+      focusMessageInputWithoutPageScroll();
     });
   }
-}
-
-function addAiMessage(content) {
-  if (!content || !content.trim()) {
-    return;
-  }
-
-  const aiMessage = {
-    id:
-        "ai-local-" +
-        Date.now() +
-        "-" +
-        Math.random().toString(36).slice(2),
-    sender: "ai",
-    content: content.trim(),
-    createdAt: new Date().toISOString(),
-    seen: true,
-    localAi: true,
-  };
-
-  messages.value.push(aiMessage);
-
-  saveLocalAiMessages();
 }
 
 async function refreshSession() {
@@ -723,90 +669,60 @@ async function loadMessages(initialLoad = false) {
     return;
   }
 
+  const shouldStickToBottom =
+      initialLoad || isMessageContainerNearBottom();
+
   loadingMessages.value = true;
 
   try {
-    /*
-     * Giữ lại tin AI đang được lưu tạm trên trình duyệt.
-     */
-    const localAiMessages =
-        getLocalAiMessages();
-
-    const response =
-        await getCustomerMessages(token);
-
-    const apiMessages = Array.isArray(response.data)
-        ? response.data
-        : [];
+    const response = await getCustomerMessages(token);
+    const apiMessages = Array.isArray(response.data) ? response.data : [];
 
     if (!initialLoad) {
-      const newStaffMessages =
-          apiMessages.filter((message) => {
-            return (
-                message.nguoiGui === "NHAN_VIEN" &&
-                !knownMessageIds.has(message.maTinNhan)
-            );
-          });
+      const newStaffMessages = apiMessages.filter((message) => {
+        return (
+            message.nguoiGui === "NHAN_VIEN" &&
+            !knownMessageIds.has(message.maTinNhan)
+        );
+      });
 
       if (
           newStaffMessages.length > 0 &&
           (!isOpen.value || isMinimized.value)
       ) {
-        unreadCount.value +=
-            newStaffMessages.length;
+        unreadCount.value += newStaffMessages.length;
       }
     }
 
-    const mappedApiMessages =
-        apiMessages.map((message) => {
-          let sender = "staff";
+    messages.value = apiMessages.map((message) => {
+      let sender = "staff";
 
-          if (
-              message.nguoiGui === "KHACH_HANG"
-          ) {
-            sender = "customer";
-          } else if (
-              message.nguoiGui === "AI"
-          ) {
-            sender = "ai";
-          }
+      if (message.nguoiGui === "KHACH_HANG") {
+        sender = "customer";
+      } else if (message.nguoiGui === "AI") {
+        sender = "ai";
+      }
 
-          return {
-            id: message.maTinNhan,
-            sender,
-            content: message.noiDung,
-            createdAt: message.createdAt,
-            seen: Boolean(message.daDoc),
-            localAi: false,
-          };
-        });
-
-    /*
-     * Ghép tin từ DB với các câu AI lưu tạm.
-     */
-    messages.value = [
-      ...mappedApiMessages,
-      ...localAiMessages,
-    ].sort((first, second) => {
-      return (
-          new Date(first.createdAt).getTime() -
-          new Date(second.createdAt).getTime()
-      );
+      return {
+        id: message.maTinNhan,
+        sender,
+        content: message.noiDung,
+        createdAt: message.createdAt,
+        seen: Boolean(message.daDoc),
+      };
     });
 
     knownMessageIds = new Set(
-        apiMessages.map(
-            (message) => message.maTinNhan
-        )
+        apiMessages.map((message) => message.maTinNhan)
     );
 
-    if (
-        isOpen.value &&
-        !isMinimized.value
-    ) {
+    if (isOpen.value && !isMinimized.value) {
       unreadCount.value = 0;
-
       await markVisibleMessagesRead();
+
+      if (shouldStickToBottom) {
+        await scrollToBottom();
+      }
     }
   } catch (error) {
     if (error?.response?.status === 404) {
@@ -874,89 +790,35 @@ async function markVisibleMessagesRead() {
 }
 
 function saveSession(session) {
-  sessionStorage.setItem(
+  let current = null;
+
+  try {
+    current = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "null"
+    );
+  } catch {
+    current = null;
+  }
+
+  const guestToken =
+      session?.guestToken ||
+      current?.guestToken ||
+      null;
+
+  localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
         tokenPhien: session.tokenPhien,
         tenKhachHang: session.tenKhachHang,
+        guestToken,
       })
-  );
-}
-
-function saveLocalAiMessages() {
-  const token =
-      sessionInfo.value?.tokenPhien;
-
-  if (!token) {
-    return;
-  }
-
-  const localAiMessages =
-      messages.value.filter(
-          (message) => message.localAi
-      );
-
-  const storageData = getAllStoredAiMessages();
-
-  storageData[token] = localAiMessages;
-
-  sessionStorage.setItem(
-      AI_MESSAGES_KEY,
-      JSON.stringify(storageData)
-  );
-}
-
-function getLocalAiMessages() {
-  const token =
-      sessionInfo.value?.tokenPhien;
-
-  if (!token) {
-    return [];
-  }
-
-  const storageData = getAllStoredAiMessages();
-  const storedMessages = storageData[token];
-
-  return Array.isArray(storedMessages)
-      ? storedMessages
-      : [];
-}
-
-function getAllStoredAiMessages() {
-  try {
-    return JSON.parse(
-        sessionStorage.getItem(
-            AI_MESSAGES_KEY
-        ) || "{}"
-    );
-  } catch {
-    return {};
-  }
-}
-
-function clearLocalAiMessages() {
-  const token =
-      sessionInfo.value?.tokenPhien;
-
-  if (!token) {
-    return;
-  }
-
-  const storageData =
-      getAllStoredAiMessages();
-
-  delete storageData[token];
-
-  sessionStorage.setItem(
-      AI_MESSAGES_KEY,
-      JSON.stringify(storageData)
   );
 }
 
 async function restoreSession() {
   try {
     const stored = JSON.parse(
-        sessionStorage.getItem(
+        localStorage.getItem(
             STORAGE_KEY
         ) || "null"
     );
@@ -975,6 +837,19 @@ async function restoreSession() {
 
     sessionInfo.value = response.data;
 
+    try {
+      const aiRequestResponse = await getAiConsultationRequest(
+          stored.tokenPhien
+      );
+      const aiRequest = aiRequestResponse?.data?.data;
+      customerConfirmed.value = Boolean(aiRequest?.daGuiHotline);
+      readyForHotline.value = Boolean(
+          aiRequest?.daGuiHotline || aiRequest?.trangThai >= 1
+      );
+    } catch (error) {
+      console.error("Không thể khôi phục trạng thái chuyển Hotline:", error);
+    }
+
     unreadCount.value = Number(
         response.data
             ?.soTinNhanChuaDocKhach || 0
@@ -984,7 +859,7 @@ async function restoreSession() {
 
     startPolling();
   } catch {
-    sessionStorage.removeItem(
+    localStorage.removeItem(
         STORAGE_KEY
     );
 
@@ -993,9 +868,7 @@ async function restoreSession() {
 }
 
 function resetChatSession() {
-  clearLocalAiMessages();
-
-  sessionStorage.removeItem(
+  localStorage.removeItem(
       STORAGE_KEY
   );
 
@@ -1043,7 +916,7 @@ function addEmoji(emoji) {
   showEmoji.value = false;
 
   nextTick(() => {
-    messageInput.value?.focus();
+    messageInput.value?.focus({ preventScroll: true });
     resizeTextarea();
   });
 }
@@ -1074,13 +947,40 @@ function resetTextarea() {
   });
 }
 
+function isMessageContainerNearBottom(threshold = 100) {
+  const container = messageContainer.value;
+
+  if (!container) {
+    return true;
+  }
+
+  const remaining =
+      container.scrollHeight -
+      container.scrollTop -
+      container.clientHeight;
+
+  return remaining <= threshold;
+}
+
 async function scrollToBottom() {
   await nextTick();
 
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop =
-        messageContainer.value.scrollHeight;
+  const container = messageContainer.value;
+
+  if (!container) {
+    return;
   }
+
+  container.scrollTo({
+    top: container.scrollHeight,
+    behavior: "auto",
+  });
+}
+
+function focusMessageInputWithoutPageScroll() {
+  nextTick(() => {
+    messageInput.value?.focus({ preventScroll: true });
+  });
 }
 
 function formatTime(dateValue) {
@@ -1120,8 +1020,27 @@ function getErrorMessage(
   );
 }
 
-onMounted(restoreSession);
-onUnmounted(stopPolling);
+function handleGuestChatExpired() {
+  resetChatSession();
+  chatError.value =
+      "Phiên tư vấn đã hết hạn. Anh/chị vui lòng bắt đầu phiên mới.";
+}
+
+onMounted(async () => {
+  window.addEventListener(
+      "guest-chat-expired",
+      handleGuestChatExpired
+  );
+  await restoreSession();
+});
+
+onUnmounted(() => {
+  stopPolling();
+  window.removeEventListener(
+      "guest-chat-expired",
+      handleGuestChatExpired
+  );
+});
 </script>
 
 <style scoped>
@@ -1205,6 +1124,7 @@ textarea {
   width: 370px;
   height: 560px;
   overflow: hidden;
+  overscroll-behavior: contain;
   background: white;
   border: 1px solid #e7e7e7;
   border-radius: 18px;
@@ -1315,6 +1235,7 @@ textarea {
 
 .chat-header {
   display: flex;
+  flex: 0 0 auto;
   min-height: 70px;
   align-items: center;
   gap: 11px;
@@ -1442,7 +1363,8 @@ textarea {
           #f4e4e8,
           transparent 40%
       );
-  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  scroll-behavior: auto;
 }
 
 .welcome-message {
@@ -1713,7 +1635,10 @@ textarea {
 }
 
 .chat-footer {
+  position: relative;
+  z-index: 2;
   display: flex;
+  flex: 0 0 auto;
   align-items: flex-end;
   gap: 8px;
   padding: 10px;
@@ -1837,6 +1762,7 @@ textarea {
 }
 
 .chat-note {
+  flex: 0 0 auto;
   padding: 0 10px 8px;
   color: #999;
   background: white;

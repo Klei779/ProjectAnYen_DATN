@@ -21,6 +21,23 @@ public class TuVanNhanVienController {
         this.tuVanService = tuVanService;
     }
 
+    @PostMapping("/presence/heartbeat")
+    public java.util.Map<String, Object> heartbeat(Authentication authentication) {
+        tuVanService.heartbeat(authentication);
+        return java.util.Map.of("online", true);
+    }
+
+    @GetMapping("/presence/me")
+    public java.util.Map<String, Object> getPresence(Authentication authentication) {
+        return java.util.Map.of("online", tuVanService.isOnline(authentication));
+    }
+
+    @DeleteMapping("/presence/offline")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void offline(Authentication authentication) {
+        tuVanService.offline(authentication);
+    }
+
     @GetMapping("/phien")
     public List<PhienTuVanResponse> getDanhSachPhien(Authentication authentication) {
         return tuVanService.getDanhSachPhienNhanVien(authentication);

@@ -15,6 +15,7 @@ public class PhienTuVanResponse {
     private final Integer soTinNhanChuaDocNhanVien;
     private final Integer soTinNhanChuaDocKhach;
     private final LocalDateTime createdAt;
+    private final String guestToken;
 
     public PhienTuVanResponse(
             Long maPhien,
@@ -28,7 +29,8 @@ public class PhienTuVanResponse {
             LocalDateTime thoiGianTinNhanCuoi,
             Integer soTinNhanChuaDocNhanVien,
             Integer soTinNhanChuaDocKhach,
-            LocalDateTime createdAt
+            LocalDateTime createdAt,
+            String guestToken
     ) {
         this.maPhien = maPhien;
         this.tokenPhien = tokenPhien;
@@ -42,6 +44,7 @@ public class PhienTuVanResponse {
         this.soTinNhanChuaDocNhanVien = soTinNhanChuaDocNhanVien;
         this.soTinNhanChuaDocKhach = soTinNhanChuaDocKhach;
         this.createdAt = createdAt;
+        this.guestToken = guestToken;
     }
 
     public Long getMaPhien() { return maPhien; }
@@ -56,4 +59,5 @@ public class PhienTuVanResponse {
     public Integer getSoTinNhanChuaDocNhanVien() { return soTinNhanChuaDocNhanVien; }
     public Integer getSoTinNhanChuaDocKhach() { return soTinNhanChuaDocKhach; }
     public LocalDateTime getCreatedAt() { return createdAt; }
+    public String getGuestToken() { return guestToken; }
 }

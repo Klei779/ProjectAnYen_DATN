@@ -11,4 +11,6 @@ public interface YeuCauTuVanAiRepository
     Optional<YeuCauTuVanAi> findByMaPhien(
             Long maPhien
     );
+
+    boolean existsByMaPhienAndDaGuiHotlineTrue(Long maPhien);
 }

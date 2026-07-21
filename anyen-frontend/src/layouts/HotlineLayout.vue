@@ -87,6 +87,7 @@ import { useRoute, useRouter } from "vue-router";
 import api from "../api/api.js";
 import HotlineSidebar from "../components/HotlineSidebar.vue";
 import UserProfileDropdown from "../components/UserProfileDropdown.vue";
+import { heartbeatStaffChat, markStaffOffline } from "../services/tuVanService.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -97,6 +98,7 @@ const showProfile = ref(false);
 const routeTitles = {
   "/hotline/quan-ly-cong-viec": "Quản lý công việc",
   "/hotline/quan-ly-don-hang": "Quản lý đơn hàng",
+  "/hotline/nhan-tin": "Tin nhắn tư vấn",
   "/hotline/thong-bao": "Thông báo",
   "/hotline/thong-tin-tai-khoan": "Thông tin cá nhân",
 };
@@ -109,6 +111,7 @@ const pageTitle = computed(() => {
 const notifications = ref([]);
 const showMiniNoti = ref(false);
 let pollingInterval = null;
+let presenceInterval = null;
 const API_URL = "/api/nhan-vien/thong-bao";
 
 const unreadCount = computed(() => {
@@ -140,6 +143,23 @@ const startPolling = () => {
 
 const stopPolling = () => {
   if (pollingInterval) clearInterval(pollingInterval);
+};
+
+const updatePresence = async () => {
+  try {
+    await heartbeatStaffChat();
+  } catch (error) {
+    console.error("Không thể cập nhật trạng thái online:", error);
+  }
+};
+
+const startPresenceHeartbeat = () => {
+  updatePresence();
+  presenceInterval = setInterval(updatePresence, 20000);
+};
+
+const stopPresenceHeartbeat = () => {
+  if (presenceInterval) clearInterval(presenceInterval);
 };
 
 const markAllAsRead = async () => {
@@ -192,13 +212,20 @@ onMounted(() => {
 
   loadNotifications();
   startPolling();
+  startPresenceHeartbeat();
 });
 
 const toggleProfile = () => {
   showProfile.value = !showProfile.value;
 };
 
-const logout = () => {
+const logout = async () => {
+  try {
+    await markStaffOffline();
+  } catch (error) {
+    console.error("Không thể cập nhật trạng thái offline:", error);
+  }
+
   localStorage.removeItem("user");
   localStorage.removeItem("token");
   localStorage.removeItem("loaiTaiKhoan");
@@ -210,6 +237,7 @@ const logout = () => {
 
 onUnmounted(() => {
   stopPolling();
+  stopPresenceHeartbeat();
 });
 </script>
 <style scoped src="../assets/styles/layouts/Layout.css"></style>

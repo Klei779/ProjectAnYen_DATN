@@ -7,10 +7,18 @@ import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.TinNhanTuVan;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TinNhanTuVanRepository extends JpaRepository<TinNhanTuVan, Long> {
 
     List<TinNhanTuVan> findByMaPhienOrderByCreatedAtAscMaTinNhanAsc(Long maPhien);
+
+    boolean existsByMaPhienAndNguoiGui(Long maPhien, String nguoiGui);
+
+    Optional<TinNhanTuVan> findFirstByMaPhienAndNguoiGuiOrderByCreatedAtDescMaTinNhanDesc(
+            Long maPhien,
+            String nguoiGui
+    );
 
     @Modifying
     @Query("""

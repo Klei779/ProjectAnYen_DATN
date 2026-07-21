@@ -26,46 +26,83 @@ import java.util.stream.Collectors;
 @Service
 public class TuVanService {
 
+    private static final String WELCOME_MESSAGE =
+            "Xin chào, Trợ lý AI An Yên sẵn sàng tiếp nhận nhu cầu của anh/chị. " +
+            "Khi cần, toàn bộ cuộc trò chuyện sẽ được chuyển nguyên vẹn cho nhân viên tư vấn.";
+
     private final PhienTuVanRepository phienTuVanRepository;
     private final TinNhanTuVanRepository tinNhanTuVanRepository;
     private final NhanVienRepository nhanVienRepository;
+    private final NhanVienOnlineService nhanVienOnlineService;
+    private final PhanCongTuVanService phanCongTuVanService;
+    private final JwtService jwtService;
+    private final ChatRedisService chatRedisService;
 
     public TuVanService(
             PhienTuVanRepository phienTuVanRepository,
             TinNhanTuVanRepository tinNhanTuVanRepository,
-            NhanVienRepository nhanVienRepository
+            NhanVienRepository nhanVienRepository,
+            NhanVienOnlineService nhanVienOnlineService,
+            PhanCongTuVanService phanCongTuVanService,
+            JwtService jwtService,
+            ChatRedisService chatRedisService
     ) {
         this.phienTuVanRepository = phienTuVanRepository;
         this.tinNhanTuVanRepository = tinNhanTuVanRepository;
         this.nhanVienRepository = nhanVienRepository;
+        this.nhanVienOnlineService = nhanVienOnlineService;
+        this.phanCongTuVanService = phanCongTuVanService;
+        this.jwtService = jwtService;
+        this.chatRedisService = chatRedisService;
     }
 
     @Transactional
     public PhienTuVanResponse taoPhien(TaoPhienTuVanRequest request) {
         LocalDateTime now = LocalDateTime.now();
-        PhienTuVan phien = new PhienTuVan();
-        phien.setTokenPhien(UUID.randomUUID().toString().replace("-", ""));
-        phien.setTenKhachHang(request.getTenKhachHang().trim());
-        phien.setTrangThai(PhienTuVan.TRANG_THAI_CHO_TIEP_NHAN);
-        phien.setTinNhanCuoi("Khách hàng vừa bắt đầu phiên tư vấn");
-        phien.setThoiGianTinNhanCuoi(now);
-        phien.setSoTinNhanChuaDocNhanVien(0);
-        phien.setSoTinNhanChuaDocKhach(0);
-        phien.setCreatedAt(now);
-        phien.setUpdatedAt(now);
 
-        return toPhienResponse(phienTuVanRepository.save(phien), null, true);
+        PhienTuVan session = new PhienTuVan();
+        session.setTokenPhien(UUID.randomUUID().toString().replace("-", ""));
+        session.setTenKhachHang(request.getTenKhachHang().trim());
+        session.setTrangThai(PhienTuVan.TRANG_THAI_CHO_TIEP_NHAN);
+        session.setTinNhanCuoi(shorten(WELCOME_MESSAGE));
+        session.setThoiGianTinNhanCuoi(now);
+        session.setSoTinNhanChuaDocNhanVien(0);
+        session.setSoTinNhanChuaDocKhach(0);
+        session.setCreatedAt(now);
+        session.setUpdatedAt(now);
+        session.setHetHanLuc(now.plusDays(2));
+        session = phienTuVanRepository.save(session);
+
+        TinNhanTuVan welcome = new TinNhanTuVan();
+        welcome.setMaPhien(session.getMaPhien());
+        welcome.setNguoiGui(TinNhanTuVan.NGUOI_GUI_AI);
+        welcome.setMaNhanVien(null);
+        welcome.setNoiDung(WELCOME_MESSAGE);
+        welcome.setDaDoc(true);
+        welcome.setCreatedAt(now);
+        tinNhanTuVanRepository.save(welcome);
+
+        NhanVien routedEmployee =
+                phanCongTuVanService.tuDongGanDeTheoDoi(session);
+
+        String guestToken = jwtService.generateGuestChatToken(session.getTokenPhien());
+        chatRedisService.rememberGuestSession(
+                jwtService.getTokenId(guestToken),
+                session.getTokenPhien()
+        );
+        chatRedisService.evictMessages(session.getTokenPhien());
+
+        return toPhienResponse(session, routedEmployee, true, guestToken);
     }
 
     @Transactional(readOnly = true)
     public PhienTuVanResponse getPhienKhach(String tokenPhien) {
-        return toPhienResponse(requirePhienByToken(tokenPhien), null, true);
+        return toPhienResponse(requirePhienByToken(tokenPhien), null, true, null);
     }
 
     @Transactional(readOnly = true)
     public List<TinNhanTuVanResponse> getTinNhanKhach(String tokenPhien) {
-        PhienTuVan phien = requirePhienByToken(tokenPhien);
-        return toTinNhanResponses(phien);
+        return toTinNhanResponses(requirePhienByToken(tokenPhien));
     }
 
     @Transactional
@@ -73,47 +110,53 @@ public class TuVanService {
             String tokenPhien,
             GuiTinNhanTuVanRequest request
     ) {
-        PhienTuVan phien = requirePhienByTokenForUpdate(tokenPhien);
-        ensureOpen(phien);
+        PhienTuVan session = requirePhienByTokenForUpdate(tokenPhien);
+        ensureOpen(session);
 
         LocalDateTime now = LocalDateTime.now();
         String content = normalizeMessage(request.getNoiDung());
+
         TinNhanTuVan message = new TinNhanTuVan();
-        message.setMaPhien(phien.getMaPhien());
+        message.setMaPhien(session.getMaPhien());
         message.setNguoiGui(TinNhanTuVan.NGUOI_GUI_KHACH_HANG);
         message.setNoiDung(content);
         message.setDaDoc(false);
         message.setCreatedAt(now);
         TinNhanTuVan saved = tinNhanTuVanRepository.save(message);
 
-        phien.setTinNhanCuoi(shorten(content));
-        phien.setThoiGianTinNhanCuoi(now);
-        phien.setSoTinNhanChuaDocNhanVien(
-                safeCount(phien.getSoTinNhanChuaDocNhanVien()) + 1
+        session.setTinNhanCuoi(shorten(content));
+        session.setThoiGianTinNhanCuoi(now);
+        session.setSoTinNhanChuaDocNhanVien(
+                safeCount(session.getSoTinNhanChuaDocNhanVien()) + 1
         );
-        phien.setUpdatedAt(now);
-        phienTuVanRepository.save(phien);
+        session.setUpdatedAt(now);
+        phienTuVanRepository.save(session);
+        chatRedisService.evictMessages(session.getTokenPhien());
 
-        return toTinNhanResponse(saved, null);
+        return toTinNhanResponse(saved);
     }
 
     @Transactional
     public void danhDauKhachDaDoc(String tokenPhien) {
-        PhienTuVan phien = requirePhienByTokenForUpdate(tokenPhien);
+        PhienTuVan session = requirePhienByTokenForUpdate(tokenPhien);
         tinNhanTuVanRepository.markRead(
-                phien.getMaPhien(),
+                session.getMaPhien(),
                 TinNhanTuVan.NGUOI_GUI_NHAN_VIEN
         );
-        phien.setSoTinNhanChuaDocKhach(0);
-        phien.setUpdatedAt(LocalDateTime.now());
-        phienTuVanRepository.save(phien);
+        session.setSoTinNhanChuaDocKhach(0);
+        session.setUpdatedAt(LocalDateTime.now());
+        phienTuVanRepository.save(session);
+        chatRedisService.evictMessages(session.getTokenPhien());
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<PhienTuVanResponse> getDanhSachPhienNhanVien(Authentication authentication) {
-        NhanVien currentEmployee = requireNhanVien(authentication);
+        NhanVien employee = requireNhanVien(authentication);
+        touchOnline(employee);
+        phanCongTuVanService.phanCongCacPhienDangCho();
+
         List<PhienTuVan> sessions = phienTuVanRepository.findVisibleForEmployee(
-                currentEmployee.getMaNhanVien(),
+                employee.getMaNhanVien(),
                 PhienTuVan.TRANG_THAI_DA_DONG
         );
 
@@ -127,31 +170,34 @@ public class TuVanService {
                 .collect(Collectors.toMap(NhanVien::getMaNhanVien, Function.identity()));
 
         return sessions.stream()
-                .map(session -> toPhienResponse(session, employeeMap.get(session.getMaNhanVien()), false))
+                .map(session -> toPhienResponse(
+                        session,
+                        employeeMap.get(session.getMaNhanVien()),
+                        false,
+                        null
+                ))
                 .toList();
     }
 
     @Transactional
-    public PhienTuVanResponse nhanPhien(
-            Authentication authentication,
-            Long maPhien
-    ) {
-        NhanVien currentEmployee = requireNhanVien(authentication);
-        PhienTuVan phien = requirePhienForUpdate(maPhien);
-        ensureOpen(phien);
+    public PhienTuVanResponse nhanPhien(Authentication authentication, Long maPhien) {
+        NhanVien employee = requireNhanVien(authentication);
+        touchOnline(employee);
+        PhienTuVan session = requirePhienForUpdate(maPhien);
+        ensureOpen(session);
 
-        if (phien.getMaNhanVien() != null
-                && !phien.getMaNhanVien().equals(currentEmployee.getMaNhanVien())) {
+        if (session.getMaNhanVien() != null
+                && !session.getMaNhanVien().equals(employee.getMaNhanVien())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Phiên tư vấn đang được " + employeeName(phien.getMaNhanVien()) + " phụ trách"
+                    "Phiên tư vấn đang được " + employeeName(session.getMaNhanVien()) + " phụ trách"
             );
         }
 
-        phien.setMaNhanVien(currentEmployee.getMaNhanVien());
-        phien.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
-        phien.setUpdatedAt(LocalDateTime.now());
-        return toPhienResponse(phienTuVanRepository.save(phien), currentEmployee, false);
+        session.setMaNhanVien(employee.getMaNhanVien());
+        session.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
+        session.setUpdatedAt(LocalDateTime.now());
+        return toPhienResponse(phienTuVanRepository.save(session), employee, false, null);
     }
 
     @Transactional
@@ -159,20 +205,21 @@ public class TuVanService {
             Authentication authentication,
             Long maPhien
     ) {
-        NhanVien currentEmployee = requireNhanVien(authentication);
-        PhienTuVan phien = requirePhienForUpdate(maPhien);
-
-        ensureEmployeeOwnsSession(phien, currentEmployee);
+        NhanVien employee = requireNhanVien(authentication);
+        touchOnline(employee);
+        PhienTuVan session = requirePhienForUpdate(maPhien);
+        ensureEmployeeOwnsSession(session, employee);
 
         tinNhanTuVanRepository.markRead(
-                phien.getMaPhien(),
+                session.getMaPhien(),
                 TinNhanTuVan.NGUOI_GUI_KHACH_HANG
         );
-        phien.setSoTinNhanChuaDocNhanVien(0);
-        phien.setUpdatedAt(LocalDateTime.now());
-        phienTuVanRepository.save(phien);
+        session.setSoTinNhanChuaDocNhanVien(0);
+        session.setUpdatedAt(LocalDateTime.now());
+        phienTuVanRepository.save(session);
+        chatRedisService.evictMessages(session.getTokenPhien());
 
-        return toTinNhanResponses(phien);
+        return toTinNhanResponses(session);
     }
 
     @Transactional
@@ -181,110 +228,146 @@ public class TuVanService {
             Long maPhien,
             GuiTinNhanTuVanRequest request
     ) {
-        NhanVien currentEmployee = requireNhanVien(authentication);
-        PhienTuVan phien = requirePhienForUpdate(maPhien);
-        ensureOpen(phien);
+        NhanVien employee = requireNhanVien(authentication);
+        touchOnline(employee);
+        PhienTuVan session = requirePhienForUpdate(maPhien);
+        ensureOpen(session);
 
-        if (phien.getMaNhanVien() != null
-                && !phien.getMaNhanVien().equals(currentEmployee.getMaNhanVien())) {
+        if (session.getMaNhanVien() != null
+                && !session.getMaNhanVien().equals(employee.getMaNhanVien())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Phiên tư vấn đang được " + employeeName(phien.getMaNhanVien()) + " phụ trách"
+                    "Phiên tư vấn đang được " + employeeName(session.getMaNhanVien()) + " phụ trách"
             );
         }
 
-        if (phien.getMaNhanVien() == null) {
-            phien.setMaNhanVien(currentEmployee.getMaNhanVien());
-            phien.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
+        if (session.getMaNhanVien() == null) {
+            session.setMaNhanVien(employee.getMaNhanVien());
         }
+
+        /*
+         * Tin nhắn đầu tiên của nhân viên là thời điểm bàn giao chính thức.
+         * Kể cả phiên đã được tự động gán trước đó, phải chuyển trạng thái sang
+         * ĐANG_TU_VAN để chatbot dừng và quyền sở hữu được giữ cố định.
+         */
+        session.setTrangThai(PhienTuVan.TRANG_THAI_DANG_TU_VAN);
 
         LocalDateTime now = LocalDateTime.now();
         String content = normalizeMessage(request.getNoiDung());
+
         TinNhanTuVan message = new TinNhanTuVan();
-        message.setMaPhien(phien.getMaPhien());
+        message.setMaPhien(session.getMaPhien());
         message.setNguoiGui(TinNhanTuVan.NGUOI_GUI_NHAN_VIEN);
-        message.setMaNhanVien(currentEmployee.getMaNhanVien());
+        message.setMaNhanVien(employee.getMaNhanVien());
         message.setNoiDung(content);
         message.setDaDoc(false);
         message.setCreatedAt(now);
         TinNhanTuVan saved = tinNhanTuVanRepository.save(message);
 
-        phien.setTinNhanCuoi(shorten(content));
-        phien.setThoiGianTinNhanCuoi(now);
-        phien.setSoTinNhanChuaDocKhach(
-                safeCount(phien.getSoTinNhanChuaDocKhach()) + 1
+        session.setTinNhanCuoi(shorten(content));
+        session.setThoiGianTinNhanCuoi(now);
+        session.setSoTinNhanChuaDocKhach(
+                safeCount(session.getSoTinNhanChuaDocKhach()) + 1
         );
-        phien.setUpdatedAt(now);
-        phienTuVanRepository.save(phien);
+        session.setUpdatedAt(now);
+        phienTuVanRepository.save(session);
+        chatRedisService.evictMessages(session.getTokenPhien());
 
-        return toTinNhanResponse(saved, currentEmployee);
+        return toTinNhanResponse(saved);
     }
 
     @Transactional
-    public PhienTuVanResponse dongPhien(
-            Authentication authentication,
-            Long maPhien
-    ) {
-        NhanVien currentEmployee = requireNhanVien(authentication);
-        PhienTuVan phien = requirePhienForUpdate(maPhien);
+    public PhienTuVanResponse dongPhien(Authentication authentication, Long maPhien) {
+        NhanVien employee = requireNhanVien(authentication);
+        touchOnline(employee);
+        PhienTuVan session = requirePhienForUpdate(maPhien);
+        ensureEmployeeOwnsSession(session, employee);
 
-        ensureEmployeeOwnsSession(phien, currentEmployee);
-
-        phien.setTrangThai(PhienTuVan.TRANG_THAI_DA_DONG);
-        phien.setUpdatedAt(LocalDateTime.now());
-        return toPhienResponse(phienTuVanRepository.save(phien), currentEmployee, false);
+        session.setTrangThai(PhienTuVan.TRANG_THAI_DA_DONG);
+        session.setUpdatedAt(LocalDateTime.now());
+        return toPhienResponse(phienTuVanRepository.save(session), employee, false, null);
     }
 
-    private List<TinNhanTuVanResponse> toTinNhanResponses(PhienTuVan phien) {
-        List<TinNhanTuVan> messages =
-                tinNhanTuVanRepository.findByMaPhienOrderByCreatedAtAscMaTinNhanAsc(phien.getMaPhien());
+    @Transactional
+    public void heartbeat(Authentication authentication) {
+        NhanVien employee = requireNhanVien(authentication);
+        touchOnline(employee);
+        phanCongTuVanService.phanCongCacPhienDangCho();
+    }
 
-        Map<Integer, NhanVien> employeeMap = nhanVienRepository.findAllById(
-                        messages.stream()
-                                .map(TinNhanTuVan::getMaNhanVien)
-                                .filter(id -> id != null)
-                                .distinct()
-                                .toList()
-                ).stream()
-                .collect(Collectors.toMap(NhanVien::getMaNhanVien, Function.identity()));
+    @Transactional(readOnly = true)
+    public boolean isOnline(Authentication authentication) {
+        NhanVien employee = requireNhanVien(authentication);
+        return nhanVienOnlineService.isOnline(employee.getMaNhanVien());
+    }
 
-        return messages.stream()
-                .map(message -> toTinNhanResponse(message, employeeMap.get(message.getMaNhanVien())))
+    @Transactional
+    public void offline(Authentication authentication) {
+        NhanVien employee = requireNhanVien(authentication);
+        nhanVienOnlineService.markOffline(employee.getMaNhanVien());
+        phanCongTuVanService.phanCongCacPhienDangCho();
+    }
+
+    private void touchOnline(NhanVien employee) {
+        nhanVienOnlineService.markOnline(employee);
+    }
+
+    private List<TinNhanTuVanResponse> toTinNhanResponses(PhienTuVan session) {
+        List<TinNhanTuVanResponse> cached = chatRedisService
+                .getCachedMessages(session.getTokenPhien());
+        if (!cached.isEmpty()) {
+            return cached;
+        }
+
+        List<TinNhanTuVanResponse> messages = tinNhanTuVanRepository
+                .findByMaPhienOrderByCreatedAtAscMaTinNhanAsc(session.getMaPhien())
+                .stream()
+                .map(this::toTinNhanResponse)
                 .toList();
+
+        chatRedisService.cacheMessages(session.getTokenPhien(), messages);
+        return messages;
     }
 
     private PhienTuVanResponse toPhienResponse(
-            PhienTuVan phien,
+            PhienTuVan session,
             NhanVien employee,
-            boolean includeToken
+            boolean includeToken,
+            String guestToken
     ) {
-        NhanVien resolvedEmployee = employee;
-        if (resolvedEmployee == null && phien.getMaNhanVien() != null) {
-            resolvedEmployee = nhanVienRepository.findById(phien.getMaNhanVien()).orElse(null);
+        NhanVien resolved = employee;
+        if (resolved == null && session.getMaNhanVien() != null) {
+            resolved = nhanVienRepository.findById(session.getMaNhanVien()).orElse(null);
         }
 
         return new PhienTuVanResponse(
-                phien.getMaPhien(),
-                includeToken ? phien.getTokenPhien() : null,
-                phien.getTenKhachHang(),
-                phien.getMaNhanVien(),
+                session.getMaPhien(),
+                includeToken ? session.getTokenPhien() : null,
+                session.getTenKhachHang(),
+                session.getMaNhanVien(),
                 includeToken
-                        ? (phien.getMaNhanVien() == null ? null : "Nhân viên tư vấn")
-                        : (resolvedEmployee == null ? null : resolvedEmployee.getHoTen()),
-                phien.getTrangThai(),
-                statusLabel(phien.getTrangThai()),
-                phien.getTinNhanCuoi(),
-                phien.getThoiGianTinNhanCuoi(),
-                safeCount(phien.getSoTinNhanChuaDocNhanVien()),
-                safeCount(phien.getSoTinNhanChuaDocKhach()),
-                phien.getCreatedAt()
+                        ? (session.getMaNhanVien() == null ? null : "Nhân viên tư vấn")
+                        : (resolved == null ? null : resolved.getHoTen()),
+                session.getTrangThai(),
+                statusLabel(session.getTrangThai()),
+                session.getTinNhanCuoi(),
+                session.getThoiGianTinNhanCuoi(),
+                safeCount(session.getSoTinNhanChuaDocNhanVien()),
+                safeCount(session.getSoTinNhanChuaDocKhach()),
+                session.getCreatedAt(),
+                guestToken
         );
     }
 
-    private TinNhanTuVanResponse toTinNhanResponse(TinNhanTuVan message, NhanVien employee) {
-        String senderName = TinNhanTuVan.NGUOI_GUI_KHACH_HANG.equals(message.getNguoiGui())
-                ? "Khách hàng"
-                : "Nhân viên tư vấn";
+    private TinNhanTuVanResponse toTinNhanResponse(TinNhanTuVan message) {
+        String senderName;
+        if (TinNhanTuVan.NGUOI_GUI_KHACH_HANG.equals(message.getNguoiGui())) {
+            senderName = "Khách hàng";
+        } else if (TinNhanTuVan.NGUOI_GUI_AI.equals(message.getNguoiGui())) {
+            senderName = "Trợ lý AI An Yên";
+        } else {
+            senderName = "Nhân viên tư vấn";
+        }
 
         return new TinNhanTuVanResponse(
                 message.getMaTinNhan(),
@@ -320,14 +403,6 @@ public class TuVanService {
                 ));
     }
 
-    private PhienTuVan requirePhien(Long maPhien) {
-        return phienTuVanRepository.findById(maPhien)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Không tìm thấy phiên tư vấn"
-                ));
-    }
-
     private PhienTuVan requirePhienForUpdate(Long maPhien) {
         return phienTuVanRepository.findByIdForUpdate(maPhien)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -347,15 +422,14 @@ public class TuVanService {
                 ));
     }
 
-    private void ensureEmployeeOwnsSession(PhienTuVan phien, NhanVien currentEmployee) {
-        if (phien.getMaNhanVien() == null) {
+    private void ensureEmployeeOwnsSession(PhienTuVan session, NhanVien employee) {
+        if (session.getMaNhanVien() == null) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Bạn cần tiếp nhận phiên tư vấn trước khi xem tin nhắn"
             );
         }
-
-        if (!phien.getMaNhanVien().equals(currentEmployee.getMaNhanVien())) {
+        if (!session.getMaNhanVien().equals(employee.getMaNhanVien())) {
             throw new ResponseStatusException(
                     HttpStatus.FORBIDDEN,
                     "Bạn không phải nhân viên đang phụ trách phiên tư vấn này"
@@ -363,12 +437,9 @@ public class TuVanService {
         }
     }
 
-    private void ensureOpen(PhienTuVan phien) {
-        if (PhienTuVan.TRANG_THAI_DA_DONG.equals(phien.getTrangThai())) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Phiên tư vấn đã kết thúc"
-            );
+    private void ensureOpen(PhienTuVan session) {
+        if (PhienTuVan.TRANG_THAI_DA_DONG.equals(session.getTrangThai())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Phiên tư vấn đã kết thúc");
         }
     }
 

@@ -15,6 +15,7 @@ public class TinNhanTuVan {
 
     public static final String NGUOI_GUI_KHACH_HANG = "KHACH_HANG";
     public static final String NGUOI_GUI_NHAN_VIEN = "NHAN_VIEN";
+    public static final String NGUOI_GUI_AI = "AI";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -21,11 +21,50 @@ public interface PhienTuVanRepository extends JpaRepository<PhienTuVan, Long> {
     @Query("SELECT p FROM PhienTuVan p WHERE p.maPhien = :maPhien")
     Optional<PhienTuVan> findByIdForUpdate(@Param("maPhien") Long maPhien);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT p
             FROM PhienTuVan p
-            WHERE (p.maNhanVien IS NULL AND p.trangThai <> :trangThaiDaDong)
-               OR p.maNhanVien = :maNhanVien
+            WHERE p.maNhanVien IS NULL
+              AND p.trangThai <> :trangThaiDaDong
+            ORDER BY p.thoiGianTinNhanCuoi ASC, p.maPhien ASC
+            """)
+    List<PhienTuVan> findUnassignedOpenForUpdate(
+            @Param("trangThaiDaDong") Integer trangThaiDaDong
+    );
+
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT p
+            FROM PhienTuVan p
+            WHERE p.maNhanVien IS NOT NULL
+              AND p.trangThai <> :trangThaiDaDong
+            ORDER BY p.thoiGianTinNhanCuoi ASC, p.maPhien ASC
+            """)
+    List<PhienTuVan> findAssignedOpenForUpdate(
+            @Param("trangThaiDaDong") Integer trangThaiDaDong
+    );
+
+    long countByMaNhanVienAndTrangThaiNot(
+            Integer maNhanVien,
+            Integer trangThai
+    );
+
+    @Query("""
+            SELECT p
+            FROM PhienTuVan p
+            WHERE p.maNhanVien = :maNhanVien
+               OR (
+                    p.maNhanVien IS NULL
+                    AND p.trangThai <> :trangThaiDaDong
+                    AND EXISTS (
+                        SELECT y.maYeuCau
+                        FROM YeuCauTuVanAi y
+                        WHERE y.maPhien = p.maPhien
+                          AND y.daGuiHotline = true
+                    )
+               )
             ORDER BY p.thoiGianTinNhanCuoi DESC, p.maPhien DESC
             """)
     List<PhienTuVan> findVisibleForEmployee(

@@ -1,7 +1,12 @@
 <script setup>
-import {ref, computed, watch, onMounted} from "vue";
+import {ref, computed, watch, onMounted, onBeforeUnmount} from "vue";
 import api from "../../api/api.js";
 import { ElMessage } from "element-plus";
+import TrangTaoSanPham from "./TrangTaoSanPham.vue";
+
+const UPLOAD_URL = "/api/upload";
+const MAX_GALLERY_IMAGES = 10;
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 const API_URL = "/api/doi-tac/san-pham";
 const NGUNG_BAN_API = (id) => `${API_URL}/${id}/an`;
@@ -24,6 +29,12 @@ const savingStockId = ref(null);
 const total = ref(0);
 const selectedProductDetail = ref(null);
 const loadingProductDetail = ref(false);
+
+// === Chi tiết & hình ảnh sản phẩm (dùng khi sửa) ===
+const editChiTietList = ref([]);
+const editGalleryFiles = ref([]);
+const editGalleryPreviews = ref([]);
+const editGalleryUrls = ref([]);
 
 const emptyProduct = () => ({
   tenSanPham: "",
@@ -280,6 +291,11 @@ const resetForm = () => {
   editingProduct.value = null;
   newProduct.value = emptyProduct();
   imagePreview.value = "";
+  editChiTietList.value = [];
+  editGalleryFiles.value = [];
+  editGalleryPreviews.value.forEach(url => { if (url && url.startsWith('blob:')) URL.revokeObjectURL(url); });
+  editGalleryPreviews.value = [];
+  editGalleryUrls.value = [];
 };
 
 const validateProduct = () => {
@@ -301,59 +317,68 @@ const validateProduct = () => {
   return true;
 };
 
-const buildPayload = () => ({
-  tenSanPham: newProduct.value.tenSanPham,
-  loai: newProduct.value.loai,
-  noiThat: newProduct.value.noiThat,
-  quyCach: newProduct.value.quyCach,
-  tonGiao: newProduct.value.tonGiao,
-  giaTien: Number(newProduct.value.giaTien || 0),
-  maDoiTac: newProduct.value.maDoiTac || null,
-  soLuong: Number(newProduct.value.soLuong || 0),
-  thietKe: newProduct.value.thietKe,
-  xuatXu: newProduct.value.xuatXu,
-  ghiChu: newProduct.value.ghiChu,
-  khuyenMai: newProduct.value.khuyenMai === "" ? null : Number(newProduct.value.khuyenMai),
-  mauSac: newProduct.value.mauSac,
-  hinhAnh: typeof newProduct.value.hinhAnh === "string" ? newProduct.value.hinhAnh : "",
-  vatLieu: newProduct.value.vatLieu,
-  trangThai: newProduct.value.trangThai,
-  kichThuoc: newProduct.value.kichThuoc,
-  trongLuong: newProduct.value.trongLuong,
-  cnsx: newProduct.value.cnsx,
-});
+const buildPayload = () => {
+  const chiTietList = editChiTietList.value
+    .filter(b => b.noiDung && b.noiDung.trim())
+    .map((b, i) => ({ loaiKhoi: b.loaiKhoi, noiDung: b.noiDung.trim(), thuTu: i }));
+
+  const hinhAnhList = editGalleryUrls.value
+    .filter(url => url && url.trim())
+    .map((url, i) => ({ loaiHinhAnh: i === 0 ? 'CHINH' : 'GALLERY', urlHinhAnh: url, thuTu: i }));
+
+  return {
+    tenSanPham: newProduct.value.tenSanPham,
+    loai: newProduct.value.loai,
+    noiThat: newProduct.value.noiThat,
+    quyCach: newProduct.value.quyCach,
+    tonGiao: newProduct.value.tonGiao,
+    giaTien: Number(newProduct.value.giaTien || 0),
+    maDoiTac: newProduct.value.maDoiTac || null,
+    soLuong: Number(newProduct.value.soLuong || 0),
+    thietKe: newProduct.value.thietKe,
+    xuatXu: newProduct.value.xuatXu,
+    ghiChu: newProduct.value.ghiChu,
+    khuyenMai: newProduct.value.khuyenMai === "" ? null : Number(newProduct.value.khuyenMai),
+    mauSac: newProduct.value.mauSac,
+    hinhAnh: editGalleryUrls.value[0] || (typeof newProduct.value.hinhAnh === "string" ? newProduct.value.hinhAnh : ""),
+    vatLieu: newProduct.value.vatLieu,
+    trangThai: newProduct.value.trangThai,
+    kichThuoc: newProduct.value.kichThuoc,
+    trongLuong: newProduct.value.trongLuong,
+    cnsx: newProduct.value.cnsx,
+    chiTietList,
+    hinhAnhList,
+  };
+};
 
 const editProduct = (product) => {
   editingProduct.value = product;
-
-  newProduct.value = {
-    tenSanPham: product.tenSanPham || product.name || "",
-    loai: product.loai || product.category || "",
-    noiThat: product.noiThat || "",
-    quyCach: product.quyCach || "",
-    tonGiao: product.tonGiao || "",
-    giaTien: product.giaTien ?? product.price ?? 0,
-    maDoiTac: product.maDoiTac || "",
-    soLuong: product.soLuong ?? product.stock ?? 0,
-    thietKe: product.thietKe || "",
-    xuatXu: product.xuatXu || "",
-    ghiChu: product.ghiChu || "",
-    khuyenMai: product.khuyenMai ?? "",
-    mauSac: product.mauSac || "",
-    hinhAnh: product.hinhAnh || product.image || "",
-    vatLieu: product.vatLieu || "",
-    trangThai: product.trangThai || (product.status === "Ẩn" ? "Ẩn" : "Đang bán"),
-    kichThuoc: product.kichThuoc || "",
-    trongLuong: product.trongLuong || "",
-    cnsx: product.cnsx || "",
-  };
-
-  imagePreview.value = product.image || "";
   activeTab.value = "create";
+};
+
+const handleEditSaved = async () => {
+  editingProduct.value = null;
+  activeTab.value = "list";
+  await loadProducts();
+};
+
+const handleEditClose = () => {
+  editingProduct.value = null;
+  activeTab.value = "list";
 };
 
 const updateProduct = async () => {
   if (!editingProduct.value || !validateProduct()) return;
+
+  if (editingProduct.value.trangThaiCode === 1) {
+    const isConfirm = window.confirm(
+      "Sản phẩm này sẽ cập nhật sau khi quản lý duyệt.\n\nSau khi ấn lưu thì sẽ có thông báo kêu duyệt lại sản phẩm cho quản lý và quản lý khi nào duyệt rồi thì sản phẩm trên web mới hiện lại.\n\nBạn có chắc chắn muốn lưu thay đổi không?"
+    );
+    if (!isConfirm) return;
+    
+    // Đổi trạng thái về chờ duyệt
+    newProduct.value.trangThai = 2;
+  }
 
   try {
     await api.put(`${API_URL}/${editingProduct.value.id}`, buildPayload());
@@ -365,6 +390,21 @@ const updateProduct = async () => {
   } catch (error) {
     console.error("Lỗi cập nhật sản phẩm:", error);
     alert("Không thể cập nhật sản phẩm.");
+  }
+};
+
+const createProduct = async () => {
+  if (!validateProduct()) return;
+
+  try {
+    await api.post(API_URL, buildPayload());
+    alert("Thêm sản phẩm thành công!");
+    resetForm();
+    activeTab.value = "list";
+    await loadProducts();
+  } catch (error) {
+    console.error("Lỗi thêm sản phẩm:", error);
+    alert("Không thể thêm sản phẩm.");
   }
 };
 
@@ -643,6 +683,73 @@ const handleImageUpload = (event) => {
   newProduct.value.hinhAnh = file;
   imagePreview.value = URL.createObjectURL(file);
 };
+
+// === Quản lý chi tiết sản phẩm ===
+const addChiTiet = (loaiKhoi = 'TIEU_DE') => {
+  editChiTietList.value.push({ loaiKhoi, noiDung: '', thuTu: editChiTietList.value.length });
+};
+
+const removeChiTiet = (index) => {
+  editChiTietList.value.splice(index, 1);
+  if (editChiTietList.value.length === 0) addChiTiet('TIEU_DE');
+};
+
+// === Quản lý hình ảnh gallery ===
+const uploadOneImage = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  const response = await api.post(UPLOAD_URL, formData);
+  const data = response.data;
+  if (typeof data === 'string') return data;
+  if (typeof data.data === 'string') return data.data;
+  return data.url || data.secureUrl || data.secure_url || data.data?.url || '';
+};
+
+const handleGalleryUpload = async (event) => {
+  const files = Array.from(event.target.files || []);
+  event.target.value = '';
+  const remaining = MAX_GALLERY_IMAGES - editGalleryUrls.value.length;
+  if (remaining <= 0) { alert(`Tối đa ${MAX_GALLERY_IMAGES} ảnh.`); return; }
+
+  for (const file of files.slice(0, remaining)) {
+    if (!file.type.startsWith('image/')) continue;
+    if (file.size > MAX_FILE_SIZE) { alert(`${file.name} vượt quá 5MB.`); continue; }
+    try {
+      const url = await uploadOneImage(file);
+      if (url) {
+        editGalleryUrls.value.push(url);
+        editGalleryPreviews.value.push(url);
+      }
+    } catch (err) {
+      console.error('Lỗi upload ảnh:', err);
+      alert(`Không thể tải ảnh ${file.name}`);
+    }
+  }
+};
+
+const removeGalleryImage = (index) => {
+  const preview = editGalleryPreviews.value[index];
+  if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
+  editGalleryUrls.value.splice(index, 1);
+  editGalleryPreviews.value.splice(index, 1);
+};
+
+const handleChiTietImageUpload = async (index, event) => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file || !file.type.startsWith('image/')) return;
+  try {
+    const url = await uploadOneImage(file);
+    if (url) editChiTietList.value[index].noiDung = url;
+  } catch (err) {
+    console.error('Lỗi upload ảnh chi tiết:', err);
+    alert('Không thể tải ảnh chi tiết.');
+  }
+};
+
+onBeforeUnmount(() => {
+  editGalleryPreviews.value.forEach(url => { if (url && url.startsWith('blob:')) URL.revokeObjectURL(url); });
+});
 </script>
 
 <template>
@@ -903,6 +1010,13 @@ const handleImageUpload = (event) => {
         </div>
       </template>
 
+      <template v-if="activeTab === 'create'">
+        <TrangTaoSanPham
+          :edit-id="editingProduct ? editingProduct.id : null"
+          @saved="handleEditSaved"
+          @close="handleEditClose"
+        />
+      </template>
 
       <div v-if="selectedProductDetail" class="product-detail-overlay" @click.self="closeDetail">
         <article class="product-detail-modal">
@@ -1256,5 +1370,151 @@ const handleImageUpload = (event) => {
   .detail-image-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .detail-content { padding: 26px 17px 22px; }
 }
+
+.edit-form-container {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px 32px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  margin-top: 16px;
+}
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #edf2f7;
+}
+.form-header h4 {
+  font-size: 20px;
+  color: #1f2937;
+  margin: 0;
+}
+.close-form-btn {
+  background: #f1f5f9;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #475569;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+.close-form-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+.product-form .form-row {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.product-form .form-group {
+  flex: 1;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+.product-form .form-group.full-width {
+  flex: 100%;
+}
+.product-form label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+.product-form .req {
+  color: #ef4444;
+}
+.product-form input,
+.product-form select,
+.product-form textarea {
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+.product-form input:focus,
+.product-form select:focus,
+.product-form textarea:focus {
+  outline: none;
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
+}
+.product-form textarea {
+  resize: vertical;
+}
+.form-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 32px 0 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #f1f5f9;
+}
+.image-upload-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.img-preview {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+.form-footer {
+  margin-top: 32px;
+  display: flex;
+  justify-content: flex-end;
+}
+.btn-submit {
+  background: #b91c1c;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-submit:hover {
+  background: #9f1239;
+}
+.gallery-manager { margin-bottom: 24px; }
+.gallery-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+.gallery-item { position: relative; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+.gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+.gallery-badge { position: absolute; bottom: 4px; left: 4px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; z-index: 10; }
+.gallery-remove { position: absolute; top: 4px; right: 4px; background: rgba(255, 255, 255, 0.9); color: #ef4444; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 10; }
+.gallery-remove:hover { background: #ef4444; color: #fff; }
+.gallery-add { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120px; height: 120px; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: pointer; color: #64748b; transition: all 0.2s; background: #f8fafc; }
+.gallery-add:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.gallery-add i { font-size: 24px; margin-bottom: 8px; }
+.chitiet-manager { margin-bottom: 32px; }
+.chitiet-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.chitiet-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.chitiet-order { background: #334155; color: #fff; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; font-weight: 600; }
+.chitiet-type-select { padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; }
+.chitiet-remove { margin-left: auto; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; font-size: 14px; }
+.chitiet-remove:hover { color: #b91c1c; }
+.chitiet-body { padding-left: 36px; }
+.chitiet-input { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; font-weight: 600; }
+.chitiet-textarea { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; resize: vertical; background: #fff; }
+.chitiet-image-area { display: flex; flex-direction: column; gap: 12px; }
+.chitiet-image-preview { max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; }
+.chitiet-image-upload-btn { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: #334155; width: fit-content; transition: background 0.2s; }
+.chitiet-image-upload-btn:hover { background: #f1f5f9; }
+.chitiet-add-row { display: flex; gap: 12px; margin-top: 16px; }
+.chitiet-add-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px dashed #94a3b8; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
+.chitiet-add-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
+.form-section-title .section-count { font-size: 13px; font-weight: normal; color: #64748b; margin-left: 8px; padding: 2px 8px; background: #f1f5f9; border-radius: 12px; }
 </style>
 

@@ -204,8 +204,8 @@ public class SanPhamDoiTacService {
                 .build();
 
         thongBaoRepository.save(thongBao);
-        sanPhamChiTietRepository.deleteByMaSanPham(id);
         sanPhamHinhAnhRepository.deleteByMaSanPham(id);
+        sanPhamChiTietRepository.deleteByMaSanPham(id);
         saveChiTietVaHinhAnh(id, request);
 
         return toResponse(savedSanPham);

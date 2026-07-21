@@ -9,6 +9,15 @@ import {
 import { useRouter } from "vue-router";
 import api from "../../api/api.js";
 
+const props = defineProps({
+  editId: {
+    type: [Number, String],
+    default: null
+  }
+});
+
+const emit = defineEmits(["close", "saved"]);
+
 const router = useRouter();
 
 const API_URL = "/api/doi-tac/san-pham";
@@ -149,45 +158,81 @@ const loadPartnerId = () => {
       "";
 };
 
-onMounted(() => {
-  const timestamp = Date.now()
-      .toString(36)
-      .toUpperCase();
+onMounted(async () => {
+  if (props.editId) {
+    try {
+      const res = await api.get(`${API_URL}/${props.editId}`);
+      const data = res.data;
+      
+      product.value = {
+        ...product.value,
+        ...data,
+      };
 
-  product.value.maSanPham = `SP-${timestamp}`;
+      // Tải hình ảnh chính
+      if (data.hinhAnh) {
+        imagePreviews.value[0] = data.hinhAnh;
+      }
+      
+      // Tải hình ảnh gallery
+      const galleryImages = (data.hinhAnhList || []).filter(img => img.loaiHinhAnh === 'GALLERY' || !img.maChiTiet);
+      galleryImages.forEach(img => {
+        if (img.urlHinhAnh) {
+          imagePreviews.value.push(img.urlHinhAnh);
+        }
+      });
+      
+      // Tải chi tiết
+      if (data.chiTietList && data.chiTietList.length > 0) {
+        detailBlocks.value = data.chiTietList.map(ct => ({
+          id: createBlockId(),
+          type: ct.loaiKhoi === 'TIEU_DE' ? 'title' : ct.loaiKhoi === 'NOI_DUNG' ? 'text' : 'image',
+          content: ct.noiDung || '',
+          file: null,
+          previewUrl: ct.loaiKhoi === 'HINH_ANH' ? ct.noiDung : ''
+        }));
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải thông tin sản phẩm:", err);
+      alert("Không thể tải thông tin sản phẩm. Vui lòng thử lại!");
+    }
+  } else {
+    const timestamp = Date.now()
+        .toString(36)
+        .toUpperCase();
 
-  const now = new Date();
-  const timezoneOffset = now.getTimezoneOffset() * 60 * 1000;
+    product.value.maSanPham = `SP-${timestamp}`;
 
-  product.value.ngayTao = new Date(
-      now.getTime() - timezoneOffset
-  )
-      .toISOString()
-      .slice(0, 16);
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60 * 1000;
 
-  loadPartnerId();
+    product.value.ngayTao = new Date(
+        now.getTime() - timezoneOffset
+    )
+        .toISOString()
+        .slice(0, 16);
 
-  // Dữ liệu mẫu để kiểm thử
-  product.value.tenSanPham = "Quan tài gỗ gụ cao cấp";
-  product.value.loai = "Quan tài";
-  product.value.noiThat = "Lót nhung đỏ";
-  product.value.quyCach = "Trọn bộ";
-  product.value.tonGiao = "Phật giáo";
-  product.value.giaTien = "15000000";
-  product.value.soLuong = "10";
-  product.value.thietKe = "Truyền thống";
-  product.value.xuatXu = "Việt Nam";
+    loadPartnerId();
 
-  product.value.ghiChu =
-      "Sản phẩm được làm từ gỗ gụ tự nhiên, độ bền cao, phù hợp cho các lễ nghi tang lễ truyền thống.";
-
-  product.value.khuyenMai = "";
-  product.value.mauSac = "Nâu đậm";
-  product.value.vatLieu = "Gỗ Gụ";
-  product.value.trangThai = 1;
-  product.value.kichThuoc = "200 x 60 x 50 cm";
-  product.value.trongLuong = "80";
-  product.value.cnsx = "Thủ công truyền thống";
+    // Dữ liệu mẫu để kiểm thử
+    product.value.tenSanPham = "Quan tài gỗ gụ cao cấp";
+    product.value.loai = "Quan tài";
+    product.value.noiThat = "Lót nhung đỏ";
+    product.value.quyCach = "Trọn bộ";
+    product.value.tonGiao = "Phật giáo";
+    product.value.giaTien = "15000000";
+    product.value.soLuong = "10";
+    product.value.thietKe = "Truyền thống";
+    product.value.xuatXu = "Việt Nam";
+    product.value.ghiChu = "Sản phẩm được làm từ gỗ gụ tự nhiên, độ bền cao, phù hợp cho các lễ nghi tang lễ truyền thống.";
+    product.value.khuyenMai = "";
+    product.value.mauSac = "Nâu đậm";
+    product.value.vatLieu = "Gỗ Gụ";
+    product.value.trangThai = 1;
+    product.value.kichThuoc = "200 x 60 x 50 cm";
+    product.value.trongLuong = "80";
+    product.value.cnsx = "Thủ công truyền thống";
+  }
 });
 
 onBeforeUnmount(() => {
@@ -639,7 +684,18 @@ const buildPayload = async () => {
 
   await uploadDetailImages();
 
-  const mainImageUrl = galleryUrls[0] || "";
+  // Nếu đang edit mà không upload ảnh mới, dùng ảnh cũ từ imagePreviews
+  let finalGalleryUrls = galleryUrls;
+  if (galleryUrls.length === 0 && props.editId) {
+    // imagePreviews chứa URL ảnh cũ từ server
+    finalGalleryUrls = imagePreviews.value.filter(url => url && typeof url === 'string');
+  } else if (galleryUrls.length > 0 && props.editId) {
+    // Kết hợp: ảnh cũ chưa bị xóa + ảnh mới upload
+    const existingUrls = imagePreviews.value.filter(url => url && typeof url === 'string' && !url.startsWith('blob:'));
+    finalGalleryUrls = [...existingUrls, ...galleryUrls];
+  }
+
+  const mainImageUrl = finalGalleryUrls[0] || "";
 
   const chiTietList = [];
   const hinhAnhList = [];
@@ -650,7 +706,7 @@ const buildPayload = async () => {
   /*
    * Ảnh sản phẩm đưa vào bảng sanpham_hinhanh.
    */
-  galleryUrls.forEach((url, index) => {
+  finalGalleryUrls.forEach((url, index) => {
     hinhAnhList.push({
       loaiHinhAnh:
           index === 0 ? "CHINH" : "GALLERY",
@@ -927,7 +983,7 @@ const validateProduct = () => {
         "Trọng lượng phải là một số lớn hơn 0!";
   }
 
-  if (imageFiles.value.length === 0) {
+  if (imageFiles.value.length === 0 && imagePreviews.value.length === 0) {
     errors.value.hinhAnh =
         "Vui lòng tải lên ít nhất 1 hình ảnh sản phẩm!";
   }
@@ -1009,13 +1065,23 @@ const publishProduct = async () => {
   try {
     const payload = await buildPayload();
 
-    await api.post(API_URL, payload);
-
-    alert("Đã đăng sản phẩm thành công!");
-
-    await router.push(
-        "/doi-tac/quan-ly-san-pham"
-    );
+    if (props.editId) {
+      // Sản phẩm đã duyệt -> chuyển về chờ duyệt
+      if (product.value.trangThai === 1) {
+        const confirmed = confirm(
+          '⚠️ Sản phẩm này đã được duyệt.\n\nSau khi sửa, sản phẩm sẽ chuyển về trạng thái "Chờ duyệt" và tạm ẩn khỏi website cho đến khi quản lý duyệt lại.\n\nBạn có muốn tiếp tục?'
+        );
+        if (!confirmed) { isSubmitting.value = false; return; }
+        payload.trangThai = 2; // Chờ duyệt
+      }
+      await api.put(`${API_URL}/${props.editId}`, payload);
+      alert('Đã cập nhật sản phẩm thành công!');
+      emit('saved');
+    } else {
+      await api.post(API_URL, payload);
+      alert("Đã đăng sản phẩm thành công!");
+      await router.push("/doi-tac/quan-ly-san-pham");
+    }
   } catch (error) {
     console.error(
         "===== LỖI ĐĂNG SẢN PHẨM ====="
@@ -1048,9 +1114,11 @@ const cancelCreate = () => {
   );
 
   if (confirmed) {
-    router.push(
-        "/doi-tac/quan-ly-san-pham"
-    );
+    if (props.editId) {
+      emit('close');
+    } else {
+      router.push("/doi-tac/quan-ly-san-pham");
+    }
   }
 };
 </script>
@@ -2079,6 +2147,7 @@ const cancelCreate = () => {
       </button>
 
       <button
+          v-if="!props.editId"
           type="button"
           class="tao-sp-btn-draft"
           :disabled="isSubmitting"
@@ -2115,8 +2184,8 @@ const cancelCreate = () => {
 
         {{
           isSubmitting
-              ? "Đang đăng..."
-              : "Đăng sản phẩm"
+              ? (props.editId ? "Đang lưu..." : "Đang đăng...")
+              : (props.editId ? "Lưu thay đổi" : "Đăng sản phẩm")
         }}
       </button>
     </div>

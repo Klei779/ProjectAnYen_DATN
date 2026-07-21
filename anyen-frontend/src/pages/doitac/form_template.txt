@@ -1,0 +1,787 @@
+
+  <div class="tao-sp-page">
+    <!-- Top bar -->
+    <div class="tao-sp-topbar">
+      <button
+          type="button"
+          class="tao-sp-guide-btn"
+      >
+        <i class="fa-regular fa-circle-question"></i>
+        H?????ng d???n t???o s???n ph???m
+      </button>
+    </div>
+
+    <div class="tao-sp-layout">
+      <!-- C???T TR??I -->
+      <div class="tao-sp-left">
+        <!-- Section 1 -->
+        <section class="tao-sp-section">
+          <div class="tao-sp-section-head">
+            <h2 class="tao-sp-section-title">
+              1. Th??ng tin c?? b???n
+            </h2>
+          </div>
+
+          <div class="tao-sp-grid">
+            <div class="tao-sp-field">
+              <label>M?? s???n ph???m</label>
+
+              <input
+                  class="tao-sp-input"
+                  :value="product.maSanPham"
+                  disabled
+              />
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                T??n s???n ph???m
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.tenSanPham"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.tenSanPham
+                }"
+                  placeholder="Nh???p t??n s???n ph???m"
+                  maxlength="120"
+                  @input="clearError('tenSanPham')"
+              />
+
+              <span
+                  v-if="errors.tenSanPham"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.tenSanPham }}
+              </span>
+
+              <span
+                  v-else
+                  class="tao-sp-char-count"
+              >
+                {{ tenSanPhamCount }}/120
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                Lo???i
+                <span class="req">*</span>
+              </label>
+
+              <select
+                  v-model="product.loai"
+                  class="tao-sp-select"
+                  :class="{
+                  'has-error': errors.loai
+                }"
+                  @change="clearError('loai')"
+              >
+                <option value="">
+                  Ch???n lo???i s???n ph???m
+                </option>
+
+                <option
+                    v-for="option in loaiOptions"
+                    :key="option"
+                    :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+
+              <span
+                  v-if="errors.loai"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.loai }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                Gi?? b??n
+                <span class="req">*</span>
+              </label>
+
+              <div
+                  class="tao-sp-input-wrap"
+                  :class="{
+                  'has-error': errors.giaTien
+                }"
+              >
+                <input
+                    v-model="product.giaTien"
+                    type="number"
+                    class="tao-sp-input"
+                    placeholder="Nh???p gi?? b??n"
+                    min="0"
+                    @input="clearError('giaTien')"
+                />
+
+                <span class="tao-sp-suffix">
+                  VND
+                </span>
+              </div>
+
+              <span
+                  v-if="errors.giaTien"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.giaTien }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>Khuy???n m??i</label>
+
+              <div class="tao-sp-promo-row">
+                <select
+                    v-model="product.khuyenMaiLoai"
+                    class="tao-sp-select"
+                    @change="clearError('khuyenMai')"
+                >
+                  <option value="PHAN_TRAM">
+                    Ph???n tr??m
+                  </option>
+
+                  <option value="SO_TIEN">
+                    S??? ti???n
+                  </option>
+                </select>
+
+                <div
+                    class="tao-sp-input-wrap"
+                    :class="{
+                    'has-error': errors.khuyenMai
+                  }"
+                >
+                  <input
+                      v-model="product.khuyenMai"
+                      type="number"
+                      class="tao-sp-input"
+                      placeholder="0"
+                      min="0"
+                      @input="clearError('khuyenMai')"
+                  />
+
+                  <span class="tao-sp-suffix">
+                    {{
+                      product.khuyenMaiLoai ===
+                      "PHAN_TRAM"
+                          ? "%"
+                          : "VND"
+                    }}
+                  </span>
+                </div>
+              </div>
+
+              <span
+                  v-if="errors.khuyenMai"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.khuyenMai }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                S??? l?????ng
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.soLuong"
+                  type="number"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.soLuong
+                }"
+                  placeholder="Nh???p s??? l?????ng"
+                  min="0"
+                  @input="clearError('soLuong')"
+              />
+
+              <span
+                  v-if="errors.soLuong"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.soLuong }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                T??n gi??o
+                <span class="req">*</span>
+              </label>
+
+              <select
+                  v-model="product.tonGiao"
+                  class="tao-sp-select"
+                  :class="{
+                  'has-error': errors.tonGiao
+                }"
+                  @change="clearError('tonGiao')"
+              >
+                <option value="">
+                  Ch???n t??n gi??o
+                </option>
+
+                <option
+                    v-for="option in tonGiaoOptions"
+                    :key="option"
+                    :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+
+              <span
+                  v-if="errors.tonGiao"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.tonGiao }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                Quy c??ch
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.quyCach"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.quyCach
+                }"
+                  placeholder="Nh???p quy c??ch"
+                  @input="clearError('quyCach')"
+              />
+
+              <span
+                  v-if="errors.quyCach"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.quyCach }}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2 -->
+        <section class="tao-sp-section">
+          <div class="tao-sp-section-head">
+            <h2 class="tao-sp-section-title">
+              2. Th??ng tin n??ng cao
+            </h2>
+
+            <button
+                type="button"
+                class="tao-sp-collapse-btn"
+                @click="toggleAdvanced"
+            >
+              {{ showAdvanced ? "???n" : "Hi???n" }}
+
+              <i
+                  class="fa-solid"
+                  :class="
+                  showAdvanced
+                    ? 'fa-chevron-up'
+                    : 'fa-chevron-down'
+                "
+              ></i>
+            </button>
+          </div>
+
+          <div
+              v-show="showAdvanced"
+              class="tao-sp-grid"
+          >
+            <div class="tao-sp-field">
+              <label>
+                N???i th???t
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.noiThat"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.noiThat
+                }"
+                  placeholder="Nh???p n???i th???t"
+                  @input="clearError('noiThat')"
+              />
+
+              <span
+                  v-if="errors.noiThat"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.noiThat }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>M?? ?????i t??c</label>
+
+              <input
+                  :value="
+                  product.maDoiTac ||
+                  'T??? ?????ng l???y t??? t??i kho???n'
+                "
+                  class="tao-sp-input"
+                  disabled
+              />
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                Thi???t k???
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.thietKe"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.thietKe
+                }"
+                  placeholder="Nh???p thi???t k???"
+                  @input="clearError('thietKe')"
+              />
+
+              <span
+                  v-if="errors.thietKe"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.thietKe }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                Xu???t x???
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.xuatXu"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.xuatXu
+                }"
+                  placeholder="Nh???p xu???t x???"
+                  @input="clearError('xuatXu')"
+              />
+
+              <span
+                  v-if="errors.xuatXu"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.xuatXu }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field span-2">
+              <label>
+                M??u s???c
+                <span class="req">*</span>
+              </label>
+
+              <div
+                  class="tao-sp-color-row"
+                  :class="{
+                  'has-error': errors.mauSac
+                }"
+              >
+                <button
+                    v-for="swatch in allSwatches"
+                    :key="swatch.value"
+                    type="button"
+                    class="tao-sp-swatch"
+                    :class="{
+                    active: isColorActive(swatch)
+                  }"
+                    :style="{
+                    background: swatch.value
+                  }"
+                    :title="swatch.label"
+                    @click="selectColor(swatch)"
+                ></button>
+
+                <button
+                    type="button"
+                    class="tao-sp-swatch-add"
+                    title="Th??m m??u"
+                    @click="openColorPicker"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+
+                <input
+                    ref="colorInputRef"
+                    type="color"
+                    class="tao-sp-color-picker-hidden"
+                    @input="handleCustomColor"
+                />
+              </div>
+
+              <span
+                  v-if="errors.mauSac"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.mauSac }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                V???t li???u
+                <span class="req">*</span>
+              </label>
+
+              <select
+                  v-model="product.vatLieu"
+                  class="tao-sp-select"
+                  :class="{
+                  'has-error': errors.vatLieu
+                }"
+                  @change="clearError('vatLieu')"
+              >
+                <option value="">
+                  Ch???n v???t li???u
+                </option>
+
+                <option
+                    v-for="option in vatLieuOptions"
+                    :key="option"
+                    :value="option"
+                >
+                  {{ option }}
+                </option>
+              </select>
+
+              <span
+                  v-if="errors.vatLieu"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.vatLieu }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>Tr???ng th??i</label>
+
+              <select
+                  v-model.number="product.trangThai"
+                  class="tao-sp-select"
+              >
+                <option :value="1">
+                  ??ang b??n
+                </option>
+
+                <option :value="0">
+                  ???n
+                </option>
+              </select>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                K??ch th?????c
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.kichThuoc"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.kichThuoc
+                }"
+                  placeholder="VD: 120x60x80cm"
+                  @input="clearError('kichThuoc')"
+              />
+
+              <span
+                  v-if="errors.kichThuoc"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.kichThuoc }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                Tr???ng l?????ng
+                <span class="req">*</span>
+              </label>
+
+              <div
+                  class="tao-sp-input-wrap"
+                  :class="{
+                  'has-error': errors.trongLuong
+                }"
+              >
+                <input
+                    v-model="product.trongLuong"
+                    type="number"
+                    class="tao-sp-input"
+                    placeholder="Nh???p tr???ng l?????ng"
+                    min="0"
+                    @input="clearError('trongLuong')"
+                />
+
+                <span class="tao-sp-suffix">
+                  kg
+                </span>
+              </div>
+
+              <span
+                  v-if="errors.trongLuong"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.trongLuong }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>
+                C??ng ngh??? s???n xu???t
+                <span class="req">*</span>
+              </label>
+
+              <input
+                  v-model="product.cnsx"
+                  class="tao-sp-input"
+                  :class="{
+                  'has-error': errors.cnsx
+                }"
+                  placeholder="Nh???p CNSX"
+                  @input="clearError('cnsx')"
+              />
+
+              <span
+                  v-if="errors.cnsx"
+                  class="tao-sp-error-text"
+              >
+                {{ errors.cnsx }}
+              </span>
+            </div>
+
+            <div class="tao-sp-field">
+              <label>Ng??y t???o</label>
+
+              <input
+                  :value="product.ngayTao"
+                  class="tao-sp-input"
+                  type="datetime-local"
+                  disabled
+              />
+            </div>
+
+            <div class="tao-sp-field span-full">
+              <label>Ghi ch??</label>
+
+              <textarea
+                  v-model="product.ghiChu"
+                  class="tao-sp-textarea"
+                  placeholder="Nh???p ghi ch??"
+                  maxlength="300"
+                  rows="3"
+              ></textarea>
+
+              <span class="tao-sp-char-count">
+                {{ ghiChuCount }}/300
+              </span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- C???T PH???I -->
+      <div class="tao-sp-right">
+        <!-- Section 3 -->
+        <section class="tao-sp-section">
+          <h2 class="tao-sp-section-title">
+            3. H??nh ???nh s???n ph???m
+          </h2>
+
+          <label
+              class="tao-sp-upload-zone"
+              :class="{
+              'drag-over': isDragOver,
+              'has-error': errors.hinhAnh
+            }"
+              for="product-image-upload"
+              @dragover.prevent="isDragOver = true"
+              @dragleave.prevent="isDragOver = false"
+              @drop.prevent="handleDrop"
+          >
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+
+            <span class="tao-sp-upload-title">
+              T???i ???nh l??n
+            </span>
+
+            <span class="tao-sp-upload-hint">
+              K??o th??? ho???c click ????? ch???n ???nh
+            </span>
+
+            <span class="tao-sp-upload-format">
+              ?????nh d???ng: JPG, PNG, WEBP
+              (T???i ??a 5MB)
+            </span>
+          </label>
+
+          <span
+              v-if="errors.hinhAnh"
+              class="tao-sp-error-text"
+              style="
+              margin-top: -10px;
+              margin-bottom: 12px;
+            "
+          >
+            {{ errors.hinhAnh }}
+          </span>
+
+          <input
+              id="product-image-upload"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              hidden
+              @change="handleImageUpload"
+          />
+
+          <div class="tao-sp-gallery">
+            <div
+                v-for="(image, index) in imagePreviews"
+                :key="`${image}-${index}`"
+                class="tao-sp-gallery-item"
+            >
+              <img
+                  :src="image"
+                  alt="???nh s???n ph???m"
+              />
+
+              <button
+                  type="button"
+                  class="tao-sp-gallery-remove"
+                  @click="removeImage(index)"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <label
+                v-if="imagePreviews.length < MAX_IMAGES"
+                class="tao-sp-gallery-add"
+                for="product-image-upload-more"
+            >
+              <i class="fa-solid fa-plus"></i>
+              <span>Th??m ???nh</span>
+            </label>
+
+            <input
+                id="product-image-upload-more"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                hidden
+                @change="handleImageUpload"
+            />
+          </div>
+
+          <p class="tao-sp-upload-note">
+            C?? th??? t???i l??n t???i ??a
+            {{ MAX_IMAGES }} ???nh
+          </p>
+        </section>
+
+        <!-- Section 4 -->
+        <section class="tao-sp-section">
+          <h2 class="tao-sp-section-title">
+            4. Th??ng tin chi ti???t
+          </h2>
+
+          <p class="tao-sp-detail-intro">
+            Th??m n???i dung m?? t??? chi ti???t v??? s???n ph???m
+            c???a b???n
+          </p>
+
+          <div class="tao-sp-detail-toolbar">
+            <button
+                type="button"
+                class="primary-outline"
+                @click="addDetailBlock('title')"
+            >
+              <i class="fa-solid fa-plus"></i>
+              Th??m ti??u ?????
+            </button>
+
+            <button
+                type="button"
+                @click="addDetailBlock('text')"
+            >
+              <i class="fa-solid fa-align-left"></i>
+              Th??m n???i dung
+            </button>
+
+            <button
+                type="button"
+                @click="addDetailBlock('image')"
+            >
+              <i class="fa-solid fa-image"></i>
+              Th??m ???nh
+            </button>
+          </div>
+
+          <div
+              v-for="(block, index) in detailBlocks"
+              :key="block.id"
+              class="tao-sp-detail-block"
+          >
+            <div class="tao-sp-detail-block-head">
+              <label v-if="block.type === 'title'">
+                Ti??u ?????
+              </label>
+
+              <label v-else-if="block.type === 'text'">
+                N???i dung v??n b???n
+              </label>
+
+              <label v-else-if="block.type === 'image'">
+                H??nh ???nh chi ti???t
+              </label>
+
+              <button
+                  type="button"
+                  class="tao-sp-detail-delete"
+                  title="X??a kh???i"
+                  @click="removeDetailBlock(index)"
+              >
+                <i class="fa-regular fa-trash-can"></i>
+              </button>
+            </div>
+
+            <template v-if="block.type === 'title'">
+              <input
+                  v-model="block.content"
+                  class="tao-sp-input"
+                  placeholder="Nh???p ti??u ?????..."
+                  maxlength="100"
+                  style="
+                  font-weight: bold;
+                  font-size: 14px;
+                "
+              />
+
+              <span class="tao-sp-char-count">
+                {{ block.content.length }}/100
+              </span>
+            

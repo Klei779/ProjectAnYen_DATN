@@ -31,6 +31,9 @@ public class DonHang {
     @Column(name = "NgayTaoDon")
     private LocalDate ngayTaoDon;
 
+    @Column(name = "NgayGiaoDuKien")
+    private LocalDate ngayGiaoDuKien;
+
     @Column(name = "tongTien")
     private BigDecimal tongTien;
 
@@ -42,6 +45,8 @@ public class DonHang {
     public static final Integer TT_HOAN_THANH = 6;
     public static final Integer TT_DA_HUY = 7;
     public static final Integer TT_DOI_TAC_TU_CHOI = 8;
+    public static final Integer TT_DA_GIAO = 9;
+    public static final Integer TT_DA_THANH_TOAN = 10;
 
     public static final Integer PT_CHUA_CHON = 0;
     public static final Integer PT_TIEN_MAT = 1;

@@ -381,7 +381,7 @@
 
 <script setup>
 
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter } from "vue-router";
 import {
   getThongBaoDoiTac,
@@ -517,8 +517,29 @@ const loadThongBao = async () => {
   }
 };
 
+// Polling để reload thông báo mỗi 5 giây
+let pollingInterval = null;
+
+const startPolling = () => {
+  pollingInterval = setInterval(() => {
+    loadThongBao();
+  }, 5000);
+};
+
+const stopPolling = () => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+    pollingInterval = null;
+  }
+};
+
 onMounted(() => {
   loadThongBao();
+  startPolling();
+});
+
+onUnmounted(() => {
+  stopPolling();
 });
 
 const filteredNotifications = computed(() => {

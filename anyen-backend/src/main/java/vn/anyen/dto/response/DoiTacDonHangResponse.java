@@ -24,6 +24,7 @@ public class DoiTacDonHangResponse {
     private String ghiChu;
     private String trangThai;
     private BigDecimal tongCong;
+    private Boolean coHopDong;
 
     private List<LichSuTrangThaiResponse> trangThaiLichSu;
     private TepDinhKemResponse tepDinhKem;
@@ -40,6 +41,7 @@ public class DoiTacDonHangResponse {
         private Integer soLuong;
         private BigDecimal donGia;
         private BigDecimal thanhTien;
+        private String ngayGiaoDuKien;
     }
 
     @Getter

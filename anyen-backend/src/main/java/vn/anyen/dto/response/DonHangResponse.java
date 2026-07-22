@@ -28,6 +28,7 @@ public class DonHangResponse {
     private Integer MaNhanVien;
     private String tenNhanVien;
     private LocalDate NgayTaoDon;
+    private String ngayGiaoDuKien;
     private BigDecimal tongTien;
     private Integer trangThai;
     private String GhiChu;

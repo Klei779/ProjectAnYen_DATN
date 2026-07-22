@@ -12,6 +12,7 @@
     "test:e2e:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "axios": "^1.17.0",
     "bootstrap": "^5.3.8",
@@ -23,6 +24,7 @@
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "pinia": "^3.0.4",
+    "sockjs-client": "^1.6.1",
     "vue": "^3.5.34",
     "vue-router": "^5.1.0",
     "vue-turnstile": "^1.0.11"

@@ -16,9 +16,9 @@ import vn.anyen.entity.*;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.DonHangRepository;
+import vn.anyen.repository.HopDongRepository;
 import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
-import vn.anyen.constants.AppLabels;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -39,6 +39,8 @@ public class DoiTacThongBaoService {
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final ThongBaoService thongBaoService;
     private final SanPhamRepository sanPhamRepository;
+    private final RealtimeService realtimeService;
+    private final HopDongRepository hopDongRepository;
 
     // Loai dùng String để khớp VARCHAR trong DB
     private static final String LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
@@ -96,6 +98,14 @@ public class DoiTacThongBaoService {
         thongBaoRepository.save(thongBao);
 
         if (donHang != null) {
+            // Đánh dấu các ChiTietDonHang của đối tác này là Đã nhận (1)
+            List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHangAndDoiTac(
+                    donHang.getMaDonHang(), doiTac.getMaDoiTac());
+            for (ChiTietDonHang ct : chiTiets) {
+                ct.setTrangThaiDoiTac(1);
+                chiTietDonHangRepository.save(ct);
+            }
+
             capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(donHang);
 
             thongBaoService.taoThongBaoChapNhanDonHang(donHang.getMaDonHang());
@@ -130,7 +140,14 @@ public class DoiTacThongBaoService {
         DonHang donHang = thongBao.getDonHang();
 
         if (donHang != null) {
-            donHang.setTrangThai(DonHang.TT_DOI_TAC_TU_CHOI);
+            // Xóa các sản phẩm của đối tác này khỏi đơn hàng
+            List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHangAndDoiTac(
+                    donHang.getMaDonHang(), doiTac.getMaDoiTac());
+            chiTietDonHangRepository.deleteAll(chiTiets);
+            chiTietDonHangRepository.flush();
+
+            // Nếu đơn hàng bị từ chối bởi ít nhất 1 đối tác, nó quay về trạng thái Mới tạo
+            donHang.setTrangThai(DonHang.TT_MOI_TAO);
 
             String ghiChuCu = donHang.getGhiChu() == null
                     ? ""
@@ -141,10 +158,22 @@ public class DoiTacThongBaoService {
                             + "\nĐối tác "
                             + doiTac.getTenDoiTac()
                             + " từ chối. Lý do: "
-                            + request.getLyDo();
+                            + request.getLyDo()
+                            + ". Sản phẩm của đối tác này đã bị xóa khỏi đơn.";
 
             donHang.setGhiChu(ghiChuMoi.trim());
+            
+            // Tính lại tổng tiền sau khi xóa
+            List<ChiTietDonHang> remainingChiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(donHang.getMaDonHang());
+            BigDecimal tongTienMoi = remainingChiTiets.stream()
+                .map(ct -> ct.getGiaTien().multiply(BigDecimal.valueOf(ct.getSoLuong())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            donHang.setTongTien(tongTienMoi);
+
             donHangRepository.save(donHang);
+
+            // Gửi thông báo về nhân viên rằng đối tác đã từ chối
+            thongBaoService.taoThongBaoDoiTacTuChoiDonHang(donHang.getMaDonHang(), doiTac.getTenDoiTac(), request.getLyDo());
         }
 
         thongBaoRepository.save(thongBao);
@@ -254,6 +283,14 @@ public class DoiTacThongBaoService {
 
         DonHang donHang = thongBao.getDonHang();
 
+        // Kiểm tra xem đơn hàng đã có hợp đồng chưa
+        if (!hopDongRepository.existsByDonHang_MaDonHang(maDonHang)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Đơn hàng chưa có hợp đồng. Vui lòng chờ nhân viên tạo hợp đồng."
+            );
+        }
+
         donHang.setTrangThai(request.getTrangThai());
 
         donHangRepository.save(donHang);
@@ -267,6 +304,50 @@ public class DoiTacThongBaoService {
                 .build();
     }
 
+    @Transactional
+    public void taoThongBaoDaTaoHopDong(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy đơn hàng"
+                ));
+
+        List<Integer> maDoiTacs =
+                chiTietDonHangRepository.findMaDoiTacsByDonHang(maDonHang);
+
+        for (Integer maDoiTac : maDoiTacs) {
+            DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                    .orElse(null);
+
+            if (doiTac == null) {
+                continue;
+            }
+
+            String tenKhachHang = donHang.getKhachHang() != null
+                    ? donHang.getKhachHang().getTenKhachHang()
+                    : "Khách hàng";
+
+            String maDonHangText = "DH" + String.format("%03d", maDonHang);
+
+            ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
+                    .doiTac(doiTac)
+                    .donHang(donHang)
+                    .loai(LOAI_DON_HANG)
+                    .tieuDe("Đã tạo hợp đồng #" + maDonHangText)
+                    .noiDung("Hợp đồng cho đơn hàng " + maDonHangText + 
+                            " của khách hàng " + tenKhachHang + 
+                            " đã được tạo. Vui lòng xử lý đơn hàng.")
+                    .trangThaiThongBao(DA_CHAP_NHAN)
+                    .daDoc(false)
+                    .thoiGianTao(LocalDateTime.now())
+                    .build();
+
+            thongBaoRepository.save(thongBao);
+            realtimeService.guiThongBaoDoiTac(doiTac.getMaDoiTac(), thongBao);
+        }
+    }
+
+    @Transactional
     public void taoThongBaoChoDonHang(Integer maDonHang) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -285,16 +366,19 @@ public class DoiTacThongBaoService {
                 continue;
             }
 
-            boolean daCoThongBao =
-                    thongBaoRepository
-                            .existsByDoiTac_MaDoiTacAndDonHang_MaDonHangAndLoai(
-                                    doiTac.getMaDoiTac(),
-                                    maDonHang,
-                                    LOAI_DON_HANG
-                            );
-
-            if (daCoThongBao) {
-                continue;
+            // Xóa thông báo cũ của đối tác này cho đơn hàng này (nếu có)
+            List<ThongBaoDoiTac> allOldThongBaos =
+                    thongBaoRepository.findByDonHang_MaDonHangAndLoai(maDonHang, LOAI_DON_HANG);
+            
+            List<ThongBaoDoiTac> oldThongBaos =
+                    allOldThongBaos
+                            .stream()
+                            .filter(tb -> tb.getDoiTac() != null && tb.getDoiTac().getMaDoiTac().equals(maDoiTac))
+                            .toList();
+            
+            if (!oldThongBaos.isEmpty()) {
+                thongBaoRepository.deleteAll(oldThongBaos);
+                thongBaoRepository.flush();
             }
 
             String tenKhachHang = donHang.getKhachHang() != null
@@ -319,6 +403,7 @@ public class DoiTacThongBaoService {
                     .build();
 
             thongBaoRepository.save(thongBao);
+            realtimeService.guiThongBaoDoiTac(doiTac.getMaDoiTac(), thongBao);
         }
     }
 
@@ -598,28 +683,29 @@ public class DoiTacThongBaoService {
     }
 
     private void capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(DonHang donHang) {
-        List<ThongBaoDoiTac> thongBaos =
-                thongBaoRepository.findByDonHang_MaDonHangAndLoai(
-                        donHang.getMaDonHang(),
-                        LOAI_DON_HANG
-                );
-
-        if (thongBaos == null || thongBaos.isEmpty()) {
+        List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(donHang.getMaDonHang());
+        
+        if (chiTiets == null || chiTiets.isEmpty()) {
             return;
         }
 
-        boolean tatCaDoiTacDaChapNhan = thongBaos.stream()
-                .allMatch(tb -> DA_CHAP_NHAN.equals(tb.getTrangThaiThongBao()));
+        // Kiểm tra xem tất cả ChiTietDonHang đã được nhận chưa (TrangThaiDoiTac = 1)
+        boolean tatCaDaChapNhan = chiTiets.stream()
+                .allMatch(ct -> ct.getTrangThaiDoiTac() != null && ct.getTrangThaiDoiTac() == 1);
 
-        if (!tatCaDoiTacDaChapNhan) {
+        if (!tatCaDaChapNhan) {
             return;
         }
 
         if (DonHang.TT_CHO_DOI_TAC_XAC_NHAN.equals(donHang.getTrangThai())
                 || DonHang.TT_MOI_TAO.equals(donHang.getTrangThai())) {
 
+            // Chuyển sang trạng thái Đã xác nhận và gửi thông báo yêu cầu tạo hợp đồng
             donHang.setTrangThai(DonHang.TT_DA_XAC_NHAN);
             donHangRepository.save(donHang);
+            
+            // Gửi thông báo yêu cầu tạo hợp đồng cho nhân viên
+            thongBaoService.taoThongBaoYeuCauTaoHopDong(donHang.getMaDonHang());
         }
     }
 

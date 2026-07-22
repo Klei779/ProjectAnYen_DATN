@@ -28,6 +28,7 @@ public class ThongBaoService {
     private final NhanVienRepository nhanVienRepository;
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
+    private final RealtimeService realtimeService;
     private final ThongBaoDoiTacRepository thongBaoDoiTacRepository;
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
@@ -698,5 +699,127 @@ public class ThongBaoService {
 
             thongBaoRepository.save(thongBao);
         }
+    }
+
+    @Transactional
+    public void taoThongBaoDoiTacXuLyDonHang(Integer maDonHang, Integer maDoiTac, java.time.LocalDate ngayGiao) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+        
+        DoiTac doiTac = doiTacRepository.findById(maDoiTac)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đối tác"));
+
+        List<NhanVien> admins = nhanVienRepository.findByVaiTro(1);
+        if (admins == null || admins.isEmpty()) {
+            return;
+        }
+
+        String noiDung = String.format(
+                "Đối tác %s dự kiến giao đơn hàng #DH%04d vào ngày %s",
+                doiTac.getTenDoiTac(), maDonHang, ngayGiao.toString()
+        );
+
+        for (NhanVien admin : admins) {
+            ThongBao thongBao = ThongBao.builder()
+                    .tieuDe("Đối tác đã xử lý đơn hàng")
+                    .noiDung(noiDung)
+                    .loaiThongBao("DON_HANG")
+                    .nguoiNhanId(admin.getMaNhanVien())
+                    .maKhachHang(donHang.getKhachHang() != null ? donHang.getKhachHang().getMaKhachHang() : null)
+                    .daDoc(false)
+                    .trangThai(TRANG_THAI_CHUA_DOC)
+                    .build();
+
+            ThongBao saved = thongBaoRepository.save(thongBao);
+            realtimeService.guiThongBaoNhanVien(admin.getMaNhanVien(), saved);
+        }
+    }
+
+    @Transactional
+    public void taoThongBaoDoiTacTuChoiDonHang(Integer maDonHang, String tenDoiTac, String lyDo) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        if (donHang.getNhanVien() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Đơn hàng chưa có nhân viên phụ trách"
+            );
+        }
+
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
+
+        String tenKhachHang = "Không có";
+        if (donHang.getKhachHang() != null) {
+            tenKhachHang = donHang.getKhachHang().getTenKhachHang();
+        }
+
+        String maDonHangText = "DH" + String.format("%03d", donHang.getMaDonHang());
+
+        ThongBao thongBao = new ThongBao();
+        thongBao.setTieuDe("Đối tác đã từ chối đơn hàng");
+        thongBao.setNoiDung(
+                "Đối tác " + tenDoiTac + " đã từ chối đơn hàng " + maDonHangText +
+                        " của khách hàng " + tenKhachHang +
+                        ". Lý do: " + lyDo +
+                        ". Vui lòng chọn sản phẩm khác."
+        );
+        thongBao.setLoaiThongBao("DON_HANG");
+        thongBao.setNguoiGuiId(null);
+        thongBao.setNguoiNhanId(nguoiNhanId);
+
+        if (donHang.getKhachHang() != null) {
+            thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
+        }
+
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setNgayCapNhat(LocalDateTime.now());
+
+        thongBaoRepository.save(thongBao);
+    }
+
+    @Transactional
+    public void taoThongBaoYeuCauTaoHopDong(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        if (donHang.getNhanVien() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Đơn hàng chưa có nhân viên phụ trách"
+            );
+        }
+
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
+
+        String tenKhachHang = "Không có";
+        if (donHang.getKhachHang() != null) {
+            tenKhachHang = donHang.getKhachHang().getTenKhachHang();
+        }
+
+        String maDonHangText = "DH" + String.format("%03d", donHang.getMaDonHang());
+
+        ThongBao thongBao = new ThongBao();
+        thongBao.setTieuDe("Yêu cầu tạo hợp đồng");
+        thongBao.setNoiDung(
+                "Tất cả đối tác đã nhận đơn hàng " + maDonHangText +
+                        " của khách hàng " + tenKhachHang +
+                        ". Vui lòng tạo hợp đồng để tiếp tục xử lý. [MA_DON_HANG:" + maDonHang + "]"
+        );
+        thongBao.setLoaiThongBao("DON_HANG");
+        thongBao.setNguoiGuiId(null);
+        thongBao.setNguoiNhanId(nguoiNhanId);
+
+        if (donHang.getKhachHang() != null) {
+            thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
+        }
+
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setNgayCapNhat(LocalDateTime.now());
+
+        thongBaoRepository.save(thongBao);
+        realtimeService.guiThongBaoNhanVien(nguoiNhanId, thongBao);
     }
 }

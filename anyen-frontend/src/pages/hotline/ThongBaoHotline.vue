@@ -151,7 +151,14 @@
              <p class="text-center text-muted"><i class="fa-regular fa-clock"></i> Thời gian: {{ selectedNotification.ngayTao }}</p>
              
              <div class="system-content-box mt-4">
-               <p>{{ selectedNotification.noiDung }}</p>
+               <p>{{ selectedNotification.noiDung.replace(/\[MA_DON_HANG:\d+\]/, '') }}</p>
+             </div>
+
+             <!-- Nút tạo hợp đồng cho thông báo yêu cầu tạo hợp đồng -->
+             <div class="action-buttons mt-4" v-if="selectedNotification.tieuDe === 'Yêu cầu tạo hợp đồng'">
+               <button class="btn btn-primary w-100" @click="openHopDongPopup(selectedNotification)">
+                 <i class="fa-solid fa-file-contract"></i> Tạo hợp đồng
+               </button>
              </div>
           </div>
         </div>
@@ -166,12 +173,23 @@
       </div>
     </Transition>
 
+    <!-- POPUP TẠO HỢP ĐỒNG -->
+    <PopTaoHopDong 
+      v-model="showHopDongPopup" 
+      :initial-ma-don-hang="selectedMaDonHangForHopDong"
+      @success="onHopDongSuccess"
+    />
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import api from "../../api/api.js";
+import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
+
+const router = useRouter();
 
 // Layout & State
 const activeTab = ref("all");
@@ -183,6 +201,10 @@ const toast = ref({ show: false, message: "", type: "success" });
 
 // User Info
 const userHoTen = ref("Hotline");
+
+// Popup tạo hợp đồng
+const showHopDongPopup = ref(false);
+const selectedMaDonHangForHopDong = ref(null);
 
 // Tabs matching the design
 const TT_CHUA_DOC = 0;
@@ -366,6 +388,33 @@ const getStatusText = (trangThai) => {
 const showToast = (message, type = "success") => {
   toast.value = { show: true, message, type };
   setTimeout(() => { toast.value.show = false; }, 3000);
+};
+
+// Parse maDonHang từ nội dung thông báo
+const parseMaDonHangFromContent = (content) => {
+  if (!content) return null;
+  const match = content.match(/\[MA_DON_HANG:(\d+)\]/);
+  return match ? parseInt(match[1]) : null;
+};
+
+// Mở popup tạo hợp đồng với đơn hàng đã chọn
+const openHopDongPopup = (notification) => {
+  const maDonHang = parseMaDonHangFromContent(notification.noiDung);
+  if (maDonHang) {
+    selectedMaDonHangForHopDong.value = maDonHang;
+    showHopDongPopup.value = true;
+  } else {
+    showToast("Không tìm thấy mã đơn hàng trong thông báo", "error");
+  }
+};
+
+// Xử lý khi tạo hợp đồng thành công
+const onHopDongSuccess = () => {
+  showHopDongPopup.value = false;
+  selectedMaDonHangForHopDong.value = null;
+  selectedNotification.value = null;
+  showToast("Đã tạo hợp đồng thành công");
+  loadNotifications();
 };
 </script>
 

@@ -27,6 +27,13 @@ import {
 const visible = defineModel();
 const emit = defineEmits(["success", "saved"]);
 
+const props = defineProps({
+  initialMaDonHang: {
+    type: Number,
+    default: null
+  }
+});
+
 const AUTO_CONTRACT_CODE = "Tự động sau khi lưu";
 
 const userStr = localStorage.getItem("user");
@@ -575,6 +582,10 @@ const saveContract = async () => {
 
     const today = new Date().toISOString().slice(0, 10);
 
+    // Chuyển đổi giới tính từ string sang boolean
+    const genderValue = contract.value.gender === "Nam" ? true : 
+                       contract.value.gender === "Nữ" ? false : null;
+
     const saved = await createHopDong({
       maDonHang: Number(selectedMaDonHang.value),
 
@@ -583,12 +594,12 @@ const saveContract = async () => {
       ngayKetThuc: contract.value.contractEndDate || null,
       thoiHanKetThuc: contract.value.contractEndDate || null,
 
-      trangThai: "Chờ ký",
+      trangThai: 1, // 1 = Chờ ký
 
       hoTenNguoiMat: contract.value.deceasedName || null,
       ngayMat: contract.value.deathDate || null,
       ngaySinh: contract.value.birthDate || null,
-      gioiTinh: contract.value.gender || null,
+      gioiTinh: genderValue,
 
       soGiayBaoTu: contract.value.deathCertificateNo || null,
       noiCapGiayBaoTu: contract.value.deathCertificateIssuePlace || null,
@@ -763,6 +774,12 @@ watch(
       await loadDonHangOptions();
 
       console.log("DON HANG OPTIONS:", donHangOptions.value);
+
+      // Nếu có initialMaDonHang từ thông báo, tự động chọn đơn hàng
+      if (props.initialMaDonHang) {
+        selectedMaDonHang.value = props.initialMaDonHang;
+        await onSelectDonHang(props.initialMaDonHang);
+      }
     },
     {
       immediate: true

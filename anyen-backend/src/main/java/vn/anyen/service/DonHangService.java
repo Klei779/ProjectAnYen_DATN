@@ -26,6 +26,7 @@ import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.HoaDonRepository;
 import vn.anyen.repository.HopDongRepository;
 import vn.anyen.repository.KhachHangRepository;
+import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.repository.SanPhamRepository;
 
@@ -50,6 +51,7 @@ public class DonHangService {
     private final KhachHangRepository khachHangRepository;
     private final NhanVienRepository nhanVienRepository;
     private final SanPhamRepository sanPhamRepository;
+    private final DoiTacRepository doiTacRepository;
     private final DoiTacThongBaoService doiTacThongBaoService;
     private final ThongBaoService thongBaoService;
 
@@ -58,7 +60,8 @@ public class DonHangService {
             DonHang.TT_CHO_DOI_TAC_XAC_NHAN,
             DonHang.TT_DA_XAC_NHAN,
             DonHang.TT_DANG_XU_LY,
-            DonHang.TT_CHO_THANH_TOAN,
+            DonHang.TT_DA_GIAO,
+            DonHang.TT_DA_THANH_TOAN,
             DonHang.TT_HOAN_THANH
     );
 
@@ -108,7 +111,8 @@ public class DonHangService {
 
         BigDecimal tongTien = taoChiTietDonHangVaTruTonKho(
                 savedDonHang,
-                request.getItems()
+                request.getItems(),
+                null
         );
 
         savedDonHang.setTongTien(tongTien);
@@ -188,16 +192,22 @@ public class DonHangService {
                         : DonHang.TTTT_CHUA_THANH_TOAN
         );
 
-        hoanTonKhoVaXoaChiTietCu(donHang);
+        List<ChiTietDonHang> chiTietsCu = hoanTonKhoVaXoaChiTietCu(donHang);
 
         BigDecimal tongTienMoi = taoChiTietDonHangVaTruTonKho(
                 donHang,
-                request.getItems()
+                request.getItems(),
+                chiTietsCu
         );
 
         donHang.setTongTien(tongTienMoi);
 
         DonHang saved = donHangRepository.save(donHang);
+
+        // Nếu đơn hàng ở trạng thái Mới tạo (sau khi đối tác từ chối), tự động gửi lại thông báo
+        if (DonHang.TT_MOI_TAO.equals(saved.getTrangThai())) {
+            doiTacThongBaoService.taoThongBaoChoDonHang(saved.getMaDonHang());
+        }
 
         return mapToDonHangResponse(saved);
     }
@@ -308,7 +318,7 @@ public class DonHangService {
         khachHang.setDiaChi(request.getDiaChi());
     }
 
-    private void hoanTonKhoVaXoaChiTietCu(DonHang donHang) {
+    private List<ChiTietDonHang> hoanTonKhoVaXoaChiTietCu(DonHang donHang) {
         List<ChiTietDonHang> chiTietsCu =
                 chiTietDonHangRepository.findByDonHang_MaDonHang(
                         donHang.getMaDonHang()
@@ -333,11 +343,14 @@ public class DonHangService {
 
         chiTietDonHangRepository.deleteAll(chiTietsCu);
         chiTietDonHangRepository.flush();
+        
+        return chiTietsCu;
     }
 
     private BigDecimal taoChiTietDonHangVaTruTonKho(
             DonHang donHang,
-            List<TaoDonHangRequest.SanPhamTrongDonRequest> items
+            List<TaoDonHangRequest.SanPhamTrongDonRequest> items,
+            List<ChiTietDonHang> chiTietsCu
     ) {
         BigDecimal tongTien = BigDecimal.ZERO;
 
@@ -377,12 +390,27 @@ public class DonHangService {
             tongTien = tongTien.add(
                     donGia.multiply(BigDecimal.valueOf(soLuongDat))
             );
+            
+            Integer oldTrangThai = 0;
+            if (chiTietsCu != null) {
+                for (ChiTietDonHang ct : chiTietsCu) {
+                    if (ct.getSanPham() != null && ct.getSanPham().getMaSanPham().equals(sanPham.getMaSanPham())) {
+                        if (ct.getSoLuong() != null && ct.getSoLuong().equals(soLuongDat)) {
+                            if (ct.getTrangThaiDoiTac() != null && ct.getTrangThaiDoiTac() == 1) {
+                                oldTrangThai = 1;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
 
             ChiTietDonHang chiTiet = ChiTietDonHang.builder()
                     .donHang(donHang)
                     .sanPham(sanPham)
                     .soLuong(soLuongDat)
                     .giaTien(donGia)
+                    .trangThaiDoiTac(oldTrangThai)
                     .build();
 
             chiTietDonHangRepository.save(chiTiet);
@@ -411,21 +439,25 @@ public class DonHangService {
             case 1:
                 return "Mới tạo";
             case 2:
-                return "Chờ đối tác xác nhận";
+                return "Xác nhận";
             case 3:
-                return "Đã xác nhận";
+                return "Đã nhận";
             case 4:
-                return "Đang xử lý";
+                return "Xử lý";
             case 5:
-                return "Chờ thanh toán";
+                return "Thanh toán";
             case 6:
                 return "Hoàn thành";
             case 7:
                 return "Đã hủy";
             case 8:
-                return "Đối tác đã từ chối";
+                return "Từ chối";
+            case 9:
+                return "Đã giao";
+            case 10:
+                return "Đã thanh toán";
             default:
-                return "Không xác định";
+                return "Không rõ";
         }
     }
 
@@ -486,13 +518,17 @@ public class DonHangService {
             );
         }
 
-        if (coDoiTacTuChoi(maDonHang)) {
-            donHang.setTrangThai(DonHang.TT_DOI_TAC_TU_CHOI);
-            donHangRepository.save(donHang);
+        // Nếu đơn hàng ở trạng thái Mới tạo (sau khi đối tác từ chối), cho phép cập nhật
+        // để nhân viên có thể gửi lại đơn hàng
+        if (!DonHang.TT_MOI_TAO.equals(trangThaiHienTai)) {
+            if (coDoiTacTuChoi(maDonHang)) {
+                donHang.setTrangThai(DonHang.TT_DOI_TAC_TU_CHOI);
+                donHangRepository.save(donHang);
 
-            throw new RuntimeException(
-                    "Có đối tác đã từ chối đơn hàng, không thể cập nhật tiếp."
-            );
+                throw new RuntimeException(
+                        "Có đối tác đã từ chối đơn hàng, không thể cập nhật tiếp."
+                );
+            }
         }
 
         if (!DonHang.TT_DA_HUY.equals(trangThaiMoi)
@@ -519,6 +555,15 @@ public class DonHangService {
                         "Chưa thể chuyển sang Đã xác nhận vì chưa đủ đối tác xác nhận."
                 );
             }
+        }
+
+        // Chặn nhân viên chuyển sang các trạng thái chỉ dành cho đối tác
+        if (DonHang.TT_DANG_XU_LY.equals(trangThaiMoi) 
+                || DonHang.TT_DA_GIAO.equals(trangThaiMoi)) {
+            throw new RuntimeException(
+                    "Nhân viên không thể chuyển sang trạng thái Đang xử lý hoặc Đã giao. "
+                            + "Các trạng thái này chỉ dành cho đối tác."
+            );
         }
 
         if (!DonHang.TT_DA_HUY.equals(trangThaiMoi)) {
@@ -559,6 +604,106 @@ public class DonHangService {
     @Transactional
     public DonHangResponse huyDonHang(Integer maDonHang) {
         return capNhatTrangThai(maDonHang, DonHang.TT_DA_HUY);
+    }
+
+    @Transactional
+    public DonHangResponse guiDonChoDoiTac(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy đơn hàng #" + maDonHang
+                ));
+
+        // Cho phép gửi lại đơn hàng khi:
+        // - Trạng thái là Mới tạo (TT_MOI_TAO) - sau khi đối tác từ chối
+        // - Hoặc trạng thái là Chờ đối tác xác nhận (để gửi lại nếu chưa gửi đủ)
+        if (!DonHang.TT_MOI_TAO.equals(donHang.getTrangThai()) 
+                && !DonHang.TT_CHO_DOI_TAC_XAC_NHAN.equals(donHang.getTrangThai())) {
+            throw new RuntimeException(
+                    "Chỉ có thể gửi đơn hàng ở trạng thái Mới tạo hoặc Chờ đối tác xác nhận"
+            );
+        }
+
+        donHang.setTrangThai(DonHang.TT_CHO_DOI_TAC_XAC_NHAN);
+        DonHang saved = donHangRepository.save(donHang);
+
+        doiTacThongBaoService.taoThongBaoChoDonHang(maDonHang);
+
+        return mapToDonHangResponse(saved);
+    }
+
+    @Transactional
+    public DonHangResponse taoHopDong(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy đơn hàng #" + maDonHang
+                ));
+
+        if (!DonHang.TT_DA_XAC_NHAN.equals(donHang.getTrangThai())) {
+            throw new RuntimeException(
+                    "Chỉ có thể tạo hợp đồng cho đơn hàng ở trạng thái Đã xác nhận"
+            );
+        }
+
+        if (hopDongRepository.existsByDonHang_MaDonHang(maDonHang)) {
+            throw new RuntimeException(
+                    "Đơn hàng đã có hợp đồng"
+            );
+        }
+
+        HopDong hopDong = HopDong.builder()
+                .donHang(donHang)
+                .ngayKyHD(LocalDate.now())
+                .trangThai(HopDong.DA_KY)
+                .build();
+
+        hopDongRepository.save(hopDong);
+
+        // Gửi thông báo đã tạo hợp đồng cho các đối tác
+        doiTacThongBaoService.taoThongBaoDaTaoHopDong(maDonHang);
+
+        return mapToDonHangResponse(donHang);
+    }
+
+    @Transactional
+    public DonHangResponse doiTacBaoDaGiao(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy đơn hàng #" + maDonHang
+                ));
+
+        if (!DonHang.TT_DANG_XU_LY.equals(donHang.getTrangThai())) {
+            throw new RuntimeException(
+                    "Chỉ có thể báo đã giao cho đơn hàng ở trạng thái Đang xử lý"
+            );
+        }
+
+        donHang.setTrangThai(DonHang.TT_DA_GIAO);
+        DonHang saved = donHangRepository.save(donHang);
+
+        return mapToDonHangResponse(saved);
+    }
+
+    @Transactional
+    public DonHangResponse thanhToanDonHang(Integer maDonHang) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy đơn hàng #" + maDonHang
+                ));
+
+        if (!DonHang.TT_DA_GIAO.equals(donHang.getTrangThai())) {
+            throw new RuntimeException(
+                    "Chỉ có thể thanh toán cho đơn hàng ở trạng thái Đã giao"
+            );
+        }
+
+        donHang.setTrangThai(DonHang.TT_DA_THANH_TOAN);
+        donHang.setTrangThaiThanhToan(DonHang.TTTT_DA_THANH_TOAN);
+        DonHang saved = donHangRepository.save(donHang);
+
+        donHang.setTrangThai(DonHang.TT_HOAN_THANH);
+        saved = donHangRepository.save(saved);
+
+        return mapToDonHangResponse(saved);
     }
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {
@@ -720,6 +865,8 @@ public class DonHangService {
                 .maHopDong(hopDong != null ? hopDong.getMaHopDong() : null)
                 .trangThaiHopDong(hopDong != null ? hopDong.getTrangThai() : null)
 
+                .ngayGiaoDuKien(donHang.getNgayGiaoDuKien() != null ? donHang.getNgayGiaoDuKien().toString() : null)
+
                 .phuongThucGiaoHang("Giao hàng tận nơi")
                 .phiVanChuyen(BigDecimal.ZERO)
                 .giamGia(BigDecimal.ZERO)
@@ -821,6 +968,7 @@ public class DonHangService {
                                             BigDecimal.valueOf(soLuong)
                                     )
                             )
+                            .ngayGiaoDuKien(ct.getNgayGiaoDuKien() != null ? ct.getNgayGiaoDuKien().toString() : "")
                             .build()
             );
         }
@@ -872,6 +1020,7 @@ public class DonHangService {
                 .ghiChu(donHang.getGhiChu())
                 .trangThai(getTrangThaiString(donHang.getTrangThai()))
                 .tongCong(tongCong)
+                .coHopDong(hopDongRepository.existsByDonHang_MaDonHang(donHang.getMaDonHang()))
 
                 .sanPhams(sanPhams)
                 .build();
@@ -932,6 +1081,26 @@ public class DonHangService {
         }
 
         return response;
+    }
+
+    @Transactional
+    public void xuLyDonHangDoiTac(Integer maDonHang, Integer maDoiTac, LocalDate ngayGiaoDuKien) {
+        if (!hopDongRepository.existsByDonHang_MaDonHang(maDonHang)) {
+            throw new RuntimeException("Chưa có hợp đồng, không thể xử lý đơn hàng");
+        }
+
+        List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHangAndDoiTac(maDonHang, maDoiTac);
+        if (chiTiets.isEmpty()) {
+            throw new RuntimeException("Đơn hàng không thuộc đối tác này");
+        }
+
+        for (ChiTietDonHang ct : chiTiets) {
+            ct.setNgayGiaoDuKien(ngayGiaoDuKien);
+            ct.setTrangThaiDoiTac(2); 
+            chiTietDonHangRepository.save(ct);
+        }
+
+        thongBaoService.taoThongBaoDoiTacXuLyDonHang(maDonHang, maDoiTac, ngayGiaoDuKien);
     }
 
     private boolean tatCaDoiTacDaChapNhan(Integer maDonHang) {

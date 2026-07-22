@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "chitietdonhang")
@@ -32,4 +33,10 @@ public class ChiTietDonHang {
 
     @Column(name = "giaTien")
     private BigDecimal giaTien;
+
+    @Column(name = "TrangThaiDoiTac", columnDefinition = "int default 0")
+    private Integer trangThaiDoiTac = 0;
+
+    @Column(name = "NgayGiaoDuKien")
+    private LocalDate ngayGiaoDuKien;
 }

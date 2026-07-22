@@ -126,3 +126,12 @@ export async function updateTrangThaiDonHang(maDonHang, payload) {
 
   return response.data;
 }
+
+export async function xuLyDonHang(maDonHang, ngayGiaoDuKien) {
+  const response = await api.put(
+      `${API_URL}/${maDonHang}/xu-ly`,
+      { ngayGiaoDuKien }
+  );
+
+  return response.data;
+}

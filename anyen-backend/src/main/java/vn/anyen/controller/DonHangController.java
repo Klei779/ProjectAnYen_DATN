@@ -8,7 +8,6 @@ import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.service.DonHangService;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/don-hang")
@@ -38,6 +37,30 @@ public class DonHangController {
     @PutMapping("/{maDonHang}/huy")
     public ResponseEntity<DonHangResponse> huyDonHang(@PathVariable Integer maDonHang) {
         DonHangResponse response = donHangService.huyDonHang(maDonHang);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{maDonHang}/gui-doi-tac")
+    public ResponseEntity<DonHangResponse> guiDonChoDoiTac(@PathVariable Integer maDonHang) {
+        DonHangResponse response = donHangService.guiDonChoDoiTac(maDonHang);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{maDonHang}/tao-hop-dong")
+    public ResponseEntity<DonHangResponse> taoHopDong(@PathVariable Integer maDonHang) {
+        DonHangResponse response = donHangService.taoHopDong(maDonHang);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{maDonHang}/doi-tac-bao-da-giao")
+    public ResponseEntity<DonHangResponse> doiTacBaoDaGiao(@PathVariable Integer maDonHang) {
+        DonHangResponse response = donHangService.doiTacBaoDaGiao(maDonHang);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{maDonHang}/thanh-toan")
+    public ResponseEntity<DonHangResponse> thanhToanDonHang(@PathVariable Integer maDonHang) {
+        DonHangResponse response = donHangService.thanhToanDonHang(maDonHang);
         return ResponseEntity.ok(response);
     }
 }

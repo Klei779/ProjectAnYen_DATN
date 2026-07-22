@@ -39,6 +39,13 @@ public interface ThongBaoDoiTacRepository
             String loai
     );
 
+    boolean existsByDoiTac_MaDoiTacAndDonHang_MaDonHangAndLoaiAndTrangThaiThongBao(
+            Integer maDoiTac,
+            Integer maDonHang,
+            String loai,
+            Integer trangThaiThongBao
+    );
+
     Optional<ThongBaoDoiTac> findByDoiTac_MaDoiTacAndDonHang_MaDonHangAndLoai(
             Integer maDoiTac,
             Integer donHang,

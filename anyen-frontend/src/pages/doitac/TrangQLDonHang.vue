@@ -1,12 +1,21 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { getDonHangsDoiTac } from "../../services/doitacDonHangService.js";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
+import { ElMessage } from "element-plus";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
-import { Search, Filter, View } from "@element-plus/icons-vue";
+import { Search, Filter, View, Setting } from "@element-plus/icons-vue";
+import { xuLyDonHang } from "../../services/doitacDonHangService.js";
+import api from "../../api/api.js";
 
 const donHangs = ref([]);
 const showPopup = ref(false);
 const selectedDonHang = ref(null);
+const showXuLyDialog = ref(false);
+const xuLyForm = ref({
+  ngayGiaoDuKien: null
+});
 
 const loading = ref(false);
 const keyword = ref("");
@@ -42,6 +51,7 @@ const normalizeDonHang = (dh) => {
         dh.trangThaiDonHang ||
         dh.status ||
         "Đơn mới",
+    coHopDong: Boolean(dh.coHopDong)
   };
 };
 
@@ -71,13 +81,103 @@ const fetchDonHangs = async () => {
   }
 };
 
+let stompClient = null;
+
+const connectWebSocket = () => {
+  const socket = new SockJS("http://localhost:8080/ws");
+  stompClient = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    onConnect: () => {
+      console.log("Connected to WebSocket");
+      
+      const userStr = localStorage.getItem("user");
+      let maDoiTac = null;
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          maDoiTac = userObj.maDoiTac || userObj.id;
+        } catch (e) {
+          console.error("Error parsing user info", e);
+        }
+      }
+
+      if (maDoiTac) {
+        stompClient.subscribe(`/topic/doitac/${maDoiTac}`, (message) => {
+          ElMessage.success(message.body || "Bạn có thông báo mới!");
+          fetchDonHangs(); 
+        });
+      }
+    },
+    onStompError: (frame) => {
+      console.error("Broker reported error: " + frame.headers["message"]);
+      console.error("Additional details: " + frame.body);
+    },
+  });
+
+  stompClient.activate();
+};
+
 onMounted(() => {
   fetchDonHangs();
+  connectWebSocket();
+});
+
+onUnmounted(() => {
+  if (stompClient) {
+    stompClient.deactivate();
+  }
 });
 
 const openChiTiet = (dh) => {
   selectedDonHang.value = dh;
   showPopup.value = true;
+};
+
+const openXuLy = (dh) => {
+  if (!dh.coHopDong) {
+    ElMessage.warning("Đơn hàng chưa tạo hợp đồng, không thể xử lý!");
+    return;
+  }
+  selectedDonHang.value = dh;
+  xuLyForm.value.ngayGiaoDuKien = null;
+  showXuLyDialog.value = true;
+};
+
+const handleXuLy = async () => {
+  if (!xuLyForm.value.ngayGiaoDuKien) {
+    ElMessage.warning("Vui lòng nhập ngày giao dự kiến");
+    return;
+  }
+
+  try {
+    loading.value = true;
+    await xuLyDonHang(selectedDonHang.value.maDonHang, xuLyForm.value.ngayGiaoDuKien);
+    ElMessage.success("Xử lý đơn hàng thành công!");
+    showXuLyDialog.value = false;
+    await fetchDonHangs();
+  } catch (error) {
+    console.error("Lỗi khi xử lý đơn hàng:", error);
+    ElMessage.error(error.response?.data?.message || "Có lỗi xảy ra khi xử lý đơn hàng");
+  } finally {
+    loading.value = false;
+  }
+};
+
+const baoDaGiao = async (dh) => {
+  try {
+    loading.value = true;
+    await api.put(`/api/don-hang/${dh.maDonHang}/doi-tac-bao-da-giao`);
+    ElMessage.success("Đã báo giao hàng thành công!");
+    await fetchDonHangs();
+  } catch (error) {
+    console.error("Lỗi khi báo đã giao:", error);
+    ElMessage.error(error.response?.data?.message || "Có lỗi xảy ra khi báo đã giao");
+  } finally {
+    loading.value = false;
+  }
 };
 
 const getStatus = (dh) => {
@@ -336,6 +436,34 @@ const completedCount = computed(() => {
               </el-icon>
               Xem chi tiết
             </el-button>
+
+            <el-button
+                v-if="(dh.trangThai === 'Đã nhận' || dh.trangThai === 'Xử lý') && dh.coHopDong"
+                size="small"
+                type="success"
+                class="detail-btn"
+                style="margin-left: 8px"
+                @click="openXuLy(dh)"
+            >
+              <el-icon>
+                <Setting />
+              </el-icon>
+              Xử lý
+            </el-button>
+
+            <el-button
+                v-if="dh.trangThai === 'Xử lý' && dh.coHopDong"
+                size="small"
+                type="warning"
+                class="detail-btn"
+                style="margin-left: 8px"
+                @click="baoDaGiao(dh)"
+            >
+              <el-icon>
+                <Setting />
+              </el-icon>
+              Đã giao
+            </el-button>
           </td>
         </tr>
         </tbody>
@@ -347,6 +475,33 @@ const completedCount = computed(() => {
         v-model="showPopup"
         :don-hang="selectedDonHang"
     />
+
+    <el-dialog
+        v-model="showXuLyDialog"
+        title="Xử lý đơn hàng"
+        width="400px"
+    >
+      <div v-if="selectedDonHang" style="margin-bottom: 20px;">
+        <p><strong>Mã đơn hàng:</strong> #{{ selectedDonHang.maCode }}</p>
+        <p>Vui lòng nhập ngày dự kiến hoàn thành & giao hàng:</p>
+        <el-date-picker
+            v-model="xuLyForm.ngayGiaoDuKien"
+            type="date"
+            placeholder="Chọn ngày giao"
+            format="DD/MM/YYYY"
+            value-format="YYYY-MM-DD"
+            style="width: 100%; margin-top: 10px;"
+        />
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="showXuLyDialog = false">Hủy</el-button>
+          <el-button type="primary" @click="handleXuLy" :loading="loading">
+            Xác nhận
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 

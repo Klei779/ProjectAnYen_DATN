@@ -9,6 +9,12 @@ import vn.anyen.entity.DoiTac;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.service.DonHangService;
 
+import java.time.LocalDate;
+import java.util.Map;
+import vn.anyen.entity.DoiTac;
+import vn.anyen.repository.DoiTacRepository;
+import vn.anyen.service.DonHangService;
+
 @RestController
 @RequestMapping("/api/doi-tac/quan-ly-don-hang")
 @RequiredArgsConstructor
@@ -56,6 +62,33 @@ public class DoiTacDonHangController {
         return donHangService.getDoiTacDonHangDetail(
                 maDonHang,
                 doiTac.getMaDoiTac()
+        );
+    }
+
+    @PutMapping("/{maDonHang}/xu-ly")
+    public void xuLyDonHang(
+            Authentication authentication,
+            @PathVariable Integer maDonHang,
+            @RequestBody Map<String, String> body
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("Chưa đăng nhập");
+        }
+
+        DoiTac doiTac = doiTacRepository.findByTenDangNhap(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác đăng nhập"));
+
+        String ngayGiaoDuKienStr = body.get("ngayGiaoDuKien");
+        if (ngayGiaoDuKienStr == null || ngayGiaoDuKienStr.trim().isEmpty()) {
+            throw new RuntimeException("Ngày giao dự kiến không được để trống");
+        }
+
+        LocalDate ngayGiaoDuKien = LocalDate.parse(ngayGiaoDuKienStr);
+
+        donHangService.xuLyDonHangDoiTac(
+                maDonHang,
+                doiTac.getMaDoiTac(),
+                ngayGiaoDuKien
         );
     }
 }

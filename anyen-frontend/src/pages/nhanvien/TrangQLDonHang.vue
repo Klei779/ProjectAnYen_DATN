@@ -1,6 +1,8 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { Client } from "@stomp/stompjs";
+import SockJS from "sockjs-client";
 
 import PopTaoDonHang from "./PopTaoDonHang.vue";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
@@ -74,8 +76,61 @@ const loadDonHangs = async () => {
   }
 };
 
+let stompClient = null;
+
+const connectWebSocket = () => {
+  const socket = new SockJS("http://localhost:8080/ws");
+  stompClient = new Client({
+    webSocketFactory: () => socket,
+    reconnectDelay: 5000,
+    heartbeatIncoming: 4000,
+    heartbeatOutgoing: 4000,
+    onConnect: () => {
+      console.log("Connected to WebSocket");
+      
+      const userStr = localStorage.getItem("user");
+      let maNhanVien = null;
+      if (userStr) {
+        try {
+          const userObj = JSON.parse(userStr);
+          maNhanVien = userObj.maNhanVien || userObj.id;
+        } catch (e) {
+          console.error("Error parsing user info", e);
+        }
+      }
+
+      // Lắng nghe thông báo chung
+      stompClient.subscribe("/topic/nhanvien", (message) => {
+        ElMessage.success(message.body || "Có thông báo mới!");
+        loadDonHangs(); // Tự động reload danh sách đơn hàng
+      });
+
+      // Lắng nghe thông báo cá nhân
+      if (maNhanVien) {
+        stompClient.subscribe(`/topic/nhanvien/${maNhanVien}`, (message) => {
+          ElMessage.success(message.body || "Bạn có thông báo mới!");
+          loadDonHangs(); 
+        });
+      }
+    },
+    onStompError: (frame) => {
+      console.error("Broker reported error: " + frame.headers["message"]);
+      console.error("Additional details: " + frame.body);
+    },
+  });
+
+  stompClient.activate();
+};
+
 onMounted(() => {
   loadDonHangs();
+  connectWebSocket();
+});
+
+onUnmounted(() => {
+  if (stompClient) {
+    stompClient.deactivate();
+  }
 });
 
 // ── Helper mã đơn hàng ─────────────────────────────
@@ -98,7 +153,7 @@ const canCancelOrder = (order) => {
   return ![
     "Đã hủy",
     "Hoàn thành",
-    "Đối tác đã từ chối",
+    "Từ chối",
   ].includes(status);
 };
 
@@ -363,10 +418,10 @@ const xemHoaDon = (dh) => {
 // ── Stepper trạng thái ─────────────────────────────
 const STEPS = [
   "Mới tạo",
-  "Chờ đối tác xác nhận",
-  "Đã xác nhận",
-  "Đang xử lý",
-  "Chờ thanh toán",
+  "Xác nhận",
+  "Đã nhận",
+  "Xử lý",
+  "Thanh toán",
   "Hoàn thành",
 ];
 
@@ -408,12 +463,12 @@ const nextStatus = (dh) => {
 // ── Badge class ─────────────────────────────
 const trangThaiBadgeClass = (tt) => {
   if (tt === "Mới tạo") return "badge-yellow";
-  if (tt === "Chờ đối tác xác nhận") return "badge-pink";
-  if (tt === "Đã xác nhận") return "badge-blue";
-  if (tt === "Đang xử lý") return "badge-orange";
-  if (tt === "Chờ thanh toán") return "badge-purple";
+  if (tt === "Xác nhận") return "badge-pink";
+  if (tt === "Đã nhận") return "badge-blue";
+  if (tt === "Xử lý") return "badge-orange";
+  if (tt === "Thanh toán") return "badge-purple";
   if (tt === "Hoàn thành") return "badge-green";
-  if (tt === "Đã hủy" || tt === "Đối tác đã từ chối") {
+  if (tt === "Đã hủy" || tt === "Từ chối") {
     return "badge-red";
   }
 
@@ -469,7 +524,7 @@ const updateNextStatus = async (dh) => {
 
   if (!next) return;
 
-  if (dh.trangThai === "Chờ thanh toán") {
+  if (dh.trangThai === "Thanh toán") {
     if (dh.phuongThucThanhToan === "Chuyển khoản") {
       selectedOrderForPayment.value = dh;
       showPaymentDialog.value = true;
@@ -554,13 +609,13 @@ const confirmCashPayment = async () => {
         >
           <option>Tất cả</option>
           <option>Mới tạo</option>
-          <option>Chờ đối tác xác nhận</option>
-          <option>Đã xác nhận</option>
-          <option>Đang xử lý</option>
-          <option>Chờ thanh toán</option>
+          <option>Xác nhận</option>
+          <option>Đã nhận</option>
+          <option>Xử lý</option>
+          <option>Thanh toán</option>
           <option>Hoàn thành</option>
           <option>Đã hủy</option>
-          <option>Đối tác đã từ chối</option>
+          <option>Từ chối</option>
         </select>
       </div>
 
@@ -768,15 +823,23 @@ const confirmCashPayment = async () => {
           </button>
 
           <button
-              v-if="nextStatus(dh) && dh.trangThai !== 'Chờ đối tác xác nhận'"
+              v-if="dh.trangThai === 'Mới tạo'"
               class="btn-filled-green"
               @click="updateNextStatus(dh)"
           >
-            {{ dh.trangThai === "Chờ thanh toán" ? "Thanh toán" : "Cập nhật" }}
+            Gửi đối tác
+          </button>
+          
+          <button
+              v-else-if="nextStatus(dh) && dh.trangThai !== 'Xác nhận' && dh.trangThai !== 'Mới tạo'"
+              class="btn-filled-green"
+              @click="updateNextStatus(dh)"
+          >
+            {{ dh.trangThai === "Thanh toán" ? "Thanh toán" : "Cập nhật" }}
           </button>
 
           <button
-              v-else-if="dh.trangThai === 'Chờ đối tác xác nhận'"
+              v-else-if="dh.trangThai === 'Xác nhận'"
               class="btn-disabled"
               disabled
           >

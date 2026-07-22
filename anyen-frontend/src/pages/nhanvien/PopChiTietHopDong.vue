@@ -127,10 +127,22 @@ const resetData = () => {
   contract.value = createEmptyContract();
 };
 
-const getContractStartDate = (hopDong) => {
-  return hopDong?.ngayKyHD || hopDong?.ngayViet || "";
+const getContractWriteDate = (hopDong) => {
+  return hopDong?.ngayViet || "";
 };
 
+const getContractSignedDate = (hopDong) => {
+  return hopDong?.ngayKyHD || "";
+};
+
+const getContractExecutionDate = (hopDong) => {
+  return (
+      hopDong?.ngayThucHien ||
+      hopDong?.ngayBatDau ||
+      hopDong?.ngayKyHD ||
+      ""
+  );
+};
 const getContractEndDate = (hopDong) => {
   return (
       hopDong?.thoiHanKetThuc ||
@@ -141,55 +153,137 @@ const getContractEndDate = (hopDong) => {
 };
 
 const fillContractFromData = (hopDong, donHang) => {
-  const startDate = getContractStartDate(hopDong);
+  if (!hopDong) {
+    contract.value = createEmptyContract();
+    return;
+  }
+
+  const writeDate = getContractWriteDate(hopDong);
+  const signedDate = getContractSignedDate(hopDong);
+  const executionDate = getContractExecutionDate(hopDong);
   const endDate = getContractEndDate(hopDong);
 
   contract.value.orderCode =
       hopDong.maDonHangText ||
       donHang?.maDonHangText ||
-      (hopDong.maDonHang ? `DH${String(hopDong.maDonHang).padStart(4, "0")}` : "");
+      (
+          hopDong.maDonHang
+              ? `DH${String(hopDong.maDonHang).padStart(4, "0")}`
+              : ""
+      );
 
   contract.value.contractCode =
       hopDong.soHopDong ||
       hopDong.maHopDongText ||
-      (hopDong.maHopDong ? `HD${String(hopDong.maHopDong).padStart(7, "0")}` : "");
+      (
+          hopDong.maHopDong
+              ? `HD${String(hopDong.maHopDong).padStart(7, "0")}`
+              : ""
+      );
 
-  contract.value.contractDate = startDate;
-  contract.value.contractStartDate = startDate;
-  contract.value.executionDate = startDate;
+  /*
+   * Ngày viết hợp đồng phải lấy riêng từ ngayViet.
+   * Không sử dụng new Date() và không lấy từ ngayKyHD.
+   */
+  contract.value.contractDate = writeDate;
+
+  /*
+   * Ngày bắt đầu/ngày ký lấy từ ngayKyHD.
+   */
+  contract.value.contractStartDate = signedDate;
+
+  /*
+   * Ngày thực hiện lấy từ ngày thực hiện của backend.
+   * Nếu backend chưa có thì mới sử dụng ngày ký.
+   */
+  contract.value.executionDate = executionDate;
 
   contract.value.contractEndDate = endDate;
 
-  contract.value.employee = donHang?.tenNhanVien || "";
+  contract.value.employee =
+      donHang?.tenNhanVien ||
+      hopDong.tenNhanVien ||
+      "";
 
   contract.value.customerName =
       donHang?.tenKhachHang ||
       hopDong.tenKhachHang ||
       "";
 
-  contract.value.citizenId = donHang?.cccd || "";
-  contract.value.address = donHang?.diaChi || "";
-  contract.value.phone = donHang?.soDienThoai || hopDong.soDienThoai || "";
+  contract.value.citizenId =
+      donHang?.cccd ||
+      hopDong.cccd ||
+      "";
 
-  contract.value.deceasedName = hopDong.hoTenNguoiMat || "";
-  contract.value.deathDate = hopDong.ngayMat || "";
-  contract.value.birthDate = hopDong.ngaySinh || "";
-  contract.value.gender = hopDong.gioiTinh || "";
+  contract.value.address =
+      donHang?.diaChi ||
+      hopDong.diaChi ||
+      "";
 
-  contract.value.deathCertificateNo = hopDong.soGiayBaoTu || "";
-  contract.value.deathCertificateIssuePlace = hopDong.noiCapGiayBaoTu || "";
-  contract.value.issuedPlace = hopDong.noiCapGiayBaoTu || "";
+  contract.value.phone =
+      donHang?.soDienThoai ||
+      hopDong.soDienThoai ||
+      "";
 
-  contract.value.facility = hopDong.coSoMaiTang || "";
-  contract.value.cemeteryArea = hopDong.khuMo || "";
-  contract.value.graveNumber = hopDong.soMo || "";
-  contract.value.burialDatetime = hopDong.ngayGioAnTang || "";
+  contract.value.relationship =
+      hopDong.quanHeVoiNguoiMat ||
+      hopDong.moiQuanHe ||
+      "";
 
-  console.log("HOP DONG DETAIL:", hopDong);
-  console.log("Ngày thực hiện:", contract.value.contractStartDate);
+  contract.value.deceasedName =
+      hopDong.hoTenNguoiMat ||
+      "";
+
+  contract.value.deathDate =
+      hopDong.ngayMat ||
+      "";
+
+  contract.value.birthDate =
+      hopDong.ngaySinh ||
+      "";
+
+  contract.value.age =
+      hopDong.tuoi ||
+      "";
+
+  contract.value.gender =
+      hopDong.gioiTinh ||
+      "";
+
+  contract.value.deathCertificateNo =
+      hopDong.soGiayBaoTu ||
+      "";
+
+  contract.value.deathCertificateIssuePlace =
+      hopDong.noiCapGiayBaoTu ||
+      "";
+
+  contract.value.issuedPlace =
+      hopDong.noiCapGiayBaoTu ||
+      "";
+
+  contract.value.facility =
+      hopDong.coSoMaiTang ||
+      "";
+
+  contract.value.cemeteryArea =
+      hopDong.khuMo ||
+      "";
+
+  contract.value.graveNumber =
+      hopDong.soMo ||
+      "";
+
+  contract.value.burialDatetime =
+      hopDong.ngayGioAnTang ||
+      "";
+
+  console.log("HỢP ĐỒNG DETAIL:", hopDong);
+  console.log("Ngày viết:", contract.value.contractDate);
+  console.log("Ngày ký:", contract.value.contractStartDate);
+  console.log("Ngày thực hiện:", contract.value.executionDate);
   console.log("Ngày hết hạn:", contract.value.contractEndDate);
 };
-
 const loadDetail = async () => {
   if (!props.hopDongId) return;
 

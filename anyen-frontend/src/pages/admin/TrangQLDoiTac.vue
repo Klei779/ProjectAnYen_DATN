@@ -4,6 +4,7 @@
     <div class="page-header">
       <div>
         <h3 class="page-title">Quản Lý Đối Tác</h3>
+
         <p class="page-subtitle">
           Theo dõi thông tin, trạng thái hợp tác và quyền xóa của từng đối tác.
         </p>
@@ -125,11 +126,18 @@
           <tr>
             <th class="ps-4">Mã</th>
             <th>Đối tác</th>
-            <th>Liên hệ</th>
+
+            <!-- ĐÃ SỬA CĂN CỘT LIÊN HỆ -->
+            <th class="contact-header">
+              Liên hệ
+            </th>
+
             <th>Tài khoản</th>
             <th>Trạng thái</th>
             <th>Ngày tạo</th>
-            <th class="text-end pe-4">Hành động</th>
+            <th class="text-end pe-4">
+              Hành động
+            </th>
           </tr>
           </thead>
 
@@ -180,7 +188,7 @@
                     {{ getInitials(dt.tenDoiTac) }}
                   </div>
 
-                  <div>
+                  <div class="partner-detail">
                     <div class="partner-name">
                       {{ dt.tenDoiTac || "Chưa cập nhật" }}
                     </div>
@@ -202,15 +210,22 @@
                 </div>
               </td>
 
-              <td>
+              <!-- ĐÃ THÊM CLASS CONTACT-CELL -->
+              <td class="contact-cell">
                 <div class="contact-line">
                   <i class="bi bi-envelope"></i>
-                  <span>{{ dt.email || "Chưa có email" }}</span>
+
+                  <span>
+                      {{ dt.email || "Chưa có email" }}
+                    </span>
                 </div>
 
                 <div class="contact-line">
                   <i class="bi bi-telephone"></i>
-                  <span>{{ dt.soDienThoai || "Chưa có SĐT" }}</span>
+
+                  <span>
+                      {{ dt.soDienThoai || "Chưa có SĐT" }}
+                    </span>
                 </div>
 
                 <div
@@ -218,7 +233,10 @@
                     :title="dt.diaChi"
                 >
                   <i class="bi bi-geo-alt"></i>
-                  <span>{{ dt.diaChi || "Chưa có địa chỉ" }}</span>
+
+                  <span>
+                      {{ dt.diaChi || "Chưa có địa chỉ" }}
+                    </span>
                 </div>
               </td>
 
@@ -234,6 +252,7 @@
                       :class="getStatusClass(dt.trangThai)"
                   >
                     <span class="status-dot"></span>
+
                     {{ hienThiTrangThai(dt.trangThai) }}
                   </span>
               </td>
@@ -241,6 +260,7 @@
               <td>
                 <div class="date-cell">
                   <i class="bi bi-calendar3"></i>
+
                   {{ formatDate(dt.createdAt) }}
                 </div>
               </td>
@@ -413,6 +433,7 @@
 
                     <div class="form-text mt-3">
                       <i class="bi bi-info-circle me-1"></i>
+
                       Đối tác sẽ nhận được email chứa đường dẫn xác nhận và
                       tự điền thông tin doanh nghiệp, mã số thuế, số điện
                       thoại và địa chỉ.
@@ -1578,6 +1599,20 @@ function getInitials(name) {
   border-bottom: 0;
 }
 
+/*
+  FIX CỘT LIÊN HỆ:
+  Nội dung có icon rộng 15px và khoảng cách 7px.
+  Tiêu đề được đẩy sang phải để thẳng hàng với phần chữ.
+*/
+.partner-table thead th.contact-header {
+  min-width: 225px;
+  padding-left: 35px;
+}
+
+.partner-table tbody td.contact-cell {
+  min-width: 225px;
+}
+
 .partner-code {
   color: #7a8699;
   font-size: 0.86rem;
@@ -1591,6 +1626,10 @@ function getInitials(name) {
   align-items: center;
   gap: 11px;
   min-width: 220px;
+}
+
+.partner-detail {
+  min-width: 0;
 }
 
 .partner-avatar {
@@ -1626,13 +1665,17 @@ function getInitials(name) {
   white-space: nowrap;
 }
 
+/* CONTACT */
+
 .contact-line {
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
   margin-bottom: 4px;
   color: #596579;
   font-size: 0.82rem;
+  line-height: 1.4;
 }
 
 .contact-line:last-child {
@@ -1640,17 +1683,32 @@ function getInitials(name) {
 }
 
 .contact-line i {
+  display: inline-flex;
+  flex: 0 0 15px;
+  align-items: center;
+  justify-content: center;
   width: 15px;
+  min-width: 15px;
   color: #98a2b3;
   text-align: center;
 }
 
+.contact-line span {
+  min-width: 0;
+}
+
 .address-cell {
   max-width: 230px;
+}
+
+.address-cell span {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ACCOUNT */
 
 .account-name {
   display: inline-block;
@@ -1849,6 +1907,7 @@ function getInitials(name) {
   padding: 50px 20px !important;
   color: #748094 !important;
 }
+
 /* PAGINATION */
 
 .pagination-bar {
@@ -1865,11 +1924,6 @@ function getInitials(name) {
   color: #748094;
   font-size: 0.84rem;
 }
-
-/*
-Không sử dụng :deep() để tránh lỗi với phiên bản Vue/Vite hiện tại.
-Phân trang sẽ sử dụng giao diện mặc định của Element Plus.
-*/
 
 /* MODAL */
 
@@ -2054,6 +2108,11 @@ Phân trang sẽ sử dụng giao diện mặc định của Element Plus.
 @media (max-width: 575px) {
   .partner-info {
     min-width: 190px;
+  }
+
+  .partner-table thead th.contact-header,
+  .partner-table tbody td.contact-cell {
+    min-width: 210px;
   }
 
   .action-buttons {

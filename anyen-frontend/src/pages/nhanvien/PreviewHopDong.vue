@@ -5,27 +5,190 @@ const props = defineProps({
   contract: {
     type: Object,
     required: false,
-    default: () => ({})
+    default: () => ({}),
   },
+
   extraServices: {
     type: Array,
     required: false,
-    default: () => []
+    default: () => [],
   },
+
   orderProducts: {
     type: Array,
     required: false,
-    default: () => []
-  }
+    default: () => [],
+  },
 });
 
-const today = new Date();
-
-const currentDay = String(today.getDate()).padStart(2, "0");
-const currentMonth = String(today.getMonth() + 1).padStart(2, "0");
-const currentYear = today.getFullYear();
-
 const safeNumber = (value) => Number(value || 0);
+
+/**
+ * Parse ngày an toàn, tránh lệch ngày do múi giờ.
+ *
+ * Backend trả YYYY-MM-DD thì không dùng trực tiếp new Date("YYYY-MM-DD"),
+ * vì trình duyệt có thể hiểu theo UTC.
+ */
+const parseDate = (value) => {
+  if (!value) {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime())
+        ? null
+        : value;
+  }
+
+  const rawValue = String(value).trim();
+
+  /*
+   * Dạng backend:
+   * 2026-07-22
+   */
+  const isoDateMatch = rawValue.match(
+      /^(\d{4})-(\d{2})-(\d{2})$/
+  );
+
+  if (isoDateMatch) {
+    const [, year, month, day] = isoDateMatch;
+
+    return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day)
+    );
+  }
+
+  /*
+   * Dạng backend có thời gian:
+   * 2026-07-22T16:13:00
+   * 2026-07-22 16:13:00
+   */
+  const isoDateTimeMatch = rawValue.match(
+      /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{1,2}):(\d{2})(?::(\d{2}))?/
+  );
+
+  if (isoDateTimeMatch) {
+    const [
+      ,
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second = "0",
+    ] = isoDateTimeMatch;
+
+    return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+    );
+  }
+
+  /*
+   * Dạng đang dùng khi tạo hợp đồng:
+   * 16:13 22/07/2026
+   */
+  const timeFirstMatch = rawValue.match(
+      /^(\d{1,2}):(\d{2})(?::(\d{2}))?\s+(\d{1,2})\/(\d{1,2})\/(\d{4})$/
+  );
+
+  if (timeFirstMatch) {
+    const [
+      ,
+      hour,
+      minute,
+      second = "0",
+      day,
+      month,
+      year,
+    ] = timeFirstMatch;
+
+    return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+    );
+  }
+
+  /*
+   * Dạng:
+   * 22/07/2026 16:13
+   */
+  const dateFirstMatch = rawValue.match(
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/
+  );
+
+  if (dateFirstMatch) {
+    const [
+      ,
+      day,
+      month,
+      year,
+      hour = "0",
+      minute = "0",
+      second = "0",
+    ] = dateFirstMatch;
+
+    return new Date(
+        Number(year),
+        Number(month) - 1,
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+    );
+  }
+
+  const date = new Date(rawValue);
+
+  return Number.isNaN(date.getTime())
+      ? null
+      : date;
+};
+/**
+ * Ngày viết hợp đồng trên đầu PDF.
+ * Chỉ lấy ngày từ hợp đồng, không lấy ngày hiện tại.
+ */
+const contractWriteDate = computed(() => {
+  return parseDate(
+      props.contract.contractDate ||
+      props.contract.ngayViet ||
+      ""
+  );
+});
+
+const contractWriteDay = computed(() => {
+  const date = contractWriteDate.value;
+
+  return date
+      ? String(date.getDate()).padStart(2, "0")
+      : "......";
+});
+
+const contractWriteMonth = computed(() => {
+  const date = contractWriteDate.value;
+
+  return date
+      ? String(date.getMonth() + 1).padStart(2, "0")
+      : "......";
+});
+
+const contractWriteYear = computed(() => {
+  const date = contractWriteDate.value;
+
+  return date
+      ? String(date.getFullYear())
+      : "......";
+});
 
 const productsTotal = computed(() => {
   return props.orderProducts.reduce((sum, item) => {
@@ -33,7 +196,11 @@ const productsTotal = computed(() => {
     const quantity = safeNumber(item.quantity);
     const thanhTien = safeNumber(item.thanhTien);
 
-    return sum + (thanhTien > 0 ? thanhTien : price * quantity);
+    return sum + (
+        thanhTien > 0
+            ? thanhTien
+            : price * quantity
+    );
   }, 0);
 });
 
@@ -44,43 +211,58 @@ const extraServicesTotal = computed(() => {
 });
 
 const grandTotal = computed(() => {
-  return productsTotal.value + extraServicesTotal.value;
+  return (
+      productsTotal.value +
+      extraServicesTotal.value
+  );
 });
 
 const formatCurrency = (value) => {
-  return new Intl.NumberFormat("vi-VN").format(safeNumber(value));
+  return new Intl.NumberFormat("vi-VN").format(
+      safeNumber(value)
+  );
 };
 
 const formatDate = (value) => {
-  if (!value) return "";
+  const date = parseDate(value);
 
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) return "";
+  if (!date) {
+    return "";
+  }
 
   return date.toLocaleDateString("vi-VN");
 };
 
 const formatDateTime = (value) => {
-  if (!value) return "";
+  if (!value) {
+    return "";
+  }
 
   const date = new Date(value);
 
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
 
   return date.toLocaleString("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
     day: "2-digit",
     month: "2-digit",
-    year: "numeric"
+    year: "numeric",
   });
 };
+
+/**
+ * Ngày bắt đầu thực hiện hợp đồng.
+ *
+ * Không fallback sang ngayViet vì ngày viết và ngày thực hiện
+ * là hai trường khác nhau.
+ */
 const previewContractStartDate = computed(() => {
   return (
       props.contract.contractStartDate ||
       props.contract.ngayKyHD ||
-      props.contract.ngayViet ||
       props.contract.executionDate ||
       ""
   );
@@ -99,9 +281,19 @@ const previewContractEndDate = computed(() => {
 const readVietnameseNumber = (number) => {
   let num = Math.round(safeNumber(number));
 
-  if (num === 0) return "Không đồng";
+  if (num === 0) {
+    return "Không đồng";
+  }
 
-  const units = ["", "nghìn", "triệu", "tỷ", "nghìn tỷ", "triệu tỷ"];
+  const units = [
+    "",
+    "nghìn",
+    "triệu",
+    "tỷ",
+    "nghìn tỷ",
+    "triệu tỷ",
+  ];
+
   const ones = [
     "không",
     "một",
@@ -112,14 +304,14 @@ const readVietnameseNumber = (number) => {
     "sáu",
     "bảy",
     "tám",
-    "chín"
+    "chín",
   ];
 
-  const readBlock = (n, full) => {
+  const readBlock = (value, full) => {
     let result = "";
 
-    const hundred = Math.floor(n / 100);
-    const remainder = n % 100;
+    const hundred = Math.floor(value / 100);
+    const remainder = value % 100;
     const ten = Math.floor(remainder / 10);
     const one = remainder % 10;
 
@@ -128,7 +320,9 @@ const readVietnameseNumber = (number) => {
     }
 
     if (ten === 0 && one > 0) {
-      if (full || hundred > 0) result += "lẻ ";
+      if (full || hundred > 0) {
+        result += "lẻ ";
+      }
     } else if (ten === 1) {
       result += "mười ";
     } else if (ten > 1) {
@@ -153,24 +347,36 @@ const readVietnameseNumber = (number) => {
     const block = num % 1000;
 
     if (block > 0) {
-      const blockText = readBlock(block, index > 0 && num > 1000);
-      result = `${blockText} ${units[index]} ${result}`;
+      const blockText = readBlock(
+          block,
+          index > 0 && num > 1000
+      );
+
+      result =
+          `${blockText} ${units[index]} ${result}`;
     }
 
     num = Math.floor(num / 1000);
     index++;
   }
 
-  result = result.trim().replace(/\s+/g, " ");
+  result = result
+      .trim()
+      .replace(/\s+/g, " ");
 
-  return result.charAt(0).toUpperCase() + result.slice(1) + " đồng";
+  return (
+      result.charAt(0).toUpperCase() +
+      result.slice(1) +
+      " đồng"
+  );
 };
 
 const grandTotalInWords = computed(() => {
-  return readVietnameseNumber(grandTotal.value);
+  return readVietnameseNumber(
+      grandTotal.value
+  );
 });
 </script>
-
 <template>
   <div class="preview-wrapper">
     <div class="contract-paper">
@@ -200,9 +406,10 @@ const grandTotalInWords = computed(() => {
           </div>
         </div>
         <div class="meta-right">
-          Hồ Chí Minh, ngày {{ currentDay }} tháng {{ currentMonth }} năm {{ currentYear }}
-        </div>
-      </div>
+          Hồ Chí Minh, ngày {{ contractWriteDay }}
+          tháng {{ contractWriteMonth }}
+          năm {{ contractWriteYear }}
+        </div>      </div>
 
       <h2 class="title">HỢP ĐỒNG MAI TÁNG THI HÀI</h2>
 

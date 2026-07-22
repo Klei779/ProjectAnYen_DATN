@@ -1,19 +1,24 @@
 <script setup>
-import {ref, computed, watch, onMounted, onBeforeUnmount} from "vue";
-import api from "../../api/api.js";
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { ElMessage } from "element-plus";
+
+import api from "../../api/api.js";
 import TrangTaoSanPham from "./TrangTaoSanPham.vue";
 
-const UPLOAD_URL = "/api/upload";
-const MAX_GALLERY_IMAGES = 10;
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
 const API_URL = "/api/doi-tac/san-pham";
+
 const NGUNG_BAN_API = (id) => `${API_URL}/${id}/an`;
 const BAN_LAI_API = (id) => `${API_URL}/${id}/hien`;
 
 const editingProduct = ref(null);
 const activeTab = ref("list");
+
 const keyword = ref("");
 const selectedStatus = ref("");
 const selectedCategory = ref("");
@@ -22,119 +27,205 @@ const currentPage = ref(1);
 const pageSize = 16;
 
 const loading = ref(false);
-const imagePreview = ref("");
 const products = ref([]);
+
 const stockDrafts = ref({});
 const savingStockId = ref(null);
-const total = ref(0);
+
 const selectedProductDetail = ref(null);
 const loadingProductDetail = ref(false);
 
-// === Chi tiết & hình ảnh sản phẩm (dùng khi sửa) ===
-const editChiTietList = ref([]);
-const editGalleryFiles = ref([]);
-const editGalleryPreviews = ref([]);
-const editGalleryUrls = ref([]);
+let previousBodyOverflow = "";
+let previousHtmlOverflow = "";
 
-const emptyProduct = () => ({
-  tenSanPham: "",
-  loai: "",
-  noiThat: "",
-  quyCach: "",
-  tonGiao: "",
-  giaTien: "",
-  maDoiTac: "",
-  soLuong: "",
-  thietKe: "",
-  xuatXu: "",
-  ghiChu: "",
-  khuyenMai: "",
-  mauSac: "",
-  hinhAnh: "",
-  vatLieu: "",
-  trangThai: "Đang bán",
-  kichThuoc: "",
-  trongLuong: "",
-  cnsx: "",
-});
+/**
+ * Lấy ID sản phẩm, hỗ trợ nhiều định dạng response.
+ */
+const getProductId = (product) => {
+  return product.id ?? product.maSanPham ?? product.maSP;
+};
 
-const newProduct = ref(emptyProduct());
+/**
+ * Lấy trạng thái bán dựa theo trạng thái duyệt và tồn kho.
+ */
+const getProductStatus = (product) => {
+  const approvalCode = Number(
+      product.trangThai ?? product.status ?? 2
+  );
 
-const getProductId = (sp) => sp.id ?? sp.maSanPham ?? sp.maSP;
+  if (approvalCode === 0) {
+    return "Ngưng bán";
+  }
 
-const getProductStatus = (sp) => {
-  const approvalCode = Number(sp.trangThai ?? sp.status ?? 2);
-  if (approvalCode === 0) return "Ngưng bán";
-  if (approvalCode === 2) return "Chờ duyệt";
-  const stock = Number(sp.stock ?? sp.soLuong ?? 0);
+  if (approvalCode === 2) {
+    return "Chờ duyệt";
+  }
+
+  const stock = Number(
+      product.stock ?? product.soLuong ?? 0
+  );
+
   return stock > 0 ? "Còn hàng" : "Hết hàng";
 };
 
+/**
+ * Nhãn trạng thái duyệt.
+ */
 const getApprovalLabel = (code) => {
-  if (Number(code) === 1) return "Đã duyệt";
-  if (Number(code) === 2) return "Chờ duyệt";
+  const statusCode = Number(code);
+
+  if (statusCode === 1) {
+    return "Đã duyệt";
+  }
+
+  if (statusCode === 2) {
+    return "Chờ duyệt";
+  }
+
   return "Đang ẩn / Đã từ chối";
 };
 
+/**
+ * Class CSS trạng thái duyệt.
+ */
 const getApprovalClass = (code) => {
-  if (Number(code) === 1) return "approved";
-  if (Number(code) === 2) return "pending";
+  const statusCode = Number(code);
+
+  if (statusCode === 1) {
+    return "approved";
+  }
+
+  if (statusCode === 2) {
+    return "pending";
+  }
+
   return "hidden";
 };
 
-const normalizeProduct = (sp) => {
-  const id = getProductId(sp);
-  const stock = Number(sp.stock ?? sp.soLuong ?? 0);
-  const status = getProductStatus(sp);
-  const trangThaiCode = Number(sp.trangThai ?? sp.status ?? 2);
+/**
+ * Kiểm tra sản phẩm đang ngưng bán.
+ */
+const isHiddenProduct = (product) => {
+  return product.trangThaiCode === 0;
+};
+
+/**
+ * Chuẩn hóa dữ liệu sản phẩm từ backend.
+ */
+const normalizeProduct = (product) => {
+  const id = getProductId(product);
+
+  const stock = Number(
+      product.stock ?? product.soLuong ?? 0
+  );
+
+  const trangThaiCode = Number(
+      product.trangThai ?? product.status ?? 2
+  );
 
   return {
     id,
-    name: sp.name || sp.tenSanPham || "Chưa có tên",
-    sku: sp.sku || `SP-${id}`,
-    category: sp.category || sp.loai || "Chưa phân loại",
-    price: Number(sp.price ?? sp.giaTien ?? 0),
+
+    name:
+        product.name ||
+        product.tenSanPham ||
+        "Chưa có tên",
+
+    sku:
+        product.sku ||
+        `SP-${id}`,
+
+    category:
+        product.category ||
+        product.loai ||
+        "Chưa phân loại",
+
+    price: Number(
+        product.price ??
+        product.giaTien ??
+        0
+    ),
+
     stock,
-    status,
+    status: getProductStatus(product),
+
     image:
-        sp.image ||
-        sp.hinhAnh ||
+        product.image ||
+        product.hinhAnh ||
         "https://via.placeholder.com/350x180?text=San+Pham",
 
     maSanPham: id,
-    tenSanPham: sp.tenSanPham || sp.name || "",
-    loai: sp.loai || sp.category || "",
-    noiThat: sp.noiThat || "",
-    quyCach: sp.quyCach || "",
-    tonGiao: sp.tonGiao || "",
-    giaTien: Number(sp.giaTien ?? sp.price ?? 0),
-    maDoiTac: sp.maDoiTac || "",
+
+    tenSanPham:
+        product.tenSanPham ||
+        product.name ||
+        "",
+
+    loai:
+        product.loai ||
+        product.category ||
+        "",
+
+    noiThat: product.noiThat || "",
+    quyCach: product.quyCach || "",
+    tonGiao: product.tonGiao || "",
+
+    giaTien: Number(
+        product.giaTien ??
+        product.price ??
+        0
+    ),
+
+    maDoiTac: product.maDoiTac || "",
     soLuong: stock,
-    thietKe: sp.thietKe || "",
-    xuatXu: sp.xuatXu || "",
-    ghiChu: sp.ghiChu || "",
-    khuyenMai: sp.khuyenMai ?? "",
-    mauSac: sp.mauSac || "",
-    hinhAnh: sp.hinhAnh || sp.image || "",
-    vatLieu: sp.vatLieu || "",
+    thietKe: product.thietKe || "",
+    xuatXu: product.xuatXu || "",
+    ghiChu: product.ghiChu || "",
+    khuyenMai: product.khuyenMai ?? "",
+    mauSac: product.mauSac || "",
+
+    hinhAnh:
+        product.hinhAnh ||
+        product.image ||
+        "",
+
+    vatLieu: product.vatLieu || "",
     trangThaiCode,
-    trangThai: trangThaiCode === 1 ? "Đang bán" : trangThaiCode === 2 ? "Chờ duyệt" : "Ngưng bán",
-    kichThuoc: sp.kichThuoc || "",
-    trongLuong: sp.trongLuong || "",
-    cnsx: sp.cnsx || sp.CNSX || "",
-    chiTietList: Array.isArray(sp.chiTietList) ? sp.chiTietList : [],
-    hinhAnhList: Array.isArray(sp.hinhAnhList) ? sp.hinhAnhList : [],
+
+    trangThai:
+        trangThaiCode === 1
+            ? "Đang bán"
+            : trangThaiCode === 2
+                ? "Chờ duyệt"
+                : "Ngưng bán",
+
+    kichThuoc: product.kichThuoc || "",
+    trongLuong: product.trongLuong || "",
+
+    cnsx:
+        product.cnsx ||
+        product.CNSX ||
+        "",
+
+    chiTietList: Array.isArray(product.chiTietList)
+        ? product.chiTietList
+        : [],
+
+    hinhAnhList: Array.isArray(product.hinhAnhList)
+        ? product.hinhAnhList
+        : [],
   };
 };
 
+/**
+ * Tải toàn bộ sản phẩm của đối tác.
+ */
 const loadProducts = async () => {
   try {
     loading.value = true;
 
     const response = await api.get(API_URL, {
       params: {
-        // Spring Pageable bắt đầu từ 0. Nếu để page: 1 + pageSize: 9999
-        // thì backend sẽ nhảy sang trang thứ 2 và dễ trả về mảng rỗng.
         page: 0,
         pageSize: 9999,
         sortBy: "newest",
@@ -142,6 +233,7 @@ const loadProducts = async () => {
     });
 
     const data = response.data || {};
+
     const items = Array.isArray(data)
         ? data
         : Array.isArray(data.items)
@@ -153,647 +245,730 @@ const loadProducts = async () => {
                     : [];
 
     products.value = items.map(normalizeProduct);
+
     stockDrafts.value = Object.fromEntries(
-        products.value.map(product => [product.id, product.stock])
+        products.value.map((product) => [
+          product.id,
+          product.stock,
+        ])
     );
-    total.value = data.total ?? data.totalElements ?? products.value.length;
   } catch (error) {
-    console.error("Lỗi load sản phẩm đối tác:", error);
+    console.error(
+        "Lỗi load sản phẩm đối tác:",
+        error
+    );
 
     if (error.response?.status === 403) {
-      alert("Bạn không có quyền xem sản phẩm đối tác. Hãy đăng nhập bằng tài khoản đối tác.");
-    } else if (error.response?.status === 401) {
-      alert("Bạn chưa đăng nhập hoặc token hết hạn.");
-    } else {
-      alert("Không thể tải danh sách sản phẩm.");
+      ElMessage.error(
+          "Bạn không có quyền xem sản phẩm đối tác. Hãy đăng nhập bằng tài khoản đối tác."
+      );
+      return;
     }
+
+    if (error.response?.status === 401) {
+      ElMessage.error(
+          "Bạn chưa đăng nhập hoặc token đã hết hạn."
+      );
+      return;
+    }
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        "Không thể tải danh sách sản phẩm."
+    );
   } finally {
     loading.value = false;
   }
 };
 
-onMounted(() => {
-  loadProducts();
-});
-
+/**
+ * Danh sách danh mục.
+ */
 const categories = computed(() => {
-  const map = new Map();
+  const categoryMap = new Map();
 
-  products.value.forEach((p) => {
-    const name = p.category || p.loai || "Chưa phân loại";
+  products.value.forEach((product) => {
+    const categoryName =
+        product.category ||
+        product.loai ||
+        "Chưa phân loại";
 
-    if (!map.has(name)) {
-      map.set(name, {
-        id: name,
-        name,
+    if (!categoryMap.has(categoryName)) {
+      categoryMap.set(categoryName, {
+        name: categoryName,
         total: 0,
         hidden: 0,
       });
     }
 
-    const cate = map.get(name);
-    cate.total += 1;
+    const category = categoryMap.get(categoryName);
 
-    if (isHiddenProduct(p)) {
-      cate.hidden += 1;
+    category.total += 1;
+
+    if (isHiddenProduct(product)) {
+      category.hidden += 1;
     }
   });
 
-  return Array.from(map.values()).map((cate, index) => ({
-    id: index + 1,
-    name: cate.name,
-    total: cate.total,
-    status: cate.total > 0 && cate.hidden === cate.total ? "Ngưng bán" : "Đang bán",
-  }));
+  return Array.from(categoryMap.values()).map(
+      (category, index) => ({
+        id: index + 1,
+        name: category.name,
+      })
+  );
 });
 
-const availableProducts = computed(() =>
-    products.value.filter((p) => p.trangThaiCode === 1)
-);
+/**
+ * Sản phẩm đã được duyệt.
+ */
+const availableProducts = computed(() => {
+  return products.value.filter(
+      (product) => product.trangThaiCode === 1
+  );
+});
 
-const outOfStockProducts = computed(() =>
-    products.value.filter((p) => p.status === "Hết hàng")
-);
+/**
+ * Sản phẩm đã duyệt nhưng hết hàng.
+ */
+const outOfStockProducts = computed(() => {
+  return products.value.filter(
+      (product) =>
+          product.trangThaiCode === 1 &&
+          product.status === "Hết hàng"
+  );
+});
 
-const stoppedProducts = computed(() =>
-    products.value.filter(p => p.trangThaiCode === 0)
-);
+/**
+ * Sản phẩm ngưng bán.
+ */
+const stoppedProducts = computed(() => {
+  return products.value.filter(
+      (product) => product.trangThaiCode === 0
+  );
+});
 
+/**
+ * Lọc sản phẩm.
+ */
 const filteredProducts = computed(() => {
-  const searchText = keyword.value.trim().toLowerCase();
+  const searchText = keyword.value
+      .trim()
+      .toLowerCase();
 
-  return products.value.filter((p) => {
+  return products.value.filter((product) => {
+    const productName = (
+        product.name || ""
+    ).toLowerCase();
+
+    const productSku = (
+        product.sku || ""
+    ).toLowerCase();
+
+    const productCategory = (
+        product.category || ""
+    ).toLowerCase();
+
     const matchKeyword =
         !searchText ||
-        (p.name || "").toLowerCase().includes(searchText) ||
-        (p.sku || "").toLowerCase().includes(searchText) ||
-        (p.category || "").toLowerCase().includes(searchText);
+        productName.includes(searchText) ||
+        productSku.includes(searchText) ||
+        productCategory.includes(searchText);
 
     const matchCategory =
-        !selectedCategory.value || p.category === selectedCategory.value || p.loai === selectedCategory.value;
+        !selectedCategory.value ||
+        product.category === selectedCategory.value ||
+        product.loai === selectedCategory.value;
 
     let matchStatus = true;
 
     if (selectedStatus.value === "con-hang") {
-      matchStatus = p.status === "Còn hàng";
+      matchStatus =
+          product.trangThaiCode === 1 &&
+          product.status === "Còn hàng";
+    } else if (selectedStatus.value === "het-hang") {
+      matchStatus =
+          product.trangThaiCode === 1 &&
+          product.status === "Hết hàng";
+    } else if (selectedStatus.value === "ngung-ban") {
+      matchStatus = product.trangThaiCode === 0;
     }
 
-    if (selectedStatus.value === "het-hang") {
-      matchStatus = p.status === "Hết hàng";
-    }
-
-    if (selectedStatus.value === "ngung-ban") {
-      matchStatus = p.trangThaiCode === 0;
-    }
-
-    return matchKeyword && matchCategory && matchStatus;
+    return (
+        matchKeyword &&
+        matchCategory &&
+        matchStatus
+    );
   });
 });
 
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / pageSize) || 1);
+/**
+ * Tổng số trang.
+ */
+const totalPages = computed(() => {
+  return (
+      Math.ceil(
+          filteredProducts.value.length / pageSize
+      ) || 1
+  );
+});
 
+/**
+ * Sản phẩm trên trang hiện tại.
+ */
 const paginatedProducts = computed(() => {
-  const start = (currentPage.value - 1) * pageSize;
-  return filteredProducts.value.slice(start, start + pageSize);
+  const startIndex =
+      (currentPage.value - 1) * pageSize;
+
+  return filteredProducts.value.slice(
+      startIndex,
+      startIndex + pageSize
+  );
 });
 
-const startItem = computed(() =>
-    filteredProducts.value.length === 0 ? 0 : (currentPage.value - 1) * pageSize + 1
-);
+const startItem = computed(() => {
+  if (filteredProducts.value.length === 0) {
+    return 0;
+  }
 
-const endItem = computed(() =>
-    Math.min(currentPage.value * pageSize, filteredProducts.value.length)
-);
-
-watch([keyword, selectedStatus, selectedCategory, activeTab], () => {
-  currentPage.value = 1;
+  return (
+      (currentPage.value - 1) * pageSize + 1
+  );
 });
+
+const endItem = computed(() => {
+  return Math.min(
+      currentPage.value * pageSize,
+      filteredProducts.value.length
+  );
+});
+
+/**
+ * Bộ lọc thay đổi thì quay về trang đầu.
+ */
+watch(
+    [
+      keyword,
+      selectedStatus,
+      selectedCategory,
+      activeTab,
+    ],
+    () => {
+      currentPage.value = 1;
+    }
+);
+
+/**
+ * Khóa cuộn trang khi popup đang mở.
+ */
+watch(
+    () => Boolean(selectedProductDetail.value),
+    (isOpen) => {
+      if (isOpen) {
+        previousBodyOverflow =
+            document.body.style.overflow;
+
+        previousHtmlOverflow =
+            document.documentElement.style.overflow;
+
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        return;
+      }
+
+      document.body.style.overflow =
+          previousBodyOverflow;
+
+      document.documentElement.style.overflow =
+          previousHtmlOverflow;
+    }
+);
 
 const formatPrice = (price) => {
-  return new Intl.NumberFormat("vi-VN").format(Number(price || 0)) + " đ";
-};
-
-const changeTab = (tab) => {
-  activeTab.value = tab;
-
-  if (tab === "create" && !editingProduct.value) {
-    resetForm();
-  }
+  return (
+      new Intl.NumberFormat("vi-VN").format(
+          Number(price || 0)
+      ) + " đ"
+  );
 };
 
 const changePage = (page) => {
-  if (page >= 1 && page <= totalPages.value) {
+  if (
+      page >= 1 &&
+      page <= totalPages.value
+  ) {
     currentPage.value = page;
   }
 };
 
-const resetForm = () => {
-  editingProduct.value = null;
-  newProduct.value = emptyProduct();
-  imagePreview.value = "";
-  editChiTietList.value = [];
-  editGalleryFiles.value = [];
-  editGalleryPreviews.value.forEach(url => { if (url && url.startsWith('blob:')) URL.revokeObjectURL(url); });
-  editGalleryPreviews.value = [];
-  editGalleryUrls.value = [];
-};
-
-const validateProduct = () => {
-  if (
-      !newProduct.value.tenSanPham ||
-      !newProduct.value.loai ||
-      newProduct.value.giaTien === "" ||
-      newProduct.value.soLuong === ""
-  ) {
-    alert("Vui lòng nhập tên sản phẩm, loại, giá tiền và số lượng!");
-    return false;
-  }
-
-  if (Number(newProduct.value.giaTien) < 0 || Number(newProduct.value.soLuong) < 0) {
-    alert("Giá tiền và số lượng không được nhỏ hơn 0!");
-    return false;
-  }
-
-  return true;
-};
-
-const buildPayload = () => {
-  const chiTietList = editChiTietList.value
-    .filter(b => b.noiDung && b.noiDung.trim())
-    .map((b, i) => ({ loaiKhoi: b.loaiKhoi, noiDung: b.noiDung.trim(), thuTu: i }));
-
-  const hinhAnhList = editGalleryUrls.value
-    .filter(url => url && url.trim())
-    .map((url, i) => ({ loaiHinhAnh: i === 0 ? 'CHINH' : 'GALLERY', urlHinhAnh: url, thuTu: i }));
-
-  return {
-    tenSanPham: newProduct.value.tenSanPham,
-    loai: newProduct.value.loai,
-    noiThat: newProduct.value.noiThat,
-    quyCach: newProduct.value.quyCach,
-    tonGiao: newProduct.value.tonGiao,
-    giaTien: Number(newProduct.value.giaTien || 0),
-    maDoiTac: newProduct.value.maDoiTac || null,
-    soLuong: Number(newProduct.value.soLuong || 0),
-    thietKe: newProduct.value.thietKe,
-    xuatXu: newProduct.value.xuatXu,
-    ghiChu: newProduct.value.ghiChu,
-    khuyenMai: newProduct.value.khuyenMai === "" ? null : Number(newProduct.value.khuyenMai),
-    mauSac: newProduct.value.mauSac,
-    hinhAnh: editGalleryUrls.value[0] || (typeof newProduct.value.hinhAnh === "string" ? newProduct.value.hinhAnh : ""),
-    vatLieu: newProduct.value.vatLieu,
-    trangThai: newProduct.value.trangThai,
-    kichThuoc: newProduct.value.kichThuoc,
-    trongLuong: newProduct.value.trongLuong,
-    cnsx: newProduct.value.cnsx,
-    chiTietList,
-    hinhAnhList,
-  };
-};
-
+/**
+ * Mở form sửa sản phẩm.
+ */
 const editProduct = (product) => {
   editingProduct.value = product;
   activeTab.value = "create";
 };
 
+/**
+ * Xử lý sau khi lưu sản phẩm.
+ */
 const handleEditSaved = async () => {
   editingProduct.value = null;
   activeTab.value = "list";
+
   await loadProducts();
 };
 
+/**
+ * Đóng form sửa sản phẩm.
+ */
 const handleEditClose = () => {
   editingProduct.value = null;
   activeTab.value = "list";
 };
 
-const updateProduct = async () => {
-  if (!editingProduct.value || !validateProduct()) return;
-
-  if (editingProduct.value.trangThaiCode === 1) {
-    const isConfirm = window.confirm(
-      "Sản phẩm này sẽ cập nhật sau khi quản lý duyệt.\n\nSau khi ấn lưu thì sẽ có thông báo kêu duyệt lại sản phẩm cho quản lý và quản lý khi nào duyệt rồi thì sản phẩm trên web mới hiện lại.\n\nBạn có chắc chắn muốn lưu thay đổi không?"
-    );
-    if (!isConfirm) return;
-    
-    // Đổi trạng thái về chờ duyệt
-    newProduct.value.trangThai = 2;
-  }
-
-  try {
-    await api.put(`${API_URL}/${editingProduct.value.id}`, buildPayload());
-
-    alert("Cập nhật sản phẩm thành công!");
-    resetForm();
-    activeTab.value = "list";
-    await loadProducts();
-  } catch (error) {
-    console.error("Lỗi cập nhật sản phẩm:", error);
-    alert("Không thể cập nhật sản phẩm.");
-  }
-};
-
-const createProduct = async () => {
-  if (!validateProduct()) return;
-
-  try {
-    await api.post(API_URL, buildPayload());
-    alert("Thêm sản phẩm thành công!");
-    resetForm();
-    activeTab.value = "list";
-    await loadProducts();
-  } catch (error) {
-    console.error("Lỗi thêm sản phẩm:", error);
-    alert("Không thể thêm sản phẩm.");
-  }
-};
-
+/**
+ * Lấy tồn kho đang chỉnh sửa.
+ */
 const getDraftStock = (product) => {
   const value = stockDrafts.value[product.id];
-  return Math.max(0, Number(value ?? product.stock ?? 0));
+
+  return Math.max(
+      0,
+      Number(value ?? product.stock ?? 0)
+  );
 };
 
-const isStockDirty = (product) => getDraftStock(product) !== Number(product.stock || 0);
+/**
+ * Kiểm tra tồn kho đã thay đổi chưa.
+ */
+const isStockDirty = (product) => {
+  return (
+      getDraftStock(product) !==
+      Number(product.stock || 0)
+  );
+};
 
+/**
+ * Trạng thái tồn kho đang chỉnh sửa.
+ */
 const getDraftStockStatus = (product) => {
-  if (product.trangThaiCode === 0) return "Ngưng bán";
-  if (product.trangThaiCode === 2) return "Chờ duyệt";
-  return getDraftStock(product) > 0 ? "Còn hàng" : "Hết hàng";
+  if (product.trangThaiCode === 0) {
+    return "Ngưng bán";
+  }
+
+  if (product.trangThaiCode === 2) {
+    return "Chờ duyệt";
+  }
+
+  return getDraftStock(product) > 0
+      ? "Còn hàng"
+      : "Hết hàng";
 };
 
-const changeStockDraft = (product, delta) => {
+/**
+ * Thay đổi tồn kho tạm thời.
+ */
+const changeStockDraft = (
+    product,
+    amount
+) => {
   stockDrafts.value = {
     ...stockDrafts.value,
-    [product.id]: Math.max(0, getDraftStock(product) + delta),
+
+    [product.id]: Math.max(
+        0,
+        getDraftStock(product) + amount
+    ),
   };
 };
 
-const increaseStock = (product) => changeStockDraft(product, 1);
-const decreaseStock = (product) => changeStockDraft(product, -1);
+const increaseStock = (product) => {
+  changeStockDraft(product, 1);
+};
 
+const decreaseStock = (product) => {
+  changeStockDraft(product, -1);
+};
+
+/**
+ * Lưu tồn kho.
+ */
 const saveStock = async (product) => {
-  if (!isStockDirty(product) || savingStockId.value === product.id) return;
+  if (
+      !isStockDirty(product) ||
+      savingStockId.value === product.id
+  ) {
+    return;
+  }
 
   try {
     savingStockId.value = product.id;
-    await api.patch(`${API_URL}/${product.id}/ton-kho`, {
-      soLuong: getDraftStock(product),
-    });
 
-    ElMessage.success("Đã lưu số lượng tồn kho");
+    await api.patch(
+        `${API_URL}/${product.id}/ton-kho`,
+        {
+          soLuong: getDraftStock(product),
+        }
+    );
+
+    ElMessage.success(
+        "Đã lưu số lượng tồn kho."
+    );
+
     await loadProducts();
   } catch (error) {
-    console.error("Lỗi lưu tồn kho:", error);
-    ElMessage.error(error?.response?.data?.message || "Không thể lưu tồn kho");
+    console.error(
+        "Lỗi lưu tồn kho:",
+        error
+    );
+
+    ElMessage.error(
+        error?.response?.data?.message ||
+        "Không thể lưu tồn kho."
+    );
   } finally {
     savingStockId.value = null;
   }
 };
 
-const escapeExcelCell = (value) => String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+/**
+ * Escape nội dung trước khi xuất Excel.
+ */
+const escapeExcelCell = (value) => {
+  return String(value ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;");
+};
 
+/**
+ * Xuất danh sách sản phẩm.
+ */
 const exportProductsToExcel = () => {
   const rows = filteredProducts.value;
+
   if (!rows.length) {
-    ElMessage.warning("Không có sản phẩm để xuất");
+    ElMessage.warning(
+        "Không có sản phẩm để xuất."
+    );
     return;
   }
 
   const headers = [
-    "STT", "Mã sản phẩm", "Tên sản phẩm", "Loại", "Giá bán", "Khuyến mãi",
-    "Tồn kho", "Trạng thái duyệt", "Trạng thái bán", "Vật liệu", "Màu sắc",
-    "Kích thước", "Xuất xứ", "CNSX", "Ghi chú"
+    "STT",
+    "Mã sản phẩm",
+    "Tên sản phẩm",
+    "Loại",
+    "Giá bán",
+    "Khuyến mãi",
+    "Tồn kho",
+    "Trạng thái duyệt",
+    "Trạng thái bán",
+    "Vật liệu",
+    "Màu sắc",
+    "Kích thước",
+    "Xuất xứ",
+    "CNSX",
+    "Ghi chú",
   ];
-  const bodyRows = rows.map((product, index) => [
-    index + 1,
-    product.sku,
-    product.name,
-    product.category,
-    Number(product.price || 0),
-    Number(product.khuyenMai || 0),
-    Number(product.stock || 0),
-    getApprovalLabel(product.trangThaiCode),
-    product.status,
-    product.vatLieu,
-    product.mauSac,
-    product.kichThuoc,
-    product.xuatXu,
-    product.cnsx,
-    product.ghiChu,
-  ]);
+
+  const bodyRows = rows.map(
+      (product, index) => [
+        index + 1,
+        product.sku,
+        product.name,
+        product.category,
+        Number(product.price || 0),
+        Number(product.khuyenMai || 0),
+        Number(product.stock || 0),
+        getApprovalLabel(product.trangThaiCode),
+        product.status,
+        product.vatLieu,
+        product.mauSac,
+        product.kichThuoc,
+        product.xuatXu,
+        product.cnsx,
+        product.ghiChu,
+      ]
+  );
 
   const table = `
     <table border="1">
-      <thead><tr>${headers.map(header => `<th>${escapeExcelCell(header)}</th>`).join("")}</tr></thead>
-      <tbody>${bodyRows.map(row => `<tr>${row.map(cell => `<td>${escapeExcelCell(cell)}</td>`).join("")}</tr>`).join("")}</tbody>
-    </table>`;
-  const workbook = `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>${table}</body></html>`;
-  const blob = new Blob(["\ufeff", workbook], { type: "application/vnd.ms-excel;charset=utf-8" });
+      <thead>
+        <tr>
+          ${headers
+      .map(
+          (header) =>
+              `<th>${escapeExcelCell(header)}</th>`
+      )
+      .join("")}
+        </tr>
+      </thead>
+
+      <tbody>
+        ${bodyRows
+      .map(
+          (row) => `
+              <tr>
+                ${row
+              .map(
+                  (cell) =>
+                      `<td>${escapeExcelCell(cell)}</td>`
+              )
+              .join("")}
+              </tr>
+            `
+      )
+      .join("")}
+      </tbody>
+    </table>
+  `;
+
+  const workbook = `
+    <!DOCTYPE html>
+    <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+      </head>
+
+      <body>
+        ${table}
+      </body>
+    </html>
+  `;
+
+  const blob = new Blob(
+      ["\ufeff", workbook],
+      {
+        type: "application/vnd.ms-excel;charset=utf-8",
+      }
+  );
+
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
+
   link.href = url;
-  link.download = `danh-sach-san-pham-${new Date().toISOString().slice(0, 10)}.xls`;
+
+  link.download =
+      `danh-sach-san-pham-` +
+      `${new Date().toISOString().slice(0, 10)}.xls`;
+
   document.body.appendChild(link);
+
   link.click();
   link.remove();
+
   URL.revokeObjectURL(url);
-  ElMessage.success(`Đã xuất ${rows.length} sản phẩm`);
+
+  ElMessage.success(
+      `Đã xuất ${rows.length} sản phẩm.`
+  );
 };
 
-const isHiddenProduct = (product) => {
-  return product.trangThaiCode === 0;
-};
-
+/**
+ * Ngưng bán sản phẩm.
+ */
 const ngungBanProduct = async (product) => {
-  if (!confirm(`Ngưng bán "${product.name}" ?`)) {
+  const confirmed = window.confirm(
+      `Bạn có chắc chắn muốn ngưng bán "${product.name}" không?`
+  );
+
+  if (!confirmed) {
     return;
   }
 
   try {
-    await api.patch(NGUNG_BAN_API(product.id));
+    await api.patch(
+        NGUNG_BAN_API(product.id)
+    );
 
-    alert("Ngưng bán thành công!");
+    ElMessage.success(
+        "Ngưng bán sản phẩm thành công."
+    );
 
     await loadProducts();
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(
+        "Lỗi ngưng bán sản phẩm:",
+        error
+    );
 
-    alert(
-        e.response?.data ||
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data ||
         "Không thể ngưng bán sản phẩm."
     );
   }
 };
 
+/**
+ * Bán lại sản phẩm.
+ */
 const banLaiProduct = async (product) => {
   try {
-    await api.patch(BAN_LAI_API(product.id));
+    await api.patch(
+        BAN_LAI_API(product.id)
+    );
 
-    alert("Đã bán lại sản phẩm.");
+    ElMessage.success(
+        "Đã chuyển sản phẩm sang bán lại."
+    );
 
     await loadProducts();
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(
+        "Lỗi bán lại sản phẩm:",
+        error
+    );
 
-    alert(
-        e.response?.data ||
-        "Không thể bán lại."
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "Không thể bán lại sản phẩm."
     );
   }
 };
 
+/**
+ * Hiển thị chi tiết sản phẩm.
+ */
 const showDetail = async (product) => {
   loadingProductDetail.value = true;
   selectedProductDetail.value = product;
 
   try {
-    const response = await api.get(`${API_URL}/${product.id}`);
-    selectedProductDetail.value = normalizeProduct(response.data || product);
+    const response = await api.get(
+        `${API_URL}/${product.id}`
+    );
+
+    selectedProductDetail.value =
+        normalizeProduct(
+            response.data || product
+        );
   } catch (error) {
-    console.error("Lỗi tải chi tiết sản phẩm:", error);
-    alert(
+    console.error(
+        "Lỗi tải chi tiết sản phẩm:",
+        error
+    );
+
+    ElMessage.error(
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         "Không thể tải chi tiết sản phẩm."
     );
+
     selectedProductDetail.value = null;
   } finally {
     loadingProductDetail.value = false;
   }
 };
 
+/**
+ * Đóng popup chi tiết.
+ */
 const closeDetail = () => {
   selectedProductDetail.value = null;
 };
 
+/**
+ * Đóng popup khi bấm phím Escape.
+ */
+const handleEscapeKey = (event) => {
+  if (
+      event.key === "Escape" &&
+      selectedProductDetail.value
+  ) {
+    closeDetail();
+  }
+};
 
-const buildPayloadFromProduct = (product, overrides = {}) => ({
-  tenSanPham: overrides.tenSanPham ?? product.tenSanPham ?? product.name ?? "",
-  loai: overrides.loai ?? product.loai ?? product.category ?? "",
-  noiThat: overrides.noiThat ?? product.noiThat ?? "",
-  quyCach: overrides.quyCach ?? product.quyCach ?? "",
-  tonGiao: overrides.tonGiao ?? product.tonGiao ?? "",
-  giaTien: Number(overrides.giaTien ?? product.giaTien ?? product.price ?? 0),
-  maDoiTac: overrides.maDoiTac ?? product.maDoiTac ?? null,
-  soLuong: Number(overrides.soLuong ?? product.soLuong ?? product.stock ?? 0),
-  thietKe: overrides.thietKe ?? product.thietKe ?? "",
-  xuatXu: overrides.xuatXu ?? product.xuatXu ?? "",
-  ghiChu: overrides.ghiChu ?? product.ghiChu ?? "",
-  khuyenMai:
-      (overrides.khuyenMai ?? product.khuyenMai ?? "") === ""
-          ? null
-          : Number(overrides.khuyenMai ?? product.khuyenMai ?? 0),
-  mauSac: overrides.mauSac ?? product.mauSac ?? "",
-  hinhAnh: overrides.hinhAnh ?? product.hinhAnh ?? product.image ?? "",
-  vatLieu: overrides.vatLieu ?? product.vatLieu ?? "",
-  trangThai: Number(overrides.trangThai ?? product.trangThaiCode ?? 1),
-  kichThuoc: overrides.kichThuoc ?? product.kichThuoc ?? "",
-  trongLuong: overrides.trongLuong ?? product.trongLuong ?? "",
-  cnsx: overrides.cnsx ?? product.cnsx ?? "",
+onMounted(() => {
+  loadProducts();
+
+  window.addEventListener(
+      "keydown",
+      handleEscapeKey
+  );
 });
 
-const addCategory = () => {
-  resetForm();
-  activeTab.value = "create";
-};
-
-const viewCategory = (cate) => {
-  selectedCategory.value = cate.name;
-  selectedStatus.value = "";
-  keyword.value = "";
-  activeTab.value = "list";
-  currentPage.value = 1;
-};
-
-const editCategory = async (cate) => {
-  const newName = prompt("Nhập tên danh mục mới:", cate.name);
-
-  if (!newName || newName.trim() === cate.name) return;
-
-  const list = products.value.filter(
-      (p) => (p.category || p.loai || "Chưa phân loại") === cate.name
-  );
-
-  if (list.length === 0) return;
-
-  try {
-    await Promise.all(
-        list.map((product) =>
-            api.put(`${API_URL}/${product.id}`, buildPayloadFromProduct(product, {
-              loai: newName.trim(),
-            }))
-        )
-    );
-
-    alert("Cập nhật danh mục thành công!");
-    selectedCategory.value = "";
-    await loadProducts();
-  } catch (error) {
-    console.error("Lỗi cập nhật danh mục:", error);
-    alert("Không thể cập nhật danh mục.");
-  }
-};
-
-const hideCategory = async (cate) => {
-  if (!confirm(`Bạn có chắc muốn ẩn toàn bộ sản phẩm trong danh mục "${cate.name}" không?`)) {
-    return;
-  }
-
-  const list = products.value.filter(
-      (p) => (p.category || p.loai || "Chưa phân loại") === cate.name && !isHiddenProduct(p)
-  );
-
-  if (list.length === 0) return;
-
-  try {
-    await Promise.all(list.map((product) => api.patch(NGUNG_BAN_API(product.id))));
-    alert("Đã ẩn danh mục sản phẩm!");
-    await loadProducts();
-  } catch (error) {
-    console.error("Lỗi ẩn danh mục:", error);
-    alert("Không thể ẩn danh mục sản phẩm.");
-  }
-};
-
-const showCategory = async (cate) => {
-  const list = products.value.filter(
-      (p) => (p.category || p.loai || "Chưa phân loại") === cate.name && isHiddenProduct(p)
-  );
-
-  if (list.length === 0) return;
-
-  try {
-    await Promise.all(list.map((product) => api.patch(BAN_LAI_API(product.id))));
-    alert("Đã hiện lại danh mục sản phẩm!");
-    await loadProducts();
-  } catch (error) {
-    console.error("Lỗi hiện lại danh mục:", error);
-    alert("Không thể hiện lại danh mục sản phẩm.");
-  }
-};
-
-const handleImageUpload = (event) => {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  newProduct.value.hinhAnh = file;
-  imagePreview.value = URL.createObjectURL(file);
-};
-
-// === Quản lý chi tiết sản phẩm ===
-const addChiTiet = (loaiKhoi = 'TIEU_DE') => {
-  editChiTietList.value.push({ loaiKhoi, noiDung: '', thuTu: editChiTietList.value.length });
-};
-
-const removeChiTiet = (index) => {
-  editChiTietList.value.splice(index, 1);
-  if (editChiTietList.value.length === 0) addChiTiet('TIEU_DE');
-};
-
-// === Quản lý hình ảnh gallery ===
-const uploadOneImage = async (file) => {
-  const formData = new FormData();
-  formData.append('file', file, file.name);
-  const response = await api.post(UPLOAD_URL, formData);
-  const data = response.data;
-  if (typeof data === 'string') return data;
-  if (typeof data.data === 'string') return data.data;
-  return data.url || data.secureUrl || data.secure_url || data.data?.url || '';
-};
-
-const handleGalleryUpload = async (event) => {
-  const files = Array.from(event.target.files || []);
-  event.target.value = '';
-  const remaining = MAX_GALLERY_IMAGES - editGalleryUrls.value.length;
-  if (remaining <= 0) { alert(`Tối đa ${MAX_GALLERY_IMAGES} ảnh.`); return; }
-
-  for (const file of files.slice(0, remaining)) {
-    if (!file.type.startsWith('image/')) continue;
-    if (file.size > MAX_FILE_SIZE) { alert(`${file.name} vượt quá 5MB.`); continue; }
-    try {
-      const url = await uploadOneImage(file);
-      if (url) {
-        editGalleryUrls.value.push(url);
-        editGalleryPreviews.value.push(url);
-      }
-    } catch (err) {
-      console.error('Lỗi upload ảnh:', err);
-      alert(`Không thể tải ảnh ${file.name}`);
-    }
-  }
-};
-
-const removeGalleryImage = (index) => {
-  const preview = editGalleryPreviews.value[index];
-  if (preview && preview.startsWith('blob:')) URL.revokeObjectURL(preview);
-  editGalleryUrls.value.splice(index, 1);
-  editGalleryPreviews.value.splice(index, 1);
-};
-
-const handleChiTietImageUpload = async (index, event) => {
-  const file = event.target.files?.[0];
-  event.target.value = '';
-  if (!file || !file.type.startsWith('image/')) return;
-  try {
-    const url = await uploadOneImage(file);
-    if (url) editChiTietList.value[index].noiDung = url;
-  } catch (err) {
-    console.error('Lỗi upload ảnh chi tiết:', err);
-    alert('Không thể tải ảnh chi tiết.');
-  }
-};
-
 onBeforeUnmount(() => {
-  editGalleryPreviews.value.forEach(url => { if (url && url.startsWith('blob:')) URL.revokeObjectURL(url); });
+  window.removeEventListener(
+      "keydown",
+      handleEscapeKey
+  );
+
+  document.body.style.overflow =
+      previousBodyOverflow;
+
+  document.documentElement.style.overflow =
+      previousHtmlOverflow;
 });
 </script>
 
 <template>
   <div class="admin-layout">
     <section class="page-content">
-
-      <div class="tabs">
-        <button :class="{ active: activeTab === 'list' }" @click="changeTab('list')">
-          Danh sách sản phẩm
-        </button>
-        <button :class="{ active: activeTab === 'category' }" @click="changeTab('category')">
-          Danh mục sản phẩm
-        </button>
-      </div>
-
       <template v-if="activeTab === 'list'">
         <div class="filter-row">
-          <button class="date-btn">
+          <button
+              class="date-btn"
+              type="button"
+          >
             01/05/2024 - 26/05/2024
+
             <i class="fa-regular fa-calendar"></i>
           </button>
 
           <select v-model="selectedStatus">
-            <option value="">Tất cả trạng thái sản phẩm</option>
-            <option value="con-hang">Còn hàng</option>
-            <option value="het-hang">Hết hàng</option>
+            <option value="">
+              Tất cả trạng thái sản phẩm
+            </option>
+
+            <option value="con-hang">
+              Còn hàng
+            </option>
+
+            <option value="het-hang">
+              Hết hàng
+            </option>
+
             <option value="ngung-ban">
               Ngưng bán
             </option>
           </select>
 
           <select v-model="selectedCategory">
-            <option value="">Tất cả danh mục</option>
-            <option v-for="cate in categories" :key="cate.id" :value="cate.name">
-              {{ cate.name }}
+            <option value="">
+              Tất cả danh mục
+            </option>
+
+            <option
+                v-for="category in categories"
+                :key="category.id"
+                :value="category.name"
+            >
+              {{ category.name }}
             </option>
           </select>
 
           <div class="search-input">
-            <input v-model="keyword" placeholder="Tìm kiếm sản phẩm..."/>
-            <i class="fa-solid fa-magnifying-glass"></i>
+            <input
+                v-model="keyword"
+                type="text"
+                placeholder="Tìm kiếm sản phẩm..."
+            />
+
+            <i
+                class="fa-solid fa-magnifying-glass"
+            ></i>
           </div>
 
-          <button class="export-btn" type="button" @click="exportProductsToExcel">
+          <button
+              class="export-btn"
+              type="button"
+              @click="exportProductsToExcel"
+          >
             <i class="fa-solid fa-download"></i>
             Xuất danh sách
           </button>
@@ -802,8 +977,11 @@ onBeforeUnmount(() => {
         <div class="stats">
           <div class="stat-card">
             <div class="stat-icon red">
-              <i class="fa-solid fa-table-cells-large"></i>
+              <i
+                  class="fa-solid fa-table-cells-large"
+              ></i>
             </div>
+
             <div>
               <p>Tổng sản phẩm</p>
               <h3>{{ products.length }}</h3>
@@ -814,6 +992,7 @@ onBeforeUnmount(() => {
             <div class="stat-icon green">
               <i class="fa-solid fa-tag"></i>
             </div>
+
             <div>
               <p>Sản phẩm đang bán</p>
               <h3>{{ availableProducts.length }}</h3>
@@ -824,6 +1003,7 @@ onBeforeUnmount(() => {
             <div class="stat-icon gray">
               <i class="fa-regular fa-clock"></i>
             </div>
+
             <div>
               <p>Sản phẩm hết hàng</p>
               <h3>{{ outOfStockProducts.length }}</h3>
@@ -834,6 +1014,7 @@ onBeforeUnmount(() => {
             <div class="stat-icon blue">
               <i class="fa-solid fa-list"></i>
             </div>
+
             <div>
               <p>Sản phẩm ngưng bán</p>
               <h3>{{ stoppedProducts.length }}</h3>
@@ -841,52 +1022,138 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <p v-if="loading">Đang tải sản phẩm...</p>
+        <p
+            v-if="loading"
+            class="loading-message"
+        >
+          Đang tải sản phẩm...
+        </p>
 
-        <div class="product-grid">
-          <div class="product-card" v-for="product in paginatedProducts" :key="product.id">
-            <div class="approval-bar" :class="getApprovalClass(product.trangThaiCode)">
-              <i :class="product.trangThaiCode === 1 ? 'fa-solid fa-circle-check' : 'fa-regular fa-clock'"></i>
-              {{ getApprovalLabel(product.trangThaiCode) }}
+        <div
+            v-else-if="paginatedProducts.length"
+            class="product-grid"
+        >
+          <article
+              v-for="product in paginatedProducts"
+              :key="product.id"
+              class="product-card"
+          >
+            <div
+                class="approval-bar"
+                :class="
+                getApprovalClass(
+                  product.trangThaiCode
+                )
+              "
+            >
+              <i
+                  :class="
+                  product.trangThaiCode === 1
+                    ? 'fa-solid fa-circle-check'
+                    : 'fa-regular fa-clock'
+                "
+              ></i>
+
+              {{
+                getApprovalLabel(
+                    product.trangThaiCode
+                )
+              }}
             </div>
-            <img :src="product.image" :alt="product.name"/>
+
+            <img
+                :src="product.image"
+                :alt="product.name"
+            />
 
             <div class="product-info">
               <h3>{{ product.name }}</h3>
 
-              <p class="product-sku">SKU: {{ product.sku }}</p>
+              <p class="product-sku">
+                SKU: {{ product.sku }}
+              </p>
 
               <p class="product-price">
                 {{ formatPrice(product.price) }}
               </p>
 
-              <div class="stock-row" :class="{ dirty: isStockDirty(product) }">
+              <div
+                  class="stock-row"
+                  :class="{
+                  dirty: isStockDirty(product),
+                }"
+              >
                 <div class="stock-copy">
-                  <p class="stock-label">Tồn kho: <strong>{{ getDraftStock(product) }}</strong></p>
+                  <p class="stock-label">
+                    Tồn kho:
+
+                    <strong>
+                      {{ getDraftStock(product) }}
+                    </strong>
+                  </p>
+
                   <span
                       class="status"
-                      :class="getDraftStockStatus(product) === 'Còn hàng' ? 'available' : 'empty'"
+                      :class="
+                      getDraftStockStatus(product) ===
+                      'Còn hàng'
+                        ? 'available'
+                        : 'empty'
+                    "
                   >
-                    {{ getDraftStockStatus(product) }}
+                    {{
+                      getDraftStockStatus(product)
+                    }}
                   </span>
-                  <small v-if="isStockDirty(product)" class="unsaved-stock">Chưa lưu</small>
+
+                  <small
+                      v-if="isStockDirty(product)"
+                      class="unsaved-stock"
+                  >
+                    Chưa lưu
+                  </small>
                 </div>
 
                 <div class="stock-control">
-                  <button type="button" :disabled="getDraftStock(product) === 0" @click="decreaseStock(product)">−</button>
-                  <span>{{ getDraftStock(product) }}</span>
-                  <button type="button" @click="increaseStock(product)">+</button>
+                  <button
+                      type="button"
+                      :disabled="
+                      getDraftStock(product) === 0
+                    "
+                      @click="decreaseStock(product)"
+                  >
+                    −
+                  </button>
+
+                  <span>
+                    {{ getDraftStock(product) }}
+                  </span>
+
+                  <button
+                      type="button"
+                      @click="increaseStock(product)"
+                  >
+                    +
+                  </button>
                 </div>
               </div>
             </div>
 
             <div class="card-actions">
-              <button class="detail-btn" @click="showDetail(product)">
+              <button
+                  class="detail-btn"
+                  type="button"
+                  @click="showDetail(product)"
+              >
                 <i class="fa-regular fa-eye"></i>
-                chi tiết
+                Chi tiết
               </button>
 
-              <button class="edit-btn" @click="editProduct(product)">
+              <button
+                  class="edit-btn"
+                  type="button"
+                  @click="editProduct(product)"
+              >
                 <i class="fa-solid fa-pen"></i>
                 Sửa
               </button>
@@ -894,6 +1161,7 @@ onBeforeUnmount(() => {
               <button
                   v-if="product.trangThaiCode === 1"
                   class="hide-btn"
+                  type="button"
                   @click="ngungBanProduct(product)"
               >
                 <i class="fa-solid fa-ban"></i>
@@ -901,8 +1169,11 @@ onBeforeUnmount(() => {
               </button>
 
               <button
-                  v-else-if="product.trangThaiCode === 0"
+                  v-else-if="
+                  product.trangThaiCode === 0
+                "
                   class="hide-btn"
+                  type="button"
                   @click="banLaiProduct(product)"
               >
                 <i class="fa-solid fa-play"></i>
@@ -912,305 +1183,500 @@ onBeforeUnmount(() => {
               <button
                   class="save-btn"
                   type="button"
-                  :disabled="!isStockDirty(product) || savingStockId === product.id"
+                  :disabled="
+                  !isStockDirty(product) ||
+                  savingStockId === product.id
+                "
                   @click="saveStock(product)"
               >
-                <i class="fa-regular fa-floppy-disk"></i>
-                {{ savingStockId === product.id ? "Đang lưu" : "Lưu" }}
+                <i
+                    class="fa-regular fa-floppy-disk"
+                ></i>
+
+                {{
+                  savingStockId === product.id
+                      ? "Đang lưu"
+                      : "Lưu"
+                }}
               </button>
             </div>
-          </div>
+          </article>
+        </div>
+
+        <div
+            v-else
+            class="empty-product-list"
+        >
+          Không tìm thấy sản phẩm phù hợp.
         </div>
 
         <div class="pagination-row">
           <p>
-            Hiển thị {{ startItem }} - {{ endItem }}
-            trong {{ filteredProducts.length }} sản phẩm
+            Hiển thị {{ startItem }} -
+            {{ endItem }} trong
+            {{ filteredProducts.length }}
+            sản phẩm
           </p>
 
           <div class="pagination">
-            <button @click="changePage(currentPage - 1)" :disabled="currentPage === 1">
-              <i class="fa-solid fa-chevron-left"></i>
+            <button
+                type="button"
+                :disabled="currentPage === 1"
+                @click="
+                changePage(currentPage - 1)
+              "
+            >
+              <i
+                  class="fa-solid fa-chevron-left"
+              ></i>
             </button>
 
             <button
                 v-for="page in totalPages"
                 :key="page"
-                :class="{ active: currentPage === page }"
+                type="button"
+                :class="{
+                active: currentPage === page,
+              }"
                 @click="changePage(page)"
             >
               {{ page }}
             </button>
 
-            <button @click="changePage(currentPage + 1)" :disabled="currentPage === totalPages">
-              <i class="fa-solid fa-chevron-right"></i>
+            <button
+                type="button"
+                :disabled="
+                currentPage === totalPages
+              "
+                @click="
+                changePage(currentPage + 1)
+              "
+            >
+              <i
+                  class="fa-solid fa-chevron-right"
+              ></i>
             </button>
           </div>
         </div>
       </template>
 
-      <template v-if="activeTab === 'category'">
-        <div class="category-header">
-          <h4>Danh mục sản phẩm</h4>
-
-          <button class="add-category-btn" @click="addCategory">
-            <i class="fa-solid fa-plus"></i>
-            Thêm danh mục
-          </button>
-        </div>
-
-        <p v-if="loading">Đang tải danh mục sản phẩm...</p>
-
-        <div class="category-table">
-          <div class="table-head">
-            <span>Tên danh mục</span>
-            <span>Số sản phẩm</span>
-            <span>Trạng thái</span>
-            <span>Thao tác</span>
-          </div>
-
-          <div class="table-row" v-for="cate in categories" :key="cate.id">
-            <span>{{ cate.name }}</span>
-
-            <span>{{ cate.total }}</span>
-
-            <span
-                class="status category-status"
-                :class="cate.status === 'Đang bán' ? 'available' : 'empty'"
-            >
-              {{ cate.status }}
-            </span>
-
-            <span class="table-actions">
-              <button title="Sửa danh mục" @click="editCategory(cate)">
-                <i class="fa-solid fa-pen"></i>
-              </button>
-
-              <button
-                  v-if="cate.status === 'Đang bán'"
-                  title="Ẩn danh mục"
-                  @click="hideCategory(cate)"
-              >
-                <i class="fa-regular fa-trash-can"></i>
-              </button>
-
-              <button
-                  v-else
-                  title="Hiện lại danh mục"
-                  @click="showCategory(cate)"
-              >
-                <i class="fa-regular fa-eye"></i>
-              </button>
-
-              <button title="Xem sản phẩm trong danh mục" @click="viewCategory(cate)">
-                <i class="fa-regular fa-eye"></i>
-              </button>
-            </span>
-          </div>
-        </div>
-      </template>
-
-      <template v-if="activeTab === 'create'">
+      <template v-else-if="activeTab === 'create'">
         <TrangTaoSanPham
-          :edit-id="editingProduct ? editingProduct.id : null"
-          @saved="handleEditSaved"
-          @close="handleEditClose"
+            :edit-id="
+            editingProduct
+              ? editingProduct.id
+              : null
+          "
+            @saved="handleEditSaved"
+            @close="handleEditClose"
         />
       </template>
+    </section>
 
-      <div v-if="selectedProductDetail" class="product-detail-overlay" @click.self="closeDetail">
-        <article class="product-detail-modal">
-          <button class="detail-close" type="button" @click="closeDetail"><i class="fa-solid fa-xmark"></i></button>
+    <!--
+      Teleport đưa popup ra ngoài layout hiện tại,
+      tránh bị sidebar, header, overflow hoặc transform giới hạn.
+    -->
+    <Teleport to="body">
+      <div
+          v-if="selectedProductDetail"
+          class="product-detail-overlay"
+          @click.self="closeDetail"
+      >
+        <article
+            class="product-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Chi tiết sản phẩm"
+        >
+          <button
+              class="detail-close"
+              type="button"
+              aria-label="Đóng chi tiết sản phẩm"
+              @click="closeDetail"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+
           <div class="detail-image-wrap">
-            <img :src="selectedProductDetail.image" :alt="selectedProductDetail.name" />
-            <span class="approval-bar detail-status" :class="getApprovalClass(selectedProductDetail.trangThaiCode)">
-              {{ getApprovalLabel(selectedProductDetail.trangThaiCode) }}
+            <img
+                :src="selectedProductDetail.image"
+                :alt="selectedProductDetail.name"
+            />
+
+            <span
+                class="approval-bar detail-status"
+                :class="
+                getApprovalClass(
+                  selectedProductDetail.trangThaiCode
+                )
+              "
+            >
+              {{
+                getApprovalLabel(
+                    selectedProductDetail.trangThaiCode
+                )
+              }}
             </span>
           </div>
+
           <div class="detail-content">
-            <div v-if="loadingProductDetail" class="detail-loading">Đang tải chi tiết sản phẩm...</div>
+            <div
+                v-if="loadingProductDetail"
+                class="detail-loading"
+            >
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              Đang tải chi tiết sản phẩm...
+            </div>
+
             <template v-else>
               <div class="detail-heading-row">
                 <div>
-                  <p class="detail-eyebrow">SẢN PHẨM #{{ selectedProductDetail.id }}</p>
-                  <h2>{{ selectedProductDetail.name }}</h2>
+                  <p class="detail-eyebrow">
+                    SẢN PHẨM
+                    #{{ selectedProductDetail.id }}
+                  </p>
+
+                  <h2>
+                    {{ selectedProductDetail.name }}
+                  </h2>
                 </div>
-                <span class="detail-stock-pill" :class="selectedProductDetail.stock > 0 ? 'in-stock' : 'out-stock'">
-                  <i class="fa-solid fa-boxes-stacked"></i>
-                  Tồn kho {{ selectedProductDetail.stock }}
+
+                <span
+                    class="detail-stock-pill"
+                    :class="
+                    selectedProductDetail.stock > 0
+                      ? 'in-stock'
+                      : 'out-stock'
+                  "
+                >
+                  <i
+                      class="fa-solid fa-boxes-stacked"
+                  ></i>
+
+                  Tồn kho
+                  {{ selectedProductDetail.stock }}
                 </span>
               </div>
 
               <div class="detail-price-row">
-                <p class="detail-price">{{ formatPrice(selectedProductDetail.price) }}</p>
-                <span v-if="Number(selectedProductDetail.khuyenMai || 0) > 0" class="detail-promotion">
-                  Khuyến mãi {{ formatPrice(selectedProductDetail.khuyenMai) }}
+                <p class="detail-price">
+                  {{
+                    formatPrice(
+                        selectedProductDetail.price
+                    )
+                  }}
+                </p>
+
+                <span
+                    v-if="
+                    Number(
+                      selectedProductDetail.khuyenMai ||
+                      0
+                    ) > 0
+                  "
+                    class="detail-promotion"
+                >
+                  Khuyến mãi
+                  {{
+                    formatPrice(
+                        selectedProductDetail.khuyenMai
+                    )
+                  }}
                 </span>
               </div>
 
               <div class="detail-grid">
-                <div><span>Loại sản phẩm</span><strong>{{ selectedProductDetail.category || '—' }}</strong></div>
-                <div><span>Vật liệu</span><strong>{{ selectedProductDetail.vatLieu || '—' }}</strong></div>
-                <div><span>Nội thất</span><strong>{{ selectedProductDetail.noiThat || '—' }}</strong></div>
-                <div><span>Màu sắc</span><strong>{{ selectedProductDetail.mauSac || '—' }}</strong></div>
-                <div><span>Kích thước</span><strong>{{ selectedProductDetail.kichThuoc || '—' }}</strong></div>
-                <div><span>Trọng lượng</span><strong>{{ selectedProductDetail.trongLuong || '—' }}</strong></div>
-                <div><span>Quy cách</span><strong>{{ selectedProductDetail.quyCach || '—' }}</strong></div>
-                <div><span>Thiết kế</span><strong>{{ selectedProductDetail.thietKe || '—' }}</strong></div>
-                <div><span>Tôn giáo</span><strong>{{ selectedProductDetail.tonGiao || '—' }}</strong></div>
-                <div><span>Xuất xứ / CNSX</span><strong>{{ selectedProductDetail.xuatXu || '—' }} / {{ selectedProductDetail.cnsx || '—' }}</strong></div>
+                <div>
+                  <span>Loại sản phẩm</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.category ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Vật liệu</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.vatLieu ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Nội thất</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.noiThat ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Màu sắc</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.mauSac ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Kích thước</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.kichThuoc ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Trọng lượng</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.trongLuong ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Quy cách</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.quyCach ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Thiết kế</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.thietKe ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Tôn giáo</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.tonGiao ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Xuất xứ / CNSX</span>
+
+                  <strong>
+                    {{
+                      selectedProductDetail.xuatXu ||
+                      "—"
+                    }}
+                    /
+                    {{
+                      selectedProductDetail.cnsx ||
+                      "—"
+                    }}
+                  </strong>
+                </div>
               </div>
 
               <section class="database-detail-section">
                 <div class="detail-section-heading">
                   <div>
-                    <h3>Chi tiết cấu tạo sản phẩm</h3>
+                    <h3>
+                      Chi tiết cấu tạo sản phẩm
+                    </h3>
                   </div>
-                  <span class="detail-count">{{ selectedProductDetail.chiTietList.length }} mục</span>
+
+                  <span class="detail-count">
+                    {{
+                      selectedProductDetail
+                          .chiTietList.length
+                    }}
+                    mục
+                  </span>
                 </div>
 
-                <div v-if="selectedProductDetail.chiTietList.length" class="database-detail-list">
+                <div
+                    v-if="
+                    selectedProductDetail
+                      .chiTietList.length
+                  "
+                    class="database-detail-list"
+                >
                   <article
-                      v-for="(chiTiet, index) in selectedProductDetail.chiTietList"
-                      :key="chiTiet.maChiTiet || index"
+                      v-for="(
+                      chiTiet, index
+                    ) in selectedProductDetail.chiTietList"
+                      :key="
+                      chiTiet.maChiTiet || index
+                    "
                       class="database-detail-item"
                   >
-                    <div class="detail-order">{{ chiTiet.thuTu ?? index + 1 }}</div>
-                    <div>
-                      <h4>{{ chiTiet.loaiKhoi || `Chi tiết ${index + 1}` }}</h4>
-                      <p>{{ chiTiet.noiDung || 'Chưa có nội dung.' }}</p>
+                    <div class="detail-order">
+                      {{
+                        chiTiet.thuTu ??
+                        index + 1
+                      }}
+                    </div>
 
-                      <div v-if="selectedProductDetail.hinhAnhList.some(img => img.maChiTiet === chiTiet.maChiTiet)" class="detail-image-gallery inline-gallery">
+                    <div class="database-detail-content">
+                      <h4>
+                        {{
+                          chiTiet.loaiKhoi ||
+                          `Chi tiết ${index + 1}`
+                        }}
+                      </h4>
+
+                      <p>
+                        {{
+                          chiTiet.noiDung ||
+                          "Chưa có nội dung."
+                        }}
+                      </p>
+
+                      <div
+                          v-if="
+                          selectedProductDetail.hinhAnhList.some(
+                            (image) =>
+                              image.maChiTiet ===
+                              chiTiet.maChiTiet
+                          )
+                        "
+                          class="detail-image-gallery inline-gallery"
+                      >
                         <img
-                            v-for="image in selectedProductDetail.hinhAnhList.filter(img => img.maChiTiet === chiTiet.maChiTiet)"
-                            :key="image.maHinhAnh"
+                            v-for="image in selectedProductDetail.hinhAnhList.filter(
+                            (item) =>
+                              item.maChiTiet ===
+                              chiTiet.maChiTiet
+                          )"
+                            :key="
+                            image.maHinhAnh ||
+                            image.urlHinhAnh
+                          "
                             :src="image.urlHinhAnh"
-                            :alt="image.loaiHinhAnh || chiTiet.loaiKhoi"
+                            :alt="
+                            image.loaiHinhAnh ||
+                            chiTiet.loaiKhoi
+                          "
                         />
                       </div>
                     </div>
                   </article>
                 </div>
 
-                <div v-else class="empty-database-detail">
-                  Sản phẩm này chưa có dữ liệu trong bảng sanphamchitiet.
+                <div
+                    v-else
+                    class="empty-database-detail"
+                >
+                  Sản phẩm này chưa có dữ liệu
+                  trong bảng sanphamchitiet.
                 </div>
               </section>
 
-              <section v-if="selectedProductDetail.hinhAnhList.some(img => !img.maChiTiet)" class="database-detail-section image-section">
+              <section
+                  v-if="
+                  selectedProductDetail.hinhAnhList.some(
+                    (image) => !image.maChiTiet
+                  )
+                "
+                  class="database-detail-section"
+              >
                 <div class="detail-section-heading">
                   <div>
-                    <span class="detail-section-kicker">SANPHAMHINHANH</span>
+                    <span
+                        class="detail-section-kicker"
+                    >
+                      SANPHAMHINHANH
+                    </span>
+
                     <h3>Hình ảnh bổ sung</h3>
                   </div>
                 </div>
+
                 <div class="detail-image-gallery">
                   <figure
-                      v-for="image in selectedProductDetail.hinhAnhList.filter(img => !img.maChiTiet)"
-                      :key="image.maHinhAnh"
+                      v-for="image in selectedProductDetail.hinhAnhList.filter(
+                      (item) => !item.maChiTiet
+                    )"
+                      :key="
+                      image.maHinhAnh ||
+                      image.urlHinhAnh
+                    "
                   >
-                    <img :src="image.urlHinhAnh" :alt="image.loaiHinhAnh || selectedProductDetail.name" />
-                    <figcaption>{{ image.loaiHinhAnh || 'Hình ảnh sản phẩm' }}</figcaption>
+                    <img
+                        :src="image.urlHinhAnh"
+                        :alt="
+                        image.loaiHinhAnh ||
+                        selectedProductDetail.name
+                      "
+                    />
+
+                    <figcaption>
+                      {{
+                        image.loaiHinhAnh ||
+                        "Hình ảnh sản phẩm"
+                      }}
+                    </figcaption>
                   </figure>
                 </div>
               </section>
 
               <div class="detail-description">
                 <h4>Ghi chú</h4>
-                <p>{{ selectedProductDetail.ghiChu || 'Chưa có ghi chú cho sản phẩm.' }}</p>
+
+                <p>
+                  {{
+                    selectedProductDetail.ghiChu ||
+                    "Chưa có ghi chú cho sản phẩm."
+                  }}
+                </p>
               </div>
             </template>
           </div>
         </article>
       </div>
-    </section>
+    </Teleport>
   </div>
 </template>
 
-<style scoped src="../../assets/styles/doitac/QLSanPham/TrangQLSanPham.css"></style>
+<style
+    scoped
+    src="../../assets/styles/doitac/QLSanPham/TrangQLSanPham.css"
+></style>
 
 <style scoped>
-.category-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: 36px 0 18px;
-}
-
-.category-header h4 {
-  margin: 0;
-  font-size: 24px;
+.loading-message,
+.empty-product-list {
+  padding: 32px 20px;
+  color: #64748b;
   font-weight: 600;
-  color: #2d3748;
+  text-align: center;
 }
-
-.add-category-btn,
-.category-header button {
-  border: none;
-  border-radius: 8px;
-  background: #b91c1c;
-  color: #fff;
-  padding: 12px 22px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.category-table {
-  width: 100%;
-  background: #fff;
-}
-
-.table-head,
-.table-row {
-  display: grid;
-  grid-template-columns: 2.1fr 1.1fr 1.1fr 1fr;
-  align-items: center;
-  column-gap: 24px;
-}
-
-.table-head {
-  padding: 26px 8px 18px;
-  color: #1f2937;
-  font-weight: 700;
-  border-bottom: 1px solid #edf2f7;
-}
-
-.table-row {
-  min-height: 72px;
-  padding: 0 8px;
-  color: #4b5563;
-  border-bottom: 1px solid #edf2f7;
-}
-
-.category-status {
-  width: 220px;
-  height: 34px;
-  display: inline-flex;
-  align-items: center;
-  padding-left: 14px;
-  border-radius: 3px;
-  font-size: 13px;
-}
-
-.table-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.table-actions button {
-  border: none;
-  background: transparent;
-  color: #263238;
-  font-size: 16px;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.table-actions button:hover {
-  color: #b91c1c;
-}
-
 
 .product-card {
   position: relative;
@@ -1229,292 +1695,671 @@ onBeforeUnmount(() => {
 
 .product-card > .approval-bar {
   position: absolute;
-  z-index: 2;
   top: 12px;
   left: 12px;
-  box-shadow: 0 5px 15px rgba(15, 23, 42, .14);
+  z-index: 2;
+  box-shadow: 0 5px 15px rgba(15, 23, 42, 0.14);
 }
 
-.approval-bar.approved { background: #dcfce7; color: #166534; }
-.approval-bar.pending { background: #fef3c7; color: #92400e; }
-.approval-bar.hidden { background: #fee2e2; color: #991b1b; }
+.approval-bar.approved {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.approval-bar.pending {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.approval-bar.hidden {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+/* =========================
+   POPUP CHI TIẾT SẢN PHẨM
+   ========================= */
 
 .product-detail-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
-  display: grid;
-  place-items: center;
+  z-index: 999999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100vw;
+  height: 100dvh;
   padding: 24px;
-  background: rgba(15, 23, 42, .72);
-  backdrop-filter: blur(8px);
+  box-sizing: border-box;
+
+  overflow: auto;
+  overscroll-behavior: contain;
+
+  background: rgba(15, 23, 42, 0.74);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
 }
 
 .product-detail-modal {
   position: relative;
-  width: min(1120px, 96vw);
-  height: min(760px, 92vh);
-  max-height: 92vh;
-  min-height: 0;
-  overflow: hidden;
+
   display: grid;
-  grid-template-columns: minmax(330px, 38%) minmax(0, 1fr);
-  border: 1px solid rgba(255,255,255,.18);
+  grid-template-columns:
+    minmax(320px, 38%)
+    minmax(0, 1fr);
+
+  width: min(1120px, calc(100vw - 48px));
+  height: min(760px, calc(100dvh - 48px));
+
+  min-width: 0;
+  min-height: 0;
+  max-width: 1120px;
+  max-height: calc(100dvh - 48px);
+
+  margin: auto;
+  box-sizing: border-box;
+  overflow: hidden;
+
+  background: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 38px 100px rgba(15, 23, 42, .44);
+  box-shadow:
+      0 38px 100px rgba(15, 23, 42, 0.46),
+      0 8px 28px rgba(15, 23, 42, 0.18);
 }
 
 .detail-close {
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 4;
-  width: 40px;
-  height: 40px;
-  border: 1px solid rgba(15, 23, 42, .08);
-  border-radius: 50%;
-  background: rgba(255,255,255,.94);
+  z-index: 10;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 42px;
+  height: 42px;
+  padding: 0;
+
   color: #334155;
+  font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 7px 18px rgba(15, 23, 42, .13);
+
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 50%;
+
+  box-shadow: 0 7px 18px rgba(15, 23, 42, 0.14);
+
+  transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      transform 0.2s ease;
 }
 
-.detail-close:hover { color: #9f1239; transform: rotate(5deg); }
+.detail-close:hover {
+  color: #ffffff;
+  background: #9f1239;
+  transform: rotate(8deg);
+}
+
 .detail-image-wrap {
   position: relative;
-  min-height: 0;
+
+  width: 100%;
   height: 100%;
+  min-width: 0;
+  min-height: 0;
+
   overflow: hidden;
-  background: radial-gradient(circle at 35% 20%, #fff7f8, #e9eef5 65%);
+
+  background:
+      radial-gradient(
+          circle at 35% 20%,
+          #fff7f8,
+          #e9eef5 65%
+      );
 }
+
 .detail-image-wrap::after {
-  content: "";
   position: absolute;
   inset: auto 0 0;
+  z-index: 1;
+
   height: 40%;
-  background: linear-gradient(to top, rgba(15,23,42,.42), transparent);
   pointer-events: none;
+
+  content: "";
+
+  background:
+      linear-gradient(
+          to top,
+          rgba(15, 23, 42, 0.46),
+          transparent
+      );
 }
-.detail-image-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .35s ease; }
-.detail-image-wrap:hover img { transform: scale(1.025); }
-.detail-status { position: absolute; z-index: 2; left: 22px; bottom: 22px; }
+
+.detail-image-wrap img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: center;
+
+  transition: transform 0.35s ease;
+}
+
+.detail-image-wrap:hover img {
+  transform: scale(1.025);
+}
+
+.detail-status {
+  position: absolute;
+  bottom: 22px;
+  left: 22px;
+  z-index: 3;
+
+  max-width: calc(100% - 44px);
+}
+
 .detail-content {
   min-width: 0;
   min-height: 0;
   height: 100%;
+
+  padding: 42px 40px 36px;
+  box-sizing: border-box;
+
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
-  padding: 42px 40px 36px;
-  background: linear-gradient(180deg, #fff 0%, #fbfcfe 100%);
-}
-.detail-content::-webkit-scrollbar { width: 9px; }
-.detail-content::-webkit-scrollbar-track { background: #f1f5f9; }
-.detail-content::-webkit-scrollbar-thumb { border: 2px solid #f1f5f9; border-radius: 999px; background: #94a3b8; }
-.detail-content::-webkit-scrollbar-thumb:hover { background: #64748b; }
-.detail-heading-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-right: 26px; }
-.detail-eyebrow { margin: 0 0 7px; color: #9f1239; font-size: 11px; font-weight: 850; letter-spacing: .12em; }
-.detail-content h2 { margin: 0; color: #172033; font-size: clamp(25px, 3vw, 34px); line-height: 1.18; letter-spacing: -.025em; }
-.detail-stock-pill { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 7px; padding: 8px 11px; border-radius: 999px; font-size: 11px; font-weight: 800; }
-.detail-stock-pill.in-stock { background: #dcfce7; color: #166534; }
-.detail-stock-pill.out-stock { background: #fee2e2; color: #991b1b; }
-.detail-price-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin: 16px 0 23px; padding-bottom: 20px; border-bottom: 1px solid #e7ebf0; }
-.detail-price { margin: 0; color: #9f1239; font-size: 27px; font-weight: 850; }
-.detail-promotion { padding: 6px 9px; border-radius: 7px; background: #fff7ed; color: #c2410c; font-size: 11px; font-weight: 750; }
-.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-.detail-grid div { min-height: 67px; padding: 12px 14px; border: 1px solid #e5eaf0; border-radius: 12px; background: #fff; box-shadow: 0 5px 14px rgba(15,23,42,.035); }
-.detail-grid span { display: block; margin-bottom: 5px; color: #7a8698; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
-.detail-grid strong { display: block; overflow: hidden; color: #263244; font-size: 13px; line-height: 1.4; text-overflow: ellipsis; }
-.detail-description { margin-top: 22px; padding: 18px; border: 1px solid #e5eaf0; border-radius: 13px; background: #fff; }
-.detail-description h4 { margin: 0 0 8px; color: #263244; }
-.detail-description p { margin: 0; color: #596579; line-height: 1.7; }
-.detail-loading { min-height: 420px; display: grid; place-items: center; color: #64748b; font-weight: 700; }
-.database-detail-section { margin-top: 24px; padding-top: 22px; border-top: 1px solid #e5e7eb; }
-.detail-section-heading { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; margin-bottom: 14px; }
-.detail-section-heading h3 { margin: 3px 0 0; color: #1f2937; font-size: 18px; }
-.detail-section-kicker { color: #991b1b; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
-.detail-count { flex: 0 0 auto; padding: 5px 9px; border-radius: 999px; background: #fef2f2; color: #991b1b; font-size: 12px; font-weight: 700; }
-.database-detail-list { display: grid; gap: 12px; }
-.database-detail-item { display: grid; grid-template-columns: 36px 1fr; gap: 13px; padding: 16px; border: 1px solid #e5eaf0; border-radius: 13px; background: #fff; box-shadow: 0 5px 14px rgba(15,23,42,.03); }
-.detail-order { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 10px; background: #9f1239; color: #fff; font-weight: 800; font-size: 12px; }
-.database-detail-item h4 { margin: 2px 0 7px; color: #1f2937; font-size: 15px; }
-.database-detail-item p { margin: 0; color: #4b5563; line-height: 1.65; white-space: pre-line; }
-.empty-database-detail { padding: 20px; border: 1px dashed #cbd5e1; border-radius: 12px; color: #64748b; text-align: center; background: #f8fafc; }
-.detail-image-gallery { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.detail-image-gallery figure { margin: 0; }
-.detail-image-gallery img { width: 100%; height: 124px; object-fit: cover; border-radius: 10px; border: 1px solid #e5e7eb; background: #f3f4f6; }
-.detail-image-gallery figcaption { margin-top: 5px; color: #64748b; font-size: 11px; }
-.inline-gallery { margin-top: 12px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.inline-gallery img { height: 102px; }
 
-@media (max-width: 900px) {
-  .product-detail-modal {
-    height: auto;
-    max-height: 92vh;
-    grid-template-columns: 1fr;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-  .detail-image-wrap { min-height: 300px; height: 320px; max-height: 360px; }
-  .detail-content { height: auto; min-height: auto; overflow: visible; padding: 32px 24px 28px; }
+  background:
+      linear-gradient(
+          180deg,
+          #ffffff 0%,
+          #fbfcfe 100%
+      );
 }
 
-@media (max-width: 620px) {
-  .product-detail-overlay { padding: 10px; }
-  .product-detail-modal { width: 100%; height: auto; max-height: 96vh; border-radius: 17px; }
-  .detail-heading-row { display: grid; padding-right: 22px; }
-  .detail-grid { grid-template-columns: 1fr; }
-  .detail-image-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .detail-content { padding: 26px 17px 22px; }
+.detail-content::-webkit-scrollbar {
+  width: 9px;
 }
 
-.edit-form-container {
-  background: #fff;
-  border-radius: 12px;
-  padding: 24px 32px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  margin-top: 16px;
+.detail-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
 }
-.form-header {
+
+.detail-content::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border: 2px solid #f1f5f9;
+  border-radius: 999px;
+}
+
+.detail-content::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
+.detail-heading-row {
   display: flex;
+  gap: 18px;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #edf2f7;
+  padding-right: 30px;
 }
-.form-header h4 {
-  font-size: 20px;
+
+.detail-heading-row > div {
+  min-width: 0;
+}
+
+.detail-eyebrow {
+  margin: 0 0 7px;
+
+  color: #9f1239;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+}
+
+.detail-content h2 {
+  margin: 0;
+
+  overflow-wrap: anywhere;
+
+  color: #172033;
+  font-size: clamp(25px, 3vw, 34px);
+  line-height: 1.18;
+  letter-spacing: -0.025em;
+}
+
+.detail-stock-pill {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 7px;
+  align-items: center;
+
+  padding: 8px 11px;
+
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+
+  border-radius: 999px;
+}
+
+.detail-stock-pill.in-stock {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.detail-stock-pill.out-stock {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.detail-price-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+
+  margin: 16px 0 23px;
+  padding-bottom: 20px;
+
+  border-bottom: 1px solid #e7ebf0;
+}
+
+.detail-price {
+  margin: 0;
+
+  color: #9f1239;
+  font-size: 27px;
+  font-weight: 850;
+}
+
+.detail-promotion {
+  padding: 6px 9px;
+
+  color: #c2410c;
+  font-size: 11px;
+  font-weight: 750;
+
+  background: #fff7ed;
+  border-radius: 7px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.detail-grid div {
+  min-width: 0;
+  min-height: 67px;
+  padding: 12px 14px;
+  box-sizing: border-box;
+
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  border-radius: 12px;
+
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.035);
+}
+
+.detail-grid span {
+  display: block;
+  margin-bottom: 5px;
+
+  color: #7a8698;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.detail-grid strong {
+  display: block;
+  overflow: hidden;
+
+  color: #263244;
+  font-size: 13px;
+  line-height: 1.4;
+
+  overflow-wrap: anywhere;
+  text-overflow: ellipsis;
+}
+
+.detail-description {
+  margin-top: 22px;
+  padding: 18px;
+
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  border-radius: 13px;
+}
+
+.detail-description h4 {
+  margin: 0 0 8px;
+  color: #263244;
+}
+
+.detail-description p {
+  margin: 0;
+
+  color: #596579;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+
+.detail-loading {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 420px;
+
+  color: #64748b;
+  font-weight: 700;
+}
+
+.database-detail-section {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.detail-section-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  margin-bottom: 14px;
+}
+
+.detail-section-heading h3 {
+  margin: 3px 0 0;
+
   color: #1f2937;
+  font-size: 18px;
+}
+
+.detail-section-kicker {
+  color: #991b1b;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.detail-count {
+  flex: 0 0 auto;
+
+  padding: 5px 9px;
+
+  color: #991b1b;
+  font-size: 12px;
+  font-weight: 700;
+
+  background: #fef2f2;
+  border-radius: 999px;
+}
+
+.database-detail-list {
+  display: grid;
+  gap: 12px;
+}
+
+.database-detail-item {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 13px;
+
+  padding: 16px;
+
+  background: #ffffff;
+  border: 1px solid #e5eaf0;
+  border-radius: 13px;
+
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.03);
+}
+
+.database-detail-content {
+  min-width: 0;
+}
+
+.detail-order {
+  display: grid;
+  width: 32px;
+  height: 32px;
+
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+
+  background: #9f1239;
+  border-radius: 10px;
+
+  place-items: center;
+}
+
+.database-detail-item h4 {
+  margin: 2px 0 7px;
+
+  color: #1f2937;
+  font-size: 15px;
+}
+
+.database-detail-item p {
+  margin: 0;
+
+  color: #4b5563;
+  line-height: 1.65;
+
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.empty-database-detail {
+  padding: 20px;
+
+  color: #64748b;
+  text-align: center;
+
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+}
+
+.detail-image-gallery {
+  display: grid;
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.detail-image-gallery figure {
+  min-width: 0;
   margin: 0;
 }
-.close-form-btn {
-  background: #f1f5f9;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #475569;
-  font-weight: 600;
-  transition: all 0.2s;
-}
-.close-form-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-.product-form .form-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
-}
-.product-form .form-group {
-  flex: 1;
-  min-width: 250px;
-  display: flex;
-  flex-direction: column;
-}
-.product-form .form-group.full-width {
-  flex: 100%;
-}
-.product-form label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
-}
-.product-form .req {
-  color: #ef4444;
-}
-.product-form input,
-.product-form select,
-.product-form textarea {
-  padding: 10px 14px;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-  background: #fff;
-}
-.product-form input:focus,
-.product-form select:focus,
-.product-form textarea:focus {
-  outline: none;
-  border-color: #b91c1c;
-  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.1);
-}
-.product-form textarea {
-  resize: vertical;
-}
-.form-section-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #1f2937;
-  margin: 32px 0 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f1f5f9;
-}
-.image-upload-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-.img-preview {
-  width: 60px;
-  height: 60px;
-  object-fit: cover;
-  border-radius: 6px;
-  border: 1px solid #e2e8f0;
-}
-.form-footer {
-  margin-top: 32px;
-  display: flex;
-  justify-content: flex-end;
-}
-.btn-submit {
-  background: #b91c1c;
-  color: #fff;
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.btn-submit:hover {
-  background: #9f1239;
-}
-.gallery-manager { margin-bottom: 24px; }
-.gallery-grid { display: flex; flex-wrap: wrap; gap: 16px; }
-.gallery-item { position: relative; width: 120px; height: 120px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
-.gallery-item img { width: 100%; height: 100%; object-fit: cover; }
-.gallery-badge { position: absolute; bottom: 4px; left: 4px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; z-index: 10; }
-.gallery-remove { position: absolute; top: 4px; right: 4px; background: rgba(255, 255, 255, 0.9); color: #ef4444; border: none; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 12px; z-index: 10; }
-.gallery-remove:hover { background: #ef4444; color: #fff; }
-.gallery-add { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 120px; height: 120px; border: 2px dashed #cbd5e1; border-radius: 8px; cursor: pointer; color: #64748b; transition: all 0.2s; background: #f8fafc; }
-.gallery-add:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
-.gallery-add i { font-size: 24px; margin-bottom: 8px; }
-.chitiet-manager { margin-bottom: 32px; }
-.chitiet-block { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
-.chitiet-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-.chitiet-order { background: #334155; color: #fff; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; font-weight: 600; }
-.chitiet-type-select { padding: 6px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: #fff; }
-.chitiet-remove { margin-left: auto; background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px; font-size: 14px; }
-.chitiet-remove:hover { color: #b91c1c; }
-.chitiet-body { padding-left: 36px; }
-.chitiet-input { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: #fff; font-weight: 600; }
-.chitiet-textarea { width: 100%; padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; resize: vertical; background: #fff; }
-.chitiet-image-area { display: flex; flex-direction: column; gap: 12px; }
-.chitiet-image-preview { max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 6px; border: 1px solid #e2e8f0; background: #fff; }
-.chitiet-image-upload-btn { display: inline-flex; align-items: center; gap: 8px; background: #fff; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; color: #334155; width: fit-content; transition: background 0.2s; }
-.chitiet-image-upload-btn:hover { background: #f1f5f9; }
-.chitiet-add-row { display: flex; gap: 12px; margin-top: 16px; }
-.chitiet-add-btn { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border: 1px dashed #94a3b8; border-radius: 6px; background: #fff; color: #475569; cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.2s; }
-.chitiet-add-btn:hover { border-color: #3b82f6; color: #3b82f6; background: #eff6ff; }
-.form-section-title .section-count { font-size: 13px; font-weight: normal; color: #64748b; margin-left: 8px; padding: 2px 8px; background: #f1f5f9; border-radius: 12px; }
-</style>
 
+.detail-image-gallery img {
+  display: block;
+
+  width: 100%;
+  height: 124px;
+
+  object-fit: cover;
+
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.detail-image-gallery figcaption {
+  margin-top: 5px;
+
+  overflow: hidden;
+
+  color: #64748b;
+  font-size: 11px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inline-gallery {
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  margin-top: 12px;
+}
+
+.inline-gallery img {
+  height: 102px;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .product-detail-overlay {
+    padding: 16px;
+  }
+
+  .product-detail-modal {
+    grid-template-columns: 1fr;
+
+    width: min(700px, calc(100vw - 32px));
+    height: calc(100dvh - 32px);
+    max-height: calc(100dvh - 32px);
+
+    overflow-x: hidden;
+    overflow-y: auto;
+
+    border-radius: 20px;
+  }
+
+  .detail-image-wrap {
+    flex: none;
+
+    width: 100%;
+    height: 280px;
+    min-height: 280px;
+    max-height: 280px;
+  }
+
+  .detail-content {
+    height: auto;
+    min-height: 0;
+
+    padding: 32px 24px 28px;
+
+    overflow: visible;
+  }
+
+  .detail-status {
+    bottom: 18px;
+    left: 18px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 620px) {
+  .product-detail-overlay {
+    padding: 10px;
+  }
+
+  .product-detail-modal {
+    width: calc(100vw - 20px);
+    height: calc(100dvh - 20px);
+    max-height: calc(100dvh - 20px);
+
+    border-radius: 16px;
+  }
+
+  .detail-image-wrap {
+    height: 220px;
+    min-height: 220px;
+    max-height: 220px;
+  }
+
+  .detail-close {
+    top: 12px;
+    right: 12px;
+
+    width: 38px;
+    height: 38px;
+  }
+
+  .detail-heading-row {
+    display: grid;
+    gap: 12px;
+    padding-right: 25px;
+  }
+
+  .detail-stock-pill {
+    width: fit-content;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-image-gallery {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-content {
+    padding: 26px 17px 22px;
+  }
+
+  .database-detail-item {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .detail-order {
+    width: 29px;
+    height: 29px;
+  }
+}
+
+/* Màn hình rất nhỏ */
+@media (max-width: 420px) {
+  .product-detail-overlay {
+    padding: 0;
+  }
+
+  .product-detail-modal {
+    width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+
+    border: none;
+    border-radius: 0;
+  }
+
+  .detail-image-wrap {
+    height: 200px;
+    min-height: 200px;
+    max-height: 200px;
+  }
+
+  .detail-image-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-gallery {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

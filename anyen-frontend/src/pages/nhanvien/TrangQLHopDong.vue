@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
@@ -18,6 +19,7 @@ import {
   deleteHopDong
 } from "../../services/hopDongService.js";
 
+const route = useRoute();
 const keyword = ref("");
 const trangThai = ref("Tất cả");
 const loaiHopDong = ref("Tất cả");
@@ -25,6 +27,7 @@ const dateRange = ref("01/05/2024 - 31/05/2024");
 
 const showCreateContract = ref(false);
 const showDetailModal = ref(false);
+const initialMaDonHang = ref(null);
 
 const hopDongs = ref([]);
 const selectedHopDongId = ref(null);
@@ -371,6 +374,13 @@ const visiblePages = computed(() => {
 
 onMounted(() => {
   loadHopDongs();
+  
+  // Kiểm tra nếu có maDonHang trong URL query params
+  const maDonHang = route.query.maDonHang;
+  if (maDonHang) {
+    initialMaDonHang.value = Number(maDonHang);
+    showCreateContract.value = true;
+  }
 });
 </script>
 <template>
@@ -664,6 +674,7 @@ onMounted(() => {
 
     <PopTaoHopDong
         v-model="showCreateContract"
+        :initial-ma-don-hang="initialMaDonHang"
         @saved="afterCreateContract"
         @success="afterCreateContract"
     />

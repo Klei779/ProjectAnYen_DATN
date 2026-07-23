@@ -79,12 +79,12 @@
 
               <div
                   class="card-buttons"
-                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && canProcessNotification(item)"
+                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && canProcessNotification(item) && isAdmin"
               >
-                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading">
+                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading || item.trangThai === 2 || item.trangThai === 3">
                   Từ chối
                 </button>
-                <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading">
+                <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading || item.trangThai === 2 || item.trangThai === 3">
                   <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
                   Đồng ý
                 </button>
@@ -224,7 +224,14 @@
              <p class="text-center text-muted"><i class="fa-regular fa-clock"></i> Thời gian: {{ selectedNotification.ngayTao }}</p>
              
              <div class="system-content-box mt-4">
-               <p>{{ selectedNotification.noiDung }}</p>
+               <p>{{ selectedNotification.noiDung.replace(/\[MA_DON_HANG:\d+\]/, '') }}</p>
+             </div>
+
+             <!-- Nút tạo hợp đồng cho thông báo yêu cầu tạo hợp đồng -->
+             <div class="action-buttons mt-4" v-if="selectedNotification.tieuDe === 'Yêu cầu tạo hợp đồng'">
+               <button class="btn btn-primary w-100" @click="openHopDongPopup(selectedNotification)">
+                 <i class="fa-solid fa-file-contract"></i> Tạo hợp đồng
+               </button>
              </div>
           </div>
         </div>
@@ -276,14 +283,24 @@
       </div>
     </Transition>
 
+    <!-- POPUP TẠO HỢP ĐỒNG -->
+    <PopTaoHopDong 
+      v-model="showHopDongPopup" 
+      :initial-ma-don-hang="selectedMaDonHangForHopDong"
+      @success="onHopDongSuccess"
+    />
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useRouter } from "vue-router";
 import api from "../../api/api.js";
 import { ElMessage, ElMessageBox } from "element-plus";
+import PopTaoHopDong from "./PopTaoHopDong.vue";
 
+const router = useRouter();
 // Layout & State
 const activeTab = ref("all");
 const selectedNotification = ref(null);
@@ -294,6 +311,10 @@ const showTuChoiHoaDonDialog = ref(false);
 const thongBaoTuChoiHoaDon = ref(null);
 const lyDoTuChoiHoaDon = ref("");
 const xuLyHoaDonLoading = ref(false);
+
+// Popup tạo hợp đồng
+const showHopDongPopup = ref(false);
+const selectedMaDonHangForHopDong = ref(null);
 
 const parseYeuCauHuyHoaDon = (thongBao) => {
   try {
@@ -431,6 +452,20 @@ const toast = ref({ show: false, message: "", type: "success" });
 // User Info
 const userHoTen = ref("Nhân viên");
 
+// Check if current user is admin
+const currentUser = computed(() => {
+  try {
+    return JSON.parse(localStorage.getItem("user") || "null");
+  } catch {
+    return null;
+  }
+});
+
+const isAdmin = computed(() => {
+  const role = currentUser.value?.vaiTroChiTiet || currentUser.value?.role;
+  return role === "ADMIN" || role === "ROLE_ADMIN" || Number(currentUser.value?.vaiTro) === 1;
+});
+
 // Tabs matching the design
 const TT_CHUA_DOC = 0;
 const TT_DA_DOC = 1;
@@ -530,6 +565,33 @@ onMounted(() => {
 onUnmounted(() => {
   stopPolling();
 });
+
+// Parse maDonHang từ nội dung thông báo
+const parseMaDonHangFromContent = (content) => {
+  if (!content) return null;
+  const match = content.match(/\[MA_DON_HANG:(\d+)\]/);
+  return match ? parseInt(match[1]) : null;
+};
+
+// Mở popup tạo hợp đồng với đơn hàng đã chọn
+const openHopDongPopup = (notification) => {
+  const maDonHang = parseMaDonHangFromContent(notification.noiDung);
+  if (maDonHang) {
+    selectedMaDonHangForHopDong.value = maDonHang;
+    showHopDongPopup.value = true;
+  } else {
+    ElMessage.error("Không tìm thấy mã đơn hàng trong thông báo");
+  }
+};
+
+// Xử lý khi tạo hợp đồng thành công
+const onHopDongSuccess = () => {
+  showHopDongPopup.value = false;
+  selectedMaDonHangForHopDong.value = null;
+  selectedNotification.value = null;
+  ElMessage.success("Đã tạo hợp đồng thành công");
+  loadNotifications();
+};
 
 // =================== COMPUTED ===================
 

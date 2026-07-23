@@ -120,7 +120,7 @@ const routes = [
         component: DoiTacLayout,
         meta: {
             requiresAuth: true,
-            role: "DOITAC",
+            role: "ROLE_DOITAC",
         },
         children: [
             {
@@ -176,7 +176,7 @@ const routes = [
         component: NhanVienLayout,
         meta: {
             requiresAuth: true,
-            role: "NHANVIEN",
+            role: "ROLE_NHANVIEN",
         },
         children: [
             {
@@ -224,7 +224,7 @@ const routes = [
         component: AdminLayout,
         meta: {
             requiresAuth: true,
-            role: "ADMIN",
+            role: "ROLE_ADMIN",
         },
         children: [
             {
@@ -285,7 +285,7 @@ const routes = [
         component: HotlineLayout,
         meta: {
             requiresAuth: true,
-            role: "HOTLINE",
+            role: "ROLE_HOTLINE",
         },
         children: [
             {
@@ -378,13 +378,13 @@ router.beforeEach((to) => {
 
     // Có token nhưng sai quyền
     if (requiredRole && roleFromToken !== requiredRole) {
-        if (roleFromToken === "NHANVIEN") {
+        if (roleFromToken === "ROLE_NHANVIEN") {
             return "/nhan-vien/tong-quan";
-        } else if (roleFromToken === "DOITAC") {
+        } else if (roleFromToken === "ROLE_DOITAC") {
             return "/doi-tac/tong-quan";
-        } else if (roleFromToken === "ADMIN") {
+        } else if (roleFromToken === "ROLE_ADMIN") {
             return "/admin/tong-quan";
-        } else if (roleFromToken === "HOTLINE") {
+        } else if (roleFromToken === "ROLE_HOTLINE") {
             return "/hotline/quan-ly-cong-viec";
         } else {
             return "/";

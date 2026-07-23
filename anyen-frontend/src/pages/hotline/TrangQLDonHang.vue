@@ -64,8 +64,10 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import api from "../../api/api.js";
 
+const router = useRouter();
 const donHangs = ref([]);
 const loading = ref(false);
 
@@ -93,15 +95,12 @@ const guiDonChoDoiTac = async (maDonHang) => {
   }
 };
 
-const taoHopDong = async (maDonHang) => {
-  try {
-    await api.post(`/api/don-hang/${maDonHang}/tao-hop-dong`);
-    alert("Đã tạo hợp đồng");
-    await fetchDonHangs();
-  } catch (error) {
-    console.error("Lỗi khi tạo hợp đồng:", error);
-    alert(error.response?.data?.message || "Không thể tạo hợp đồng");
-  }
+const taoHopDong = (maDonHang) => {
+  // Điều hướng tới trang quản lý hợp đồng với tham số maDonHang
+  router.push({
+    path: '/nhan-vien/hop-dong',
+    query: { maDonHang: maDonHang }
+  });
 };
 
 const thanhToanDonHang = async (maDonHang) => {

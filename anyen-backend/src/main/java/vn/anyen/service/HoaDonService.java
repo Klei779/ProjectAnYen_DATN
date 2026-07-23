@@ -41,7 +41,6 @@ public class HoaDonService {
 
     private static final List<Integer> TRANG_THAI_DUOC_TAO_HOA_DON =
             Arrays.asList(
-                    DonHang.TT_CHO_THANH_TOAN,
                     DonHang.TT_HOAN_THANH
             );
 

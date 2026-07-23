@@ -720,12 +720,18 @@ const submitHoaDon = async () => {
     return;
   }
 
+  // Chuyển đổi phương thức thanh toán sang Integer
+  const phuongThucThanhToanInt = form.value.phuongThucThanhToan === "Tiền mặt" ? 1 : 2;
+
+  // Chuyển đổi trạng thái sang Integer
+  const trangThaiInt = form.value.trangThai === "Chưa thanh toán" ? 0 : 1;
+
   const payload = {
     maDonHang: maDonHang.value,
     ngayIn: form.value.ngayIn,
     tongTien: tongThanhToan.value,
-    phuongThucThanhToan: form.value.phuongThucThanhToan,
-    trangThai: form.value.trangThai,
+    phuongThucThanhToan: phuongThucThanhToanInt,
+    trangThai: trangThaiInt,
   };
 
   try {

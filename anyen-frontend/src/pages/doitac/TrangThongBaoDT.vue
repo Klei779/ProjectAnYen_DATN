@@ -368,6 +368,16 @@
           <button class="accept-btn" @click="readSystemNotification">
             Đã hiểu
           </button>
+          
+          <!-- Nút tạo hợp đồng cho thông báo yêu cầu tạo hợp đồng -->
+          <button 
+            v-if="selectedNotification.system?.title === 'Đã tạo hợp đồng'" 
+            class="accept-btn" 
+            @click="goToContractPage"
+            style="margin-left: 8px;"
+          >
+            Xem hợp đồng
+          </button>
         </div>
 
         <p class="hint">
@@ -653,6 +663,27 @@ const readSystemNotification = () => {
 
   selectedNotification.value.isNew = false;
   closePopup();
+};
+
+// Parse maDonHang từ nội dung thông báo
+const parseMaDonHangFromContent = (content) => {
+  if (!content) return null;
+  const match = content.match(/DH(\d+)/);
+  return match ? parseInt(match[1]) : null;
+};
+
+// Điều hướng tới trang hợp đồng với đơn hàng đã chọn
+const goToContractPage = () => {
+  const maDonHang = parseMaDonHangFromContent(selectedNotification.value?.system?.content);
+  if (maDonHang) {
+    // Điều hướng tới trang quản lý đơn hàng của đối tác với filter đơn hàng đã có hợp đồng
+    router.push({
+      path: '/doi-tac/quan-ly-don-hang',
+      query: { showContract: true, maDonHang: maDonHang }
+    });
+  } else {
+    alert("Không tìm thấy mã đơn hàng trong thông báo");
+  }
 };
 const getProductImage = (image) => {
   if (!image) {

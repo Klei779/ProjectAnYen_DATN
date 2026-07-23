@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { getDonHangsDoiTac } from "../../services/doitacDonHangService.js";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
@@ -9,6 +10,8 @@ import { Search, Filter, View, Setting } from "@element-plus/icons-vue";
 import { xuLyDonHang } from "../../services/doitacDonHangService.js";
 import api from "../../api/api.js";
 
+const router = useRouter();
+const route = useRoute();
 const donHangs = ref([]);
 const showPopup = ref(false);
 const selectedDonHang = ref(null);
@@ -123,6 +126,21 @@ const connectWebSocket = () => {
 onMounted(() => {
   fetchDonHangs();
   connectWebSocket();
+
+  // Kiểm tra nếu có query params từ thông báo hợp đồng
+  if (route.query.showContract && route.query.maDonHang) {
+    const maDonHang = Number(route.query.maDonHang);
+    // Đợi load đơn hàng xong rồi mới mở chi tiết
+    setTimeout(() => {
+      const targetDonHang = donHangs.value.find(dh => dh.maDonHang === maDonHang);
+      if (targetDonHang) {
+        openChiTiet(targetDonHang);
+        ElMessage.success("Đã tìm thấy đơn hàng có hợp đồng");
+      } else {
+        ElMessage.warning("Không tìm thấy đơn hàng trong danh sách");
+      }
+    }, 1000);
+  }
 });
 
 onUnmounted(() => {
@@ -438,7 +456,7 @@ const completedCount = computed(() => {
             </el-button>
 
             <el-button
-                v-if="(dh.trangThai === 'Đã nhận' || dh.trangThai === 'Xử lý') && dh.coHopDong"
+                v-if="dh.trangThai === 'Đã nhận' && dh.coHopDong"
                 size="small"
                 type="success"
                 class="detail-btn"

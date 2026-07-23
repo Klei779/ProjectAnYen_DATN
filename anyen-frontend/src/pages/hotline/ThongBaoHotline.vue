@@ -132,7 +132,14 @@
 
           <div class="text-block">
             <h5>Nội dung</h5>
-            <p>{{ selectedNotification.noiDung || '—' }}</p>
+            <p>{{ selectedNotification.noiDung.replace(/\[MA_DON_HANG:\d+\]/, '') || '—' }}</p>
+          </div>
+
+          <!-- Nút tạo hợp đồng cho thông báo yêu cầu tạo hợp đồng -->
+          <div class="action-buttons mt-4" v-if="selectedNotification.tieuDe === 'Yêu cầu tạo hợp đồng'">
+            <button class="btn btn-primary w-100" @click="openHopDongPopup(selectedNotification)">
+              <i class="fa-solid fa-file-contract"></i> Tạo hợp đồng
+            </button>
           </div>
 
           <div v-if="selectedNotification.lyDoTuChoi" class="text-block">
@@ -142,6 +149,28 @@
         </div>
 
         <!-- SIDEBAR BODY CHO HỆ THỐNG -->
+        <div class="sidebar-body" v-else-if="selectedNotification.loaiThongBao === 'DON_HANG'">
+          <div class="system-noti-wrapper">
+             <div class="system-icon-large">
+               <i class="fa-solid fa-bullhorn text-primary"></i>
+             </div>
+             <h4 class="text-center mt-3">{{ selectedNotification.tieuDe }}</h4>
+             <p class="text-center text-muted"><i class="fa-regular fa-clock"></i> Thời gian: {{ selectedNotification.ngayTao }}</p>
+             
+             <div class="system-content-box mt-4">
+               <p>{{ selectedNotification.noiDung.replace(/\[MA_DON_HANG:\d+\]/, '') }}</p>
+             </div>
+
+             <!-- Nút tạo hợp đồng cho thông báo yêu cầu tạo hợp đồng -->
+             <div class="action-buttons mt-4" v-if="selectedNotification.tieuDe === 'Yêu cầu tạo hợp đồng'">
+               <button class="btn btn-primary w-100" @click="openHopDongPopup(selectedNotification)">
+                 <i class="fa-solid fa-file-contract"></i> Tạo hợp đồng
+               </button>
+             </div>
+          </div>
+        </div>
+
+        <!-- SIDEBAR BODY CHO HỆ THỐNG KHÁC -->
         <div class="sidebar-body" v-else>
           <div class="system-noti-wrapper">
              <div class="system-icon-large">

@@ -64,14 +64,14 @@ public class AuthService {
                     int rawRole = nv.getVaiTro();
                     String specificRole = null;
                     if (rawRole == NhanVien.VAI_TRO_ADMIN) {
-                        specificRole = "ADMIN";
+                        specificRole = "ROLE_ADMIN";
                     } else if (rawRole == NhanVien.VAI_TRO_TU_VAN
                             || rawRole == NhanVien.VAI_TRO_HOTLINE) {
                         // Vai trò 3 là nhân viên trực tuyến/tư vấn, vai trò 4 là Hotline.
                         // Cả hai cùng sử dụng màn hình tiếp nhận cuộc gọi và giao việc.
-                        specificRole = "HOTLINE";
+                        specificRole = "ROLE_HOTLINE";
                     } else if (rawRole == NhanVien.VAI_TRO_BAN_HANG) {
-                        specificRole = "NHANVIEN";
+                        specificRole = "ROLE_NHANVIEN";
                     }
 
                     if (specificRole == null) {
@@ -91,10 +91,10 @@ public class AuthService {
                     response.setHoTen(nv.getHoTen());
                     response.setTenDangNhap(nv.getTenDangNhap());
                     response.setLoaiTaiKhoan("NHAN_VIEN");
-                    response.setVaiTroChiTiet(specificRole);
+                    response.setVaiTroChiTiet(specificRole.replace("ROLE_", ""));
                     response.setToken(token);
 
-                    if ("HOTLINE".equals(specificRole)) {
+                    if ("ROLE_HOTLINE".equals(specificRole)) {
                         nhanVienOnlineService.markOnline(nv);
                         phanCongTuVanService.phanCongCacPhienDangCho();
                     }
@@ -121,7 +121,7 @@ public class AuthService {
                             jwtService.generateToken(
                                     dt.getMaDoiTac(),
                                     dt.getTenDangNhap(),
-                                    "DOITAC"
+                                    "ROLE_DOITAC"
                             );
 
                     response.setSuccess(true);

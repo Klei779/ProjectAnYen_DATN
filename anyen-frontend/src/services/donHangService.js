@@ -4,13 +4,15 @@ const API_URL = "/api/nhan-vien/don-hang";
 
 const ORDER_STATUS_LABELS = Object.freeze({
   1: "Mới tạo",
-  2: "Xác nhận",
+  2: "Chờ đối tác xác nhận",
   3: "Đã nhận",
   4: "Xử lý",
   5: "Thanh toán",
   6: "Hoàn thành",
   7: "Đã hủy",
   8: "Từ chối",
+  9: "Đã giao",
+  10: "Đã thanh toán",
 });
 
 const PAYMENT_METHOD_LABELS = Object.freeze({

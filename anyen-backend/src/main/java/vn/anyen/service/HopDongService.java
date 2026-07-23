@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import vn.anyen.entity.HDongCT;
 import vn.anyen.repository.HDongCTRepository;
+import vn.anyen.service.DoiTacThongBaoService;
 import java.time.LocalDateTime;
 import vn.anyen.dto.request.HopDongCreateRequest;
 import vn.anyen.dto.response.DonHangHopDongDetailResponse;
@@ -38,6 +39,7 @@ public class HopDongService {
     private final DonHangRepository donHangRepository;
     private final ChiTietDonHangRepository chiTietDonHangRepository;
     private final HDongCTRepository hDongCTRepository;
+    private final DoiTacThongBaoService doiTacThongBaoService;
     private static final Integer TRANG_THAI_CHO_KY = HopDong.CHO_KY;
     private static final Integer TRANG_THAI_DA_HUY = HopDong.DA_HUY;
     private static final Integer TRANG_THAI_DA_KY = HopDong.DA_KY;
@@ -207,6 +209,9 @@ public class HopDongService {
 
             hDongCTRepository.save(chiTiet);
         }
+
+        // Gửi thông báo đã tạo hợp đồng cho các đối tác liên quan
+        doiTacThongBaoService.taoThongBaoDaTaoHopDong(request.getMaDonHang());
 
         return toResponse(saved);
     }

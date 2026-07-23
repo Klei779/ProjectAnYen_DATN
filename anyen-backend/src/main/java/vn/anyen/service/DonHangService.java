@@ -61,7 +61,6 @@ public class DonHangService {
             DonHang.TT_DA_XAC_NHAN,
             DonHang.TT_DANG_XU_LY,
             DonHang.TT_DA_GIAO,
-            DonHang.TT_DA_THANH_TOAN,
             DonHang.TT_HOAN_THANH
     );
 
@@ -576,7 +575,10 @@ public class DonHangService {
                 );
             }
 
-            if (nextIdx != currentIdx + 1) {
+            // Cho phép chuyển từ Đã giao (9) sang Hoàn thành (6) trực tiếp
+            if (DonHang.TT_DA_GIAO.equals(trangThaiHienTai) && DonHang.TT_HOAN_THANH.equals(trangThaiMoi)) {
+                // Cho phép chuyển trực tiếp
+            } else if (nextIdx != currentIdx + 1) {
                 throw new RuntimeException(
                         "Chỉ có thể chuyển sang trạng thái tiếp theo. "
                                 + "Hiện tại: '" + trangThaiHienTai
@@ -1096,8 +1098,16 @@ public class DonHangService {
 
         for (ChiTietDonHang ct : chiTiets) {
             ct.setNgayGiaoDuKien(ngayGiaoDuKien);
-            ct.setTrangThaiDoiTac(2); 
+            ct.setTrangThaiDoiTac(2);
             chiTietDonHangRepository.save(ct);
+        }
+
+        // Cập nhật trạng thái đơn hàng từ "Đã nhận" sang "Xử lý"
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+        if (DonHang.TT_DA_XAC_NHAN.equals(donHang.getTrangThai())) {
+            donHang.setTrangThai(DonHang.TT_DANG_XU_LY);
+            donHangRepository.save(donHang);
         }
 
         thongBaoService.taoThongBaoDoiTacXuLyDonHang(maDonHang, maDoiTac, ngayGiaoDuKien);

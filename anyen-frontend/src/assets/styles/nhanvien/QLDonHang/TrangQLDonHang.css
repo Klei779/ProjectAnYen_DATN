@@ -104,7 +104,7 @@
 /* ── Order Grid ── */
 .order-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
 }
 
@@ -746,4 +746,145 @@
   .payment-qr-image {
     max-width: 240px;
   }
+}
+
+/* ── Payment Dialog Styles ── */
+.payment-dialog-content {
+  padding: 20px 0;
+}
+
+.payment-info {
+  margin-bottom: 20px;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.payment-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-method-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #fff;
+}
+
+.payment-method-card:hover {
+  border-color: #10b981;
+  background: #f0fdf4;
+}
+
+.payment-method-card.selected {
+  border-color: #10b981;
+  background: #ecfdf5;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.payment-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 24px;
+}
+
+.payment-method-card.selected .payment-icon {
+  background: #10b981;
+  color: #fff;
+}
+
+.payment-details h4 {
+  margin: 0 0 4px 0;
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.payment-details p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+/* ── Transfer Dialog Styles ── */
+.transfer-dialog-content {
+  padding: 20px 0;
+}
+
+.transfer-info {
+  margin-bottom: 20px;
+  color: #4b5563;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.qr-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+
+.qr-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px;
+  border: 2px dashed #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.qr-placeholder .el-icon {
+  color: #9ca3af;
+}
+
+.qr-placeholder p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.bank-info {
+  padding: 16px;
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+.bank-info p {
+  margin: 8px 0;
+  color: #4b5563;
+  font-size: 14px;
+}
+
+.bank-info b {
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.order-code {
+  margin-top: 12px;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.payment-qr-image {
+  max-width: 300px;
+  border-radius: 8px;
+  margin: 0 auto;
+  display: block;
 }

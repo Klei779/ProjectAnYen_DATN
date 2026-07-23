@@ -58,4 +58,9 @@ public interface ThongBaoDoiTacRepository
     );
 
     List<ThongBaoDoiTac> findByDonHang_MaDonHang(Integer maDonHang);
+
+    List<ThongBaoDoiTac> findByDoiTac_MaDoiTacAndLoai(
+            Integer maDoiTac,
+            String loai
+    );
 }

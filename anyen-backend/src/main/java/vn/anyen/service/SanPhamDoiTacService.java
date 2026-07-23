@@ -126,9 +126,7 @@ public class SanPhamDoiTacService {
                 ));
 
         SanPham sanPham = new SanPham();
-        applyRequest(sanPham, request);
-
-        doiTac.setMaDoiTac(maDoiTac);
+        applyRequest(sanPham, request, maDoiTac);
 
         // QUAN TRỌNG:
         // Đối tác tạo sản phẩm thì KHÔNG được bán ngay.
@@ -424,6 +422,28 @@ public class SanPhamDoiTacService {
         sanPham.setKichThuoc(request.getKichThuoc());
         sanPham.setTrongLuong(request.getTrongLuong());
         sanPham.setCnsx(request.getCnsx());
+    }
+
+    private void applyRequest(SanPham sanPham, SanPhamDoiTacRequest request, Integer maDoiTac) {
+        sanPham.setTenSanPham(request.getTenSanPham());
+        sanPham.setLoai(request.getLoai());
+        sanPham.setNoiThat(request.getNoiThat());
+        sanPham.setQuyCach(request.getQuyCach());
+        sanPham.setTonGiao(request.getTonGiao());
+        sanPham.setGiaTien(request.getGiaTien());
+        sanPham.setSoLuong(request.getSoLuong());
+        sanPham.setThietKe(request.getThietKe());
+        sanPham.setXuatXu(request.getXuatXu());
+        sanPham.setGhiChu(request.getGhiChu());
+        sanPham.setKhuyenMai(request.getKhuyenMai());
+        sanPham.setMauSac(request.getMauSac());
+        sanPham.setHinhAnh(request.getHinhAnh());
+        sanPham.setVatLieu(request.getVatLieu());
+        sanPham.setTrangThai(request.getTrangThai());
+        sanPham.setKichThuoc(request.getKichThuoc());
+        sanPham.setTrongLuong(request.getTrongLuong());
+        sanPham.setCnsx(request.getCnsx());
+        sanPham.setMaDoiTac(maDoiTac);
     }
 
     private void saveChiTietVaHinhAnh(Integer maSanPham, SanPhamDoiTacRequest request) {

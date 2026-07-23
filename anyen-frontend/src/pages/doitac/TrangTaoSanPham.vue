@@ -818,6 +818,8 @@ const buildPayload = async () => {
     cnsx:
         product.value.cnsx.trim(),
 
+    maDoiTac: product.value.maDoiTac,
+
     chiTietList,
     hinhAnhList
   };

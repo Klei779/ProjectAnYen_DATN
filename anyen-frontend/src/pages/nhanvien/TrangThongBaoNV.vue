@@ -76,24 +76,11 @@
                   Nhận công việc
                 </button>
               </div>
-
-              <div
-                  class="card-buttons"
-                  v-else-if="item.loaiThongBao === 'DUYET_SAN_PHAM' && canProcessNotification(item) && isAdmin"
-              >
-                <button class="btn-outline" @click.stop="openRejectPopup(item)" :disabled="actionLoading || item.trangThai === 2 || item.trangThai === 3">
-                  Từ chối
-                </button>
-                <button class="btn-primary" @click.stop="acceptCustomer(item)" :disabled="actionLoading || item.trangThai === 2 || item.trangThai === 3">
-                  <i v-if="actionLoading" class="fa-solid fa-spinner fa-spin"></i>
-                  Đồng ý
-                </button>
-              </div>
               <div
                   class="card-buttons processed"
-                  v-else-if="item.loaiThongBao === 'CONG_VIEC' || item.loaiThongBao === 'DUYET_SAN_PHAM'"
+                  v-else-if="item.loaiThongBao === 'CONG_VIEC'"
               >
-                <span class="text-success fw-bold" v-if="item.trangThai === 2"><i class="fa-solid fa-check"></i> {{ item.loaiThongBao === 'DUYET_SAN_PHAM' ? 'Đã duyệt' : 'Đã nhận' }}</span>
+                <span class="text-success fw-bold" v-if="item.trangThai === 2"><i class="fa-solid fa-check"></i> Đã nhận</span>
                 <span class="text-danger fw-bold" v-if="item.trangThai === 3"><i class="fa-solid fa-xmark"></i> Đã từ chối</span>
               </div>
             </div>
@@ -184,34 +171,6 @@
           <p class="sidebar-note" v-if="selectedNotification.trangThai === 0 || selectedNotification.trangThai === 1">
             <i class="fa-solid fa-lock"></i> Nếu bạn tiếp nhận khách hàng, hệ thống sẽ chuyển khách hàng sang danh sách quản lý khách hàng
           </p>
-        </div>
-
-        <!-- SIDEBAR BODY CHO DUYỆT SẢN PHẨM -->
-        <div class="sidebar-body" v-else-if="selectedNotification.loaiThongBao === 'DUYET_SAN_PHAM'">
-          <div class="system-noti-wrapper">
-            <div class="system-icon-large"><i class="fa-solid fa-box-open text-primary"></i></div>
-            <h4 class="text-center mt-3">{{ selectedNotification.tieuDe }}</h4>
-            <p class="text-center text-muted">Mã sản phẩm: #SP{{ selectedNotification.maSanPham || '—' }}</p>
-            <div class="system-content-box mt-4"><p>{{ selectedNotification.noiDung }}</p></div>
-            <div class="info-table-clean mt-4">
-              <div class="info-row">
-                <span class="label">Trạng thái</span>
-                <span class="value">
-                  <span v-if="canProcessNotification(selectedNotification)" class="status-pill warning">Chờ duyệt</span>
-                  <span v-else-if="selectedNotification.trangThai === 2" class="status-pill success">Đã duyệt</span>
-                  <span v-else-if="selectedNotification.trangThai === 3" class="status-pill error">Đã từ chối</span>
-                </span>
-              </div>
-              <div v-if="selectedNotification.lyDoTuChoi" class="info-row">
-                <span class="label">Lý do từ chối</span>
-                <span class="value text-danger">{{ selectedNotification.lyDoTuChoi }}</span>
-              </div>
-            </div>
-            <div class="sidebar-actions" v-if="canProcessNotification(selectedNotification)">
-              <button class="btn-outline-modal" @click="openRejectPopup(selectedNotification)" :disabled="actionLoading">Từ chối</button>
-              <button class="btn-primary-modal" @click="acceptCustomer(selectedNotification)" :disabled="actionLoading">Duyệt sản phẩm</button>
-            </div>
-          </div>
         </div>
 
         <!-- SIDEBAR BODY CHO HỆ THỐNG -->
@@ -452,20 +411,6 @@ const toast = ref({ show: false, message: "", type: "success" });
 // User Info
 const userHoTen = ref("Nhân viên");
 
-// Check if current user is admin
-const currentUser = computed(() => {
-  try {
-    return JSON.parse(localStorage.getItem("user") || "null");
-  } catch {
-    return null;
-  }
-});
-
-const isAdmin = computed(() => {
-  const role = currentUser.value?.vaiTroChiTiet || currentUser.value?.role;
-  return role === "ADMIN" || role === "ROLE_ADMIN" || Number(currentUser.value?.vaiTro) === 1;
-});
-
 // Tabs matching the design
 const TT_CHUA_DOC = 0;
 const TT_DA_DOC = 1;
@@ -475,10 +420,6 @@ const TT_CHO_XAC_NHAN = 4;
 
 const canProcessNotification = (item) => {
   const status = Number(item?.trangThai);
-  if (item?.loaiThongBao === "DUYET_SAN_PHAM") {
-    // Hỗ trợ cả dữ liệu cũ (0/1) và dữ liệu mới chuẩn hóa (4).
-    return [TT_CHUA_DOC, TT_DA_DOC, TT_CHO_XAC_NHAN].includes(status);
-  }
   if (item?.loaiThongBao === "CONG_VIEC") {
     return [TT_CHUA_DOC, TT_DA_DOC].includes(status);
   }
@@ -486,7 +427,6 @@ const canProcessNotification = (item) => {
 };
 
 const detailTitle = (item) => {
-  if (item?.loaiThongBao === "DUYET_SAN_PHAM") return "Chi tiết duyệt sản phẩm";
   if (item?.loaiThongBao === "CONG_VIEC") return "Chi tiết khách hàng";
   return "Thông báo hệ thống";
 };
@@ -494,9 +434,9 @@ const detailTitle = (item) => {
 const tabs = [
   { key: "all", label: "Tất cả" },
   { key: TT_CHUA_DOC, label: "Chờ nhận việc" },
-  { key: TT_CHO_XAC_NHAN, label: "Chờ duyệt sản phẩm" },
+  { key: TT_DA_DOC, label: "Đã đọc" },
   { key: TT_DA_TU_CHOI, label: "Đã từ chối" },
-  { key: TT_DA_CHAP_NHAN, label: "Đã nhận / Đã duyệt" }
+  { key: TT_DA_CHAP_NHAN, label: "Đã nhận" }
 ];
 
 const notifications = ref([]);
@@ -512,10 +452,17 @@ const loadNotifications = async (isBackground = false) => {
   try {
     const res = await api.get(API_URL);
 
-    const data = res.data.map(item => ({
+    let data = res.data.map(item => ({
       ...item,
       trangThai: Number(item.trangThai)
     }));
+
+    // Chỉ lấy thông báo liên quan đến nhân viên: CONG_VIEC, HE_THONG, DON_HANG
+    data = data.filter(item => 
+      item.loaiThongBao === 'CONG_VIEC' || 
+      item.loaiThongBao === 'HE_THONG' || 
+      item.loaiThongBao === 'DON_HANG'
+    );
 
     const currentUnread = notifications.value.filter(
         n => Number(n.trangThai) === TT_CHUA_DOC
@@ -705,11 +652,7 @@ const acceptCustomer = async (item) => {
 
     item.trangThai = TT_DA_CHAP_NHAN;
 
-    if (item.loaiThongBao === "DUYET_SAN_PHAM") {
-      showToast("Đã duyệt sản phẩm. Sản phẩm đã được bày bán!", "success");
-    } else {
-      showToast("Nhận công việc thành công!", "success");
-    }
+    showToast("Nhận công việc thành công!", "success");
 
     selectedNotification.value = null;
   } catch (error) {

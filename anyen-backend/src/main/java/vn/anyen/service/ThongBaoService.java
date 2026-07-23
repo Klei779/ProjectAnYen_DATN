@@ -168,13 +168,31 @@ public class ThongBaoService {
         sanPham.setTrangThai(SanPham.TRANG_THAI_DANG_BAN);
         sanPhamRepository.save(sanPham);
 
-        // 2. Cập nhật thông báo bên nhân viên.
-        thongBao.setTrangThai(TRANG_THAI_DA_CHAP_NHAN);
-        thongBao.setNguoiNhanId(nguoiNhanId);
-        thongBao.setLyDoTuChoi(null);
-        thongBaoRepository.save(thongBao);
+        // 2. Xóa thông báo cũ (có nút duyệt/từ chối) ở phía admin/nhân viên
+        thongBaoRepository.delete(thongBao);
 
-        // 3. Gửi thông báo về đối tác.
+        // 3. Tạo thông báo mới chỉ đọc (đã duyệt) để lưu lịch sử cho admin
+        ThongBao thongBaoLichSu = ThongBao.builder()
+                .tieuDe("Đã duyệt sản phẩm")
+                .noiDung("Sản phẩm #" + maSanPham + " đã được duyệt và đang được bày bán trên hệ thống.")
+                .loaiThongBao("HE_THONG")
+                .nguoiNhanId(nguoiNhanId)
+                .maSanPham(maSanPham)
+                .trangThai(TRANG_THAI_DA_DOC)
+                .ngayTao(LocalDateTime.now())
+                .ngayCapNhat(LocalDateTime.now())
+                .build();
+        thongBaoRepository.save(thongBaoLichSu);
+
+        // 4. Xóa thông báo duyệt sản phẩm ở phía đối tác (nếu có)
+        // ThongBaoDoiTac không có trường maSanPham, nên xóa tất cả thông báo DUYET_SAN_PHAM của đối tác
+        List<ThongBaoDoiTac> thongBaoDoiTacList = thongBaoDoiTacRepository.findByDoiTac_MaDoiTacAndLoai(
+                sanPham.getMaDoiTac(),
+                ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM
+        );
+        thongBaoDoiTacRepository.deleteAll(thongBaoDoiTacList);
+
+        // 5. Gửi thông báo kết quả về đối tác.
         guiThongBaoDoiTacVeKetQuaDuyetSanPham(
                 sanPham,
                 true,
@@ -307,14 +325,32 @@ public class ThongBaoService {
                 lyDoTuChoi
         );
 
-        // 2. Cập nhật thông báo bên nhân viên.
-        thongBao.setTrangThai(TRANG_THAI_DA_TU_CHOI);
-        thongBao.setNguoiNhanId(nguoiNhanId);
-        thongBao.setLyDoTuChoi(lyDoTuChoi);
+        // 2. Xóa thông báo cũ (có nút duyệt/từ chối) ở phía admin/nhân viên
+        thongBaoRepository.delete(thongBao);
 
-        thongBaoRepository.save(thongBao);
+        // 3. Tạo thông báo mới chỉ đọc (đã từ chối) để lưu lịch sử cho admin
+        ThongBao thongBaoLichSu = ThongBao.builder()
+                .tieuDe("Đã từ chối sản phẩm")
+                .noiDung("Sản phẩm #" + maSanPham + " đã bị từ chối. Lý do: " + lyDoTuChoi)
+                .loaiThongBao("HE_THONG")
+                .nguoiNhanId(nguoiNhanId)
+                .maSanPham(maSanPham)
+                .lyDoTuChoi(lyDoTuChoi)
+                .trangThai(TRANG_THAI_DA_DOC)
+                .ngayTao(LocalDateTime.now())
+                .ngayCapNhat(LocalDateTime.now())
+                .build();
+        thongBaoRepository.save(thongBaoLichSu);
 
-        // 3. Không xóa dữ liệu; chuyển sản phẩm sang trạng thái Ẩn.
+        // 4. Xóa thông báo duyệt sản phẩm ở phía đối tác (nếu có)
+        // ThongBaoDoiTac không có trường maSanPham, nên xóa tất cả thông báo DUYET_SAN_PHAM của đối tác
+        List<ThongBaoDoiTac> thongBaoDoiTacList = thongBaoDoiTacRepository.findByDoiTac_MaDoiTacAndLoai(
+                sanPham.getMaDoiTac(),
+                ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM
+        );
+        thongBaoDoiTacRepository.deleteAll(thongBaoDoiTacList);
+
+        // 5. Không xóa dữ liệu; chuyển sản phẩm sang trạng thái Ẩn.
         sanPham.setTrangThai(SanPham.TRANG_THAI_AN);
         sanPhamRepository.save(sanPham);
     }

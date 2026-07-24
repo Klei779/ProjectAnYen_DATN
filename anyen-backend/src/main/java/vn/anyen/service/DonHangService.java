@@ -455,6 +455,8 @@ public class DonHangService {
                 return "Đã giao";
             case 10:
                 return "Đã thanh toán";
+            case 11:
+                return "Gặp sự cố";
             default:
                 return "Không rõ";
         }
@@ -873,6 +875,9 @@ public class DonHangService {
                 .phiVanChuyen(BigDecimal.ZERO)
                 .giamGia(BigDecimal.ZERO)
 
+                .nguoiBaoCaoSuCo(donHang.getNguoiBaoCaoSuCo())
+                .lyDoSuCo(donHang.getLyDoSuCo())
+
                 .sanPhams(sanPhams)
                 .lichSu(lichSu)
                 .build();
@@ -889,7 +894,8 @@ public class DonHangService {
     @Transactional
     public DonHangResponse huyDonHang(
             Integer maDonHang,
-            HuyDonHangRequest request
+            HuyDonHangRequest request,
+            Authentication authentication
     ) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException(
@@ -916,6 +922,27 @@ public class DonHangService {
         donHang.setLyDoHuy(lyDo);
 
         DonHang saved = donHangRepository.save(donHang);
+
+        // Tạo thông báo cho bên kia
+        try {
+            String nguoiHuy = authentication.getName();
+            String tenNguoiHuy = nguoiHuy;
+
+            // Xác định người hủy là nhân viên hay đối tác
+            boolean laNhanVien = nhanVienRepository.findByTenDangNhap(nguoiHuy).isPresent();
+            if (laNhanVien) {
+                NhanVien nv = nhanVienRepository.findByTenDangNhap(nguoiHuy).get();
+                tenNguoiHuy = nv.getHoTen();
+                // Tạo thông báo cho đối tác
+                thongBaoService.taoThongBaoHuyDonChoDoiTac(maDonHang, tenNguoiHuy, lyDo);
+            } else {
+                // Tạo thông báo cho nhân viên
+                thongBaoService.taoThongBaoHuyDonChoNhanVien(maDonHang, tenNguoiHuy, lyDo);
+            }
+        } catch (Exception e) {
+            // Không throw lỗi nếu tạo thông báo thất bại, đơn hàng vẫn đã được hủy
+            System.err.println("Lỗi khi tạo thông báo hủy đơn: " + e.getMessage());
+        }
 
         return mapToDonHangResponse(saved);
     }
@@ -1023,6 +1050,8 @@ public class DonHangService {
                 .trangThai(getTrangThaiString(donHang.getTrangThai()))
                 .tongCong(tongCong)
                 .coHopDong(hopDongRepository.existsByDonHang_MaDonHang(donHang.getMaDonHang()))
+                .nguoiBaoCaoSuCo(donHang.getNguoiBaoCaoSuCo())
+                .lyDoSuCo(donHang.getLyDoSuCo())
 
                 .sanPhams(sanPhams)
                 .build();
@@ -1125,5 +1154,81 @@ public class DonHangService {
 
     private boolean coDoiTacTuChoi(Integer maDonHang) {
         return donHangRepository.countDoiTacTuChoi(maDonHang) > 0;
+    }
+
+    @Transactional
+    public void baoCaoSuCo(Integer maDonHang, String lyDoSuCo, Authentication authentication) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        // Kiểm tra trạng thái hiện tại - không thể báo cáo sự cố nếu đã hủy hoặc hoàn thành
+        if (DonHang.TT_DA_HUY.equals(donHang.getTrangThai()) ||
+            DonHang.TT_HOAN_THANH.equals(donHang.getTrangThai()) ||
+            DonHang.TT_DOI_TAC_TU_CHOI.equals(donHang.getTrangThai()) ||
+            DonHang.TT_GAP_SU_CO.equals(donHang.getTrangThai())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng không thể báo cáo sự cố ở trạng thái hiện tại");
+        }
+
+        // Lưu trạng thái cũ trước khi gặp sự cố
+        String nguoiBaoCao = authentication.getName();
+
+        donHang.setTrangThaiTruocSuCo(donHang.getTrangThai());
+        donHang.setTrangThai(DonHang.TT_GAP_SU_CO);
+        donHang.setLyDoSuCo(lyDoSuCo);
+        donHang.setNguoiBaoCaoSuCo(nguoiBaoCao);
+        donHangRepository.save(donHang);
+
+        // Tạo thông báo cho bên kia
+        try {
+            String tenNguoiBaoCao = nguoiBaoCao;
+
+            // Xác định người báo cáo là nhân viên hay đối tác
+            boolean laNhanVien = nhanVienRepository.findByTenDangNhap(nguoiBaoCao).isPresent();
+            if (laNhanVien) {
+                NhanVien nv = nhanVienRepository.findByTenDangNhap(nguoiBaoCao).get();
+                tenNguoiBaoCao = nv.getHoTen();
+                // Tạo thông báo cho đối tác
+                thongBaoService.taoThongBaoSuCoChoDoiTac(maDonHang, tenNguoiBaoCao, lyDoSuCo);
+            } else {
+                // Tạo thông báo cho nhân viên
+                thongBaoService.taoThongBaoSuCoChoNhanVien(maDonHang, tenNguoiBaoCao, lyDoSuCo);
+            }
+        } catch (Exception e) {
+            // Không throw lỗi nếu tạo thông báo thất bại, đơn hàng vẫn đã được báo cáo sự cố
+            System.err.println("Lỗi khi tạo thông báo sự cố: " + e.getMessage());
+        }
+    }
+
+    @Transactional
+    public void giaiQuyetSuCo(Integer maDonHang, Authentication authentication) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        if (!DonHang.TT_GAP_SU_CO.equals(donHang.getTrangThai())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng không ở trạng thái gặp sự cố");
+        }
+
+        if (donHang.getTrangThaiTruocSuCo() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không tìm thấy trạng thái trước khi gặp sự cố");
+        }
+
+        // Khôi phục trạng thái cũ
+        donHang.setTrangThai(donHang.getTrangThaiTruocSuCo());
+        donHang.setTrangThaiTruocSuCo(null);
+        donHang.setLyDoSuCo(null);
+        donHangRepository.save(donHang);
+
+        // Tạo thông báo đã giải quyết sự cố
+        String nguoiGiaiQuyet = authentication.getName();
+        String tenNguoiGiaiQuyet = nguoiGiaiQuyet;
+
+        boolean laNhanVien = nhanVienRepository.findByTenDangNhap(nguoiGiaiQuyet).isPresent();
+        if (laNhanVien) {
+            NhanVien nv = nhanVienRepository.findByTenDangNhap(nguoiGiaiQuyet).get();
+            tenNguoiGiaiQuyet = nv.getHoTen();
+            thongBaoService.taoThongBaoDaGiaiQuyetSuCoChoDoiTac(maDonHang, tenNguoiGiaiQuyet);
+        } else {
+            thongBaoService.taoThongBaoDaGiaiQuyetSuCoChoNhanVien(maDonHang, tenNguoiGiaiQuyet);
+        }
     }
 }

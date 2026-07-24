@@ -44,6 +44,8 @@ public class DonHangResponse {
     private Integer maHopDong;
     private Integer trangThaiHopDong;
     private String lyDoHuy;
+    private String nguoiBaoCaoSuCo;
+    private String lyDoSuCo;
     private List<ChiTietDonHangResponse> sanPhams;
     private List<LichSuDonHangResponse> lichSu;
 

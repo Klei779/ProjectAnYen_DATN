@@ -1,8 +1,11 @@
 package vn.anyen.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import vn.anyen.dto.request.BaoCaoSuCoRequest;
+import vn.anyen.dto.request.HuyDonHangRequest;
 import vn.anyen.dto.response.DoiTacDonHangPageResponse;
 import vn.anyen.dto.response.DoiTacDonHangResponse;
 import vn.anyen.entity.DoiTac;
@@ -11,9 +14,6 @@ import vn.anyen.service.DonHangService;
 
 import java.time.LocalDate;
 import java.util.Map;
-import vn.anyen.entity.DoiTac;
-import vn.anyen.repository.DoiTacRepository;
-import vn.anyen.service.DonHangService;
 
 @RestController
 @RequestMapping("/api/doi-tac/quan-ly-don-hang")
@@ -90,5 +90,43 @@ public class DoiTacDonHangController {
                 doiTac.getMaDoiTac(),
                 ngayGiaoDuKien
         );
+    }
+
+    @PostMapping("/{maDonHang}/bao-cao-su-co")
+    public void baoCaoSuCo(
+            Authentication authentication,
+            @PathVariable Integer maDonHang,
+            @Valid @RequestBody BaoCaoSuCoRequest request
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("Chưa đăng nhập");
+        }
+
+        donHangService.baoCaoSuCo(maDonHang, request.getLyDoSuCo(), authentication);
+    }
+
+    @PostMapping("/{maDonHang}/giai-quyet-su-co")
+    public void giaiQuyetSuCo(
+            Authentication authentication,
+            @PathVariable Integer maDonHang
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("Chưa đăng nhập");
+        }
+
+        donHangService.giaiQuyetSuCo(maDonHang, authentication);
+    }
+
+    @PutMapping("/{maDonHang}/huy")
+    public void huyDonHang(
+            Authentication authentication,
+            @PathVariable Integer maDonHang,
+            @Valid @RequestBody HuyDonHangRequest request
+    ) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new RuntimeException("Chưa đăng nhập");
+        }
+
+        donHangService.huyDonHang(maDonHang, request, authentication);
     }
 }

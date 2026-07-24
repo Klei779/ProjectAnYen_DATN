@@ -346,6 +346,17 @@
     background: #fce8e6;
 }
 
+/* Nút Báo cáo sự cố */
+.btn-outline-orange {
+    border: 1px solid #f59e0b;
+    color: #f59e0b;
+    background: #fff;
+}
+
+.btn-outline-orange:hover {
+    background: #fef3c7;
+}
+
 /* Nút Tạo hóa đơn - giống nút Sửa */
 .btn-invoice {
     border: 1px solid #17934a;

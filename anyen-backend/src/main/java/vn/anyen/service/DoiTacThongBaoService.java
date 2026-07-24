@@ -662,6 +662,8 @@ public class DoiTacThongBaoService {
                 .ghiChu(donHang.getGhiChu())
                 .trangThai(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                 .tongCong(tongCong)
+                .nguoiBaoCaoSuCo(donHang.getNguoiBaoCaoSuCo())
+                .lyDoSuCo(donHang.getLyDoSuCo())
                 .sanPhams(sanPhams)
                 .build();
     }

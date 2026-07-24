@@ -13,6 +13,7 @@ const ORDER_STATUS_LABELS = Object.freeze({
   8: "Từ chối",
   9: "Đã giao",
   10: "Đã thanh toán",
+  11: "Gặp sự cố",
 });
 
 const PAYMENT_METHOD_LABELS = Object.freeze({

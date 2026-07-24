@@ -17,6 +17,7 @@ import {
   kiemTraDonHangCoHopDong,
   formatDate,
   formatCurrency,
+  getTrangThaiDonHangText,
 } from "../../services/donHangService.js";
 import api from "../../api/api.js";
 
@@ -33,6 +34,7 @@ import {
   Plus,
   Tickets,
   View,
+  Warning,
 } from "@element-plus/icons-vue";
 
 // ── Trạng thái popup ─────────────────────────────
@@ -72,6 +74,12 @@ const loadDonHangs = async () => {
     donHangs.value = Array.isArray(data)
         ? data
         : data?.items || [];
+
+    // Convert trangThai from number to text
+    donHangs.value = donHangs.value.map(dh => ({
+      ...dh,
+      trangThai: getTrangThaiDonHangText(dh.trangThai)
+    }));
   } catch (error) {
     console.error("Lỗi khi tải đơn hàng:", error);
     ElMessage.error("Không thể tải danh sách đơn hàng");
@@ -271,6 +279,147 @@ const getMaDonHang = (dh) => {
 const showCancelDialog = ref(false);
 const selectedCancelOrder = ref(null);
 const cancelReason = ref("");
+
+// ── Báo cáo sự cố ─────────────────────────────
+const showSuCoDialog = ref(false);
+const selectedSuCoOrder = ref(null);
+const suCoReason = ref("");
+
+const canBaoCaoSuCo = (order) => {
+  const status = order?.trangThai ?? order?.TrangThai ?? "";
+
+  return ![
+    "Đã hủy",
+    "Hoàn thành",
+    "Từ chối",
+    "Gặp sự cố",
+  ].includes(status);
+};
+
+const canGiaiQuyetSuCo = (order) => {
+  const status = order?.trangThai ?? order?.TrangThai ?? "";
+  if (status !== "Gặp sự cố") return false;
+
+  // Chỉ người báo cáo sự cố mới được giải quyết
+  const nguoiBaoCao = order?.nguoiBaoCaoSuCo || order?.NguoiBaoCaoSuCo;
+  if (!nguoiBaoCao) return false;
+
+  // Lấy thông tin người đăng nhập hiện tại từ localStorage
+  try {
+    const userStr = localStorage.getItem('user');
+    const user = userStr ? JSON.parse(userStr) : null;
+    const currentUser = user?.tenDangNhap || localStorage.getItem('tenDangNhap');
+    return currentUser === nguoiBaoCao;
+  } catch (error) {
+    console.error("Lỗi khi lấy thông tin user:", error);
+    return false;
+  }
+};
+
+const openSuCoDialog = async (order) => {
+  // Reload danh sách đơn hàng để lấy trạng thái mới nhất
+  await loadDonHangs();
+
+  // Lấy đơn hàng đã cập nhật
+  const maDonHang = getMaDonHang(order);
+  if (maDonHang) {
+    const updatedOrder = donHangs.value.find(dh => getMaDonHang(dh) === maDonHang);
+    if (updatedOrder) {
+      selectedSuCoOrder.value = updatedOrder;
+    } else {
+      selectedSuCoOrder.value = order;
+    }
+  } else {
+    selectedSuCoOrder.value = order;
+  }
+
+  suCoReason.value = "";
+  showSuCoDialog.value = true;
+};
+
+const closeSuCoDialog = () => {
+  showSuCoDialog.value = false;
+  selectedSuCoOrder.value = null;
+  suCoReason.value = "";
+};
+
+const isSuCoReasonValid = computed(() => {
+  return suCoReason.value.trim().length > 3;
+});
+
+const confirmBaoCaoSuCo = async () => {
+  if (!selectedSuCoOrder.value) {
+    ElMessage.warning("Chưa chọn đơn hàng cần báo cáo sự cố");
+    return;
+  }
+
+  if (!isSuCoReasonValid.value) {
+    ElMessage.warning("Lý do sự cố phải trên 3 ký tự");
+    return;
+  }
+
+  try {
+    const maDonHang = getMaDonHang(selectedSuCoOrder.value);
+
+    await api.post(`/api/nhan-vien/don-hang/${maDonHang}/bao-cao-su-co`, {
+      lyDoSuCo: suCoReason.value.trim()
+    });
+
+    ElMessage.success("Báo cáo sự cố thành công");
+
+    closeSuCoDialog();
+    showChiTiet.value = false;
+
+    await loadDonHangs();
+  } catch (error) {
+    console.error("Lỗi khi báo cáo sự cố:", error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Báo cáo sự cố thất bại"
+    );
+  }
+};
+
+const confirmGiaiQuyetSuCo = async (order) => {
+  try {
+    await ElMessageBox.confirm(
+      "Bạn có chắc chắn muốn giải quyết sự cố này? Đơn hàng sẽ được khôi phục trạng thái cũ.",
+      "Xác nhận giải quyết sự cố",
+      {
+        confirmButtonText: "Đồng ý",
+        cancelButtonText: "Hủy",
+        type: "warning",
+      }
+    );
+
+    const maDonHang = getMaDonHang(order);
+
+    await api.post(`/api/nhan-vien/don-hang/${maDonHang}/giai-quyet-su-co`);
+
+    ElMessage.success("Giải quyết sự cố thành công");
+
+    showChiTiet.value = false;
+
+    // Reload danh sách không ảnh hưởng đến thông báo thành công
+    try {
+      await loadDonHangs();
+    } catch (loadError) {
+      console.error("Lỗi khi tải lại danh sách đơn hàng:", loadError);
+    }
+  } catch (error) {
+    if (error !== "cancel") {
+      console.error("Lỗi khi giải quyết sự cố:", error);
+
+      ElMessage.error(
+          error.response?.data?.message ||
+          error.response?.data ||
+          "Giải quyết sự cố thất bại"
+      );
+    }
+  }
+};
 
 const isCancelReasonValid = computed(() => {
   return cancelReason.value.trim().length > 3;
@@ -599,7 +748,7 @@ const trangThaiBadgeClass = (tt) => {
   if (tt === "Đã giao") return "badge-teal";
   if (tt === "Thanh toán") return "badge-indigo";
   if (tt === "Hoàn thành") return "badge-green";
-  if (tt === "Đã hủy" || tt === "Từ chối") {
+  if (tt === "Đã hủy" || tt === "Từ chối" || tt === "Gặp sự cố") {
     return "badge-red";
   }
 
@@ -1051,6 +1200,28 @@ const createInvoiceForOrder = async (
           </button>
 
           <button
+              v-if="canBaoCaoSuCo(dh)"
+              class="btn-outline-orange"
+              @click="openSuCoDialog(dh)"
+          >
+            <el-icon>
+              <Warning />
+            </el-icon>
+            Báo cáo sự cố
+          </button>
+
+          <button
+              v-if="canGiaiQuyetSuCo(dh)"
+              class="btn-filled-green"
+              @click="confirmGiaiQuyetSuCo(dh)"
+          >
+            <el-icon>
+              <Check />
+            </el-icon>
+            Giải quyết sự cố
+          </button>
+
+          <button
               v-if="daCoHoaDon(dh)"
               class="btn-invoice-created"
               @click.stop="xemHoaDon(dh)"
@@ -1179,6 +1350,42 @@ const createInvoiceForOrder = async (
             @click="confirmCancelOrder"
         >
           Xác nhận hủy
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- ── Popup báo cáo sự cố ── -->
+    <el-dialog
+        v-model="showSuCoDialog"
+        title="Lý do báo cáo sự cố"
+        width="460px"
+        :close-on-click-modal="false"
+        :append-to-body="true"
+        :z-index="10070"
+    >
+      <div class="cancel-dialog-content">
+        <p class="cancel-warning">
+          Bạn cần nhập lý do báo cáo sự cố. Lý do phải trên 3 ký tự.
+        </p>
+
+        <el-input
+            v-model="suCoReason"
+            type="textarea"
+            :rows="4"
+            placeholder="Nhập lý do báo cáo sự cố..."
+            maxlength="500"
+            show-word-limit
+        />
+      </div>
+
+      <template #footer>
+        <el-button @click="closeSuCoDialog">Hủy</el-button>
+        <el-button
+            type="warning"
+            :disabled="!isSuCoReasonValid"
+            @click="confirmBaoCaoSuCo"
+        >
+          Xác nhận báo cáo
         </el-button>
       </template>
     </el-dialog>

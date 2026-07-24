@@ -630,6 +630,7 @@
   margin: 0;
   font-size: 18px;
   font-weight: 700;
+  padding: 0;
 }
 
 .close-btn {
@@ -647,6 +648,37 @@
 
 .modal-body {
   padding: 24px;
+}
+
+.modal-body p {
+  margin: 0 0 16px 0;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.form-group textarea:focus {
+  outline: none;
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
 }
 
 /* Job detail specific styles */

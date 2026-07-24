@@ -47,6 +47,7 @@ public class DonHang {
     public static final Integer TT_DOI_TAC_TU_CHOI = 8;
     public static final Integer TT_DA_GIAO = 9;
     public static final Integer TT_DA_THANH_TOAN = 10;
+    public static final Integer TT_GAP_SU_CO = 11;
 
     public static final Integer PT_CHUA_CHON = 0;
     public static final Integer PT_TIEN_MAT = 1;
@@ -70,6 +71,15 @@ public class DonHang {
 
     @Column(name = "LyDoHuy")
     private String lyDoHuy;
+
+    @Column(name = "TrangThaiTruocSuCo")
+    private Integer trangThaiTruocSuCo;
+
+    @Column(name = "LyDoSuCo", columnDefinition = "TEXT")
+    private String lyDoSuCo;
+
+    @Column(name = "NguoiBaoCaoSuCo")
+    private String nguoiBaoCaoSuCo;
 
     @PrePersist
     private void prePersist() {

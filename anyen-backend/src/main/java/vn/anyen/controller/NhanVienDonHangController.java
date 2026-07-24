@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import vn.anyen.dto.request.BaoCaoSuCoRequest;
 import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 import vn.anyen.dto.request.HuyDonHangRequest;
 import vn.anyen.dto.request.TaoDonHangRequest;
@@ -81,9 +82,10 @@ public class NhanVienDonHangController {
     @PutMapping("/{maDonHang}/huy")
     public DonHangResponse huyDonHang(
             @PathVariable Integer maDonHang,
-            @Valid @RequestBody HuyDonHangRequest request
+            @Valid @RequestBody HuyDonHangRequest request,
+            Authentication authentication
     ) {
-        return donHangService.huyDonHang(maDonHang, request);
+        return donHangService.huyDonHang(maDonHang, request, authentication);
     }
 
     @GetMapping("/san-pham-options")
@@ -163,5 +165,24 @@ public class NhanVienDonHangController {
             return String.format("%.0f m", distance * 1000);
         }
         return String.format("%.2f km", distance);
+    }
+
+    @PostMapping("/{maDonHang}/bao-cao-su-co")
+    public ResponseEntity<Void> baoCaoSuCo(
+            @PathVariable Integer maDonHang,
+            @Valid @RequestBody BaoCaoSuCoRequest request,
+            Authentication authentication
+    ) {
+        donHangService.baoCaoSuCo(maDonHang, request.getLyDoSuCo(), authentication);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{maDonHang}/giai-quyet-su-co")
+    public ResponseEntity<Void> giaiQuyetSuCo(
+            @PathVariable Integer maDonHang,
+            Authentication authentication
+    ) {
+        donHangService.giaiQuyetSuCo(maDonHang, authentication);
+        return ResponseEntity.ok().build();
     }
 }

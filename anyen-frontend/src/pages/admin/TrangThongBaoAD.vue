@@ -64,11 +64,15 @@ const loadNotifications = async (isBackground = false) => {
     }));
 
     // Chỉ lấy thông báo liên quan đến admin: HE_THONG, DUYET_SAN_PHAM, DON_HANG
-    data = data.filter(item => 
-      item.loaiThongBao === 'HE_THONG' || 
-      item.loaiThongBao === 'DUYET_SAN_PHAM' || 
-      item.loaiThongBao === 'DON_HANG'
-    );
+    // Loại bỏ thông báo lịch sử sản phẩm đã duyệt/từ chối (HE_THONG với tieuDe "Đã duyệt/từ chối sản phẩm")
+    data = data.filter(item => {
+      if (item.loaiThongBao === 'HE_THONG') {
+        // Loại bỏ thông báo lịch sử sản phẩm đã xử lý
+        const isProductHistory = item.tieuDe?.includes('Đã duyệt sản phẩm') || item.tieuDe?.includes('Đã từ chối sản phẩm');
+        return !isProductHistory;
+      }
+      return item.loaiThongBao === 'DUYET_SAN_PHAM' || item.loaiThongBao === 'DON_HANG';
+    });
 
     const currentUnread = notifications.value.filter(
         n => Number(n.trangThai) === TT_CHUA_DOC
@@ -430,8 +434,99 @@ const markAllAsRead = async () => {
   </div>
 </template>
 
-<style scoped>
-.text-primary { color: #dc2626; }
-</style>
-
 <style src="../../assets/styles/admin/QLThongBao/TrangThongBaoAD.css"></style>
+<style scoped>
+.text-primary {
+  color: #dc2626;
+}
+
+/* Popup từ chối sản phẩm */
+.custom-modal.modal-small {
+  width: min(525px, calc(100vw - 32px));
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* Phần tiêu đề */
+.custom-modal .modal-header {
+  padding: 20px 24px 8px;
+  border-bottom: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.custom-modal .modal-header h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+/* Phần nội dung */
+.custom-modal .modal-body {
+  padding: 0 24px 22px;
+}
+
+.custom-modal .modal-body > p {
+  margin: 0 0 18px;
+  line-height: 1.5;
+}
+
+.custom-modal .form-group {
+  width: 100%;
+}
+
+.custom-modal .form-group label {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* Tạo khoảng cách giữa chữ và viền textarea */
+.custom-modal .form-control {
+  display: block;
+  width: 100%;
+  min-height: 130px;
+  padding: 14px 16px !important;
+  border: 1px solid #d1d5db;
+  border-radius: 12px;
+  box-sizing: border-box;
+  line-height: 1.5;
+  resize: vertical;
+  outline: none;
+}
+
+.custom-modal .form-control:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.custom-modal .form-control::placeholder {
+  color: #9ca3af;
+}
+
+/* Thông báo lỗi */
+.custom-modal .form-group small {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.4;
+}
+
+/* Phần nút */
+.custom-modal .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #eeeeee;
+  background: #ffffff;
+}
+
+.custom-modal .modal-footer button {
+  min-width: 120px;
+  min-height: 46px;
+  border-radius: 10px;
+}
+</style>

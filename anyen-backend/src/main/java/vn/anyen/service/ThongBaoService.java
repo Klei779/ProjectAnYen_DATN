@@ -741,34 +741,34 @@ public class ThongBaoService {
     public void taoThongBaoDoiTacXuLyDonHang(Integer maDonHang, Integer maDoiTac, java.time.LocalDate ngayGiao) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
-        
+
         DoiTac doiTac = doiTacRepository.findById(maDoiTac)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đối tác"));
 
-        List<NhanVien> admins = nhanVienRepository.findByVaiTro(1);
-        if (admins == null || admins.isEmpty()) {
-            return;
+        // Gửi thông báo cho nhân viên phụ trách đơn hàng
+        if (donHang.getNhanVien() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng chưa có nhân viên phụ trách");
         }
+
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
 
         String noiDung = String.format(
                 "Đối tác %s dự kiến giao đơn hàng #DH%04d vào ngày %s",
                 doiTac.getTenDoiTac(), maDonHang, ngayGiao.toString()
         );
 
-        for (NhanVien admin : admins) {
-            ThongBao thongBao = ThongBao.builder()
-                    .tieuDe("Đối tác đã xử lý đơn hàng")
-                    .noiDung(noiDung)
-                    .loaiThongBao("DON_HANG")
-                    .nguoiNhanId(admin.getMaNhanVien())
-                    .maKhachHang(donHang.getKhachHang() != null ? donHang.getKhachHang().getMaKhachHang() : null)
-                    .daDoc(false)
-                    .trangThai(TRANG_THAI_CHUA_DOC)
-                    .build();
+        ThongBao thongBao = ThongBao.builder()
+                .tieuDe("Đối tác đã xử lý đơn hàng")
+                .noiDung(noiDung)
+                .loaiThongBao("DON_HANG")
+                .nguoiNhanId(nguoiNhanId)
+                .maKhachHang(donHang.getKhachHang() != null ? donHang.getKhachHang().getMaKhachHang() : null)
+                .daDoc(false)
+                .trangThai(TRANG_THAI_CHUA_DOC)
+                .build();
 
-            ThongBao saved = thongBaoRepository.save(thongBao);
-            realtimeService.guiThongBaoNhanVien(admin.getMaNhanVien(), saved);
-        }
+        ThongBao saved = thongBaoRepository.save(thongBao);
+        realtimeService.guiThongBaoNhanVien(nguoiNhanId, saved);
     }
 
     @Transactional
@@ -851,6 +851,179 @@ public class ThongBaoService {
             thongBao.setMaKhachHang(donHang.getKhachHang().getMaKhachHang());
         }
 
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setNgayCapNhat(LocalDateTime.now());
+
+        thongBaoRepository.save(thongBao);
+        realtimeService.guiThongBaoNhanVien(nguoiNhanId, thongBao);
+    }
+
+    @Transactional
+    public void taoThongBaoSuCoChoDoiTac(Integer maDonHang, String tenNguoiBaoCao, String lyDoSuCo) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        String maDonHangText = "DH" + String.format("%03d", maDonHang);
+
+        // Tìm tất cả đối tác trong đơn hàng
+        List<Integer> maDoiTacList = donHangRepository.findDoiTacIdsByDonHang(maDonHang);
+
+        for (Integer maDoiTac : maDoiTacList) {
+            DoiTac doiTac = doiTacRepository.findById(maDoiTac).orElse(null);
+            if (doiTac == null) continue;
+
+            ThongBaoDoiTac thongBaoDoiTac = ThongBaoDoiTac.builder()
+                    .doiTac(doiTac)
+                    .donHang(donHang)
+                    .loai(ThongBaoDoiTac.LOAI_DON_HANG)
+                    .tieuDe("Đơn hàng gặp sự cố")
+                    .noiDung("Nhân viên " + tenNguoiBaoCao + " đã báo cáo sự cố cho đơn hàng " + maDonHangText + ". Lý do: " + lyDoSuCo)
+                    .trangThaiThongBao(ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI)
+                    .lyDoTuChoi(lyDoSuCo)
+                    .daDoc(false)
+                    .thoiGianTao(LocalDateTime.now())
+                    .thoiGianXuLy(LocalDateTime.now())
+                    .build();
+
+            thongBaoDoiTacRepository.save(thongBaoDoiTac);
+            realtimeService.guiThongBaoDoiTac(maDoiTac, thongBaoDoiTac);
+        }
+    }
+
+    @Transactional
+    public void taoThongBaoSuCoChoNhanVien(Integer maDonHang, String tenNguoiBaoCao, String lyDoSuCo) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        if (donHang.getNhanVien() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng chưa có nhân viên phụ trách");
+        }
+
+        String maDonHangText = "DH" + String.format("%03d", maDonHang);
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
+
+        ThongBao thongBao = new ThongBao();
+        thongBao.setTieuDe("Đơn hàng gặp sự cố");
+        thongBao.setNoiDung("Đối tác " + tenNguoiBaoCao + " đã báo cáo sự cố cho đơn hàng " + maDonHangText + ". Lý do: " + lyDoSuCo + " [MA_DON_HANG:" + maDonHang + "]");
+        thongBao.setLoaiThongBao("DON_HANG");
+        thongBao.setNguoiGuiId(null);
+        thongBao.setNguoiNhanId(nguoiNhanId);
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setNgayCapNhat(LocalDateTime.now());
+
+        thongBaoRepository.save(thongBao);
+        realtimeService.guiThongBaoNhanVien(nguoiNhanId, thongBao);
+    }
+
+    @Transactional
+    public void taoThongBaoDaGiaiQuyetSuCoChoDoiTac(Integer maDonHang, String tenNguoiGiaiQuyet) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        String maDonHangText = "DH" + String.format("%03d", maDonHang);
+
+        // Tìm tất cả đối tác trong đơn hàng
+        List<Integer> maDoiTacList = donHangRepository.findDoiTacIdsByDonHang(maDonHang);
+
+        for (Integer maDoiTac : maDoiTacList) {
+            DoiTac doiTac = doiTacRepository.findById(maDoiTac).orElse(null);
+            if (doiTac == null) continue;
+
+            ThongBaoDoiTac thongBaoDoiTac = ThongBaoDoiTac.builder()
+                    .doiTac(doiTac)
+                    .donHang(donHang)
+                    .loai(ThongBaoDoiTac.LOAI_DON_HANG)
+                    .tieuDe("Sự cố đã được giải quyết")
+                    .noiDung("Nhân viên " + tenNguoiGiaiQuyet + " đã giải quyết sự cố cho đơn hàng " + maDonHangText + ". Đơn hàng đã được khôi phục trạng thái.")
+                    .trangThaiThongBao(ThongBaoDoiTac.TRANG_THAI_DA_CHAP_NHAN)
+                    .lyDoTuChoi(null)
+                    .daDoc(false)
+                    .thoiGianTao(LocalDateTime.now())
+                    .thoiGianXuLy(LocalDateTime.now())
+                    .build();
+
+            thongBaoDoiTacRepository.save(thongBaoDoiTac);
+            realtimeService.guiThongBaoDoiTac(maDoiTac, thongBaoDoiTac);
+        }
+    }
+
+    @Transactional
+    public void taoThongBaoDaGiaiQuyetSuCoChoNhanVien(Integer maDonHang, String tenNguoiGiaiQuyet) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        if (donHang.getNhanVien() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng chưa có nhân viên phụ trách");
+        }
+
+        String maDonHangText = "DH" + String.format("%03d", maDonHang);
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
+
+        ThongBao thongBao = new ThongBao();
+        thongBao.setTieuDe("Sự cố đã được giải quyết");
+        thongBao.setNoiDung("Đối tác " + tenNguoiGiaiQuyet + " đã giải quyết sự cố cho đơn hàng " + maDonHangText + ". Đơn hàng đã được khôi phục trạng thái. [MA_DON_HANG:" + maDonHang + "]");
+        thongBao.setLoaiThongBao("DON_HANG");
+        thongBao.setNguoiGuiId(null);
+        thongBao.setNguoiNhanId(nguoiNhanId);
+        thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
+        thongBao.setNgayTao(LocalDateTime.now());
+        thongBao.setNgayCapNhat(LocalDateTime.now());
+
+        thongBaoRepository.save(thongBao);
+        realtimeService.guiThongBaoNhanVien(nguoiNhanId, thongBao);
+    }
+
+    @Transactional
+    public void taoThongBaoHuyDonChoDoiTac(Integer maDonHang, String tenNguoiHuy, String lyDo) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        String maDonHangText = "DH" + String.format("%03d", maDonHang);
+
+        List<Integer> maDoiTacList = donHangRepository.findDoiTacIdsByDonHang(maDonHang);
+
+        for (Integer maDoiTac : maDoiTacList) {
+            DoiTac doiTac = doiTacRepository.findById(maDoiTac).orElse(null);
+            if (doiTac == null) continue;
+
+            ThongBaoDoiTac thongBaoDoiTac = ThongBaoDoiTac.builder()
+                    .doiTac(doiTac)
+                    .donHang(donHang)
+                    .loai(ThongBaoDoiTac.LOAI_DON_HANG)
+                    .tieuDe("Đơn hàng đã bị hủy")
+                    .noiDung("Nhân viên " + tenNguoiHuy + " đã hủy đơn hàng " + maDonHangText + ". Lý do: " + lyDo)
+                    .trangThaiThongBao(ThongBaoDoiTac.TRANG_THAI_DA_TU_CHOI)
+                    .lyDoTuChoi(lyDo)
+                    .daDoc(false)
+                    .thoiGianTao(LocalDateTime.now())
+                    .thoiGianXuLy(LocalDateTime.now())
+                    .build();
+
+            thongBaoDoiTacRepository.save(thongBaoDoiTac);
+            realtimeService.guiThongBaoDoiTac(maDoiTac, thongBaoDoiTac);
+        }
+    }
+
+    @Transactional
+    public void taoThongBaoHuyDonChoNhanVien(Integer maDonHang, String tenNguoiHuy, String lyDo) {
+        DonHang donHang = donHangRepository.findById(maDonHang)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy đơn hàng"));
+
+        if (donHang.getNhanVien() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Đơn hàng chưa có nhân viên phụ trách");
+        }
+
+        String maDonHangText = "DH" + String.format("%03d", maDonHang);
+        Integer nguoiNhanId = donHang.getNhanVien().getMaNhanVien();
+
+        ThongBao thongBao = new ThongBao();
+        thongBao.setTieuDe("Đơn hàng đã bị hủy");
+        thongBao.setNoiDung("Đối tác " + tenNguoiHuy + " đã hủy đơn hàng " + maDonHangText + ". Lý do: " + lyDo + " [MA_DON_HANG:" + maDonHang + "]");
+        thongBao.setLoaiThongBao("DON_HANG");
+        thongBao.setNguoiGuiId(null);
+        thongBao.setNguoiNhanId(nguoiNhanId);
         thongBao.setTrangThai(TRANG_THAI_CHUA_DOC);
         thongBao.setNgayTao(LocalDateTime.now());
         thongBao.setNgayCapNhat(LocalDateTime.now());

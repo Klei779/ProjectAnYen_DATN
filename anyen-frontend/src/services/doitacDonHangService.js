@@ -2,6 +2,30 @@ import api from "../api/api.js";
 
 const API_URL = "/api/doi-tac/quan-ly-don-hang";
 
+const ORDER_STATUS_LABELS = Object.freeze({
+  1: "Mới tạo",
+  2: "Chờ đối tác xác nhận",
+  3: "Đã nhận",
+  4: "Xử lý",
+  5: "Thanh toán",
+  6: "Hoàn thành",
+  7: "Đã hủy",
+  8: "Từ chối",
+  9: "Đã giao",
+  10: "Đã thanh toán",
+  11: "Gặp sự cố",
+});
+
+function getTrangThaiDonHangText(value) {
+  // Nếu giá trị đã là text hợp lệ, giữ nguyên
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+
+  const code = Number(value);
+  return ORDER_STATUS_LABELS[code] || "Chưa xác định";
+}
+
 function getItems(data) {
   if (Array.isArray(data)) return data;
   if (Array.isArray(data?.items)) return data.items;
@@ -66,10 +90,9 @@ function normalizeDonHang(dh) {
         0
     ),
 
-    trangThai:
-        dh.trangThai ??
-        dh.TrangThai ??
-        "",
+    trangThai: getTrangThaiDonHangText(
+        dh.trangThai ?? dh.TrangThai ?? ""
+    ),
 
     ghiChu:
         dh.ghiChu ??

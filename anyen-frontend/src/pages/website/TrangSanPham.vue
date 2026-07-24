@@ -106,24 +106,6 @@
                   <span class="checkbox-name">{{ item.name }}</span>
                   <span class="checkbox-count">{{ item.total }}</span>
                 </label>
-                <button class="view-more-btn">Xem thêm <i class="fa-solid fa-plus"></i></button>
-              </div>
-            </div>
-
-            <!-- COLOR -->
-            <div class="filter-group">
-              <div class="filter-header" @click="isColorOpen = !isColorOpen">
-                <span>MÀU SẮC</span>
-                <i class="fa-solid" :class="isColorOpen ? 'fa-chevron-up' : 'fa-chevron-down'" />
-              </div>
-              <div v-show="isColorOpen" class="filter-content">
-                <div class="color-list">
-                  <div v-for="color in colors" :key="color.hex" class="color-item"
-                       :style="{ background: color.hex }"
-                       :class="{ 'color-selected': selectedColor === color.name }"
-                       @click="selectedColor = selectedColor === color.name ? null : color.name" />
-                </div>
-                <button class="view-more-btn mt-2">Xem thêm <i class="fa-solid fa-chevron-down"></i></button>
               </div>
             </div>
 
@@ -138,7 +120,6 @@
                   <el-checkbox v-model="item.checked" />
                   <span class="checkbox-name">{{ item.name }}</span>
                 </label>
-                <button class="view-more-btn">Xem thêm <i class="fa-solid fa-plus"></i></button>
               </div>
             </div>
 
@@ -182,7 +163,7 @@
                 <i class="fa-solid fa-box-open"></i>
                 <p>Không tìm thấy sản phẩm phù hợp</p>
               </div>
-
+              <!-- LOAD SAN PHAM -->
               <div v-for="item in products" :key="item.id" class="product-card" @click="goToProductDetail(item.id)">
                 <div class="product-image">
                   <img
@@ -261,7 +242,6 @@
 
 </template>
 
-
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
@@ -305,7 +285,6 @@ const trustItems = [
   { icon: 'fa-solid fa-headset', title: 'Tư vấn tận tâm', desc: 'Hỗ trợ 24/7' },
   { icon: 'fa-solid fa-rotate-left', title: 'Đổi trả dễ dàng', desc: 'Trong 7 ngày' }
 ]
-
 const wishedIds = ref([])
 const isWished = (id) => wishedIds.value.includes(id)
 const toggleWish = (id) => {
@@ -313,14 +292,12 @@ const toggleWish = (id) => {
   if (idx === -1) wishedIds.value.push(id)
   else wishedIds.value.splice(idx, 1)
 }
-
 const formatPrice = (val) => {
   if (val === null || val === undefined) return 'Liên hệ'
   return Number(val).toLocaleString('vi-VN') + ' đ'
 }
 
 const DEFAULT_PRODUCT_IMAGE = noImage
-
 const getProductImage = (product) => {
   if (!product) return DEFAULT_PRODUCT_IMAGE
 
@@ -375,7 +352,6 @@ const getProductImage = (product) => {
 
   return `/images/${image}`
 }
-
 const handleImageError = (event) => {
   const img = event.currentTarget
 
@@ -387,7 +363,6 @@ const handleImageError = (event) => {
   img.dataset.fallbackApplied = 'true'
   img.src = DEFAULT_PRODUCT_IMAGE
 }
-
 function searchProducts() {
   queueLoad(true)
 }
@@ -400,6 +375,7 @@ async function loadFilterOptions() {
   colors.value = options.colors
 }
 
+//HAM LOAD SAN PHAM
 async function loadProducts() {
   loading.value = true
 
@@ -416,12 +392,12 @@ async function loadProducts() {
         .filter((r) => r.checked)
         .map((r) => r.name)
 
+//GOI TOI API LOAD SAN PHAM CUNG CAC TRUONG
     const { items, total } = await getProducts({
       keyword: keyword.value,
       loai: selectedCategory ? selectedCategory.name : '',
       vatLieu: selectedMaterials,
       tonGiao: selectedReligions,
-      mauSac: selectedColor.value || '',
       priceRange: priceRange.value,
       sortBy: sortBy.value,
       page: currentPage.value,
@@ -438,7 +414,6 @@ async function loadProducts() {
     loading.value = false
   }
 }
-
 function queueLoad(resetPage = true) {
   if (!filtersReady.value || ignoreAutoWatch) return
 
@@ -454,7 +429,6 @@ function queueLoad(resetPage = true) {
     await loadProducts()
   }, 300)
 }
-
 function resetFilter() {
   ignoreAutoWatch = true
 
@@ -471,7 +445,6 @@ function resetFilter() {
   clearTimeout(reloadTimer)
   loadProducts()
 }
-
 function goToProductDetail(productId) {
   router.push(`/san-pham/${productId}`)
 }
@@ -493,12 +466,12 @@ watch(
     () => queueLoad(true),
     { deep: true }
 )
-
 watch(currentPage, () => {
   if (!filtersReady.value || ignoreAutoWatch || settingPageForFilter) return
   loadProducts()
 })
 
+//GOI HAM LOAD SAN PHAM KHI COMPOMENT HIEN LEN
 onMounted(async () => {
   await loadFilterOptions()
   filtersReady.value = true

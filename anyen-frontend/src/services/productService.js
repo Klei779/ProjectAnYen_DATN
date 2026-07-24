@@ -12,6 +12,7 @@ const RELIGION_OPTIONS = [
   "Ấn Độ giáo",
 ];
 
+//GỬI GET REQUEST ĐẾN api/san-pham VỚI CÁC query params
 export async function getProducts(params = {}) {
   const response = await api.get(API_URL, {
     params: {

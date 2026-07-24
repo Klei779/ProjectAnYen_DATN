@@ -33,7 +33,7 @@ public class SanPhamService {
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
     private final DoiTacThongBaoService doiTacThongBaoService;
-
+//XỬ LÝ LOGIC LOAD SẢN PHẨM
     public SanPhamPageResponse getSanPham(
             String keyword,
             String loai,
@@ -46,6 +46,7 @@ public class SanPhamService {
             Integer page,
             Integer pageSize
     ) {
+        //LOGIC PHÂN TRANG
         int pageIndex = page == null || page < 1 ? 0 : page - 1;
         int size = pageSize == null || pageSize < 1 ? 16 : pageSize;
 
@@ -56,7 +57,7 @@ public class SanPhamService {
 
             // Chỉ load sản phẩm đã được duyệt (TRANG_THAI_DANG_BAN = 1)
             predicates.add(cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_DANG_BAN));
-
+            // Filter Keyword
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";
 
@@ -68,7 +69,7 @@ public class SanPhamService {
                         cb.like(cb.lower(root.get("vatLieu")), kw)
                 ));
             }
-
+            //Filter loại sản phẩm
             if (loai != null && !loai.isBlank()) {
                 predicates.add(
                         cb.equal(
@@ -77,17 +78,17 @@ public class SanPhamService {
                         )
                 );
             }
-
+            //Filter vat lieu
             List<String> vatLieuList = splitParam(vatLieu);
             if (!vatLieuList.isEmpty()) {
                 predicates.add(cb.lower(root.get("vatLieu")).in(vatLieuList));
             }
-
+            //Filter ton giao
             List<String> tonGiaoList = splitParam(tonGiao);
             if (!tonGiaoList.isEmpty()) {
                 predicates.add(cb.lower(root.get("tonGiao")).in(tonGiaoList));
             }
-
+            //Filter mau sac
             if (mauSac != null && !mauSac.isBlank()) {
                 predicates.add(
                         cb.equal(
@@ -96,7 +97,7 @@ public class SanPhamService {
                         )
                 );
             }
-
+            //Filter gia
             if (minPrice != null) {
                 predicates.add(
                         cb.greaterThanOrEqualTo(root.get("giaTien"), minPrice)
@@ -111,7 +112,7 @@ public class SanPhamService {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
-
+        //SELECT ALL SAN PHAM Repository
         Page<SanPham> result = sanPhamRepository.findAll(spec, pageable);
 
         List<SanPhamResponse> items = result.getContent()

@@ -17,6 +17,7 @@ public class SanPhamController {
 
     private final SanPhamService sanPhamService;
 
+//END POINT GET api/san-pham
     @GetMapping
     public SanPhamPageResponse getSanPham(
             @RequestParam(required = false) String keyword,

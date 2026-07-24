@@ -140,9 +140,21 @@ public class DoiTacThongBaoService {
         DonHang donHang = thongBao.getDonHang();
 
         if (donHang != null) {
-            // Xóa các sản phẩm của đối tác này khỏi đơn hàng
+            // Xóa các sản phẩm của đối tác này khỏi đơn hàng và cộng lại tồn kho
             List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHangAndDoiTac(
                     donHang.getMaDonHang(), doiTac.getMaDoiTac());
+
+            for (ChiTietDonHang chiTiet : chiTiets) {
+                // Cộng lại tồn kho cho sản phẩm
+                if (chiTiet.getSanPham() != null) {
+                    SanPham sanPham = chiTiet.getSanPham();
+                    Integer currentStock = sanPham.getSoLuong() != null ? sanPham.getSoLuong() : 0;
+                    Integer quantityToAdd = chiTiet.getSoLuong() != null ? chiTiet.getSoLuong() : 0;
+                    sanPham.setSoLuong(currentStock + quantityToAdd);
+                    sanPhamRepository.save(sanPham);
+                }
+            }
+
             chiTietDonHangRepository.deleteAll(chiTiets);
             chiTietDonHangRepository.flush();
 

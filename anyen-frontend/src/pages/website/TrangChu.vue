@@ -35,11 +35,6 @@
             An lành tiễn biệt – Yên tâm vĩnh hằng
           </p>
 
-          <div class="hero-decoration" aria-hidden="true">
-            <span></span>
-            <i class="fa-regular fa-gem"></i>
-            <span></span>
-          </div>
 
           <p class="hero-description">
             An Yên đồng hành cùng gia đình trong khoảnh khắc thiêng liêng,

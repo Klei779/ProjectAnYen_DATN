@@ -1562,3 +1562,198 @@
         font-size: 10px;
     }
 }
+/* ==================================================
+   TABLET - TĂNG KÍCH THƯỚC NỘI DUNG
+================================================== */
+
+@media (min-width: 601px) and (max-width: 900px) {
+    .header-container {
+        width: calc(100% - 48px);
+        height: 86px;
+    }
+
+    .header-logo img {
+        width: 125px;
+    }
+
+    .mobile-menu-button {
+        width: 48px;
+        height: 48px;
+
+        font-size: 21px;
+    }
+
+    /* HERO */
+
+    .hero-section {
+        min-height: 720px;
+
+        background-position: 58% center;
+    }
+
+    .hero-container {
+        width: calc(100% - 48px);
+        padding-top: 95px;
+    }
+
+    .hero-content {
+        width: 67%;
+        max-width: 570px;
+    }
+
+    .hero-main-logo {
+        width: clamp(330px, 44vw, 410px);
+
+        margin-bottom: 18px;
+    }
+
+    .hero-title-wrapper {
+        gap: 12px;
+    }
+
+    .hero-title-wrapper h1 {
+        font-size: 21px;
+        line-height: 1.4;
+        letter-spacing: 1.25px;
+    }
+
+    .hero-title-line {
+        width: 36px;
+    }
+
+    .hero-flower {
+        margin-top: 0px;
+        margin-bottom: 0px;
+    }
+
+    .hero-flower img {
+        width: 104px;
+        height: 26px;
+    }
+
+    .hero-slogan {
+        margin-bottom: 14px;
+
+        font-size: 15px;
+        line-height: 1.6;
+        letter-spacing: 1px;
+    }
+
+    .hero-description {
+        max-width: 530px;
+        margin-bottom: 28px;
+
+        font-size: 16px;
+        line-height: 1.75;
+    }
+
+    .hero-actions {
+        gap: 14px;
+    }
+
+    .hero-button {
+        min-height: 48px;
+        padding: 0 22px;
+
+        font-size: 13px;
+    }
+
+    .hero-play-button {
+        width: 48px;
+        height: 48px;
+
+        font-size: 14px;
+    }
+
+    /* TIÊU ĐỀ SECTION */
+
+    .section-label {
+        font-size: 13px;
+    }
+
+    .section-heading h2 {
+        font-size: 30px;
+    }
+
+    /* DỊCH VỤ */
+
+    .services-section {
+        padding-top: 44px;
+        padding-bottom: 55px;
+    }
+
+    .services-grid {
+        gap: 22px;
+        margin-top: 34px;
+    }
+
+    .service-card {
+        min-height: 285px;
+        padding: 32px 25px 25px;
+    }
+
+    .service-icon {
+        width: 68px;
+        height: 68px;
+
+        font-size: 30px;
+    }
+
+    .service-card h3 {
+        font-size: 18px;
+    }
+
+    .service-card p {
+        font-size: 15px;
+        line-height: 1.7;
+    }
+
+    .service-link {
+        font-size: 13px;
+    }
+
+    /* VỀ AN YÊN */
+
+    .about-label {
+        font-size: 13px;
+    }
+
+    .about-content h2 {
+        font-size: 34px;
+    }
+
+    .about-description {
+        font-size: 16px;
+    }
+
+    .value-item h3 {
+        font-size: 15px;
+    }
+
+    .value-item p {
+        font-size: 13px;
+    }
+
+    /* THỐNG KÊ */
+
+    .statistic-content strong {
+        font-size: 32px;
+    }
+
+    .statistic-content span {
+        font-size: 13px;
+    }
+
+    /* FOOTER */
+
+    .footer-brand p,
+    .footer-column > a,
+    .footer-contact > a,
+    .footer-contact > p {
+        font-size: 13px;
+    }
+
+    .footer-column h2 {
+        font-size: 14px;
+    }
+}

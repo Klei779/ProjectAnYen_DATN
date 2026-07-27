@@ -183,14 +183,18 @@
 
                   <button
                       class="wishlist-btn"
-                      :class="{ active: isWished(item.id) }"
+                      :class="{ active: isInCart(item.id) }"
                       type="button"
-                      aria-label="Thêm vào yêu thích"
-                      @click.stop="toggleWish(item.id)"
+                      :aria-label="
+      isInCart(item.id)
+        ? 'Xóa khỏi giỏ hàng'
+        : 'Thêm vào giỏ hàng'
+    "
+                      @click.stop="toggleWish(item)"
                   >
                     <i
                         :class="
-        isWished(item.id)
+        isInCart(item.id)
           ? 'fa-solid fa-heart'
           : 'fa-regular fa-heart'
       "
@@ -249,12 +253,13 @@ import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSectio
 import flowerIcon from '../../assets/images/icon/flower_icon.png'
 import { getProducts, getFilterOptions } from '../../services/productService.js'
 import noImage from '../../assets/images/noimage.jpg'
+import { ElMessage } from 'element-plus'
+import { useCart } from '../../services/useCart.js'
 
 const router = useRouter()
-
+const { isInCart, toggleCart} = useCart()
 const isPriceOpen = ref(true)
 const isMaterialOpen = ref(true)
-const isColorOpen = ref(true)
 const isReligionOpen = ref(true)
 const loading = ref(false)
 const showFilter = ref(false)
@@ -285,12 +290,17 @@ const trustItems = [
   { icon: 'fa-solid fa-headset', title: 'Tư vấn tận tâm', desc: 'Hỗ trợ 24/7' },
   { icon: 'fa-solid fa-rotate-left', title: 'Đổi trả dễ dàng', desc: 'Trong 7 ngày' }
 ]
-const wishedIds = ref([])
-const isWished = (id) => wishedIds.value.includes(id)
-const toggleWish = (id) => {
-  const idx = wishedIds.value.indexOf(id)
-  if (idx === -1) wishedIds.value.push(id)
-  else wishedIds.value.splice(idx, 1)
+function toggleWish(product) {
+  const added = toggleCart({
+    ...product,
+    image: getProductImage(product)
+  })
+
+  if (added) {
+    ElMessage.success('Đã thêm sản phẩm vào giỏ hàng')
+  } else {
+    ElMessage.info('Đã xóa sản phẩm khỏi giỏ hàng')
+  }
 }
 const formatPrice = (val) => {
   if (val === null || val === undefined) return 'Liên hệ'

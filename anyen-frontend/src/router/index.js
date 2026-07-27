@@ -21,6 +21,7 @@ import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
 import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
 import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
+import TrangGioHang from "../pages/website/TrangGioHang.vue";
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
@@ -65,6 +66,11 @@ const routes = [
             {
                 path: "san-pham",
                 component: TrangSanPham,
+            },
+            {
+                path: "/gio-hang",
+                name: "TrangGioHang",
+                component: TrangGioHang
             },
 
             {

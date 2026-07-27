@@ -120,9 +120,6 @@ Nhắn tin khách hàng
       </div>
     </nav>
   </aside>
-
-  <!-- Khung chat AI nổi ở góc phải -->
-  <AiChatBox />
 </template>
 
 <script setup>

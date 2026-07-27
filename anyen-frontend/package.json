@@ -19,6 +19,7 @@
     "cloudflare": "^6.4.0",
     "cloudflared": "^0.7.1",
     "element-plus": "^2.14.1",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jwt-decode": "^4.0.0",

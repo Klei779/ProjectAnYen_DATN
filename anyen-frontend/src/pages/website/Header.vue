@@ -38,6 +38,20 @@
       <!-- Desktop actions -->
       <div class="desktop-actions">
         <!-- Chưa đăng nhập -->
+        <RouterLink
+            to="/gio-hang"
+            class="header-cart-button"
+            aria-label="Mở giỏ hàng"
+        >
+          <i class="fa-solid fa-cart-shopping"></i>
+
+          <span
+              v-if="cartCount > 0"
+              class="header-cart-count"
+          >
+    {{ cartCount > 99 ? "99+" : cartCount }}
+  </span>
+        </RouterLink>
         <el-button
             v-if="!user"
             class="login-button"
@@ -109,6 +123,20 @@
 
       <!-- Mobile actions -->
       <div class="mobile-actions">
+        <RouterLink
+            to="/gio-hang"
+            class="header-cart-button"
+            aria-label="Mở giỏ hàng"
+        >
+          <i class="fa-solid fa-cart-shopping"></i>
+
+          <span
+              v-if="cartCount > 0"
+              class="header-cart-count"
+          >
+    {{ cartCount > 99 ? "99+" : cartCount }}
+  </span>
+        </RouterLink>
         <button
             type="button"
             class="mobile-hotline-button"
@@ -246,10 +274,11 @@ import HotlineModal from "./PopLienHeHotline.vue";
 
 import logoAnYen from "../../assets/images/icon/logoAnYen.png";
 import ChatBox from "./ChatBox.vue";
+import { useCart } from "../../services/useCart.js";
 
 const route = useRoute();
 const router = useRouter();
-
+const {cartCount} = useCart();
 const mobileMenuOpen = ref(false);
 const showLogin = ref(false);
 const showHotline = ref(false);

@@ -2,12 +2,14 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
     "@fortawesome/fontawesome-free": "^7.2.0",
+    "@stomp/stompjs": "^7.3.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "cloudflared": "^0.7.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
+    "sockjs-client": "^1.6.1",
     "vue-turnstile": "^1.0.11"
   }
 }

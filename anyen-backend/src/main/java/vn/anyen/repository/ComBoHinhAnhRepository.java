@@ -8,10 +8,20 @@ import vn.anyen.entity.ComBoHinhAnh;
 
 import java.util.List;
 
-public interface ComBoHinhAnhRepository extends JpaRepository<ComBoHinhAnh, Integer> {
-    List<ComBoHinhAnh> findByComboIdOrderByThuTuAscMaHinhAnhAsc(Integer comboId);
+public interface ComBoHinhAnhRepository
+        extends JpaRepository<ComBoHinhAnh, Integer> {
+
+    List<ComBoHinhAnh>
+    findByComboIdOrderByThuTuAscMaHinhAnhAsc(
+            Integer comboId
+    );
 
     @Modifying
-    @Query("DELETE FROM ComBoHinhAnh h WHERE h.comboId = :comboId")
-    void deleteByComboId(@Param("comboId") Integer comboId);
+    @Query("""
+        DELETE FROM ComBoHinhAnh h
+        WHERE h.comboId = :comboId
+    """)
+    void deleteByComboId(
+            @Param("comboId") Integer comboId
+    );
 }

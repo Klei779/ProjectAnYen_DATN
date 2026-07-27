@@ -249,6 +249,7 @@ const service = ref({
 })
 
 const comboChiTiet = ref([])
+const comboImages = ref([])
 const images = ref([FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE])
 const currentIndex = ref(0)
 
@@ -271,6 +272,7 @@ const normalizeImagePath = (path) => {
     return FAKE_IMAGE
   }
 
+  // URL Cloudinary đầy đủ
   if (
       cleanPath.startsWith('http://') ||
       cleanPath.startsWith('https://') ||
@@ -279,11 +281,55 @@ const normalizeImagePath = (path) => {
     return cleanPath
   }
 
+  // Trường hợp Cloudinary trả về //res.cloudinary.com/...
+  if (cleanPath.startsWith('//')) {
+    return `https:${cleanPath}`
+  }
+
+  // Ảnh trong public của frontend
   if (cleanPath.startsWith('/')) {
     return cleanPath
   }
 
   return `/images/TrangDichVuChiTiet/${cleanPath}`
+}
+
+const extractComboImages = (data) => {
+  const rawImages = []
+
+  // Trường hợp backend trả danh sách hinhAnhs
+  if (Array.isArray(data?.hinhAnhs)) {
+    rawImages.push(...data.hinhAnhs)
+  }
+
+  // Trường hợp backend trả images
+  if (Array.isArray(data?.images)) {
+    rawImages.push(...data.images)
+  }
+
+  // Trường hợp backend chỉ trả một ảnh hinhAnh
+  if (data?.hinhAnh) {
+    rawImages.push(data.hinhAnh)
+  }
+
+  return [
+    ...new Set(
+        rawImages
+            .map(item => {
+              if (typeof item === 'string') {
+                return normalizeImagePath(item)
+              }
+
+              return normalizeImagePath(
+                  item?.hinhAnh
+                  || item?.url
+                  || item?.secureUrl
+                  || item?.secure_url
+              )
+            })
+            .filter(image => image && image !== FAKE_IMAGE)
+    )
+  ]
 }
 
 const setFakeImage = (event) => {
@@ -374,10 +420,12 @@ const resetData = () => {
   service.value = {
     tenCombo: '',
     gia: 0,
-    moTa: ''
+    moTa: '',
+    hinhAnh: ''
   }
 
   comboChiTiet.value = []
+  comboImages.value = []
   images.value = [FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE]
   currentIndex.value = 0
 }
@@ -390,14 +438,31 @@ const loadCombo = async () => {
         `http://localhost:8080/api/dich-vu/${id}`
     )
 
+    console.log('Dữ liệu combo chi tiết:', res.data)
+
     service.value = {
       tenCombo: res.data.tenCombo || '',
       gia: res.data.gia || 0,
-      moTa: res.data.moTa || ''
+      moTa: res.data.moTa || '',
+      hinhAnh: res.data.hinhAnh || ''
+    }
+
+    const loadedComboImages =
+        extractComboImages(res.data)
+
+    comboImages.value = loadedComboImages
+
+    // Ưu tiên ảnh được upload lúc tạo combo
+    if (loadedComboImages.length > 0) {
+      images.value = loadedComboImages
+      currentIndex.value = 0
     }
 
   } catch (e) {
-    console.log('Không lấy được dữ liệu gói dịch vụ', e)
+    console.log(
+        'Không lấy được dữ liệu gói dịch vụ',
+        e
+    )
   }
 }
 
@@ -422,15 +487,21 @@ const loadComboChiTiet = async () => {
     )
 
     const quanTaiImages = quanTaiItem?.hinhAnhs
-        ?.map(img => normalizeImagePath(img.hinhAnh))
-        ?.filter(Boolean)
-        ?.slice(0, 3) || []
+            ?.map(img => normalizeImagePath(img.hinhAnh))
+            ?.filter(image => image && image !== FAKE_IMAGE)
+        || []
 
-    while (quanTaiImages.length < 3) {
-      quanTaiImages.push(FAKE_IMAGE)
-    }
+// Ưu tiên ảnh combo đã upload.
+    const galleryImages =
+        comboImages.value.length > 0
+            ? comboImages.value
+            : quanTaiImages
 
-    images.value = quanTaiImages
+    images.value =
+        galleryImages.length > 0
+            ? galleryImages
+            : [FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE]
+
     currentIndex.value = 0
 
   } catch (e) {

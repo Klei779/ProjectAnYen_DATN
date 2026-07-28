@@ -151,6 +151,24 @@
                 placeholder="Nhập mô tả ngắn cho combo"
             ></textarea>
           </label>
+
+          <div class="form-group full-width">
+            <label for="ghiChu">
+              Quyền lợi của combo
+            </label>
+
+            <textarea
+                id="ghiChu"
+                v-model="form.ghiChu"
+                rows="6"
+                maxlength="10000"
+                placeholder="Mỗi quyền lợi nhập trên một dòng"
+            ></textarea>
+
+            <small>
+              Ví dụ: Tư vấn hỗ trợ 24/7, xe đưa đón, nhân sự phục vụ...
+            </small>
+          </div>
         </div>
       </div>
 
@@ -362,6 +380,147 @@
         </button>
       </footer>
     </form>
+<!--    <Teleport to="body">-->
+<!--      <div-->
+<!--          v-if="showDetailPopup && activeDetailProduct"-->
+<!--          class="detail-popup-overlay"-->
+<!--          @click.self="closeDetailPopup"-->
+<!--      >-->
+<!--        <section class="detail-popup">-->
+<!--          <header class="detail-popup-header">-->
+<!--            <div>-->
+<!--              <span>NỘI DUNG CHI TIẾT GÓI</span>-->
+
+<!--              <h3>-->
+<!--                {{ activeDetailProduct.tenSanPham }}-->
+<!--              </h3>-->
+
+<!--              <p>-->
+<!--                Nhập mô tả và chọn hình ảnh hiển thị-->
+<!--                khi khách hàng xem chi tiết dịch vụ.-->
+<!--              </p>-->
+<!--            </div>-->
+
+<!--            <button-->
+<!--                type="button"-->
+<!--                class="detail-popup-close"-->
+<!--                @click="closeDetailPopup"-->
+<!--            >-->
+<!--              ×-->
+<!--            </button>-->
+<!--          </header>-->
+
+<!--          <div class="detail-popup-body">-->
+<!--            &lt;!&ndash; MÔ TẢ &ndash;&gt;-->
+<!--            <label class="popup-description">-->
+<!--              <span>Mô tả chi tiết</span>-->
+
+<!--              <textarea-->
+<!--                  v-model="-->
+<!--                detailDescriptions[-->
+<!--                  activeDetailProduct.maSanPham-->
+<!--                ]-->
+<!--              "-->
+<!--                  rows="7"-->
+<!--                  maxlength="5000"-->
+<!--                  placeholder="Ví dụ: Sản phẩm được chuẩn bị trang nghiêm, phù hợp với từng nghi thức..."-->
+<!--              ></textarea>-->
+<!--            </label>-->
+
+<!--            &lt;!&ndash; HÌNH ẢNH &ndash;&gt;-->
+<!--            <div class="popup-images">-->
+<!--              <div class="popup-image-toolbar">-->
+<!--                <div>-->
+<!--                  <strong>Hình ảnh chi tiết</strong>-->
+
+<!--                  <small>-->
+<!--                    Đã chọn-->
+<!--                    {{-->
+<!--                      detailImages[-->
+<!--                          activeDetailProduct.maSanPham-->
+<!--                          ]?.length || 0-->
+<!--                    }}-->
+<!--                    / {{ MAX_DETAIL_IMAGES }} ảnh-->
+<!--                  </small>-->
+<!--                </div>-->
+
+<!--                <label class="popup-select-image">-->
+<!--                  Chọn hình ảnh-->
+
+<!--                  <input-->
+<!--                      type="file"-->
+<!--                      accept="image/jpeg,image/png,image/webp"-->
+<!--                      multiple-->
+<!--                      hidden-->
+<!--                      @change="-->
+<!--                    event => handleDetailImageSelect(-->
+<!--                      activeDetailProduct,-->
+<!--                      event-->
+<!--                    )-->
+<!--                  "-->
+<!--                  />-->
+<!--                </label>-->
+<!--              </div>-->
+
+<!--              <div-->
+<!--                  v-if="-->
+<!--                detailImages[-->
+<!--                  activeDetailProduct.maSanPham-->
+<!--                ]?.length-->
+<!--              "-->
+<!--                  class="popup-image-grid"-->
+<!--              >-->
+<!--                <article-->
+<!--                    v-for="(image, index) in-->
+<!--                  detailImages[-->
+<!--                    activeDetailProduct.maSanPham-->
+<!--                  ]"-->
+<!--                    :key="image.key"-->
+<!--                    class="popup-image-card"-->
+<!--                >-->
+<!--                  <img-->
+<!--                      :src="image.preview || fallbackImage"-->
+<!--                      :alt="image.file.name"-->
+<!--                  />-->
+
+<!--                  <span :title="image.file.name">-->
+<!--                {{ image.file.name }}-->
+<!--              </span>-->
+
+<!--                  <button-->
+<!--                      type="button"-->
+<!--                      @click="-->
+<!--                    removeDetailImage(-->
+<!--                      activeDetailProduct.maSanPham,-->
+<!--                      index-->
+<!--                    )-->
+<!--                  "-->
+<!--                  >-->
+<!--                    ×-->
+<!--                  </button>-->
+<!--                </article>-->
+<!--              </div>-->
+
+<!--              <div-->
+<!--                  v-else-->
+<!--                  class="popup-image-empty"-->
+<!--              >-->
+<!--                Hình ảnh được chọn sẽ hiển thị tại đây.-->
+<!--              </div>-->
+<!--            </div>-->
+<!--          </div>-->
+
+<!--          <footer class="detail-popup-footer">-->
+<!--            <button-->
+<!--                type="button"-->
+<!--                @click="closeDetailPopup"-->
+<!--            >-->
+<!--              Hoàn tất-->
+<!--            </button>-->
+<!--          </footer>-->
+<!--        </section>-->
+<!--      </div>-->
+<!--    </Teleport>-->
   </section>
 </template>
 
@@ -386,6 +545,12 @@ const router = useRouter();
 const products = ref([]);
 const selectedProductIds = ref([]);
 const selectedQuantities = reactive({});
+const detailDescriptions = reactive({});
+const detailImages = reactive({});
+const showDetailPopup = ref(false);
+const activeDetailProduct = ref(null);
+
+const MAX_DETAIL_IMAGES = 20;
 
 const productKeyword = ref("");
 const loadingProducts = ref(false);
@@ -399,8 +564,9 @@ const selectedImages = ref([]);
 
 const form = reactive({
   tenCombo: "",
-  gia: 0,
+  gia: "",
   moTa: "",
+  ghiChu: "",
   trangThai: 1
 });
 
@@ -492,7 +658,10 @@ const savingAmount = computed(() =>
     )
 );
 
-onMounted(loadProducts);
+onMounted(async () => {
+  document.body.style.overflow = "";
+  await loadProducts();
+});
 
 async function loadProducts() {
   loadingProducts.value = true;
@@ -506,6 +675,11 @@ async function loadProducts() {
             ? response.data
             : [];
   } catch (error) {
+    console.error(
+        "Lỗi tải sản phẩm:",
+        error
+    );
+
     ElMessage.error(
         getErrorMessage(
             error,
@@ -621,6 +795,148 @@ function removeSelectedImage(index) {
   selectedImages.value.splice(index, 1);
 }
 
+function handleDetailImageSelect(
+    product,
+    event
+) {
+  const productId = product.maSanPham;
+
+  const pickedFiles = Array.from(
+      event.target.files || []
+  );
+
+  if (!pickedFiles.length) {
+    return;
+  }
+
+  if (!detailImages[productId]) {
+    detailImages[productId] = [];
+  }
+
+  const currentImages =
+      detailImages[productId];
+
+  const remainingSlots =
+      MAX_DETAIL_IMAGES - currentImages.length;
+
+  if (remainingSlots <= 0) {
+    ElMessage.warning(
+        `Mỗi mục chi tiết chỉ được tối đa ${MAX_DETAIL_IMAGES} ảnh`
+    );
+
+    event.target.value = "";
+    return;
+  }
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+  ];
+
+  const acceptedFiles = pickedFiles
+      .slice(0, remainingSlots)
+      .filter(file => {
+        if (!allowedTypes.includes(file.type)) {
+          ElMessage.warning(
+              `${file.name}: chỉ hỗ trợ JPG, PNG hoặc WEBP`
+          );
+
+          return false;
+        }
+
+        if (file.size > MAX_IMAGE_SIZE) {
+          ElMessage.warning(
+              `${file.name}: dung lượng vượt quá 5 MB`
+          );
+
+          return false;
+        }
+
+        const duplicated = currentImages.some(
+            item =>
+                item.file.name === file.name
+                && item.file.size === file.size
+                && item.file.lastModified
+                === file.lastModified
+        );
+
+        if (duplicated) {
+          ElMessage.warning(
+              `${file.name}: ảnh này đã được chọn`
+          );
+
+          return false;
+        }
+
+        return true;
+      });
+
+  const newImages = acceptedFiles.map(
+      file => ({
+        file,
+        preview: URL.createObjectURL(file),
+
+        key:
+            `detail-${productId}-`
+            + `${file.name}-${file.size}-`
+            + `${file.lastModified}`
+      })
+  );
+
+  currentImages.push(...newImages);
+
+  event.target.value = "";
+}
+
+function removeDetailImage(productId, imageIndex) {
+  const images = detailImages[productId];
+
+  if (
+      !Array.isArray(images)
+      || imageIndex < 0
+      || imageIndex >= images.length
+  ) {
+    return;
+  }
+
+  const removed = images[imageIndex];
+
+  if (removed?.preview) {
+    URL.revokeObjectURL(removed.preview);
+  }
+
+  images.splice(imageIndex, 1);
+}
+
+function openDetailPopup(product) {
+  const productId = product?.maSanPham;
+
+  if (!productId) {
+    return;
+  }
+
+  if (detailDescriptions[productId] === undefined) {
+    detailDescriptions[productId] = "";
+  }
+
+  if (!Array.isArray(detailImages[productId])) {
+    detailImages[productId] = [];
+  }
+
+  activeDetailProduct.value = product;
+  showDetailPopup.value = true;
+
+  document.body.style.overflow = "hidden";
+}
+
+function closeDetailPopup() {
+  showDetailPopup.value = false;
+  activeDetailProduct.value = null;
+
+  document.body.style.overflow = "";
+}
+
 function isSelected(productId) {
   return selectedProductIds.value.includes(productId);
 }
@@ -631,6 +947,12 @@ function toggleProduct(product, checked) {
   if (checked && !isSelected(productId)) {
     selectedProductIds.value.push(productId);
     selectedQuantities[productId] = 1;
+
+    // Có thể giữ dữ liệu này để code submit không lỗi
+    detailDescriptions[productId] = "";
+    detailImages[productId] = [];
+
+    // Không mở popup nữa
     return;
   }
 
@@ -640,7 +962,17 @@ function toggleProduct(product, checked) {
             id => id !== productId
         );
 
+    const images = detailImages[productId] || [];
+
+    images.forEach(item => {
+      if (item.preview) {
+        URL.revokeObjectURL(item.preview);
+      }
+    });
+
     delete selectedQuantities[productId];
+    delete detailDescriptions[productId];
+    delete detailImages[productId];
   }
 }
 
@@ -675,6 +1007,30 @@ function changeQuantity(product, delta) {
 function lineTotal(product) {
   return Number(product.giaTien || 0)
       * getQuantity(product);
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
+}
+
+function convertGhiChuToHtml(value) {
+  const items = String(value || "")
+      .split(/\r?\n/)
+      .map(item => item.trim())
+      .filter(Boolean);
+
+  if (items.length === 0) {
+    return null;
+  }
+
+  return `<ul>${items
+      .map(item => `<li>${escapeHtml(item)}</li>`)
+      .join("")}</ul>`;
 }
 
 async function submitCombo() {
@@ -736,12 +1092,25 @@ async function submitCombo() {
       tenCombo: form.tenCombo.trim(),
       gia: Number(form.gia),
       moTa: form.moTa.trim(),
+
+      ghiChu: convertGhiChuToHtml(
+          form.ghiChu
+      ),
+
       trangThai: Number(form.trangThai),
 
       sanPhams: selectedProducts.value.map(
           product => ({
             maSanPham: product.maSanPham,
-            soLuong: product.soLuongTrongCombo
+            soLuong: product.soLuongTrongCombo,
+
+            /*
+             * Lưu vào combochitiet.NoiDung.
+             */
+            noiDung:
+                detailDescriptions[
+                    product.maSanPham
+                    ]?.trim() || product.tenSanPham
           })
       )
     };
@@ -764,6 +1133,27 @@ async function submitCombo() {
           "files",
           item.file
       );
+    });
+
+    /*
+ * Ảnh chi tiết được nhóm theo mã sản phẩm.
+ *
+ * Ví dụ:
+ * detailFiles_5
+ * detailFiles_8
+ */
+    selectedProducts.value.forEach(product => {
+      const productId = product.maSanPham;
+
+      const images =
+          detailImages[productId] || [];
+
+      images.forEach(item => {
+        multipartData.append(
+            `detailFiles_${productId}`,
+            item.file
+        );
+      });
     });
 
     await createComboDoiTac(multipartData);
@@ -791,6 +1181,7 @@ function resetForm() {
   form.tenCombo = "";
   form.gia = 0;
   form.moTa = "";
+  form.ghiChu = "";
   form.trangThai = 1;
 
   productKeyword.value = "";

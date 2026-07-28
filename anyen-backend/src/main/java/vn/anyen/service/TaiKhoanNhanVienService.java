@@ -30,8 +30,11 @@ public class TaiKhoanNhanVienService {
         nhanVien.setHoTen(trim(request.getHoTen()));
         nhanVien.setEmail(trimToNull(request.getEmail()));
         nhanVien.setSoDienThoai(trimToNull(request.getSoDienThoai()));
-        nhanVien.setDiaChi(trimToNull(request.getDiaChi()));
 
+        nhanVien.setQuanHuyen(trimToNull(request.getQuanHuyen()));
+        nhanVien.setPhuongXa(trimToNull(request.getPhuongXa()));
+        nhanVien.setTinhThanh(trimToNull(request.getTinhThanh()));
+        nhanVien.setSoNhaDuong(trimToNull(request.getSoNhaDuong()));
         NhanVien saved = nhanVienRepository.save(nhanVien);
         return toResponse(saved);
     }
@@ -51,7 +54,10 @@ public class TaiKhoanNhanVienService {
                 .tenDangNhap(nv.getTenDangNhap())
                 .email(nv.getEmail())
                 .soDienThoai(nv.getSoDienThoai())
-                .diaChi(nv.getDiaChi())
+                .quanHuyen(nv.getQuanHuyen())
+                .phuongXa(nv.getPhuongXa())
+                .tinhThanh(nv.getTinhThanh())
+                .soNhaDuong(nv.getSoNhaDuong())
                 .vaiTro(nv.getVaiTro())
                 .tenVaiTro(AppLabels.getLabel(
                         AppLabels.TEN_VAI_TRO,

@@ -11,7 +11,6 @@ public class NhanVienGanNhatResponse {
     private Integer maNhanVien;
     private String hoTen;
     private String soDienThoai;
-    private String diaChi;
     private BigDecimal latitude;
     private BigDecimal longitude;
     private Double khoangCachKm;

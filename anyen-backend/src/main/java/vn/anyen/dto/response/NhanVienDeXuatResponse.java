@@ -15,7 +15,6 @@ public class NhanVienDeXuatResponse {
     private Integer maNhanVien;
     private String hoTen;
     private String soDienThoai;
-    private String diaChiDayDu;
     private String tinhThanh;
     private String trangThaiLamViec;
     private String trangThaiLamViecText;

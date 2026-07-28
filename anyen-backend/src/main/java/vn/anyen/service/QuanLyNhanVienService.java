@@ -43,7 +43,10 @@ public class QuanLyNhanVienService {
                 .matKhau(passwordEncoder.encode(request.getMatKhau()))
                 .email(email)
                 .soDienThoai(soDienThoai)
-                .diaChi(trimToNull(request.getDiaChi()))
+                .quanHuyen(request.getQuanHuyen().trim())
+                .phuongXa(request.getPhuongXa().trim())
+                .tinhThanh(request.getTinhThanh().trim())
+                .soNhaDuong(request.getSoNhaDuong().trim())
                 .vaiTro(request.getVaiTro())
                 .trangThai(NhanVien.TRANG_THAI_HOAT_DONG)
                 .build();
@@ -59,7 +62,7 @@ public class QuanLyNhanVienService {
     @Transactional
     public QuanLyNhanVienResponse capNhatNhanVien(
             Integer maNhanVien,
-            CapNhatNhanVienRequest request
+            QuanLyNhanVienRequest request
     ) {
         NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
                 .orElseThrow(() -> new RuntimeException(
@@ -86,7 +89,10 @@ public class QuanLyNhanVienService {
         nhanVien.setTenDangNhap(tenDangNhap);
         nhanVien.setEmail(email);
         nhanVien.setSoDienThoai(soDienThoai);
-        nhanVien.setDiaChi(trimToNull(request.getDiaChi()));
+           nhanVien.setQuanHuyen(request.getQuanHuyen().trim());
+                nhanVien.setPhuongXa(request.getPhuongXa().trim());
+           nhanVien.setTinhThanh(request.getTinhThanh().trim());
+                nhanVien.setSoNhaDuong(request.getSoNhaDuong().trim());
         nhanVien.setVaiTro(request.getVaiTro());
 
         // Mật khẩu là tùy chọn khi sửa. Để trống/null thì giữ mật khẩu cũ.
@@ -133,7 +139,10 @@ public class QuanLyNhanVienService {
                 .tenDangNhap(nhanVien.getTenDangNhap())
                 .email(nhanVien.getEmail())
                 .soDienThoai(nhanVien.getSoDienThoai())
-                .diaChi(nhanVien.getDiaChi())
+                .quanHuyen(nhanVien.getQuanHuyen())
+                .phuongXa(nhanVien.getPhuongXa())
+                .tinhThanh(nhanVien.getTinhThanh())
+                .soNhaDuong(nhanVien.getSoNhaDuong())
                 .vaiTro(nhanVien.getVaiTro())
                 .trangThai(nhanVien.getTrangThai())
                 .tenTrangThai(AppLabels.getLabel(

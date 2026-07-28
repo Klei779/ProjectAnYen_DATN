@@ -45,9 +45,14 @@ public class NhanVien {
     @Column(name = "Email")
     private String email;
 
-    @Column(name = "DiaChi")
-    private String diaChi;
-
+    @Column(name = "TinhThanh")
+    private String tinhThanh;
+    @Column(name = "QuanHuyen")
+    private String quanHuyen;
+    @Column(name = "PhuongXa")
+    private String phuongXa;
+    @Column(name = "SoNhaDuong")
+    private String soNhaDuong;
     @Column(name = "SoDienThoai")
     private String soDienThoai;
 

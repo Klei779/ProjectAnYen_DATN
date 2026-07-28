@@ -382,7 +382,8 @@ public class ComboDoiTacService {
                 imageUrls,
                 combo.getTrangThai(),
                 statusLabel(combo.getTrangThai()),
-                products
+                products,
+                combo.getGhiChu()
         );
     }
 

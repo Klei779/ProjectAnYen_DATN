@@ -41,11 +41,12 @@ public class CapNhatNhanVienRequest {
     @Pattern(
                         regexp = "^0[35789][0-9]{8}$",
                         message = "Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08 hoặc 09"
-                )
-                private String soDienThoai;
+    )
+    private String soDienThoai;
 
-            @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
-    private String diaChi;
+
+
+
 
             @NotNull(message = "Vai trò không được để trống")
     @Min(value = 1, message = "Vai trò không hợp lệ")

@@ -139,7 +139,6 @@ public class NhanVienDonHangController {
                             .maNhanVien(nv.getMaNhanVien())
                             .hoTen(nv.getHoTen())
                             .soDienThoai(nv.getSoDienThoai())
-                            .diaChiDayDu(nv.getDiaChi())
                             .tinhThanh(null)
                             .trangThaiLamViec("RANH")
                             .trangThaiLamViecText("Rảnh")

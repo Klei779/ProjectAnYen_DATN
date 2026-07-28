@@ -4,6 +4,11 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
 
 public class CapNhatTaiKhoanNVRequest {
 
@@ -23,36 +28,19 @@ public class CapNhatTaiKhoanNVRequest {
 
     @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
     private String diaChi;
+    @NotBlank(message = "Quận Huyện không được để trống")
+    @Size(max = 100, message = "Quận Huyện tối đa 100 ký tự")
+    private String quanHuyen;
 
-    public String getHoTen() {
-        return hoTen;
-    }
+    @NotBlank(message = "Tỉnh thành không được để trống")
+    @Size(max = 100, message = "Tỉnh thành tối đa 100 ký tự")
+    private String tinhThanh;
 
-    public void setHoTen(String hoTen) {
-        this.hoTen = hoTen;
-    }
+    @NotBlank(message = "Phường xá không được để trống")
+    @Size(max = 100, message = "Phường xá tối đa 100 ký tự")
+    private String phuongXa;
+    @NotBlank(message = "Số nhà đường không được để trống")
+    @Size(max = 100, message = "Số nhà đường tối đa 100 ký tự")
+    private String soNhaDuong;
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getSoDienThoai() {
-        return soDienThoai;
-    }
-
-    public void setSoDienThoai(String soDienThoai) {
-        this.soDienThoai = soDienThoai;
-    }
-
-    public String getDiaChi() {
-        return diaChi;
-    }
-
-    public void setDiaChi(String diaChi) {
-        this.diaChi = diaChi;
-    }
 }

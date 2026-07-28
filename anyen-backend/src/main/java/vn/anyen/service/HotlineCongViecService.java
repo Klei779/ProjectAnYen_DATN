@@ -162,7 +162,6 @@ public class HotlineCongViecService {
                 .maNhanVien(nv.getMaNhanVien())
                 .hoTen(nv.getHoTen())
                 .soDienThoai(nv.getSoDienThoai())
-                .diaChi(nv.getDiaChi())
                 .latitude(nv.getLatitude())
                 .longitude(nv.getLongitude())
                 .khoangCachKm(distance)

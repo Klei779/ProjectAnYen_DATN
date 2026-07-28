@@ -1,5 +1,6 @@
 package vn.anyen.dto.response;
 
+import jakarta.persistence.Column;
 import lombok.*;
 
 @NoArgsConstructor
@@ -20,4 +21,8 @@ public class QuanLyNhanVienResponse {
     private String diaChi;
     private String soDienThoai;
     private String tenVaiTro;
+    private String tinhThanh;
+    private String quanHuyen;
+    private String phuongXa;
+    private String soNhaDuong;
 }

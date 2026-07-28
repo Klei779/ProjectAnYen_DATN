@@ -25,7 +25,8 @@ public class ComboDoiTacRequest {
 
     @Size(max = 5000, message = "Mô tả tối đa 5000 ký tự")
     private String moTa;
-
+    @Size(max = 5000, message = "Ghi chú tối đa 5000 ký tự")
+    private String ghiChu;
     @Size(max = 500, message = "Đường dẫn hình ảnh tối đa 500 ký tự")
     private String hinhAnh;
 
@@ -41,6 +42,7 @@ public class ComboDoiTacRequest {
      * Giữ tương thích với frontend cũ. Nếu sanPhams rỗng, mỗi mã ở đây được hiểu là số lượng 1.
      */
     private List<Integer> maSanPhams;
+
 
     @Getter
     @Setter

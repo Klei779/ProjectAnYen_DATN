@@ -39,6 +39,9 @@ public class ComBo {
     @Column(name = "TrangThai")
     private Integer trangThai;
 
+    @Column(name = "GhiChu")
+    private String ghiChu;
+
     public static final Integer TT_AN = 0;
     public static final Integer TT_HOAT_DONG = 1;
     public static final Integer TT_NGUNG_KINH_DOANH = 2;

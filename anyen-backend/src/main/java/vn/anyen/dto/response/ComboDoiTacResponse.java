@@ -16,7 +16,6 @@ public class ComboDoiTacResponse {
     private final Integer trangThai;
     private final String tenTrangThai;
     private final List<SanPhamComboDoiTacResponse> sanPhams;
-private String ghiChu;
     public ComboDoiTacResponse(
             Integer comboId,
             Integer maDoiTac,
@@ -25,7 +24,6 @@ private String ghiChu;
             BigDecimal tongGiaSanPham,
             String moTa,
             String hinhAnh,
-            String ghiChu,
             List<String> hinhAnhs,
             Integer trangThai,
             String tenTrangThai,
@@ -39,7 +37,6 @@ private String ghiChu;
         this.tongGiaSanPham = tongGiaSanPham;
         this.moTa = moTa;
         this.hinhAnh = hinhAnh;
-        this.ghiChu = ghiChu;
         this.hinhAnhs = hinhAnhs;
         this.trangThai = trangThai;
         this.tenTrangThai = tenTrangThai;
@@ -61,5 +58,4 @@ private String ghiChu;
     public Integer getTrangThai() { return trangThai; }
     public String getTenTrangThai() { return tenTrangThai; }
     public List<SanPhamComboDoiTacResponse> getSanPhams() { return sanPhams; }
-    public String getGhiChu(){return ghiChu;}
 }

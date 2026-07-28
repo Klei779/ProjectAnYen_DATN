@@ -504,7 +504,6 @@ public class ComboDoiTacService {
                 totalProductPrice,
                 combo.getMoTa(),
                 combo.getHinhAnh(),
-                combo.getGhiChu(),
                 imageUrls,
                 combo.getTrangThai(),
                 statusLabel(combo.getTrangThai()),

@@ -92,8 +92,7 @@ public class ComBo {
     )
     private Integer trangThai;
 
-    @Column(name = "GhiChu")
-    private String ghiChu;
+
 
     public static final Integer TT_AN = 0;
     public static final Integer TT_HOAT_DONG = 1;

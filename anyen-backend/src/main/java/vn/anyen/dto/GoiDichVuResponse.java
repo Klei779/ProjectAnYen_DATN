@@ -29,7 +29,6 @@ public class GoiDichVuResponse {
     private List<String> hinhAnhs;
 
     private Integer trangThai;
-private String ghiChu;
     public static GoiDichVuResponse fromEntity(
             ComBo combo,
             List<String> hinhAnhs
@@ -74,8 +73,7 @@ private String ghiChu;
                 anhChinh,
                 combo.getGhiChu(),
                 danhSachAnh,
-                combo.getTrangThai(),
-                combo.getGhiChu()
+                combo.getTrangThai()
         );
     }
 }

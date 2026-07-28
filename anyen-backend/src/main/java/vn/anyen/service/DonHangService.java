@@ -470,6 +470,15 @@ public class DonHangService {
                 .collect(Collectors.toList());
     }
 
+    public List<DonHangResponse> getDonHangByNhanVien(Integer maNhanVien) {
+        List<DonHang> donHangs = donHangRepository
+                .findByNhanVien_MaNhanVienOrderByNgayTaoDonDesc(maNhanVien);
+
+        return donHangs.stream()
+                .map(this::mapToDonHangResponse)
+                .collect(Collectors.toList());
+    }
+
     public DonHangResponse getDonHangById(Integer maDonHang) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException(

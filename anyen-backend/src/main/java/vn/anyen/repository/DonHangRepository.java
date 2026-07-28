@@ -13,6 +13,8 @@ public interface DonHangRepository extends JpaRepository<DonHang, Integer> {
     List<DonHang> findByTrangThai(Integer trangThai);
     List<DonHang> findByKhachHang_MaKhachHangOrderByNgayTaoDonDesc(Integer maKhachHang);
 
+    List<DonHang> findByNhanVien_MaNhanVienOrderByNgayTaoDonDesc(Integer maNhanVien);
+
     boolean existsByKhachHang_MaKhachHang(Integer maKhachHang);
 
     @Query("""

@@ -30,11 +30,6 @@
     </div>
 
     <nav class="menu">
-      <RouterLink to="/doi-tac/tong-quan" class="menu-item" title="Tổng quan">
-        <i class="fa-solid fa-chart-pie menu-icon"></i>
-        <span class="sidebar-text">Tổng quan</span>
-      </RouterLink>
-
       <RouterLink to="/doi-tac/quan-ly-san-pham" class="menu-item" title="Quản lý sản phẩm">
         <i class="fa-solid fa-box menu-icon"></i>
         <span class="sidebar-text">Quản lý sản phẩm</span>

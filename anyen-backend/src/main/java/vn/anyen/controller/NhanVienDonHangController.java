@@ -34,6 +34,22 @@ public class NhanVienDonHangController {
     private final SanPhamService sanPhamService;
     private final NhanVienRepository nhanVienRepository;
 
+    @GetMapping
+    public ResponseEntity<List<DonHangResponse>> getDonHangCuaToi(
+            Authentication authentication
+    ) {
+        NhanVien nhanVien = nhanVienRepository
+                .findByTenDangNhap(authentication.getName())
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy nhân viên đăng nhập"
+                ));
+
+        List<DonHangResponse> donHangs = donHangService
+                .getDonHangByNhanVien(nhanVien.getMaNhanVien());
+
+        return ResponseEntity.ok(donHangs);
+    }
+
     @PostMapping
     public ResponseEntity<DonHangResponse> taoDonHang(
             @Valid @RequestBody TaoDonHangRequest request,

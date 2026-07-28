@@ -23,8 +23,7 @@ import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
 import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
 import TrangGioHang from "../pages/website/TrangGioHang.vue";
 import TrangQLTinTuc from "../pages/admin/TrangQLTinTuc.vue";
-// Đối tác
-import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
+
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
 import TrangQLDonHang from "../pages/doitac/TrangQLDonHang.vue";
 import TrangThongBao from "../pages/doitac/TrangThongBaoDT.vue";
@@ -35,8 +34,6 @@ import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
 import TaoCombo from "../pages/doitac/TaoCombo.vue";
 import TrangQLCombo from "../pages/doitac/TrangQLCombo.vue";
 
-// Nhân viên
-import TrangTongQuanNV from "../pages/nhanvien/TrangTongQuan.vue";
 import TrangQLDoiTac from "../pages/admin/TrangQLDoiTac.vue";
 import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
 import TrangThongBaoNV from "../pages/nhanvien/TrangThongBaoNV.vue";
@@ -54,6 +51,7 @@ import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
 import ThongBaoHotline from "../pages/hotline/ThongBaoHotline.vue";
 import TrangTroLyAi from "../pages/hotline/AiChatBox.vue";
 import TrangQuanLyTinNhan from "../pages/hotline/TrangQuanLyTinNhan.vue";
+import TrangThongTinTKHotline from "../pages/hotline/TrangThongTinTK.vue";
 const routes = [
     // WEBSITE
     {
@@ -133,11 +131,7 @@ const routes = [
         children: [
             {
                 path: "",
-                redirect: "/doi-tac/tong-quan",
-            },
-            {
-                path: "tong-quan",
-                component: TrangTongQuan,
+                redirect: "/doi-tac/thong-tin-tai-khoan",
             },
             {
                 path: "quan-ly-san-pham",
@@ -189,11 +183,7 @@ const routes = [
         children: [
             {
                 path: "",
-                redirect: "/nhan-vien/tong-quan",
-            },
-            {
-                path: "tong-quan",
-                component: TrangTongQuanNV,
+                redirect: "/nhan-vien/thong-tin-tai-khoan",
             },
             {
                 path: "quan-ly-don-hang",
@@ -237,11 +227,7 @@ const routes = [
         children: [
             {
                 path: "",
-                redirect: "/admin/tong-quan",
-            },
-            {
-                path: "tong-quan",
-                component: TrangTongQuanNV,
+                redirect: "/admin/thong-tin-tai-khoan",
             },
             {
                 path: "quan-ly-doi-tac",
@@ -302,7 +288,7 @@ const routes = [
         children: [
             {
                 path: "",
-                redirect: "/hotline/quan-ly-cong-viec",
+                redirect: "/hotline/thong-tin-tai-khoan",
             },
             {
                 path: "quan-ly-cong-viec",
@@ -322,7 +308,7 @@ const routes = [
             },
             {
                 path: "thong-tin-tai-khoan",
-                component: TrangThongTinNV,
+                component: TrangThongTinTKHotline,
             },
             {
                 path: "tro-ly-ai",
@@ -391,13 +377,13 @@ router.beforeEach((to) => {
     // Có token nhưng sai quyền
     if (requiredRole && roleFromToken !== requiredRole) {
         if (roleFromToken === "ROLE_NHANVIEN") {
-            return "/nhan-vien/tong-quan";
+            return "/nhan-vien/thong-tin-tai-khoan";
         } else if (roleFromToken === "ROLE_DOITAC") {
-            return "/doi-tac/tong-quan";
+            return "/doi-tac/thong-tin-tai-khoan";
         } else if (roleFromToken === "ROLE_ADMIN") {
-            return "/admin/tong-quan";
+            return "/admin/thong-tin-tai-khoan";
         } else if (roleFromToken === "ROLE_HOTLINE") {
-            return "/hotline/quan-ly-cong-viec";
+            return "/hotline/thong-tin-tai-khoan";
         } else {
             return "/";
         }

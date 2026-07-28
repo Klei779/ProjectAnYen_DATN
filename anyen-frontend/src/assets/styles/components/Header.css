@@ -630,6 +630,123 @@
 }
 
 /* ==================================================
+   CART BUTTON
+================================================== */
+
+.header-cart-button,
+.mobile-cart-button {
+    position: relative;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    border: 1px solid rgba(11, 52, 83, 0.16);
+    border-radius: 50%;
+
+    color: var(--header-blue);
+    background: rgba(255, 255, 255, 0.88);
+
+    text-decoration: none;
+
+    box-shadow:
+            0 5px 14px rgba(11, 52, 83, 0.09),
+            inset 0 0 0 1px rgba(255, 255, 255, 0.62);
+
+    transition:
+            width 0.35s ease,
+            height 0.35s ease,
+            color 0.25s ease,
+            background-color 0.25s ease,
+            border-color 0.25s ease,
+            box-shadow 0.25s ease,
+            transform 0.25s ease;
+}
+
+.header-cart-button {
+    width: 44px;
+    height: 44px;
+}
+
+.mobile-cart-button {
+    width: 42px;
+    height: 42px;
+}
+
+.header-cart-button i,
+.mobile-cart-button i {
+    font-size: 17px;
+
+    transition:
+            color 0.25s ease,
+            transform 0.25s ease;
+}
+
+.header-cart-button:hover,
+.mobile-cart-button:hover {
+    color: #ffffff;
+    background: var(--header-red);
+    border-color: var(--header-red);
+
+    transform: translateY(-2px);
+
+    box-shadow: 0 9px 20px rgba(166, 11, 39, 0.22);
+}
+
+.header-cart-button:hover i,
+.mobile-cart-button:hover i {
+    transform: scale(1.06);
+}
+
+.header-cart-button:active,
+.mobile-cart-button:active {
+    transform: scale(0.94);
+}
+
+.header-cart-button:focus-visible,
+.mobile-cart-button:focus-visible {
+    outline: 3px solid rgba(166, 11, 39, 0.18);
+    outline-offset: 3px;
+}
+
+.header-cart-count,
+.mobile-cart-count {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+
+    min-width: 19px;
+    height: 19px;
+    padding: 0 5px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 2px solid #ffffff;
+    border-radius: 999px;
+
+    color: #ffffff;
+    background: var(--header-red);
+
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1;
+
+    box-shadow: 0 3px 8px rgba(166, 11, 39, 0.25);
+}
+
+.site-header.is-scrolled .header-cart-button {
+    width: 39px;
+    height: 39px;
+}
+
+.site-header.is-scrolled .header-cart-button i {
+    font-size: 15px;
+}
+
+/* ==================================================
    MOBILE ACTIONS
 ================================================== */
 
@@ -969,132 +1086,16 @@
         box-shadow: 0 14px 35px rgba(11, 52, 83, 0.08);
     }
 
-    .header-cart-button,
-    .mobile-cart-button {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        flex-shrink: 0;
-    }
-
-    .header-cart-button {
-        width: 44px;
-        height: 44px;
-        border: 1px solid rgba(27, 120, 150, 0.2);
-        border-radius: 50%;
-        color: #1b7896;
-        background: rgba(255, 255, 255, 0.9);
-        transition: all 0.25s ease;
-    }
-
-    .header-cart-button:hover {
-        color: #ffffff;
-        background: #1b7896;
-        border-color: #1b7896;
-        transform: translateY(-1px);
-    }
-
-    .header-cart-button i {
-        font-size: 18px;
-    }
-
-    .header-cart-count,
-    .mobile-cart-count {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 19px;
-        height: 19px;
-        padding: 0 5px;
-        border-radius: 999px;
-        background: #c83e4d;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        font-size: 10px;
-        font-weight: 700;
-        line-height: 1;
-    }
-
+    /* Kích thước giỏ hàng trên mobile */
     .mobile-cart-button {
         width: 40px;
         height: 40px;
-        border: none;
-        border-radius: 50%;
-        color: #1b7896;
-        background: rgba(255, 255, 255, 0.9);
     }
 
     .mobile-cart-button i {
-        font-size: 17px;
-    }
-    .header-cart-button,
-    .mobile-cart-button {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        flex-shrink: 0;
+        font-size: 16px;
     }
 
-    .header-cart-button {
-        width: 44px;
-        height: 44px;
-        border: 1px solid rgba(27, 120, 150, 0.2);
-        border-radius: 50%;
-        color: #1b7896;
-        background: rgba(255, 255, 255, 0.9);
-        transition: all 0.25s ease;
-    }
-
-    .header-cart-button:hover {
-        color: #ffffff;
-        background: #1b7896;
-        border-color: #1b7896;
-        transform: translateY(-1px);
-    }
-
-    .header-cart-button i {
-        font-size: 18px;
-    }
-
-    .header-cart-count,
-    .mobile-cart-count {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 19px;
-        height: 19px;
-        padding: 0 5px;
-        border-radius: 999px;
-        background: #c83e4d;
-        color: #ffffff;
-        border: 2px solid #ffffff;
-        font-size: 10px;
-        font-weight: 700;
-        line-height: 1;
-    }
-
-    .mobile-cart-button {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 50%;
-        color: #1b7896;
-        background: rgba(255, 255, 255, 0.9);
-    }
-
-    .mobile-cart-button i {
-        font-size: 17px;
-    }
     .mobile-login-button,
     .mobile-logout-button,
     .mobile-hotline-full {

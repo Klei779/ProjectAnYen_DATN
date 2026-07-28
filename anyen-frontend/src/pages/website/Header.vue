@@ -45,10 +45,7 @@
         >
           <i class="fa-solid fa-cart-shopping"></i>
 
-          <span
-              v-if="cartCount > 0"
-              class="header-cart-count"
-          >
+          <span class="header-cart-count">
     {{ cartCount > 99 ? "99+" : cartCount }}
   </span>
         </RouterLink>
@@ -94,6 +91,14 @@
 
               <el-dropdown-item
                   divided
+                  @click="goToManagement"
+              >
+                <i class="fa-solid fa-gauge"></i>
+                Trang Quản lý
+              </el-dropdown-item>
+
+              <el-dropdown-item
+                  divided
                   class="logout-dropdown-item"
                   @click="logout"
               >
@@ -130,10 +135,7 @@
         >
           <i class="fa-solid fa-cart-shopping"></i>
 
-          <span
-              v-if="cartCount > 0"
-              class="header-cart-count"
-          >
+          <span class="header-cart-count">
     {{ cartCount > 99 ? "99+" : cartCount }}
   </span>
         </RouterLink>
@@ -212,6 +214,16 @@
                 </p>
               </div>
             </div>
+
+            <button
+                type="button"
+                class="mobile-logout-button"
+                style="margin-bottom: 10px; background-color: #e0f2fe; color: #0284c7; border-color: #e0f2fe;"
+                @click="goToManagement"
+            >
+              <i class="fa-solid fa-gauge"></i>
+              Trang Quản Lý
+            </button>
 
             <button
                 type="button"
@@ -462,13 +474,13 @@ const handleLoginSuccess = (userData) => {
   showLogin.value = false;
   closeMobileMenu();
 
-  const accountType = userData.loaiTaiKhoan;
+  const accountType = userData.vaiTroChiTiet || userData.loaiTaiKhoan;
 
   if (
       accountType === "NHAN_VIEN"
       || accountType === "NHANVIEN"
   ) {
-    router.push("/nhan-vien/tong-quan");
+    router.push("/nhan-vien/thong-tin-tai-khoan");
     return;
   }
 
@@ -476,7 +488,30 @@ const handleLoginSuccess = (userData) => {
       accountType === "DOI_TAC"
       || accountType === "DOITAC"
   ) {
-    router.push("/doi-tac/tong-quan");
+    router.push("/doi-tac/thong-tin-tai-khoan");
+  }
+  
+  if (accountType === "ADMIN") {
+    router.push("/admin/thong-tin-tai-khoan");
+  }
+  
+  if (accountType === "HOTLINE") {
+    router.push("/hotline/thong-tin-tai-khoan");
+  }
+};
+
+const goToManagement = () => {
+  if (!user.value) return;
+  const accountType = user.value.vaiTroChiTiet || user.value.loaiTaiKhoan;
+  
+  if (accountType === "DOITAC" || accountType === "DOI_TAC") {
+    router.push("/doi-tac/thong-tin-tai-khoan");
+  } else if (accountType === "ADMIN") {
+    router.push("/admin/thong-tin-tai-khoan");
+  } else if (accountType === "HOTLINE") {
+    router.push("/hotline/thong-tin-tai-khoan");
+  } else if (accountType === "NHANVIEN" || accountType === "NHAN_VIEN") {
+    router.push("/nhan-vien/thong-tin-tai-khoan");
   }
 };
 

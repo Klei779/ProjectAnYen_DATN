@@ -100,30 +100,6 @@
             </div>
           </div>
 
-          <!-- Tài khoản -->
-          <div
-              class="user-profile-wrapper"
-              @click.stop="toggleProfile"
-          >
-            <div class="user-profile-trigger">
-              <div class="avatar-small">
-                <i class="fa-solid fa-user"></i>
-              </div>
-
-              <div class="user-short-info">
-                <strong>
-                  {{ user?.hoTen || user?.tenDoiTac || "Đối tác" }}
-                </strong>
-              </div>
-            </div>
-
-            <UserProfileDropdown
-                v-if="showProfile"
-                :user="user"
-                icon-class="fa-solid fa-user"
-                @logout="logout"
-            />
-          </div>
         </div>
       </header>
 

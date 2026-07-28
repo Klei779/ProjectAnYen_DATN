@@ -168,7 +168,7 @@ export async function huyDonHang(maDonHang, lyDoHuy) {
 }
 
 export async function getDonHangs(params = {}) {
-  const response = await api.get("/api/don-hang", { params });
+  const response = await api.get(API_URL, { params });
   const rawItems = Array.isArray(response.data)
     ? response.data
     : response.data?.items || response.data?.content || [];

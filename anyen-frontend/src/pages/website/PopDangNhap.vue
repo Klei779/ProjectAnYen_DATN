@@ -609,28 +609,28 @@ const handleLogin =
               vaiTroChiTiet === "DOITAC"
           ) {
             router.push(
-                "/doi-tac/tong-quan"
+                "/doi-tac/thong-tin-tai-khoan"
             );
 
           } else if (
               vaiTroChiTiet === "ADMIN"
           ) {
             router.push(
-                "/admin/tong-quan"
+                "/admin/thong-tin-tai-khoan"
             );
 
           } else if (
               vaiTroChiTiet === "HOTLINE"
           ) {
             router.push(
-                "/hotline/quan-ly-cong-viec"
+                "/hotline/thong-tin-tai-khoan"
             );
 
           } else if (
               vaiTroChiTiet === "NHANVIEN"
           ) {
             router.push(
-                "/nhan-vien/tong-quan"
+                "/nhan-vien/thong-tin-tai-khoan"
             );
 
           } else {

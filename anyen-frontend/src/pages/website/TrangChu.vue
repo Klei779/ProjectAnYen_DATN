@@ -26,9 +26,8 @@
           </div>
 
           <div class="hero-flower" aria-hidden="true">
-            <span></span>
             <img :src="flowerIcon" alt="" />
-            <span></span>
+
           </div>
 
           <p class="hero-slogan">

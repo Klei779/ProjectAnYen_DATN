@@ -81,29 +81,6 @@
                 </div>
               </div>
             </div>
-
-            <div
-                class="user-profile-wrapper"
-                style="position: relative; cursor: pointer; margin-left: 20px"
-                @click.stop="toggleProfile"
-            >
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="avatar-small">
-                  <i class="fa-solid fa-user"></i>
-                </div>
-
-                <div class="user-short-info">
-                  <strong>{{ user?.hoTen || "Nhân viên" }}</strong>
-                </div>
-              </div>
-
-              <UserProfileDropdown
-                  v-if="showProfile"
-                  :user="user"
-                  icon-class="fa-solid fa-user"
-                  @logout="logout"
-              />
-            </div>
           </div>
         </header>
 

@@ -18,6 +18,10 @@ import vn.anyen.repository.ComBoHinhAnhRepository;
 import vn.anyen.repository.ComBoRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamDoiTacRepository;
+import vn.anyen.entity.ComBoChiTietHinhAnh;
+import vn.anyen.repository.ComBoChiTietHinhAnhRepository;
+
+import java.util.HashMap;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -51,11 +55,16 @@ public class ComboDoiTacService {
             CloudinaryService cloudinaryService
     ) {
         this.comboRepository = comboRepository;
-        this.comboChiTietRepository = comboChiTietRepository;
-        this.comboHinhAnhRepository = comboHinhAnhRepository;
-        this.sanPhamRepository = sanPhamRepository;
-        this.doiTacRepository = doiTacRepository;
-        this.cloudinaryService = cloudinaryService;
+        this.comboChiTietRepository =
+                comboChiTietRepository;
+        this.comboHinhAnhRepository =
+                comboHinhAnhRepository;
+        this.sanPhamRepository =
+                sanPhamRepository;
+        this.doiTacRepository =
+                doiTacRepository;
+        this.cloudinaryService =
+                cloudinaryService;
     }
 
     @Transactional(readOnly = true)
@@ -86,30 +95,62 @@ public class ComboDoiTacService {
             ComboDoiTacRequest request,
             List<MultipartFile> files
     ) {
-        DoiTac doiTac = requireDoiTac(authentication);
+        DoiTac doiTac =
+                requireDoiTac(authentication);
 
         List<ValidatedComboItem> items =
-                validateProducts(doiTac, request);
+                validateProducts(
+                        doiTac,
+                        request
+                );
 
-        validateComboPrice(request.getGia(), items);
+        validateComboPrice(
+                request.getGia(),
+                items
+        );
+
         validateComboImages(files);
 
         ComBo combo = new ComBo();
-        combo.setMaDoiTac(doiTac.getMaDoiTac());
 
-        applyRequest(combo, request);
+        combo.setMaDoiTac(
+                doiTac.getMaDoiTac()
+        );
 
-        ComBo saved = comboRepository.save(combo);
+        applyRequest(
+                combo,
+                request
+        );
 
-        List<String> imageUrls = uploadComboImages(files);
+        ComBo saved =
+                comboRepository.save(combo);
+
+        List<String> imageUrls =
+                uploadComboImages(files);
 
         if (!imageUrls.isEmpty()) {
-            saved.setHinhAnh(imageUrls.get(0));
-            saved = comboRepository.save(saved);
-            saveComboImages(saved, files, imageUrls);
+            // Ảnh đầu tiên làm ảnh đại diện combo
+            saved.setHinhAnh(
+                    imageUrls.get(0)
+            );
+
+            saved =
+                    comboRepository.save(saved);
+
+            // Lưu tất cả ảnh vào combo_hinhanh
+            saveComboImages(
+                    saved,
+                    files,
+                    imageUrls
+            );
         }
 
-        saveDetails(saved, items);
+        // Chỉ lưu sản phẩm vào combochitiet
+        saveDetails(
+                saved,
+                items,
+                request
+        );
 
         return toResponse(saved);
     }
@@ -190,7 +231,11 @@ public class ComboDoiTacService {
 
         comboChiTietRepository.deleteByComboId(comboId);
         comboChiTietRepository.flush();
-        saveDetails(saved, items);
+        saveDetails(
+                saved,
+                items,
+                request
+        );
 
         return toResponse(saved);
     }
@@ -212,24 +257,104 @@ public class ComboDoiTacService {
         combo.setGia(request.getGia());
         combo.setMoTa(trimToNull(request.getMoTa()));
         combo.setHinhAnh(trimToNull(request.getHinhAnh()));
+        combo.setGhiChu(trimToNull(request.getGhiChu()));
         combo.setTrangThai(normalizeStatus(request.getTrangThai()));
     }
 
-    private void saveDetails(ComBo combo, List<ValidatedComboItem> items) {
-        List<ComBoChiTiet> details = items.stream()
-                .map(item -> {
-                    ComBoChiTiet detail = new ComBoChiTiet();
-                    detail.setComboId(combo.getComboId());
-                    detail.setMaSanPham(item.product().getMaSanPham());
-                    detail.setLoai(ComBoChiTiet.LOAI_SAN_PHAM);
-                    detail.setSoLuong(item.quantity());
-                    detail.setNoiDung(item.product().getTenSanPham());
-                    return detail;
-                })
-                .toList();
+    private Map<Integer, ComBoChiTiet> saveDetails(
+            ComBo combo,
+            List<ValidatedComboItem> items,
+            ComboDoiTacRequest request
+    ) {
+        Map<Integer, String> noiDungMap =
+                new HashMap<>();
 
-        comboChiTietRepository.saveAll(details);
+        /*
+         * Lấy mô tả riêng của từng sản phẩm mà frontend gửi lên.
+         */
+        if (request.getSanPhams() != null) {
+            for (
+                    ComboDoiTacRequest.ComboSanPhamRequest item
+                    : request.getSanPhams()
+            ) {
+                if (
+                        item == null
+                                || item.getMaSanPham() == null
+                ) {
+                    continue;
+                }
+
+                String noiDung =
+                        trimToNull(item.getNoiDung());
+
+                if (noiDung != null) {
+                    noiDungMap.put(
+                            item.getMaSanPham(),
+                            noiDung
+                    );
+                }
+            }
+        }
+
+        List<ComBoChiTiet> details =
+                items.stream()
+                        .map(item -> {
+                            SanPham product =
+                                    item.product();
+
+                            Integer maSanPham =
+                                    product.getMaSanPham();
+
+                            ComBoChiTiet detail =
+                                    new ComBoChiTiet();
+
+                            detail.setComboId(
+                                    combo.getComboId()
+                            );
+
+                            detail.setMaSanPham(
+                                    maSanPham
+                            );
+
+                            detail.setLoai(
+                                    ComBoChiTiet.LOAI_SAN_PHAM
+                            );
+
+                            detail.setSoLuong(
+                                    item.quantity()
+                            );
+
+                            /*
+                             * Có mô tả riêng thì dùng mô tả riêng.
+                             * Không có thì dùng tên sản phẩm.
+                             */
+                            detail.setNoiDung(
+                                    noiDungMap.getOrDefault(
+                                            maSanPham,
+                                            product.getTenSanPham()
+                                    )
+                            );
+
+                            return detail;
+                        })
+                        .toList();
+
+        List<ComBoChiTiet> savedDetails =
+                comboChiTietRepository.saveAll(details);
+
         comboChiTietRepository.flush();
+
+        /*
+         * Trả về:
+         * MaSanPham -> ComBoChiTiet đã có ComboChiTietId.
+         */
+        return savedDetails.stream()
+                .collect(
+                        Collectors.toMap(
+                                ComBoChiTiet::getMaSanPham,
+                                Function.identity()
+                        )
+                );
     }
 
     private List<ValidatedComboItem> validateProducts(
@@ -379,6 +504,7 @@ public class ComboDoiTacService {
                 totalProductPrice,
                 combo.getMoTa(),
                 combo.getHinhAnh(),
+                combo.getGhiChu(),
                 imageUrls,
                 combo.getTrangThai(),
                 statusLabel(combo.getTrangThai()),

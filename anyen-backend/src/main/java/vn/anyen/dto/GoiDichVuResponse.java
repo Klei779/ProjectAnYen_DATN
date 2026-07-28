@@ -23,6 +23,8 @@ public class GoiDichVuResponse {
     // Ảnh đại diện cũ, giữ lại để không ảnh hưởng code hiện tại
     private String hinhAnh;
 
+    private String ghiChu;
+
     // Danh sách toàn bộ ảnh của combo
     private List<String> hinhAnhs;
 
@@ -70,6 +72,7 @@ private String ghiChu;
                 combo.getGia(),
                 combo.getMoTa(),
                 anhChinh,
+                combo.getGhiChu(),
                 danhSachAnh,
                 combo.getTrangThai(),
                 combo.getGhiChu()

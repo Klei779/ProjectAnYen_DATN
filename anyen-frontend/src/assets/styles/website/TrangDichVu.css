@@ -109,137 +109,221 @@
    PACKAGE
 ========================= */
 
-.package-grid{
-    display:grid;
-    grid-template-columns:repeat(4, minmax(0, 1fr));
-    gap:22px;
-    width:100%;
+.package-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 22px;
+    width: 100%;
 }
 
-.package-card{
-    background:#fff;
-    border-radius:14px;
-    padding:22px 18px;
-    border:1px solid #eadfd8;
-    box-shadow:0 8px 25px rgba(20,45,77,.06);
-
-    position:relative;
-    min-height:430px;
-    box-sizing:border-box;
-
-    display:flex;
-    flex-direction:column;
+/* Trạng thái tải dữ liệu, lỗi và không có combo */
+.combo-message {
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 45px 20px;
+    border: 1px dashed #d8c7bc;
+    border-radius: 12px;
+    background: #fff;
+    color: #5f6368;
+    font-size: 15px;
+    text-align: center;
 }
 
-/* Gói phổ biến KHÔNG đổi khung */
-.package-card.popular{
-    border:1px solid #eadfd8 !important;
-    box-shadow:0 8px 25px rgba(20,45,77,.06);
+.combo-message.combo-error {
+    border-color: #e6b8b8;
+    background: #fff5f5;
+    color: #a61b1b;
 }
 
-.popular-badge{
-    position:absolute;
-    left:12px;
-    top:-11px;
+.package-card {
+    position: relative;
 
-    background:#84071c;
-    color:#fff;
+    display: flex;
+    flex-direction: column;
 
-    font-size:11px;
-    font-weight:700;
+    min-width: 0;
+    min-height: 520px;
+    padding: 22px 18px;
 
-    padding:5px 14px;
-    border-radius:20px;
+    overflow: hidden;
+
+    border: 1px solid #eadfd8;
+    border-radius: 14px;
+
+    background: #fff;
+
+    box-shadow: 0 8px 25px rgba(20, 45, 77, 0.06);
+
+    box-sizing: border-box;
+    transition:
+            transform 0.25s ease,
+            box-shadow 0.25s ease;
 }
 
-.package-card h3{
-    text-align:center;
-    font-size:17px;
-    font-weight:800;
-    color:#142d4d;
-    margin-bottom:5px;
+.package-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(20, 45, 77, 0.11);
 }
 
-.package-card h5{
-    text-align:center;
-    font-size:13px;
-    color:#1f1f1f;
-    margin-bottom:16px;
+/* Giữ lại trong trường hợp backend có trả trạng thái phổ biến */
+.package-card.popular {
+    border: 1px solid #eadfd8;
 }
 
-.package-card img{
-    width:100%;
-    height:115px;
-    object-fit:cover;
-    border-radius:8px;
-    margin-bottom:16px;
+.popular-badge {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    z-index: 2;
+
+    padding: 5px 14px;
+
+    border-radius: 20px;
+    background: #84071c;
+    color: #fff;
+
+    font-size: 11px;
+    font-weight: 700;
 }
 
-.package-card ul{
-    list-style:none;
-    padding:0;
-    margin:0;
+.package-card h3 {
+    min-height: 24px;
+    margin: 0 0 6px;
 
-    flex:1; /* ép các card cao bằng nhau */
+    color: #142d4d;
+
+    font-family: 'Faustina', serif;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.35;
+    text-align: center;
 }
 
-.package-card li{
-    font-size:13px;
-    color:#1f1f1f;
-    margin-bottom:9px;
-    display:flex;
-    gap:8px;
-    line-height:1.35;
+.package-card h5 {
+    min-height: 40px;
+    margin: 0 0 16px;
+
+    color: #454545;
+
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.5;
+    text-align: center;
 }
 
-.package-card li i{
-    color:#142d4d;
-    margin-top:2px;
+.package-card > img {
+    display: block;
+
+    width: 100%;
+    height: 145px;
+    margin-bottom: 17px;
+
+    border-radius: 8px;
+
+    object-fit: cover;
+    background: #f4eee8;
 }
 
-.price{
-    text-align:center;
-    color:#142d4d;
-    font-size:14px;
-    font-weight:600;
+/* Danh sách lấy từ cột GhiChu */
+.package-benefit-list,
+.package-card ul {
+    flex: 1;
 
-    margin-top:16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+
+    margin: 0;
+    padding: 0;
+
+    list-style: none;
+    text-align: left;
 }
 
-.price strong{
-    color:#84071c;
-    font-size:16px;
+.package-benefit-list li,
+.package-card li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+
+    margin: 0;
+
+    color: #1f1f1f;
+
+    font-size: 13px;
+    line-height: 1.45;
 }
 
-.package-card button{
-    width:100%;
-    height:42px;
+.package-benefit-list li i,
+.package-card li i {
+    flex: 0 0 auto;
 
-    margin-top:12px;
+    margin-top: 3px;
 
-    border-radius:6px;
-    border:1px solid #84071c;
-
-    color:#84071c;
-    background:#fff;
-
-    font-size:13px;
-    font-weight:800;
-
-    cursor:pointer;
-    transition:.3s;
+    color: #84071c;
+    font-size: 14px;
 }
 
-/* Gói phổ biến giữ nguyên màu nút */
-.package-card.popular button{
-    background:#fff !important;
-    color:#84071c !important;
-    border:1px solid #84071c !important;
+.package-benefit-list li span {
+    flex: 1;
+    min-width: 0;
 }
 
-.package-card button:hover{
-    background:#84071c;
-    color:#fff;
+.package-card .price {
+    flex: 0 0 auto;
+
+    margin-top: 18px;
+
+    color: #142d4d;
+
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.package-card .price strong {
+    color: #84071c;
+    font-size: 17px;
+}
+
+.package-card button {
+    flex: 0 0 auto;
+
+    width: 100%;
+    height: 42px;
+    margin-top: 12px;
+
+    border: 1px solid #84071c;
+    border-radius: 6px;
+
+    background: #fff;
+    color: #84071c;
+
+    font-size: 13px;
+    font-weight: 800;
+
+    cursor: pointer;
+
+    transition:
+            background-color 0.25s ease,
+            color 0.25s ease;
+}
+
+.package-card button:hover {
+    background: #84071c;
+    color: #fff;
+}
+
+.package-card.popular button {
+    border: 1px solid #84071c;
+    background: #fff;
+    color: #84071c;
+}
+
+.package-card.popular button:hover {
+    background: #84071c;
+    color: #fff;
 }
 
 /* =========================
@@ -428,72 +512,118 @@
    RESPONSIVE
 ========================= */
 
-@media(max-width:992px){
-    .service-hero{
-        height:320px;
+@media (max-width: 992px) {
+    .service-hero {
+        height: 320px;
     }
 
-    .hero-title{
-        font-size:32px;
+    .hero-title {
+        font-size: 32px;
     }
 
-    .hero-desc{
-        font-size:14px;
+    .hero-desc {
+        font-size: 14px;
     }
 
-    .package-grid{
-        grid-template-columns:repeat(2, 1fr);
+    .package-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .trust-bar{
-        grid-template-columns:repeat(2, 1fr);
+    .package-card {
+        min-height: 500px;
     }
 
-    .single-service-grid{
-        grid-template-columns:repeat(2, 1fr);
+    .trust-bar {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .process-wrap{
-        grid-template-columns:repeat(2, 1fr);
+    .single-service-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .process-arrow{
-        display:none;
+    .process-wrap {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .service-cta{
-        flex-direction:column;
-        gap:20px;
-        text-align:center;
+    .process-arrow {
+        display: none;
     }
 
-    .cta-left{
-        flex-direction:column;
+    .service-cta {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+
+    .cta-left {
+        flex-direction: column;
     }
 }
 
-@media(max-width:576px){
-    .service-hero{
-        height:280px;
+@media (max-width: 576px) {
+    .service-hero {
+        height: 280px;
     }
 
-    .hero-title{
-        font-size:27px;
+    .hero-title {
+        font-size: 27px;
     }
 
-    .hero-slogan{
-        font-size:11px;
-        letter-spacing:1.5px;
+    .hero-slogan {
+        font-size: 11px;
+        letter-spacing: 1.5px;
     }
 
-    .hero-desc br{
-        display:none;
+    .hero-desc br {
+        display: none;
+    }
+
+    .service-section {
+        padding: 20.5px;
+    }
+
+    .hero-desc br {
+        display: nonepx 14px;
     }
 
     .package-grid,
     .trust-bar,
     .single-service-grid,
-    .process-wrap{
-        grid-template-columns:1fr;
+    .process-wrap {
+        grid-template-columns: 1fr;
+    }
+
+    .package-card {
+        min-height: auto;
+        padding: 20px 16px;
+    }
+
+    .package-card h5 {
+        min-height: auto;
+    }
+
+    .package-card > img {
+        height: 180px;
+    }
+
+    .package-benefit-list,
+    .package-card ul {
+        flex: initial;
+    }
+
+    .trust-bar {
+        padding: 18px 16px;
+    }
+
+    .service-cta {
+        margin-left: 14px;
+        margin-right: 14px;
+        padding: 18px;
+    }
+
+    .cta-left img {
+        width: 100%;
+        max-width: 240px;
+        height: auto;
     }
 }

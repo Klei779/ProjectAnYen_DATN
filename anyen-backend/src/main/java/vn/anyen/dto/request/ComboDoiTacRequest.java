@@ -30,6 +30,9 @@ public class ComboDoiTacRequest {
     @Size(max = 500, message = "Đường dẫn hình ảnh tối đa 500 ký tự")
     private String hinhAnh;
 
+    @Size(max = 10000, message = "Ghi chú tối đa 10000 ký tự")
+    private String ghiChu;
+
     private Integer trangThai;
 
     /**
@@ -53,5 +56,10 @@ public class ComboDoiTacRequest {
         @NotNull(message = "Số lượng sản phẩm không được để trống")
         @Positive(message = "Số lượng sản phẩm trong combo phải lớn hơn 0")
         private Integer soLuong;
+        @Size(
+                max = 5000,
+                message = "Mô tả chi tiết tối đa 5000 ký tự"
+        )
+        private String noiDung;
     }
 }

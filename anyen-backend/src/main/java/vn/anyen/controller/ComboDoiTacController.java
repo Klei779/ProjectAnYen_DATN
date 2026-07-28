@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,6 +23,9 @@ public class ComboDoiTacController {
 
     private final ComboDoiTacService comboDoiTacService;
 
+    /**
+     * GET /api/doi-tac/combo
+     */
     @GetMapping
     public List<ComboDoiTacResponse> getCombos(
             Authentication authentication
@@ -29,15 +33,24 @@ public class ComboDoiTacController {
         return comboDoiTacService.getCombos(authentication);
     }
 
+    /**
+     * GET /api/doi-tac/combo/san-pham
+     */
     @GetMapping("/san-pham")
     public List<SanPhamComboDoiTacResponse> getSanPham(
             Authentication authentication
     ) {
-        return comboDoiTacService.getSanPhamCoTheChon(authentication);
+        return comboDoiTacService
+                .getSanPhamCoTheChon(authentication);
     }
 
-    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ComboDoiTacResponse create(
+    /**
+     * POST /api/doi-tac/combo
+     */
+    @PostMapping(
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<ComboDoiTacResponse> createCombo(
             Authentication authentication,
 
             @Valid
@@ -48,15 +61,21 @@ public class ComboDoiTacController {
                     value = "files",
                     required = false
             )
-            List<MultipartFile> files
+            List<MultipartFile> comboFiles
     ) {
-        return comboDoiTacService.createCombo(
-                authentication,
-                request,
-                files
-        );
+        ComboDoiTacResponse response =
+                comboDoiTacService.createCombo(
+                        authentication,
+                        request,
+                        comboFiles
+                );
+
+        return ResponseEntity.ok(response);
     }
 
+    /**
+     * PUT /api/doi-tac/combo/{comboId}
+     */
     @PutMapping("/{comboId}")
     public ComboDoiTacResponse update(
             Authentication authentication,
@@ -70,6 +89,9 @@ public class ComboDoiTacController {
         );
     }
 
+    /**
+     * PATCH /api/doi-tac/combo/{comboId}/trang-thai
+     */
     @PatchMapping("/{comboId}/trang-thai")
     public ComboDoiTacResponse updateStatus(
             Authentication authentication,

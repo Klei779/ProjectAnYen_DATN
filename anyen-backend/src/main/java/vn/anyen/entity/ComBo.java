@@ -21,22 +21,75 @@ public class ComBo {
     @Column(name = "ComboId")
     private Integer comboId;
 
-    @Column(name = "TenCombo")
+    @Column(
+            name = "TenCombo",
+            nullable = false,
+            length = 255
+    )
     private String tenCombo;
 
-    @Column(name = "Gia")
+    @Column(
+            name = "Gia",
+            nullable = false,
+            precision = 18,
+            scale = 2
+    )
     private BigDecimal gia;
 
-    @Column(name = "MoTa")
+    @Lob
+    @Column(
+            name = "MoTa",
+            columnDefinition = "TEXT"
+    )
     private String moTa;
 
-    @Column(name = "HinhAnh")
+    /**
+     * Ảnh đại diện duy nhất của combo.
+     *
+     * Ảnh này được hiển thị tại trang danh sách dịch vụ.
+     * Khi upload nhiều ảnh, ảnh đầu tiên sẽ được chọn làm ảnh đại diện.
+     */
+    @Column(
+            name = "HinhAnh",
+            length = 500
+    )
     private String hinhAnh;
 
-    @Column(name = "MaDoiTac")
+    /**
+     * Danh sách quyền lợi hoặc ghi chú ngắn của combo.
+     *
+     * Có thể lưu dưới dạng HTML:
+     *
+     * <ul>
+     *     <li>Tư vấn 24/7</li>
+     *     <li>Xe đưa đón</li>
+     * </ul>
+     */
+    @Lob
+    @Column(
+            name = "GhiChu",
+            columnDefinition = "LONGTEXT"
+    )
+    private String ghiChu;
+
+    /**
+     * Đối tác tạo và sở hữu combo.
+     */
+    @Column(
+            name = "MaDoiTac",
+            nullable = false
+    )
     private Integer maDoiTac;
 
-    @Column(name = "TrangThai")
+    /**
+     * 0 = Ẩn
+     * 1 = Hoạt động
+     * 2 = Ngừng kinh doanh
+     */
+    @Column(
+            name = "TrangThai",
+            nullable = false
+    )
     private Integer trangThai;
 
     @Column(name = "GhiChu")
@@ -45,4 +98,11 @@ public class ComBo {
     public static final Integer TT_AN = 0;
     public static final Integer TT_HOAT_DONG = 1;
     public static final Integer TT_NGUNG_KINH_DOANH = 2;
+
+    @PrePersist
+    public void prePersist() {
+        if (trangThai == null) {
+            trangThai = TT_HOAT_DONG;
+        }
+    }
 }

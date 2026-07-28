@@ -11,15 +11,27 @@ import java.util.Optional;
 
 @Repository
 public interface NhanVienRepository
-        extends JpaRepository<NhanVien,Integer> {
+        extends JpaRepository<NhanVien, Integer> {
 
-    Optional<NhanVien> findByTenDangNhap(String tenDangNhap);
+    Optional<NhanVien> findByTenDangNhap(
+            String tenDangNhap
+    );
 
-    boolean existsByTenDangNhap(String tenDangNhap);
+    Optional<NhanVien> findByEmailIgnoreCase(
+            String email
+    );
 
-    boolean existsByEmail(String email);
+    boolean existsByTenDangNhap(
+            String tenDangNhap
+    );
 
-    boolean existsBySoDienThoai(String soDienThoai);
+    boolean existsByEmail(
+            String email
+    );
+
+    boolean existsBySoDienThoai(
+            String soDienThoai
+    );
 
     boolean existsByTenDangNhapAndMaNhanVienNot(
             String tenDangNhap,
@@ -36,7 +48,9 @@ public interface NhanVienRepository
             Integer maNhanVien
     );
 
-    List<NhanVien> findByVaiTro(Integer vaiTro);
+    List<NhanVien> findByVaiTro(
+            Integer vaiTro
+    );
 
     List<NhanVien> findByVaiTroAndTrangThaiOrderByHoTenAsc(
             Integer vaiTro,
@@ -48,8 +62,16 @@ public interface NhanVienRepository
             Integer trangThai
     );
 
-    @Query("SELECT nv FROM NhanVien nv WHERE nv.latitude IS NOT NULL AND nv.longitude IS NOT NULL AND nv.trangThai = 1 AND nv.vaiTro = 2")
-    List<NhanVien> findNhanVienTrucTiepCoToaDoDangHoatDong();
+    @Query("""
+            SELECT nv
+            FROM NhanVien nv
+            WHERE nv.latitude IS NOT NULL
+              AND nv.longitude IS NOT NULL
+              AND nv.trangThai = 1
+              AND nv.vaiTro = 2
+            """)
+    List<NhanVien>
+    findNhanVienTrucTiepCoToaDoDangHoatDong();
 
     List<NhanVien> findByVaiTroAndTrangThai(
             Integer vaiTro,

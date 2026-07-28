@@ -96,6 +96,7 @@ const routeTitles = {
   "/admin/quan-ly-nhan-vien": "Quản lý nhân viên",
   "/admin/quan-ly-khach-hang": "Quản lý khách hàng",
   "/admin/quan-ly-hop-dong": "Quản lý hợp đồng",
+  "/admin/quan-ly-tin-tuc": "Quản lý tin tức",
   "/admin/thong-bao": "Thông báo công việc",
 };
 

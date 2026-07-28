@@ -59,6 +59,21 @@
         <i class="fa-solid fa-file-contract menu-icon"></i>
         <span class="sidebar-text">Quản lý sản phẩm</span>
       </RouterLink>
+      <RouterLink
+          to="/admin/quan-ly-tin-tuc"
+          class="menu-item"
+          title="Quản lý tin tức"
+      >
+        <i
+            class="fa-regular
+             fa-newspaper
+             menu-icon"
+        ></i>
+
+        <span class="sidebar-text">
+    Quản lý tin tức
+  </span>
+      </RouterLink>
       <RouterLink to="/admin/thong-bao" class="menu-item" title="Thông báo">
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>

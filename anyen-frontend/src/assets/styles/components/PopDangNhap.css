@@ -334,3 +334,57 @@
         right: 10px;
     }
 }
+/* =========================================
+   FORGOT PASSWORD
+========================================= */
+
+.forgot-description {
+    margin: -2px 0 16px;
+
+    color: #667085;
+
+    font-size: 13px;
+    line-height: 1.55;
+    text-align: center;
+}
+
+.success-msg-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-bottom: 15px;
+    padding: 10px 15px;
+
+    color: #18794e;
+    background: #ecfdf3;
+
+    border: 1px solid #abefc6;
+    border-radius: 6px;
+
+    font-size: 14px;
+}
+
+.back-login-btn {
+    width: 100%;
+
+    margin-top: 14px;
+
+    border: none;
+
+    background: transparent;
+    color: #475467;
+
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+.back-login-btn:hover {
+    color: #7a0011;
+}
+
+.back-login-btn:disabled {
+    cursor: not-allowed;
+    opacity: .6;
+}

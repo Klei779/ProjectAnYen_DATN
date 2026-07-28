@@ -5,68 +5,83 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
 import vn.anyen.entity.TinTuc;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface TinTucRepository extends JpaRepository<TinTuc, Integer> {
-
-
-    /**
-     * Hiển thị tất cả theo trạng thái
-     */
-    Page<TinTuc> findByTrangThai(Integer trangThai, Pageable pageable);
-
+public interface TinTucRepository
+        extends JpaRepository<TinTuc, Integer> {
 
     /**
-     * Lọc theo loại tin
+     * Website chỉ hiển thị tin có TrangThai = 1.
      */
-    Page<TinTuc> findByLoaiTin(Integer loaiTin, Pageable pageable);
-
+    List<TinTuc> findAllByTrangThaiOrderByNgayDangDesc(
+            Integer trangThai
+    );
 
     /**
-     * Lọc theo loại + trạng thái
+     * Website chỉ được xem chi tiết bài viết đang hiển thị.
      */
+    Optional<TinTuc> findByMaTinTucAndTrangThai(
+            Integer maTinTuc,
+            Integer trangThai
+    );
+
+    Page<TinTuc> findByTrangThai(
+            Integer trangThai,
+            Pageable pageable
+    );
+
+    Page<TinTuc> findByLoaiTin(
+            Integer loaiTin,
+            Pageable pageable
+    );
+
     Page<TinTuc> findByLoaiTinAndTrangThai(
             Integer loaiTin,
             Integer trangThai,
             Pageable pageable
     );
 
-
-    /**
-     * Tìm theo tiêu đề
-     */
     Page<TinTuc> findByTieuDeContainingIgnoreCase(
             String keyword,
             Pageable pageable
     );
 
-
-    /**
-     * Tìm theo tiêu đề + trạng thái
-     */
     Page<TinTuc> findByTieuDeContainingIgnoreCaseAndTrangThai(
             String keyword,
             Integer trangThai,
             Pageable pageable
     );
 
-
     /**
-     * Tìm kiếm tổng hợp
+     * API quản lý dành cho Admin:
+     * - Tìm theo tiêu đề
+     * - Lọc loại tin
+     * - Lọc trạng thái
+     * - Phân trang
      */
     @Query("""
             SELECT t
             FROM TinTuc t
             WHERE
-                (:keyword IS NULL OR LOWER(t.tieuDe) LIKE LOWER(CONCAT('%', :keyword, '%')))
+                (
+                    :keyword IS NULL
+                    OR LOWER(t.tieuDe)
+                    LIKE LOWER(CONCAT('%', :keyword, '%'))
+                )
             AND
-                (:loaiTin IS NULL OR t.loaiTin = :loaiTin)
+                (
+                    :loaiTin IS NULL
+                    OR t.loaiTin = :loaiTin
+                )
             AND
-                (:trangThai IS NULL OR t.trangThai = :trangThai)
-            ORDER BY t.ngayDang DESC
+                (
+                    :trangThai IS NULL
+                    OR t.trangThai = :trangThai
+                )
+            ORDER BY t.ngayDang DESC, t.maTinTuc DESC
             """)
     Page<TinTuc> search(
             @Param("keyword") String keyword,
@@ -75,22 +90,20 @@ public interface TinTucRepository extends JpaRepository<TinTuc, Integer> {
             Pageable pageable
     );
 
-
     /**
-     * Tin mới nhất
+     * Tin mới nhất.
      */
     List<TinTuc> findTop5ByTrangThaiOrderByNgayDangDesc(
             Integer trangThai
     );
 
-
     /**
-     * Tin liên quan
+     * Tin liên quan.
      */
-    List<TinTuc> findTop4ByLoaiTinAndTrangThaiAndMaTinTucNotOrderByNgayDangDesc(
+    List<TinTuc>
+    findTop4ByLoaiTinAndTrangThaiAndMaTinTucNotOrderByNgayDangDesc(
             Integer loaiTin,
             Integer trangThai,
             Integer maTinTuc
     );
-
 }

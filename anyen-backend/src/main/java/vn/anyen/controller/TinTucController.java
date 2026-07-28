@@ -1,61 +1,46 @@
 package vn.anyen.controller;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import vn.anyen.dto.request.TinTucRequest;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import vn.anyen.dto.response.TinTucResponse;
 import vn.anyen.service.TinTucService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tin-tuc")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class TinTucController {
 
     private final TinTucService tinTucService;
 
-    // Người dùng chưa đăng nhập vẫn xem được tin tức
+    /**
+     * API công khai.
+     * Chỉ trả bài viết có TrangThai = 1.
+     */
     @GetMapping
-    public ResponseEntity<?> getAll() {
-        return ResponseEntity.ok(tinTucService.getAll());
-    }
-
-    // Xem chi tiết tin tức
-    @GetMapping("/{id}")
-    public ResponseEntity<?> getById(@PathVariable Integer id) {
-        return ResponseEntity.ok(tinTucService.findById(id));
-    }
-
-
-    // Các chức năng bên dưới nên giới hạn quyền nhân viên/admin
-    @PostMapping
-    public ResponseEntity<?> create(
-            @Valid @RequestBody TinTucRequest request) {
-
-        return ResponseEntity.ok(tinTucService.create(request));
-    }
-
-
-    @PutMapping("/{id}")
-    public ResponseEntity<?> update(
-            @PathVariable Integer id,
-            @Valid @RequestBody TinTucRequest request) {
+    public ResponseEntity<List<TinTucResponse>>
+    getAllPublic() {
 
         return ResponseEntity.ok(
-                tinTucService.update(id, request)
+                tinTucService.getAllPublic()
         );
     }
 
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> delete(
-            @PathVariable Integer id) {
-
-        tinTucService.delete(id);
-
+    /**
+     * API chi tiết công khai.
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<TinTucResponse>
+    getPublicById(
+            @PathVariable Integer id
+    ) {
         return ResponseEntity.ok(
-                "Xóa tin tức thành công"
+                tinTucService.findPublicById(id)
         );
     }
 }

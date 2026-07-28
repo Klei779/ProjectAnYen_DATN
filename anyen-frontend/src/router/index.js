@@ -22,6 +22,7 @@ import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
 import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
 import TrangGioHang from "../pages/website/TrangGioHang.vue";
+import TrangQLTinTuc from "../pages/admin/TrangQLTinTuc.vue";
 // Đối tác
 import TrangTongQuan from "../pages/doitac/TrangTongQuan.vue";
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
@@ -265,6 +266,10 @@ const routes = [
             {
                 path: "duyet-san-pham",
                 component: TrangDuyetSanPham,
+            },
+            {
+                path: "quan-ly-tin-tuc",
+                component: TrangQLTinTuc,
             },
             {
                 path: "thong-ke-doanh-thu",

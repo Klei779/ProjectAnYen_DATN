@@ -74,24 +74,6 @@ public class SecurityConfig {
                         ).permitAll()
                         
                         // Public website
-                        .requestMatchers(
-                                "/images/**",
-                                "/uploads/**",
-                                "/api/tu-van/**",
-                                "/api/gioi-thieu",
-                                "/api/gioi-thieu/**",
-                                "/api/san-pham",
-                                "/api/san-pham/**",
-                                "/api/dich-vu",
-                                "/api/dich-vu/**",
-                                "/api/lien-he",
-                                "/api/lien-he/**",
-                                "/api/khach-hang",
-                                "/api/khach-hang/**",
-                                "/api/tin-tuc",
-                                "/api/tin-tuc/**"
-                        )
-                        .permitAll()
 
                         // ADMIN quản lý đối tác
                         .requestMatchers(
@@ -107,7 +89,37 @@ public class SecurityConfig {
                         .hasAuthority("ROLE_ADMIN")
 
                         // ADMIN quản lý nhân viên
+// Public website
+                                .requestMatchers(
+                                        "/images/**",
+                                        "/uploads/**",
+                                        "/api/tu-van/**",
+                                        "/api/gioi-thieu",
+                                        "/api/gioi-thieu/**",
+                                        "/api/san-pham",
+                                        "/api/san-pham/**",
+                                        "/api/dich-vu",
+                                        "/api/dich-vu/**",
+                                        "/api/lien-he",
+                                        "/api/lien-he/**",
+                                        "/api/khach-hang",
+                                        "/api/khach-hang/**"
+                                )
+                                .permitAll()
 
+// Website công khai chỉ được xem tin tức
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/tin-tuc",
+                                        "/api/tin-tuc/**"
+                                )
+                                .permitAll()
+
+// Chỉ Admin được quản lý tin tức
+                                .requestMatchers(
+                                        "/api/admin/tin-tuc/**"
+                                )
+                                .hasAuthority("ROLE_ADMIN")
 
                         // ADMIN quản lý hợp đồng
 

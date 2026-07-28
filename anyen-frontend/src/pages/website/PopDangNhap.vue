@@ -25,7 +25,7 @@
             <!-- Banner bên trái -->
             <div class="col-md-5 login-banner">
               <img
-                  src="../../assets/images/icon/boat_login.png"
+                  :src="boatLogin"
                   alt="Boat"
                   class="boat-image"
               />
@@ -41,7 +41,7 @@
                 </p>
 
                 <img
-                    src="../../assets/images/icon/icon_flower_large.png"
+                    :src="flowerLarge"
                     alt="Flower"
                     class="flower-divider"
                 />
@@ -59,7 +59,7 @@
               </h2>
 
               <img
-                  src="../../assets/images/icon/icon_flower_large.png"
+                  :src="flowerLarge"
                   class="title-flower"
                   alt=""
               />
@@ -299,8 +299,10 @@ import {
 import {
   ElMessage,
 } from "element-plus";
-
+import api from "../../api/api.js";
 import axios from "axios";
+import boatLogin from "../../assets/images/icon/boat_login.png";
+import flowerLarge from "../../assets/images/icon/icon_flower_large.png";
 
 import {
   useRouter,

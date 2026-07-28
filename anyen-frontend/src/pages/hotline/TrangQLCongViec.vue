@@ -5,7 +5,27 @@
 
       <!-- CONTENT -->
       <section class="page-content">
-        <div class="content-layout">
+        <div class="work-page-tabs">
+          <button
+              type="button"
+              :class="{ active: activeTab === 'assign' }"
+              @click="activeTab = 'assign'"
+          >
+            <i class="fa-solid fa-user-plus"></i>
+            Giao công việc
+          </button>
+
+          <button
+              type="button"
+              :class="{ active: activeTab === 'history' }"
+              @click="openHistoryTab"
+          >
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            Lịch sử giao việc
+          </button>
+        </div>
+
+        <div v-if="activeTab === 'assign'" class="content-layout">
           <!-- LEFT CONTENT -->
           <section class="customer-panel">
             <div class="panel-card customer-card">
@@ -327,13 +347,117 @@
             </div>
           </aside>
         </div>
+
+        <section v-else class="history-card">
+          <div class="history-header">
+            <div>
+              <p class="history-eyebrow">HOTLINE</p>
+              <h2>Lịch sử giao công việc</h2>
+              <span>Chỉ hiển thị nhân viên đã được giao task, không hiển thị đơn hàng hoặc thông tin khách hàng.</span>
+            </div>
+
+            <button
+                type="button"
+                class="history-refresh-button"
+                :disabled="loadingLichSu"
+                @click="fetchLichSuGiaoViec"
+            >
+              <i
+                  class="fa-solid"
+                  :class="loadingLichSu ? 'fa-spinner fa-spin' : 'fa-rotate-right'"
+              ></i>
+              Tải lại
+            </button>
+          </div>
+
+          <div class="history-filter-row">
+            <div class="history-search">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input
+                  v-model="tuKhoaLichSu"
+                  type="text"
+                  placeholder="Tìm theo tên hoặc mã nhân viên"
+              />
+            </div>
+
+            <select v-model="trangThaiLichSu">
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="0">Đã giao - Chưa xem</option>
+              <option value="1">Đã xem</option>
+              <option value="2">Đã tiếp nhận</option>
+              <option value="3">Đã từ chối</option>
+            </select>
+          </div>
+
+          <div v-if="loadingLichSu" class="history-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            Đang tải lịch sử giao việc...
+          </div>
+
+          <div v-else-if="filteredLichSu.length === 0" class="history-state empty">
+            <i class="fa-regular fa-folder-open"></i>
+            Chưa có lịch sử giao việc phù hợp.
+          </div>
+
+          <div v-else class="history-table-wrapper">
+            <table class="history-table">
+              <thead>
+              <tr>
+                <th>STT</th>
+                <th>Nhân viên được giao</th>
+                <th>Số điện thoại</th>
+                <th>Thời gian giao</th>
+                <th>Trạng thái task</th>
+              </tr>
+              </thead>
+
+              <tbody>
+              <tr
+                  v-for="(item, index) in filteredLichSu"
+                  :key="item.maThongBao"
+              >
+                <td>{{ index + 1 }}</td>
+
+                <td>
+                  <div class="history-employee">
+                    <div class="history-avatar">
+                      {{ getInitials(item.tenNhanVien) }}
+                    </div>
+
+                    <div>
+                      <strong>{{ item.tenNhanVien }}</strong>
+                      <span>#NV{{ String(item.maNhanVien || 0).padStart(4, "0") }}</span>
+                    </div>
+                  </div>
+                </td>
+
+                <td>{{ item.soDienThoai || "Chưa cập nhật" }}</td>
+                <td>{{ item.thoiGianGiao || "--" }}</td>
+
+                <td>
+                  <span
+                      class="history-status"
+                      :class="getHistoryStatusClass(item.trangThai)"
+                  >
+                    {{ item.trangThaiText }}
+                  </span>
+                </td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="history-footer">
+            Tổng cộng <strong>{{ filteredLichSu.length }}</strong> lần giao việc
+          </div>
+        </section>
       </section>
     </main>
   </div>
 </template>
 
 <script setup>
-import { ref, nextTick } from "vue";
+import { computed, nextTick, ref } from "vue";
 
 import {
   LMap,
@@ -345,6 +469,86 @@ import {
 
 import { getNhanVienDeXuat } from "../../services/nhanVienService";
 import api from "../../api/api.js";
+
+const activeTab = ref("assign");
+const lichSuGiaoViec = ref([]);
+const loadingLichSu = ref(false);
+const daTaiLichSu = ref(false);
+const tuKhoaLichSu = ref("");
+const trangThaiLichSu = ref("ALL");
+
+const filteredLichSu = computed(() => {
+  const keyword = tuKhoaLichSu.value.trim().toLowerCase();
+
+  return lichSuGiaoViec.value.filter((item) => {
+    const dungTuKhoa =
+        !keyword ||
+        String(item.tenNhanVien || "").toLowerCase().includes(keyword) ||
+        String(item.maNhanVien || "").includes(keyword);
+
+    const dungTrangThai =
+        trangThaiLichSu.value === "ALL" ||
+        String(item.trangThai ?? 0) === trangThaiLichSu.value;
+
+    return dungTuKhoa && dungTrangThai;
+  });
+});
+
+const fetchLichSuGiaoViec = async () => {
+  try {
+    loadingLichSu.value = true;
+
+    const response = await api.get(
+        "/api/nhan-vien/hotline/cong-viec/lich-su"
+    );
+
+    lichSuGiaoViec.value = Array.isArray(response.data)
+        ? response.data
+        : [];
+
+    daTaiLichSu.value = true;
+  } catch (error) {
+    console.error("Lỗi tải lịch sử giao việc:", error);
+    lichSuGiaoViec.value = [];
+
+    alert(
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Không thể tải lịch sử giao việc"
+    );
+  } finally {
+    loadingLichSu.value = false;
+  }
+};
+
+const openHistoryTab = async () => {
+  activeTab.value = "history";
+
+  if (!daTaiLichSu.value) {
+    await fetchLichSuGiaoViec();
+  }
+};
+
+const getInitials = (name) => {
+  const words = String(name || "NV")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+
+  return words
+      .slice(-2)
+      .map((word) => word.charAt(0).toUpperCase())
+      .join("");
+};
+
+const getHistoryStatusClass = (status) => {
+  const code = Number(status);
+
+  if (code === 2) return "accepted";
+  if (code === 3) return "rejected";
+  if (code === 1) return "viewed";
+  return "sent";
+};
 
 const diaChiA = ref("");
 
@@ -594,6 +798,8 @@ const giaoViec = async () => {
     console.log("Kết quả giao việc:", response.data);
 
     alert(`Đã giao việc cho nhân viên: ${selectedNhanVien.value.hoTen}`);
+
+    await fetchLichSuGiaoViec();
 
     hoTenKhachHang.value = "";
     soDienThoaiKhachHang.value = "";
@@ -1400,6 +1606,276 @@ const chonVaGiaoViec = async (employee) => {
 
   .map-container {
     height: 270px;
+  }
+}
+
+/* =========================
+   TAB & LỊCH SỬ GIAO VIỆC
+========================= */
+.work-page-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 6px;
+  width: fit-content;
+  border: 1px solid #eadfe0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(34, 34, 34, 0.06);
+}
+
+.work-page-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #646464;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.work-page-tabs button.active {
+  background: #b51f2e;
+  color: #ffffff;
+  box-shadow: 0 6px 14px rgba(181, 31, 46, 0.22);
+}
+
+.history-card {
+  overflow: hidden;
+  border: 1px solid #eee3e4;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 12px 34px rgba(25, 25, 25, 0.07);
+}
+
+.history-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border-bottom: 1px solid #f0e8e9;
+}
+
+.history-header h2 {
+  margin: 3px 0 6px;
+  color: #242424;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.history-header span {
+  color: #777777;
+  font-size: 14px;
+}
+
+.history-eyebrow {
+  margin: 0;
+  color: #b51f2e;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+}
+
+.history-refresh-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 15px;
+  border: 1px solid #b51f2e;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #b51f2e;
+  font-weight: 700;
+}
+
+.history-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.history-filter-row {
+  display: flex;
+  gap: 12px;
+  padding: 18px 24px;
+  background: #fcf9f9;
+}
+
+.history-search {
+  position: relative;
+  flex: 1;
+}
+
+.history-search i {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  color: #9b8f90;
+  transform: translateY(-50%);
+}
+
+.history-search input,
+.history-filter-row select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #ddd1d2;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #333333;
+  outline: none;
+}
+
+.history-search input {
+  padding: 0 14px 0 40px;
+}
+
+.history-filter-row select {
+  max-width: 240px;
+  padding: 0 12px;
+}
+
+.history-search input:focus,
+.history-filter-row select:focus {
+  border-color: #b51f2e;
+  box-shadow: 0 0 0 3px rgba(181, 31, 46, 0.09);
+}
+
+.history-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 220px;
+  color: #696969;
+  font-weight: 600;
+}
+
+.history-state.empty i {
+  color: #b51f2e;
+  font-size: 25px;
+}
+
+.history-table-wrapper {
+  overflow-x: auto;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+  padding: 15px 18px;
+  border-bottom: 1px solid #f0eaea;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history-table th {
+  background: #ffffff;
+  color: #6c6263;
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.history-table tbody tr:hover {
+  background: #fffafa;
+}
+
+.history-employee {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.history-avatar {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #f7e5e7;
+  color: #b51f2e;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.history-employee strong,
+.history-employee span {
+  display: block;
+}
+
+.history-employee strong {
+  color: #272727;
+}
+
+.history-employee span {
+  margin-top: 3px;
+  color: #999999;
+  font-size: 12px;
+}
+
+.history-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.history-status.sent {
+  background: #fff3d7;
+  color: #93630b;
+}
+
+.history-status.viewed {
+  background: #e8f2ff;
+  color: #2467a5;
+}
+
+.history-status.accepted {
+  background: #e3f7e9;
+  color: #21733b;
+}
+
+.history-status.rejected {
+  background: #ffe6e7;
+  color: #b4232e;
+}
+
+.history-footer {
+  padding: 15px 24px;
+  background: #fcf9f9;
+  color: #706667;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .work-page-tabs {
+    width: 100%;
+  }
+
+  .work-page-tabs button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .history-header,
+  .history-filter-row {
+    flex-direction: column;
+  }
+
+  .history-refresh-button,
+  .history-filter-row select {
+    width: 100%;
+    max-width: none;
   }
 }
 </style>

@@ -1,11 +1,11 @@
 package vn.anyen.controller;
 
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.GiaoCongViecRequest;
 import vn.anyen.dto.response.GiaoCongViecResponse;
+import vn.anyen.dto.response.LichSuGiaoCongViecResponse;
 import vn.anyen.dto.response.NhanVienGanNhatResponse;
 import vn.anyen.service.HotlineCongViecService;
 
@@ -14,10 +14,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping({"/api/nhan-vien/hotline/cong-viec", "/api/nhan-vien/truc-tuyen/cong-viec"})
-@RequiredArgsConstructor
 public class HotlineCongViecController {
 
     private final HotlineCongViecService hotlineCongViecService;
+
+    public HotlineCongViecController(HotlineCongViecService hotlineCongViecService) {
+        this.hotlineCongViecService = hotlineCongViecService;
+    }
 
     @GetMapping("/nhan-vien-truc-tiep")
     public List<NhanVienGanNhatResponse> getNhanVienTrucTiep(
@@ -30,6 +33,13 @@ public class HotlineCongViecController {
                 latitude,
                 longitude
         );
+    }
+
+    @GetMapping("/lich-su")
+    public List<LichSuGiaoCongViecResponse> getLichSuGiaoCongViec(
+            Authentication authentication
+    ) {
+        return hotlineCongViecService.getLichSuGiaoCongViec(authentication);
     }
 
     @PostMapping

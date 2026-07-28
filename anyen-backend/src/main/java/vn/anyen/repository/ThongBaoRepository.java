@@ -46,6 +46,15 @@ public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
     List<ThongBao> findByMaKhachHangOrderByNgayTaoDesc(Integer maKhachHang);
 
     /**
+     * Lịch sử các công việc do một Hotline đã giao.
+     * Chỉ lấy bản ghi Hotline là người gửi và loại CONG_VIEC.
+     */
+    List<ThongBao> findByNguoiGuiIdAndLoaiThongBaoOrderByNgayTaoDesc(
+            Integer nguoiGuiId,
+            String loaiThongBao
+    );
+
+    /**
      * Lấy danh sách thông báo duyệt sản phẩm đang chờ xác nhận
      */
 //    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(

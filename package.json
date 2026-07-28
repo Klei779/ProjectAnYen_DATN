@@ -5,6 +5,7 @@
     "@stomp/stompjs": "^7.3.0",
     "@vue-leaflet/vue-leaflet": "^0.10.1",
     "cloudflared": "^0.7.1",
+    "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jwt-decode": "^4.0.0",

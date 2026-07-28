@@ -1,6 +1,5 @@
 package vn.anyen.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -8,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.request.GiaoCongViecRequest;
 import vn.anyen.dto.response.GiaoCongViecResponse;
+import vn.anyen.dto.response.LichSuGiaoCongViecResponse;
 import vn.anyen.dto.response.NhanVienGanNhatResponse;
 import vn.anyen.entity.KhachHang;
 import vn.anyen.entity.NhanVien;
@@ -19,18 +19,31 @@ import vn.anyen.repository.ThongBaoRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class HotlineCongViecService {
 
     private static final Integer VAI_TRO_NHAN_VIEN_TRUC_TIEP = NhanVien.VAI_TRO_BAN_HANG;
+    private static final String LOAI_CONG_VIEC = "CONG_VIEC";
+    private static final DateTimeFormatter DINH_DANG_THOI_GIAN =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy - HH:mm");
 
     private final NhanVienRepository nhanVienRepository;
     private final KhachHangRepository khachHangRepository;
     private final ThongBaoRepository thongBaoRepository;
+
+    public HotlineCongViecService(
+            NhanVienRepository nhanVienRepository,
+            KhachHangRepository khachHangRepository,
+            ThongBaoRepository thongBaoRepository
+    ) {
+        this.nhanVienRepository = nhanVienRepository;
+        this.khachHangRepository = khachHangRepository;
+        this.thongBaoRepository = thongBaoRepository;
+    }
 
     @Transactional(readOnly = true)
     public List<NhanVienGanNhatResponse> getNhanVienTrucTiep(
@@ -53,6 +66,22 @@ public class HotlineCongViecService {
                                 Comparator.nullsLast(Double::compareTo)
                         )
                         .thenComparing(NhanVienGanNhatResponse::getHoTen, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<LichSuGiaoCongViecResponse> getLichSuGiaoCongViec(
+            Authentication authentication
+    ) {
+        NhanVien hotline = requireHotline(authentication);
+
+        return thongBaoRepository
+                .findByNguoiGuiIdAndLoaiThongBaoOrderByNgayTaoDesc(
+                        hotline.getMaNhanVien(),
+                        LOAI_CONG_VIEC
+                )
+                .stream()
+                .map(this::toLichSuResponse)
                 .toList();
     }
 
@@ -120,6 +149,45 @@ public class HotlineCongViecService {
                 .tenNhanVien(nhanVien.getHoTen())
                 .message("Đã giao công việc cho " + nhanVien.getHoTen())
                 .build();
+    }
+
+    private LichSuGiaoCongViecResponse toLichSuResponse(ThongBao thongBao) {
+        NhanVien nguoiNhan = null;
+
+        if (thongBao.getNguoiNhanId() != null) {
+            nguoiNhan = nhanVienRepository
+                    .findById(thongBao.getNguoiNhanId())
+                    .orElse(null);
+        }
+
+        return new LichSuGiaoCongViecResponse(
+                thongBao.getMaThongBao(),
+                thongBao.getNguoiNhanId(),
+                nguoiNhan != null
+                        ? nguoiNhan.getHoTen()
+                        : "Nhân viên không còn tồn tại",
+                nguoiNhan != null
+                        ? nguoiNhan.getSoDienThoai()
+                        : null,
+                thongBao.getTrangThai(),
+                getTrangThaiText(thongBao.getTrangThai()),
+                thongBao.getNgayTao() != null
+                        ? thongBao.getNgayTao().format(DINH_DANG_THOI_GIAN)
+                        : null
+        );
+    }
+
+    private String getTrangThaiText(Integer trangThai) {
+        if (trangThai == null || trangThai == 0) {
+            return "Đã giao - Chưa xem";
+        }
+
+        return switch (trangThai) {
+            case 1 -> "Đã xem";
+            case 2 -> "Đã tiếp nhận";
+            case 3 -> "Đã từ chối";
+            default -> "Không xác định";
+        };
     }
 
     private NhanVien requireHotline(Authentication authentication) {

@@ -6,14 +6,11 @@ import PopXemHopDong from "../nhanvien/PopChiTietHopDong.vue";
 
 import {
   getHopDongsAdmin,
-  anHopDong,
-  hienHopDong,
   xoaHopDong,
 } from "../../services/quanLyHopDongService.js";
 
 const keyword = ref("");
 const trangThai = ref(null);
-const includeHidden = ref(true);
 
 const showDetailModal = ref(false);
 
@@ -52,7 +49,6 @@ const loadHopDongs = async () => {
     const data = await getHopDongsAdmin({
       keyword: keyword.value?.trim() || "",
       trangThai: trangThai.value,
-      includeHidden: includeHidden.value,
       page: page.value,
       pageSize: pageSize.value,
     });
@@ -88,14 +84,6 @@ const searchHopDong = () => {
   loadHopDongs();
 };
 
-const resetFilter = () => {
-  keyword.value = "";
-  trangThai.value = "Tất cả";
-  includeHidden.value = true;
-  page.value = 1;
-  loadHopDongs();
-};
-
 const changePage = (newPage) => {
   if (newPage < 1 || newPage > totalPages.value) return;
 
@@ -106,30 +94,6 @@ const changePage = (newPage) => {
 const changePageSize = () => {
   page.value = 1;
   loadHopDongs();
-};
-
-const toggleHidden = async (item) => {
-  if (!item?.maHopDong) return;
-
-  try {
-    if (item.an) {
-      await hienHopDong(item.maHopDong);
-      ElMessage.success("Đã hiện lại hợp đồng");
-    } else {
-      await anHopDong(item.maHopDong);
-      ElMessage.success("Đã ẩn hợp đồng tạm thời");
-    }
-
-    await loadHopDongs();
-  } catch (error) {
-    console.error("Lỗi ẩn/hiện hợp đồng:", error);
-
-    ElMessage.error(
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Không thể cập nhật trạng thái ẩn của hợp đồng"
-    );
-  }
 };
 
 const deleteContract = async (item) => {
@@ -338,20 +302,6 @@ onMounted(() => {
           </option>
         </select>
       </div>
-
-      <label class="hidden-filter">
-        <input
-            type="checkbox"
-            v-model="includeHidden"
-            @change="searchHopDong"
-        />
-        Hiển thị hợp đồng đã ẩn
-      </label>
-
-      <button class="reset-btn" @click="resetFilter">
-        <i class="fa-solid fa-rotate-right"></i>
-        Đặt lại
-      </button>
     </div>
 
     <div class="list-header">
@@ -368,7 +318,6 @@ onMounted(() => {
           <th>Ngày ký</th>
           <th>Ngày hết hạn</th>
           <th>Trạng thái</th>
-          <th>Hiển thị</th>
           <th class="action-title">Thao tác</th>
         </tr>
         </thead>
@@ -413,12 +362,6 @@ onMounted(() => {
               </span>
             </td>
 
-            <td>
-              <span class="badge" :class="item.an ? 'gray' : 'green'">
-                {{ item.an ? "Đang ẩn" : "Hiển thị" }}
-              </span>
-            </td>
-
             <td class="action-cell">
               <button
                   class="action-btn view"
@@ -426,17 +369,6 @@ onMounted(() => {
                   @click="openDetail(item.maHopDong)"
               >
                 <i class="fa-regular fa-eye"></i>
-              </button>
-
-              <button
-                  class="action-btn hide"
-                  :title="item.an ? 'Hiện hợp đồng' : 'Ẩn tạm thời'"
-                  @click="toggleHidden(item)"
-              >
-                <i
-                    class="fa-regular"
-                    :class="item.an ? 'fa-eye' : 'fa-eye-slash'"
-                ></i>
               </button>
 
               <button

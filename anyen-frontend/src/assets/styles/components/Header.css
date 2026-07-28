@@ -43,7 +43,7 @@
 .site-header.home-mode.is-scrolled {
     position: fixed;
 
-    background: rgba(255, 250, 242, 0.94);
+    background: white;
     border-bottom-color: rgba(11, 52, 83, 0.08);
 
     box-shadow: 0 8px 30px rgba(11, 52, 83, 0.12);
@@ -57,7 +57,7 @@
     position: sticky;
     top: 0;
 
-    background: rgba(255, 255, 255, 0.98);
+    background: transparent;
     border-bottom: 1px solid rgba(11, 52, 83, 0.08);
     box-shadow: none;
 
@@ -67,7 +67,7 @@
 
 /* Các trang khác khi cuộn */
 .site-header.inner-mode.is-scrolled {
-    background: rgba(255, 250, 242, 0.95);
+    background: white;
     border-bottom-color: rgba(11, 52, 83, 0.1);
 
     box-shadow: 0 8px 30px rgba(11, 52, 83, 0.12);
@@ -152,7 +152,7 @@
 .desktop-nav a {
     position: relative;
 
-    padding: 33px 0 14px;
+    padding: 18px 0 14px;
 
     color: var(--header-blue);
     text-decoration: none;

@@ -1526,3 +1526,81 @@ export const exportHopDongExcel = ({
         "danh-sach-hop-dong"
     );
 };
+
+export const exportSanPhamExcel = ({
+                                       products = [],
+                                       keyword = "",
+                                       categoryFilter = "all",
+                                       partnerFilter = "all",
+                                   }) => {
+
+    if (!products.length) {
+        throw new Error("Không có dữ liệu để xuất");
+    }
+
+    const workbook = XLSX.utils.book_new();
+
+    appendSheet(
+        workbook,
+        "Danh sách sản phẩm",
+        [
+            {
+                header: "STT",
+                value: (_, index) => index + 1,
+                type: "number",
+                width: 8,
+            },
+            {
+                header: "Mã sản phẩm",
+                value: (item) => `SP${String(item.id).padStart(4,"0")}`,
+                width: 18,
+            },
+            {
+                header: "Tên sản phẩm",
+                key: "name",
+                width: 35,
+            },
+            {
+                header: "Đối tác",
+                key: "tenDoiTac",
+                width: 30,
+            },
+            {
+                header: "Loại",
+                key: "loai",
+                width: 20,
+            },
+            {
+                header: "Vật liệu",
+                key: "vatLieu",
+                width: 20,
+            },
+            {
+                header: "Số lượng",
+                key: "soLuong",
+                type: "number",
+                width: 15,
+            },
+            {
+                header: "Giá bán",
+                key: "price",
+                type: "money",
+                width: 18,
+            },
+            {
+                header: "Trạng thái",
+                key: "tenTrangThai",
+                width: 20,
+            },
+            {
+                header: "Ngày gửi",
+                key: "ngayTao",
+                type: "date",
+                width: 18,
+            },
+        ],
+        products
+    );
+
+    saveWorkbook(workbook, "danh-sach-san-pham");
+};

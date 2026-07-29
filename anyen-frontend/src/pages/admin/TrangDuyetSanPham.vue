@@ -7,6 +7,8 @@ import {
   tuChoiSanPham,
 } from "../../services/duyetSanPhamService.js";
 
+import { exportSanPhamExcel } from "../../utils/exportExcel.js";
+
 const danhSachSanPham = ref([]);
 const loadingStates = reactive({});
 const isLoading = ref(false);
@@ -175,6 +177,19 @@ const resetFilters = () => {
   categoryFilter.value = "all";
   partnerFilter.value = "all";
   currentPage.value = 1;
+};
+
+const exportExcel = () => {
+  try {
+    exportSanPhamExcel({
+      products: filteredProducts.value,
+      keyword: keyword.value,
+      categoryFilter: categoryFilter.value,
+      partnerFilter: partnerFilter.value,
+    });
+  } catch (error) {
+    alert(error.message);
+  }
 };
 
 const changePage = (page) => {
@@ -453,6 +468,16 @@ const getImageUrl = (path) => {
               "
             ></i>
             Tải lại
+          </button>
+
+
+          <button
+              class="export-btn"
+              type="button"
+              @click="exportExcel"
+          >
+            <i class="fa-solid fa-file-excel"></i>
+            Xuất Excel
           </button>
         </div>
 
@@ -981,11 +1006,12 @@ const getImageUrl = (path) => {
 .filter-row {
   display: grid;
   grid-template-columns:
-    minmax(280px, 1fr)
-    200px
-    190px
-    auto
-    auto;
+      minmax(280px, 1fr)
+      180px
+      180px
+      auto
+      auto
+      auto;
   gap: 12px;
   align-items: center;
   padding: 18px;
@@ -1088,15 +1114,35 @@ const getImageUrl = (path) => {
 }
 
 .reload-btn {
-  border: 0;
-  background: #2563eb;
-  color: #ffffff;
-  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.2);
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #d1d5db; /* viền xám */
+  border-radius: 9px;
+  background: #fff;
+  color: #222; /* chữ xám */
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.reload-btn i {
+  color: #6b7280; /* icon xám */
 }
 
 .reload-btn:hover:not(:disabled) {
-  background: #1d4ed8;
-  transform: translateY(-1px);
+  background: #f9fafb;
+  border-color: #9ca3af;
+  color: #374151;
+}
+
+.reload-btn:hover:not(:disabled) i {
+  color: #374151;
 }
 
 button:disabled {
@@ -1823,5 +1869,36 @@ button:disabled {
     padding-right: 18px;
     padding-left: 18px;
   }
+}
+
+.export-btn {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #198754; /* viền xanh lá */
+  border-radius: 9px;
+  background: #fff;          /* nền trắng */
+  color: #222;               /* chữ đen */
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.export-btn i {
+  color: #198754; /* icon xanh lá */
+}
+
+.export-btn:hover {
+  background: #f3fff7;       /* xanh rất nhạt khi hover */
+  border-color: #157347;
+}
+
+.export-btn:active {
+  transform: scale(0.98);
 }
 </style>

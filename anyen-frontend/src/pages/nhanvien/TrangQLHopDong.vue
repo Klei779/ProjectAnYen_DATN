@@ -4,7 +4,7 @@ import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 
 import PopTaoHopDong from "../nhanvien/PopTaoHopDong.vue";
-
+import { exportHopDongExcel } from "../../utils/exportExcel.js";
 /*
   Nếu file popup của bạn tên là PopChiTietHopDong.vue thì giữ dòng này:
   import PopXemHopDong from "./PopChiTietHopDong.vue";
@@ -131,7 +131,15 @@ const afterCancelContract = async () => {
 };
 
 const exportExcel = () => {
-  alert("Chức năng xuất Excel đang được phát triển");
+  try {
+    exportHopDongExcel({
+      hopDongs: tableHopDongs.value,
+    });
+
+    ElMessage.success("Xuất Excel thành công");
+  } catch (error) {
+    ElMessage.error(error.message);
+  }
 };
 
 

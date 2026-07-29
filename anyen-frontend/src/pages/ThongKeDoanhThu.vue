@@ -2,6 +2,9 @@
 import { computed, onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { getThongKeDoanhThu } from "../services/thongKeDoanhThuService.js";
+import {
+  exportDoanhThuExcel
+} from "../utils/exportExcel.js";
 
 const props = defineProps({
   loaiTaiKhoan: {
@@ -162,6 +165,59 @@ const pageInfo = computed(() => {
         "Doanh thu nhân viên được tính theo tổng tiền hóa đơn đã lập.",
   };
 });
+
+const handleExportDoanhThu = () => {
+  try {
+    exportDoanhThuExcel({
+      thongKe: thongKe.value,
+
+      tuNgay:
+          Array.isArray(dateRange.value)
+              ? dateRange.value[0]
+              : null,
+
+      denNgay:
+          Array.isArray(dateRange.value)
+              ? dateRange.value[1]
+              : null,
+
+      kieuThongKe:
+      kieuThongKe.value,
+
+      loaiTaiKhoan:
+      props.loaiTaiKhoan,
+
+      vaiTro:
+      currentRole.value,
+
+      tyLeDoanhThu:
+      tyLeDoanhThuHienThi.value,
+
+      doanhThuThucNhan:
+      doanhThuThucNhanHienThi.value,
+
+      pageInfo:
+      pageInfo.value,
+
+      currentUser:
+      currentUser.value,
+    });
+
+    ElMessage.success(
+        "Đã xuất đầy đủ báo cáo doanh thu"
+    );
+  } catch (error) {
+    console.error(
+        "Lỗi xuất doanh thu:",
+        error
+    );
+
+    ElMessage.error(
+        error.message ||
+        "Không thể xuất báo cáo doanh thu"
+    );
+  }
+};
 
 const maxRevenue = computed(() => {
   const values =
@@ -565,15 +621,27 @@ onMounted(() => {
           Năm này
         </button>
 
-        <button
-            class="btn-primary"
-            type="button"
-            :disabled="loading"
-            @click="loadThongKe"
-        >
-          <i class="fa-solid fa-filter"></i>
-          Lọc doanh thu
-        </button>
+        <div class="filter-actions">
+          <button
+              class="btn-primary"
+              type="button"
+              :disabled="loading"
+              @click="loadThongKe"
+          >
+            <i class="fa-solid fa-filter"></i>
+            Lọc doanh thu
+          </button>
+
+          <button
+              type="button"
+              class="btn-export-excel"
+              :disabled="loading"
+              @click="handleExportDoanhThu"
+          >
+            <i class="fa-solid fa-file-excel"></i>
+            Xuất Excel
+          </button>
+        </div>
       </div>
     </div>
 

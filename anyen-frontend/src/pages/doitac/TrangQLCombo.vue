@@ -17,18 +17,34 @@
           <template #prefix><i class="fa-solid fa-magnifying-glass"></i></template>
         </el-input>
         <el-select v-model="statusFilter" class="status-filter">
-          <el-option label="Tất cả trạng thái" value="all" />
-          <el-option label="Đang hoạt động" :value="1" />
-          <el-option label="Đang ẩn" :value="0" />
-          <el-option label="Ngừng kinh doanh" :value="2" />
+          <el-option label="Tất cả trạng thái" value="all"/>
+          <el-option label="Đang hoạt động" :value="1"/>
+          <el-option label="Đang ẩn" :value="0"/>
+          <el-option label="Ngừng kinh doanh" :value="2"/>
         </el-select>
+
+        <button
+            type="button"
+            class="btn-export-excel"
+            :disabled="
+        loading ||
+        filteredCombos.length === 0
+      "
+            @click="handleExportCombo"
+        >
+          <i
+              class="fa-solid fa-file-excel"
+          ></i>
+
+          Xuất Excel
+        </button>
       </div>
 
       <el-table v-loading="loading" :data="filteredCombos" stripe empty-text="Chưa có combo nào">
         <el-table-column label="Combo" min-width="250">
           <template #default="{ row }">
             <div class="combo-cell">
-              <img v-if="row.hinhAnh" :src="row.hinhAnh" :alt="row.tenCombo" />
+              <img v-if="row.hinhAnh" :src="row.hinhAnh" :alt="row.tenCombo"/>
               <div v-else class="combo-placeholder"><i class="fa-solid fa-layer-group"></i></div>
               <div>
                 <strong>{{ row.tenCombo }}</strong>
@@ -98,7 +114,7 @@
       <el-form label-position="top">
         <div class="dialog-grid">
           <el-form-item label="Tên combo *" class="full-width">
-            <el-input v-model="form.tenCombo" maxlength="255" show-word-limit />
+            <el-input v-model="form.tenCombo" maxlength="255" show-word-limit/>
           </el-form-item>
 
           <el-form-item label="Giá combo *">
@@ -113,18 +129,18 @@
 
           <el-form-item label="Trạng thái">
             <el-select v-model="form.trangThai" class="full-control">
-              <el-option label="Đang hoạt động" :value="1" />
-              <el-option label="Đang ẩn" :value="0" />
-              <el-option label="Ngừng kinh doanh" :value="2" />
+              <el-option label="Đang hoạt động" :value="1"/>
+              <el-option label="Đang ẩn" :value="0"/>
+              <el-option label="Ngừng kinh doanh" :value="2"/>
             </el-select>
           </el-form-item>
 
           <el-form-item label="Ảnh combo (URL)" class="full-width">
-            <el-input v-model="form.hinhAnh" maxlength="500" placeholder="https://..." />
+            <el-input v-model="form.hinhAnh" maxlength="500" placeholder="https://..."/>
           </el-form-item>
 
           <el-form-item label="Mô tả" class="full-width">
-            <el-input v-model="form.moTa" type="textarea" :rows="3" maxlength="5000" show-word-limit />
+            <el-input v-model="form.moTa" type="textarea" :rows="3" maxlength="5000" show-word-limit/>
           </el-form-item>
 
           <el-form-item class="full-width product-picker">
@@ -135,7 +151,7 @@
               </div>
             </template>
 
-            <el-input v-model="productKeyword" clearable placeholder="Tìm sản phẩm" class="product-search" />
+            <el-input v-model="productKeyword" clearable placeholder="Tìm sản phẩm" class="product-search"/>
 
             <div v-if="filteredProducts.length" class="product-list">
               <article
@@ -149,7 +165,7 @@
                     :disabled="Number(product.soLuong || 0) <= 0 && !isProductSelected(product.maSanPham)"
                     @change="checked => toggleProduct(product, checked)"
                 />
-                <img v-if="product.hinhAnh" :src="product.hinhAnh" :alt="product.tenSanPham" />
+                <img v-if="product.hinhAnh" :src="product.hinhAnh" :alt="product.tenSanPham"/>
                 <div v-else class="product-image-placeholder"><i class="fa-solid fa-box"></i></div>
                 <div class="product-copy">
                   <strong>{{ product.tenSanPham }}</strong>
@@ -168,14 +184,16 @@
                 </div>
               </article>
             </div>
-            <el-empty v-else description="Không có sản phẩm đang bán để tạo combo" :image-size="80" />
+            <el-empty v-else description="Không có sản phẩm đang bán để tạo combo" :image-size="80"/>
           </el-form-item>
 
           <div class="edit-summary full-width">
             <div><span>Sản phẩm</span><strong>{{ selectedFormProducts.length }}</strong></div>
             <div><span>Tổng số lượng</span><strong>{{ editTotalQuantity }}</strong></div>
             <div><span>Tổng giá sản phẩm</span><strong>{{ formatCurrency(editTotalProductPrice) }}</strong></div>
-            <div><span>Giá combo</span><strong :class="{ invalid: editPriceExceedsTotal }">{{ formatCurrency(form.gia) }}</strong></div>
+            <div><span>Giá combo</span><strong :class="{ invalid: editPriceExceedsTotal }">{{
+                formatCurrency(form.gia)
+              }}</strong></div>
           </div>
         </div>
       </el-form>
@@ -191,14 +209,18 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import {computed, onMounted, reactive, ref} from "vue";
+import {ElMessage} from "element-plus";
 import {
   getCombosDoiTac,
   getSanPhamComboDoiTac,
   updateComboDoiTac,
   updateTrangThaiComboDoiTac
 } from "../../services/comboDoiTacService.js";
+
+import {
+  exportComboExcel
+} from "../../utils/exportExcel.js";
 
 const combos = ref([]);
 const products = ref([]);
@@ -242,7 +264,7 @@ const filteredProducts = computed(() => {
 const selectedFormProducts = computed(() =>
     form.sanPhams.map(item => {
       const product = products.value.find(candidate => candidate.maSanPham === item.maSanPham);
-      return product ? { ...product, soLuongTrongCombo: Number(item.soLuong || 1) } : null;
+      return product ? {...product, soLuongTrongCombo: Number(item.soLuong || 1)} : null;
     }).filter(Boolean)
 );
 
@@ -260,6 +282,40 @@ const editTotalProductPrice = computed(() =>
 const editPriceExceedsTotal = computed(() =>
     editTotalProductPrice.value > 0 && Number(form.gia || 0) > editTotalProductPrice.value
 );
+
+function handleExportCombo() {
+  try {
+    exportComboExcel({
+      // Xuất danh sách đang tìm kiếm/lọc.
+      combos: filteredCombos.value,
+
+      // Dùng để tính thống kê toàn bộ.
+      allCombos: combos.value,
+
+      keyword: keyword.value,
+
+      statusFilter:
+      statusFilter.value,
+
+      productsCount:
+      products.value.length,
+    });
+
+    ElMessage.success(
+        "Đã xuất đầy đủ danh sách combo"
+    );
+  } catch (error) {
+    console.error(
+        "Lỗi xuất combo:",
+        error
+    );
+
+    ElMessage.error(
+        error.message ||
+        "Không thể xuất danh sách combo"
+    );
+  }
+}
 
 onMounted(async () => {
   await Promise.all([loadCombos(), loadProducts()]);
@@ -322,7 +378,7 @@ function getSelectedQuantity(productId) {
 
 function toggleProduct(product, checked) {
   if (checked && !isProductSelected(product.maSanPham)) {
-    form.sanPhams.push({ maSanPham: product.maSanPham, soLuong: 1 });
+    form.sanPhams.push({maSanPham: product.maSanPham, soLuong: 1});
   } else if (!checked) {
     form.sanPhams = form.sanPhams.filter(item => item.maSanPham !== product.maSanPham);
   }
@@ -425,52 +481,393 @@ function getErrorMessage(error, fallback) {
 </script>
 
 <style scoped>
-.combo-page { min-height: 100vh; padding: 28px; background: #f5f7fb; color: #1f2937; }
-.page-header { display: flex; justify-content: space-between; align-items: center; gap: 18px; margin-bottom: 22px; }
-.eyebrow { margin: 0 0 5px !important; color: #be123c !important; font-size: 11px; font-weight: 800; letter-spacing: .1em; }
-.page-header h2 { margin: 0; font-weight: 780; }
-.page-header p { margin: 7px 0 0; color: #6b7280; }
-.summary-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 20px; }
-.summary-card, .table-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 15px; box-shadow: 0 8px 24px rgba(15, 23, 42, .05); }
-.summary-card { padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; }
-.summary-card span { color: #64748b; }
-.summary-card strong { color: #9f1239; font-size: 25px; }
-.table-card { padding: 20px; }
-.table-toolbar { display: flex; gap: 12px; margin-bottom: 18px; }
-.search-input { max-width: 420px; }
-.status-filter { width: 190px; }
-.combo-cell { display: flex; gap: 12px; align-items: center; }
-.combo-cell img, .combo-placeholder { width: 58px; height: 58px; border-radius: 10px; object-fit: cover; flex: 0 0 auto; }
-.combo-placeholder { display: grid; place-items: center; color: #9f1239; background: #fff1f2; }
-.combo-cell small { display: -webkit-box; margin-top: 5px; color: #6b7280; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.product-tags { display: flex; flex-wrap: wrap; gap: 6px; }
-.price-cell { display: grid; gap: 4px; }
-.price-cell strong { color: #b42318; }
-.price-cell small { color: #64748b; font-size: 11px; }
-.dialog-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 18px; }
-.full-width { grid-column: 1 / -1; }
-.full-control, .number-input { width: 100%; }
-.picker-label { display: flex; justify-content: space-between; align-items: baseline; width: 100%; gap: 12px; }
-.picker-label small { color: #6b7280; font-weight: 400; }
-.product-search { margin-bottom: 12px; }
-.product-list { width: 100%; max-height: 390px; overflow: auto; display: grid; gap: 10px; padding: 4px; }
-.product-option { min-width: 0; display: grid; grid-template-columns: auto 48px minmax(0, 1fr) minmax(190px, auto); align-items: center; gap: 10px; padding: 10px; border: 1px solid #e5e7eb; border-radius: 11px; transition: .18s ease; }
-.product-option.selected { border-color: #e11d48; background: #fff1f2; }
-.product-option img, .product-image-placeholder { width: 46px; height: 46px; border-radius: 8px; object-fit: cover; }
-.product-image-placeholder { display: grid; place-items: center; background: #f1f5f9; color: #64748b; }
-.product-copy { min-width: 0; }
-.product-copy strong, .product-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.product-copy small { margin-top: 4px; color: #64748b; }
-.product-quantity { display: grid; grid-template-columns: auto auto; gap: 5px 10px; align-items: center; justify-content: end; }
-.product-quantity span { color: #64748b; font-size: 11px; }
-.product-quantity strong { grid-column: 1 / -1; justify-self: end; color: #9f1239; font-size: 12px; }
-.edit-summary { display: grid; grid-template-columns: repeat(4, 1fr); overflow: hidden; margin-top: 6px; border: 1px solid #e5e7eb; border-radius: 12px; background: #f8fafc; }
-.edit-summary div { padding: 12px 14px; border-right: 1px solid #e5e7eb; }
-.edit-summary div:last-child { border-right: 0; }
-.edit-summary span, .edit-summary strong { display: block; }
-.edit-summary span { color: #64748b; font-size: 11px; }
-.edit-summary strong { margin-top: 4px; color: #1f2937; }
-.edit-summary strong.invalid { color: #dc2626; }
-@media (max-width: 900px) { .summary-row, .dialog-grid { grid-template-columns: 1fr; } .full-width { grid-column: auto; } .product-option { grid-template-columns: auto 48px minmax(0, 1fr); } .product-quantity { grid-column: 2 / -1; justify-content: start; padding-top: 8px; border-top: 1px solid #fecdd3; } .edit-summary { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 640px) { .combo-page { padding: 16px; } .page-header, .table-toolbar { flex-direction: column; align-items: stretch; } .search-input, .status-filter { max-width: none; width: 100%; } }
+.combo-page {
+  min-height: 100vh;
+  padding: 28px;
+  background: #f5f7fb;
+  color: #1f2937;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.eyebrow {
+  margin: 0 0 5px !important;
+  color: #be123c !important;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.page-header h2 {
+  margin: 0;
+  font-weight: 780;
+}
+
+.page-header p {
+  margin: 7px 0 0;
+  color: #6b7280;
+}
+
+.summary-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.summary-card, .table-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 15px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+}
+
+.summary-card {
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-card span {
+  color: #64748b;
+}
+
+.summary-card strong {
+  color: #9f1239;
+  font-size: 25px;
+}
+
+.table-card {
+  padding: 20px;
+}
+
+.table-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.search-input {
+  max-width: 420px;
+}
+
+.status-filter {
+  width: 190px;
+}
+
+.combo-cell {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.combo-cell img, .combo-placeholder {
+  width: 58px;
+  height: 58px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.combo-placeholder {
+  display: grid;
+  place-items: center;
+  color: #9f1239;
+  background: #fff1f2;
+}
+
+.combo-cell small {
+  display: -webkit-box;
+  margin-top: 5px;
+  color: #6b7280;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.price-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.price-cell strong {
+  color: #b42318;
+}
+
+.price-cell small {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.full-control, .number-input {
+  width: 100%;
+}
+
+.picker-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  width: 100%;
+  gap: 12px;
+}
+
+.picker-label small {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.product-search {
+  margin-bottom: 12px;
+}
+
+.product-list {
+  width: 100%;
+  max-height: 390px;
+  overflow: auto;
+  display: grid;
+  gap: 10px;
+  padding: 4px;
+}
+
+.product-option {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 48px minmax(0, 1fr) minmax(190px, auto);
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 11px;
+  transition: .18s ease;
+}
+
+.product-option.selected {
+  border-color: #e11d48;
+  background: #fff1f2;
+}
+
+.product-option img, .product-image-placeholder {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.product-image-placeholder {
+  display: grid;
+  place-items: center;
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.product-copy {
+  min-width: 0;
+}
+
+.product-copy strong, .product-copy small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-copy small {
+  margin-top: 4px;
+  color: #64748b;
+}
+
+.product-quantity {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 5px 10px;
+  align-items: center;
+  justify-content: end;
+}
+
+.product-quantity span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.product-quantity strong {
+  grid-column: 1 / -1;
+  justify-self: end;
+  color: #9f1239;
+  font-size: 12px;
+}
+
+.edit-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  overflow: hidden;
+  margin-top: 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.edit-summary div {
+  padding: 12px 14px;
+  border-right: 1px solid #e5e7eb;
+}
+
+.edit-summary div:last-child {
+  border-right: 0;
+}
+
+.edit-summary span, .edit-summary strong {
+  display: block;
+}
+
+.edit-summary span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.edit-summary strong {
+  margin-top: 4px;
+  color: #1f2937;
+}
+
+.edit-summary strong.invalid {
+  color: #dc2626;
+}
+
+@media (max-width: 900px) {
+  .summary-row, .dialog-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .full-width {
+    grid-column: auto;
+  }
+
+  .product-option {
+    grid-template-columns: auto 48px minmax(0, 1fr);
+  }
+
+  .product-quantity {
+    grid-column: 2 / -1;
+    justify-content: start;
+    padding-top: 8px;
+    border-top: 1px solid #fecdd3;
+  }
+
+  .edit-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .combo-page {
+    padding: 16px;
+  }
+
+  .page-header, .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-input, .status-filter {
+    max-width: none;
+    width: 100%;
+  }
+}
+
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.btn-export-excel {
+  height: 32px;
+  min-height: 32px;
+  padding: 0 16px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  flex: 0 0 auto;
+
+  background-color: #ffffff;
+  color: #111111;
+
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+
+  cursor: pointer;
+
+  transition: background-color 0.2s ease,
+  border-color 0.2s ease,
+  box-shadow 0.2s ease;
+}
+
+.btn-export-excel i {
+  color: #dc3545;
+}
+
+.btn-export-excel:hover:not(:disabled) {
+  background-color: #fff5f5;
+  color: #111111;
+  border-color: #b02a37;
+
+  box-shadow: 0 3px 10px rgba(220, 53, 69, 0.16);
+}
+
+.btn-export-excel:disabled {
+  background-color: #f5f5f5;
+  color: #9ca3af;
+  border-color: #d1d5db;
+
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.btn-export-excel:disabled i {
+  color: #9ca3af;
+}
+
+@media (max-width: 640px) {
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-export-excel {
+    width: 100%;
+    height: 40px;
+  }
+}
 </style>

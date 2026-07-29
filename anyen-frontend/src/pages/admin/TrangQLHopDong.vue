@@ -9,6 +9,8 @@ import {
   xoaHopDong,
 } from "../../services/quanLyHopDongService.js";
 
+import { exportHopDongExcel } from "../../utils/exportExcel.js";
+
 const keyword = ref("");
 const trangThai = ref(null);
 
@@ -235,6 +237,18 @@ const statusClass = (status) => {
   return "gray";
 };
 
+const exportExcel = () => {
+  try {
+    exportHopDongExcel({
+      hopDongs: hopDongs.value,
+    });
+
+    ElMessage.success("Xuất Excel thành công");
+  } catch (error) {
+    ElMessage.error(error.message);
+  }
+};
+
 const totalPages = computed(() => {
   return Math.max(Math.ceil(total.value / pageSize.value), 1);
 });
@@ -306,6 +320,17 @@ onMounted(() => {
 
     <div class="list-header">
       <h3>Lịch sử &amp; danh sách hợp đồng</h3>
+
+      <div class="list-actions">
+        <button class="outline-btn" @click="exportExcel">
+          <i class="fa-solid fa-download"></i>
+          Xuất Excel
+        </button>
+
+        <button class="square-btn">
+          <i class="fa-solid fa-sliders"></i>
+        </button>
+      </div>
     </div>
 
     <div class="table-card">

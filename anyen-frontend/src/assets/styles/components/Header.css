@@ -25,16 +25,14 @@
     transition:
             background-color 0.35s ease,
             border-color 0.35s ease,
-            box-shadow 0.35s ease,
-            backdrop-filter 0.35s ease,
-            -webkit-backdrop-filter 0.35s ease;
+            box-shadow 0.35s ease;
 }
 
 /* Trang chủ khi đang ở đầu trang */
 .site-header.home-mode {
     position: absolute;
 
-    background: transparent;
+    background: white;
     border-bottom: 1px solid transparent;
     box-shadow: none;
 }
@@ -47,9 +45,6 @@
     border-bottom-color: rgba(11, 52, 83, 0.08);
 
     box-shadow: 0 8px 30px rgba(11, 52, 83, 0.12);
-
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
 }
 
 /* Các trang khác */
@@ -57,12 +52,9 @@
     position: sticky;
     top: 0;
 
-    background: transparent;
+    background: white;
     border-bottom: 1px solid rgba(11, 52, 83, 0.08);
     box-shadow: none;
-
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
 }
 
 /* Các trang khác khi cuộn */
@@ -71,9 +63,6 @@
     border-bottom-color: rgba(11, 52, 83, 0.1);
 
     box-shadow: 0 8px 30px rgba(11, 52, 83, 0.12);
-
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
 }
 
 .site-header.menu-opened {
@@ -86,7 +75,7 @@
 
 .header-inner {
     width: min(1280px, calc(100% - 70px));
-    height: 92px;
+    height: 105px;
     margin: 0 auto;
 
     display: grid;
@@ -532,7 +521,7 @@
 
 @media (min-width: 993px) {
     .site-header.is-scrolled .header-inner {
-        height: 72px;
+        height: 85px;
 
         grid-template-columns:
             125px
@@ -934,7 +923,7 @@
 
     .header-inner {
         width: calc(100% - 32px);
-        height: 76px;
+        height: 85px;
 
         display: grid;
         grid-template-columns: 1fr auto;
@@ -957,7 +946,7 @@
 
     /* Mobile cũng co nhẹ khi cuộn */
     .site-header.is-scrolled .header-inner {
-        height: 66px;
+        height: 75px;
     }
 
     .site-header.is-scrolled .header-logo-image {
@@ -999,12 +988,12 @@
 
     .mobile-navigation-wrapper {
         position: fixed;
-        top: 76px;
+        top: 85px;
         left: 0;
         z-index: 999;
 
         width: 100%;
-        height: calc(100vh - 76px);
+        height: calc(100vh - 85px);
         overflow-y: auto;
 
         display: block;
@@ -1022,8 +1011,8 @@
     }
 
     .site-header.is-scrolled .mobile-navigation-wrapper {
-        top: 66px;
-        height: calc(100vh - 66px);
+        top: 75px;
+        height: calc(100vh - 75px);
     }
 
     .mobile-navigation {
@@ -1256,7 +1245,7 @@
 @media (max-width: 480px) {
     .header-inner {
         width: calc(100% - 24px);
-        height: 70px;
+        height: 80px;
     }
 
     .header-logo-image {
@@ -1292,15 +1281,15 @@
     }
 
     .mobile-navigation-wrapper {
-        top: 70px;
-        height: calc(100vh - 70px);
+        top: 80px;
+        height: calc(100vh - 80px);
 
         padding-right: 12px;
         padding-left: 12px;
     }
 
     .site-header.is-scrolled .header-inner {
-        height: 62px;
+        height: 72px;
     }
 
     .site-header.is-scrolled .header-logo-image {
@@ -1308,7 +1297,7 @@
     }
 
     .site-header.is-scrolled .mobile-navigation-wrapper {
-        top: 62px;
-        height: calc(100vh - 62px);
+        top: 72px;
+        height: calc(100vh - 72px);
     }
 }

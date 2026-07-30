@@ -15,8 +15,12 @@ import vn.anyen.dto.request.SanPhamRequest;
 import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.SanPham;
+import vn.anyen.entity.SanPhamChiTiet;
+import vn.anyen.entity.SanPhamHinhAnh;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.SanPhamRepository;
+import vn.anyen.repository.SanPhamChiTietRepository;
+import vn.anyen.repository.SanPhamHinhAnhRepository;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -33,6 +37,8 @@ public class SanPhamService {
     private final SanPhamRepository sanPhamRepository;
     private final DoiTacRepository doiTacRepository;
     private final DoiTacThongBaoService doiTacThongBaoService;
+    private final SanPhamChiTietRepository sanPhamChiTietRepository;
+    private final SanPhamHinhAnhRepository sanPhamHinhAnhRepository;
 //XỬ LÝ LOGIC LOAD SẢN PHẨM
     public SanPhamPageResponse getSanPham(
             String keyword,
@@ -330,6 +336,29 @@ public class SanPhamService {
 
     private SanPhamResponse mapToResponse(SanPham sp) {
         String tenDT = (sp.getMaDoiTac() != null) ? sanPhamRepository.findTenDoiTacByMaDoiTac(sp.getMaDoiTac()) : "Không rõ đối tác";
+
+        // Load chi tiết sản phẩm
+        List<SanPhamChiTiet> chiTiets = sanPhamChiTietRepository.findByMaSanPhamOrderByThuTuAsc(sp.getMaSanPham());
+        List<SanPhamResponse.SanPhamChiTietResponse> chiTietResponses = chiTiets.stream()
+                .map(ct -> SanPhamResponse.SanPhamChiTietResponse.builder()
+                        .maChiTiet(ct.getMaChiTiet())
+                        .loaiKhoi(ct.getLoaiKhoi())
+                        .noiDung(ct.getNoiDung())
+                        .thuTu(ct.getThuTu())
+                        .build())
+                .toList();
+
+        // Load hình ảnh sản phẩm
+        List<SanPhamHinhAnh> hinhAnhs = sanPhamHinhAnhRepository.findByMaSanPhamOrderByThuTuAsc(sp.getMaSanPham());
+        List<SanPhamResponse.SanPhamHinhAnhResponse> hinhAnhResponses = hinhAnhs.stream()
+                .map(ha -> SanPhamResponse.SanPhamHinhAnhResponse.builder()
+                        .maHinhAnh(ha.getMaHinhAnh())
+                        .loaiHinhAnh(ha.getLoaiHinhAnh())
+                        .urlHinhAnh(ha.getUrlHinhAnh())
+                        .thuTu(ha.getThuTu())
+                        .build())
+                .toList();
+
         return SanPhamResponse.builder()
                 .id(sp.getMaSanPham())
                 .name(sp.getTenSanPham())
@@ -353,11 +382,13 @@ public class SanPhamService {
                 .tenDoiTac(tenDT)
                 .soLuong(sp.getSoLuong())
                 .ngayCapNhat("N/A")
-                .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null 
-                    ? sp.getGiaTien().subtract(sp.getKhuyenMai()) 
+                .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null
+                    ? sp.getGiaTien().subtract(sp.getKhuyenMai())
                     : null)
                 .moTa(sp.getGhiChu())
                 .huongDanBaoQuan("Sản phẩm nên được bảo quản ở nơi khô ráo, thoáng mát, tránh ánh nắng trực tiếp và độ ẩm cao.")
+                .sanPhamChiTiets(chiTietResponses)
+                .sanPhamHinhAnhs(hinhAnhResponses)
                 .build();
     }
 }

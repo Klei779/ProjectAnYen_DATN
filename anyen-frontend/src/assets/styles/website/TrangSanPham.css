@@ -653,8 +653,54 @@
 }
 
 /* =============================================
-   TRUST BAR
+   PRODUCT DETAILS (Dạng bài viết)
    ============================================= */
+
+.product-details {
+    padding: 16px;
+    border-top: 1px solid #f0ebe7;
+    background: #faf9f7;
+}
+
+.detail-item {
+    margin-bottom: 12px;
+}
+
+.detail-item:last-child {
+    margin-bottom: 0;
+}
+
+.detail-title h5 {
+    font-family: 'Faustina', serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #15304e;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.3px;
+}
+
+.detail-content p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #0a0908;
+    margin: 0 0 8px 0;
+}
+
+.detail-image {
+    margin-top: 8px;
+}
+
+.detail-image img {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-bottom: 8px;
+}
+
+.detail-image img:last-child {
+    margin-bottom: 0;
+}
 
 .trust-bar {
     background: #fff;

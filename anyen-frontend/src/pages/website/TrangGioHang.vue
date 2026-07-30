@@ -4,12 +4,12 @@
     <section class="cart-hero">
       <div class="cart-container">
         <div class="cart-hero-content">
-          <span class="cart-eyebrow"><i class="fa-solid fa-heart"></i> AN YÊN</span>
+          <span class="cart-eyebrow"><i class="fa-solid fa-cart-shopping"></i> AN YÊN</span>
 
-          <h1>Sản phẩm đã lưu</h1>
+          <h1>Giỏ hàng</h1>
 
           <p>
-            Danh sách sản phẩm quý khách đang quan tâm và muốn lưu lại để tham khảo.
+            Quản lý sản phẩm bạn muốn mua, điều chỉnh số lượng và xem tổng giá.
           </p>
         </div>
       </div>
@@ -25,7 +25,7 @@
 
           <i class="fa-solid fa-chevron-right"></i>
 
-          <span>Sản phẩm đã lưu</span>
+          <span>Giỏ hàng</span>
         </nav>
       </div>
     </div>
@@ -39,14 +39,13 @@
             class="empty-cart"
         >
           <div class="empty-cart-icon">
-            <i class="fa-regular fa-heart"></i>
+            <i class="fa-solid fa-cart-shopping"></i>
           </div>
 
-          <h2>Chưa có sản phẩm nào được lưu</h2>
+          <h2>Giỏ hàng trống</h2>
 
           <p>
-            Nhấn vào biểu tượng trái tim trên sản phẩm để thêm sản phẩm
-            vào danh sách quan tâm.
+            Nhấn vào biểu tượng giỏ hàng trên sản phẩm để thêm vào giỏ hàng.
           </p>
 
           <RouterLink
@@ -67,7 +66,7 @@
               </span>
 
               <div>
-                <small>Sản phẩm đã lưu</small>
+                <small>Sản phẩm trong giỏ</small>
 
                 <strong>
                   {{ cartCount }} sản phẩm
@@ -166,6 +165,34 @@
                 </div>
 
                 <div class="cart-item-actions">
+                  <div class="quantity-control">
+                    <button
+                        type="button"
+                        class="quantity-btn"
+                        @click="decreaseQuantity(item.id)"
+                        :disabled="(item.quantity || 1) <= 1"
+                    >
+                      <i class="fa-solid fa-minus"></i>
+                    </button>
+
+                    <input
+                        type="number"
+                        class="quantity-input"
+                        :value="item.quantity || 1"
+                        min="1"
+                        @change="handleQuantityChange(item.id, $event)"
+                        @blur="handleQuantityBlur(item.id, $event)"
+                    >
+
+                    <button
+                        type="button"
+                        class="quantity-btn"
+                        @click="increaseQuantity(item.id)"
+                    >
+                      <i class="fa-solid fa-plus"></i>
+                    </button>
+                  </div>
+
                   <RouterLink
                       :to="`/san-pham/${item.id}`"
                       class="detail-button"
@@ -176,7 +203,7 @@
                   <button
                       type="button"
                       class="remove-button"
-                      aria-label="Xóa khỏi danh sách"
+                      aria-label="Xóa khỏi giỏ hàng"
                       @click="removeProduct(item.id)"
                   >
                     <i class="fa-solid fa-trash-can"></i>
@@ -195,7 +222,7 @@
                   />
                 </div>
 
-                <h3>Danh sách quan tâm</h3>
+                <h3>Tóm tắt giỏ hàng</h3>
 
                 <div class="sidebar-row">
                   <span>Số sản phẩm</span>
@@ -208,8 +235,7 @@
                 </div>
 
                 <p class="price-note">
-                  Giá sản phẩm chỉ mang tính tham khảo tại thời điểm lưu.
-                  Vui lòng liên hệ An Yên để được tư vấn chính xác.
+                  Giá sản phẩm có thể thay đổi. Vui lòng liên hệ An Yên để được tư vấn chính xác.
                 </p>
 
                 <button
@@ -251,7 +277,10 @@ const {
   cartItems,
   cartCount,
   removeFromCart,
-  clearCart
+  clearCart,
+  increaseQuantity,
+  decreaseQuantity,
+  updateQuantity
 } = useCart();
 
 const exporting = ref(false);
@@ -259,10 +288,11 @@ const exporting = ref(false);
 const totalPrice = computed(() => {
   return cartItems.value.reduce((total, product) => {
     const price = Number(product.price);
+    const quantity = Number(product.quantity) || 1;
 
     return total + (
         Number.isFinite(price)
-            ? price
+            ? price * quantity
             : 0
     );
   }, 0);
@@ -301,8 +331,27 @@ function removeProduct(productId) {
   removeFromCart(productId);
 
   ElMessage.success(
-      "Đã xóa sản phẩm khỏi danh sách"
+      "Đã xóa sản phẩm khỏi giỏ hàng"
   );
+}
+
+function handleQuantityChange(productId, event) {
+  const value = parseInt(event.target.value);
+  if (value && value > 0) {
+    updateQuantity(productId, value);
+  } else {
+    // Reset về 1 nếu nhập giá trị không hợp lệ
+    event.target.value = 1;
+    updateQuantity(productId, 1);
+  }
+}
+
+function handleQuantityBlur(productId, event) {
+  const value = parseInt(event.target.value);
+  if (!value || value < 1) {
+    event.target.value = 1;
+    updateQuantity(productId, 1);
+  }
 }
 
 async function confirmClearCart() {
@@ -1180,6 +1229,63 @@ async function exportToExcel() {
   border-left: 1px solid #eee8e2;
 }
 
+.quantity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.quantity-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ddd7d0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--navy);
+  cursor: pointer;
+  transition: all .22s ease;
+}
+
+.quantity-btn:hover:not(:disabled) {
+  border-color: var(--red);
+  color: var(--red);
+  background: #fff7f7;
+}
+
+.quantity-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quantity-input {
+  width: 50px;
+  height: 32px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  border: 1px solid #ddd7d0;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.quantity-input::-webkit-outer-spin-button,
+.quantity-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.quantity-input:focus {
+  outline: none;
+  border-color: var(--red);
+}
+
 .detail-button {
   min-height: 40px;
   padding: 0 14px;
@@ -1210,7 +1316,7 @@ async function exportToExcel() {
 }
 
 .remove-button::after {
-  content: " Xóa khỏi danh sách";
+  content: " Xóa khỏi giỏ";
   margin-left: 7px;
   font-family: "Be Vietnam Pro", Arial, sans-serif;
   font-size: 11px;

@@ -64,16 +64,10 @@
                   class="main-wishlist-btn"
                   :class="{ active: isWished }"
                   type="button"
-                  aria-label="Thêm sản phẩm vào yêu thích"
+                  aria-label="Thêm vào giỏ hàng"
                   @click="toggleWish"
               >
-                <i
-                    :class="
-                    isWished
-                      ? 'fa-solid fa-heart'
-                      : 'fa-regular fa-heart'
-                  "
-                ></i>
+                <i class="fa-solid fa-cart-shopping"></i>
               </button>
 
               <img
@@ -361,6 +355,27 @@
               "Sản phẩm được An Yên tuyển chọn nhằm bảo đảm tính trang trọng, phù hợp với nhu cầu và nghi thức của từng gia đình."
             }}
           </p>
+
+          <!-- Chi tiết sản phẩm dạng bài viết -->
+          <div v-if="product.sanPhamChiTiets && product.sanPhamChiTiets.length > 0" class="product-article-details">
+            <div v-for="chiTiet in sortedChiTiets(product.sanPhamChiTiets)" :key="chiTiet.maChiTiet" class="article-detail-item">
+              <div v-if="chiTiet.loaiKhoi === 'tieu_de'" class="article-detail-title">
+                <h3>{{ chiTiet.noiDung }}</h3>
+              </div>
+              <div v-else-if="chiTiet.loaiKhoi === 'noi_dung'" class="article-detail-content">
+                <p>{{ chiTiet.noiDung }}</p>
+              </div>
+              <div v-else-if="chiTiet.loaiKhoi === 'hinh_anh' && product.sanPhamHinhAnhs" class="article-detail-image">
+                <img
+                    v-for="hinhAnh in getHinhAnhByChiTiet(product.sanPhamHinhAnhs, chiTiet.maChiTiet)"
+                    :key="hinhAnh.maHinhAnh"
+                    :src="formatHinhAnhUrl(hinhAnh.urlHinhAnh)"
+                    :alt="hinhAnh.loaiHinhAnh"
+                    loading="lazy"
+                />
+              </div>
+            </div>
+          </div>
 
           <div class="detail-feature-grid">
             <article class="detail-feature-card">
@@ -832,6 +847,27 @@ const handleImageError = (event) => {
   image.dataset.fallbackApplied = "true";
   image.src = DEFAULT_IMAGE;
 };
+
+// Sắp xếp chi tiết sản phẩm theo thứ tự
+const sortedChiTiets = (chiTiets) => {
+  if (!chiTiets || chiTiets.length === 0) return []
+  return [...chiTiets].sort((a, b) => (a.thuTu || 0) - (b.thuTu || 0))
+}
+
+// Lấy hình ảnh theo chi tiết
+const getHinhAnhByChiTiet = (hinhAnhs, maChiTiet) => {
+  if (!hinhAnhs || hinhAnhs.length === 0) return []
+  return hinhAnhs.filter(ha => ha.maChiTiet === maChiTiet)
+}
+
+// Format URL hình ảnh
+const formatHinhAnhUrl = (url) => {
+  if (!url) return DEFAULT_IMAGE
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/')) {
+    return url
+  }
+  return `/images/${url}`
+}
 
 const toggleWish = () => {
   isWished.value = !isWished.value;
@@ -1674,6 +1710,55 @@ onMounted(loadProduct);
   font-size: 13px;
   line-height: 1.8;
   text-align: center;
+}
+
+/* Chi tiết sản phẩm dạng bài viết */
+.product-article-details {
+  margin: 24px 0 32px;
+  padding: 28px;
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+.article-detail-item {
+  margin-bottom: 20px;
+}
+
+.article-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.article-detail-title h3 {
+  font-family: "Faustina", serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--navy);
+  margin: 0 0 12px 0;
+  letter-spacing: 0.3px;
+}
+
+.article-detail-content p {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text);
+  margin: 0 0 12px 0;
+}
+
+.article-detail-image {
+  margin-top: 12px;
+}
+
+.article-detail-image img {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.article-detail-image img:last-child {
+  margin-bottom: 0;
 }
 
 .detail-feature-grid {

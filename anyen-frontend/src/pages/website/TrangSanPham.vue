@@ -192,13 +192,7 @@
     "
                       @click.stop="toggleWish(item)"
                   >
-                    <i
-                        :class="
-        isInCart(item.id)
-          ? 'fa-solid fa-heart'
-          : 'fa-regular fa-heart'
-      "
-                    ></i>
+                    <i class="fa-solid fa-cart-shopping"></i>
                   </button>
                 </div>
 

@@ -3,6 +3,7 @@ package vn.anyen.dto;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Getter
 @Setter
@@ -39,4 +40,32 @@ public class SanPhamResponse {
     private BigDecimal discount;
     private String moTa;
     private String huongDanBaoQuan;
+
+    // Chi tiết sản phẩm dạng bài viết
+    private List<SanPhamChiTietResponse> sanPhamChiTiets;
+    private List<SanPhamHinhAnhResponse> sanPhamHinhAnhs;
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SanPhamChiTietResponse {
+        private Integer maChiTiet;
+        private String loaiKhoi;
+        private String noiDung;
+        private Integer thuTu;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class SanPhamHinhAnhResponse {
+        private Integer maHinhAnh;
+        private String loaiHinhAnh;
+        private String urlHinhAnh;
+        private Integer thuTu;
+    }
 }

@@ -95,15 +95,15 @@ const routes = [
                 component: TrangLienHe,
             },
             {
-                path:"/tin-tuc",
-                name:"TinTuc",
-                component:TrangTinTuc
+                path: "/tin-tuc",
+                name: "TinTuc",
+                component: TrangTinTuc
             },
 
             {
-                path:"/tin-tuc/:id",
-                name:"ChiTietTinTuc",
-                component:ChiTietTinTuc
+                path: "/tin-tuc/:id",
+                name: "ChiTietTinTuc",
+                component: ChiTietTinTuc
             },
             {
                 path: "xac-nhan-doi-tac",
@@ -203,7 +203,7 @@ const routes = [
             },
             {
                 path: "quan-ly-hop-dong",
-                component:TrangQLHopDong,
+                component: TrangQLHopDong,
             },
             {
                 path: "thong-ke-doanh-thu",
@@ -295,7 +295,7 @@ const routes = [
                 component: TrangQLCongViec,
             },
             {
-                path:"nhan-tin",
+                path: "nhan-tin",
                 component: TrangNhanTin,
             },
             {

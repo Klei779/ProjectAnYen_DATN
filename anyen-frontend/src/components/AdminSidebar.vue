@@ -83,13 +83,21 @@
         <span class="sidebar-text">Thống kê doanh thu</span>
       </RouterLink>
       <RouterLink
-          to="/admin/quan-ly-hoa-don"
-          class="menu-item"
-          title="Quản lý hóa đơn"
-      >
-        <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
-        <span class="sidebar-text">Quản lý hóa đơn</span>
-      </RouterLink>
+    to="/admin/quan-ly-hoa-don"
+    class="menu-item"
+    title="Quản lý hóa đơn"
+>
+  <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
+  <span class="sidebar-text">Quản lý hóa đơn</span>
+</RouterLink>
+<RouterLink
+    to="/admin/quan-ly-cong-no"
+    class="menu-item"
+    title="Quản lý công nợ"
+>
+  <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
+  <span class="sidebar-text">Quản lý công nợ</span>
+</RouterLink>
       <RouterLink to="/admin/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
         <i class="fa-solid fa-user menu-icon"></i>
         <span class="sidebar-text">Thông tin tài khoản</span>

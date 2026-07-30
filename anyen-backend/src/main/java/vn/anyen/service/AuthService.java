@@ -49,7 +49,6 @@ public class AuthService {
                     nhanVienRepository.findByTenDangNhap(
                             request.getTenDangNhap());
 
-
             if (optionalNv.isPresent()) {
 
                 NhanVien nv = optionalNv.get();

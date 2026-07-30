@@ -207,16 +207,12 @@ const pageSize = ref(4);
 const donHangs = ref([]);
 
 // ─────────────────────────────────────────────
-// Stepper giống trang quản lý đơn hàng nhân viên
+// Stepper cho đối tác - chỉ hiển thị 3 trạng thái riêng
 // ─────────────────────────────────────────────
 const STEPS = [
-  "Mới tạo",
-  "Xác nhận",
   "Đã nhận",
-  "Xử lý",
+  "Đang xử lý",
   "Đã giao",
-  "Thanh toán",
-  "Hoàn thành",
 ];
 
 const normalizeText = (value) =>
@@ -227,11 +223,26 @@ const normalizeText = (value) =>
 const normalizeStatus = (value) => {
   const status = normalizeText(value);
 
-  if (!status) return "Mới tạo";
+  if (!status) return "Đã nhận";
 
   // Xử lý số trạng thái
   if (value === 11 || value === "11") return "Gặp sự cố";
 
+  // Ưu tiên xử lý 3 trạng thái riêng của đối tác
+  if (status.includes("đã nhận")) return "Đã nhận";
+
+  if (
+      status === "xử lý" ||
+      status === "đang xử lý" ||
+      status.includes("đang xử lý") ||
+      status.includes("đang chuẩn bị")
+  ) {
+    return "Đang xử lý";
+  }
+
+  if (status.includes("đã giao")) return "Đã giao";
+
+  // Xử lý các trạng thái khác (cho tương thích)
   if (
       status === "đơn mới" ||
       status === "mới tạo" ||
@@ -248,18 +259,6 @@ const normalizeStatus = (value) => {
   ) {
     return "Xác nhận";
   }
-
-  if (status.includes("đã nhận")) return "Đã nhận";
-
-  if (
-      status === "xử lý" ||
-      status.includes("đang xử lý") ||
-      status.includes("đang chuẩn bị")
-  ) {
-    return "Xử lý";
-  }
-
-  if (status.includes("đã giao")) return "Đã giao";
 
   if (
       status === "thanh toán" ||
@@ -304,10 +303,11 @@ const normalizeDonHang = (dh) => {
       dh.maCode;
 
   const rawStatus =
+      dh.trangThaiRieng ?? // Sử dụng trạng thái riêng của đối tác
       dh.trangThai ??
       dh.trangThaiDonHang ??
       dh.status ??
-      "Mới tạo";
+      "Đã nhận";
 
   return {
     ...dh,
@@ -344,6 +344,7 @@ const normalizeDonHang = (dh) => {
         dh.total ??
         0,
     trangThai: rawStatus, // Service đã convert từ số sang text rồi
+    trangThaiTongThe: dh.trangThai ?? dh.trangThaiDonHang ?? dh.status, // Lưu trạng thái tổng thể cho reference
     coHopDong: toBoolean(
         dh.coHopDong ??
         dh.daCoHopDong ??
@@ -478,28 +479,23 @@ const canStartProcessing = (dh) =>
     dh.trangThai === "Đã nhận" && dh.coHopDong;
 
 const canMarkDelivered = (dh) =>
-    dh.trangThai === "Xử lý" && dh.coHopDong;
+    dh.trangThai === "Đang xử lý" && dh.coHopDong;
 
 const isPartnerActionEnabled = (dh) =>
     canStartProcessing(dh) || canMarkDelivered(dh);
 
 const getPartnerActionLabel = (dh) => {
-  if (canStartProcessing(dh)) return "Xử lý đơn hàng";
+  if (canStartProcessing(dh)) return "Bắt đầu xử lý";
   if (canMarkDelivered(dh)) return "Báo đã giao";
 
   if (dh.trangThai === "Đã nhận" && !dh.coHopDong) {
     return "Chờ hợp đồng";
   }
 
-  if (["Mới tạo", "Xác nhận"].includes(dh.trangThai)) {
-    return "Chờ nhân viên cập nhật";
-  }
-
-  if (dh.trangThai === "Đã giao") return "Chờ thanh toán";
-  if (dh.trangThai === "Thanh toán") return "Chờ hoàn tất";
-  if (dh.trangThai === "Hoàn thành") return "Hoàn tất";
+  if (dh.trangThai === "Đã giao") return "Đã giao hàng";
   if (dh.trangThai === "Đã hủy") return "Đơn đã hủy";
   if (dh.trangThai === "Từ chối") return "Đơn đã từ chối";
+  if (dh.trangThai === "Gặp sự cố") return "Gặp sự cố";
 
   return "Chưa thể xử lý";
 };
@@ -594,7 +590,7 @@ const getStepIndex = (trangThai) =>
     STEPS.indexOf(normalizeStatus(trangThai));
 
 const isTerminalFailedStatus = (dh) =>
-    ["Đã hủy", "Từ chối"].includes(dh.trangThai);
+    ["Đã hủy", "Từ chối", "Gặp sự cố"].includes(dh.trangThai);
 
 const isStepCompleted = (dh, stepName) => {
   if (isTerminalFailedStatus(dh)) return false;
@@ -616,13 +612,9 @@ const isLineCompleted = (dh, targetStep) =>
 const trangThaiBadgeClass = (status) => {
   const normalized = normalizeStatus(status);
 
-  if (normalized === "Mới tạo") return "badge-yellow";
-  if (normalized === "Xác nhận") return "badge-pink";
   if (normalized === "Đã nhận") return "badge-blue";
-  if (normalized === "Xử lý") return "badge-orange";
+  if (normalized === "Đang xử lý") return "badge-orange";
   if (normalized === "Đã giao") return "badge-teal";
-  if (normalized === "Thanh toán") return "badge-indigo";
-  if (normalized === "Hoàn thành") return "badge-green";
   if (["Đã hủy", "Từ chối", "Gặp sự cố"].includes(normalized)) {
     return "badge-red";
   }
@@ -752,15 +744,9 @@ const apDungBoLoc = () => {
             class="select-filter"
         >
           <option>Tất cả</option>
-          <option>Mới tạo</option>
-          <option>Xác nhận</option>
           <option>Đã nhận</option>
-          <option>Xử lý</option>
+          <option>Đang xử lý</option>
           <option>Đã giao</option>
-          <option>Thanh toán</option>
-          <option>Hoàn thành</option>
-          <option>Đã hủy</option>
-          <option>Từ chối</option>
         </select>
       </div>
 
@@ -1151,7 +1137,7 @@ const apDungBoLoc = () => {
 <!-- Dùng lại giao diện của trang quản lý đơn hàng nhân viên -->
 <style
     scoped
-    src="../../assets/styles/nhanvien/QLDonHang/TrangQLDonHang.css"
+    src="../../assets/styles/doitac/QLDonHang/TrangQLDonHang.css"
 ></style>
 
 <style scoped>

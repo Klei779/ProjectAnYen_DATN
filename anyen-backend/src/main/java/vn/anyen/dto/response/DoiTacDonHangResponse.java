@@ -23,6 +23,7 @@ public class DoiTacDonHangResponse {
     private String nhanVien;
     private String ghiChu;
     private String trangThai;
+    private String trangThaiRieng; // Trạng thái riêng của đối tác (chưa xử lý/đang xử lý/đã giao)
     private BigDecimal tongCong;
     private Boolean coHopDong;
     private String nguoiBaoCaoSuCo;

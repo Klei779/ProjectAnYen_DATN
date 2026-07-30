@@ -7,7 +7,7 @@
     <div class="logo-section">
       <img
           src="../assets/images/icon/logoAnYen.png"
-          alt="An Yên"
+          alt="An Yên"n
           class="logo-img"
       />
     </div>

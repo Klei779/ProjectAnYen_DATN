@@ -2,9 +2,11 @@ package vn.anyen.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
+import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.service.DonHangService;
 
 import java.util.List;
@@ -15,6 +17,7 @@ import java.util.List;
 public class DonHangController {
 
     private final DonHangService donHangService;
+    private final DoiTacRepository doiTacRepository;
 
     @GetMapping
     public List<DonHangResponse> getAllDonHang() {
@@ -53,8 +56,17 @@ public class DonHangController {
     }
 
     @PutMapping("/{maDonHang}/doi-tac-bao-da-giao")
-    public ResponseEntity<DonHangResponse> doiTacBaoDaGiao(@PathVariable Integer maDonHang) {
-        DonHangResponse response = donHangService.doiTacBaoDaGiao(maDonHang);
+    public ResponseEntity<DonHangResponse> doiTacBaoDaGiao(
+            @PathVariable Integer maDonHang,
+            Authentication authentication
+    ) {
+        // Lấy maDoiTac từ authentication (đối tác đang đăng nhập)
+        String tenDangNhap = authentication.getName();
+        Integer maDoiTac = doiTacRepository.findByTenDangNhap(tenDangNhap)
+                .map(doiTac -> doiTac.getMaDoiTac())
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy thông tin đối tác"));
+        
+        DonHangResponse response = donHangService.doiTacBaoDaGiao(maDonHang, maDoiTac);
         return ResponseEntity.ok(response);
     }
 

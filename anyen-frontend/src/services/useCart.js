@@ -37,30 +37,85 @@ export function useCart() {
     }
 
     function addToCart(product, quantity = 1) {
-        if (!product || product.id === null || product.id === undefined) {
-            return
+        if (
+            !product ||
+            product.id === null ||
+            product.id === undefined
+        ) {
+            return;
         }
 
-        const existingItem = getItem(product.id)
+        const safeQuantity = Math.max(
+            1,
+            Number(quantity) || 1
+        );
+
+        const existingItem = getItem(product.id);
 
         if (existingItem) {
-            existingItem.quantity = (existingItem.quantity || 1) + quantity
+            existingItem.quantity =
+                (Number(existingItem.quantity) || 1)
+                + safeQuantity;
         } else {
             cartItems.value.push({
                 id: product.id,
-                name: product.name || '',
-                subname: product.subname || '',
-                price: product.price ?? null,
-                oldPrice: product.oldPrice ?? null,
-                image: product.image || '',
-                material: product.material || product.vatLieu || '',
-                religion: product.religion || product.tonGiao || '',
-                quantity: quantity,
+
+                name:
+                    product.name ||
+                    product.tenSanPham ||
+                    "",
+
+                subname:
+                    product.subname ||
+                    product.tenLoai ||
+                    product.loai ||
+                    "",
+
+                // Nên lưu riêng loại sản phẩm
+                loai:
+                    product.loai ||
+                    product.tenLoai ||
+                    product.categoryName ||
+                    product.subname ||
+                    "",
+
+
+                maDoiTac:
+                    product.maDoiTac ??
+                    product.partnerId ??
+                    null,
+
+                price:
+                    product.price ??
+                    product.giaTien ??
+                    null,
+
+                oldPrice:
+                    product.oldPrice ??
+                    null,
+
+                image:
+                    product.image ||
+                    product.hinhAnh ||
+                    "",
+
+                material:
+                    product.material ||
+                    product.vatLieu ||
+                    "",
+
+                religion:
+                    product.religion ||
+                    product.tonGiao ||
+                    "",
+
+                quantity: safeQuantity,
+
                 addedAt: new Date().toISOString()
-            })
+            });
         }
 
-        saveCart()
+        saveCart();
     }
 
     function removeFromCart(productId) {

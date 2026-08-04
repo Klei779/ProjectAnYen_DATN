@@ -722,6 +722,7 @@ public class DoiTacThongBaoService {
                         .map(ct -> {
                             int index = chiTiets.indexOf(ct) + 1;
 
+
                             BigDecimal donGia = ct.getGiaTien() == null
                                     ? BigDecimal.ZERO
                                     : ct.getGiaTien();
@@ -729,12 +730,22 @@ public class DoiTacThongBaoService {
                             int soLuong = ct.getSoLuong() == null
                                     ? 0
                                     : ct.getSoLuong();
+                            SanPham sp = ct.getSanPham();
 
                             return DoiTacDonHangResponse
                                     .SanPhamTrongDonResponse
                                     .builder()
                                     .stt(index)
                                     .ten(ct.getSanPham().getTenSanPham())
+                                    .loai(
+
+                                            sp != null && sp.getLoai() != null
+
+                                                    ? sp.getLoai()
+
+                                                    : ""
+
+                                    )
                                     .soLuong(soLuong)
                                     .donGia(donGia)
                                     .thanhTien(donGia.multiply(

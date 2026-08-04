@@ -219,7 +219,59 @@ const normalizeText = (value) =>
     String(value ?? "")
         .trim()
         .toLocaleLowerCase("vi-VN");
+const normalizeVietnameseText = (value) => {
+  return String(value ?? "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase()
+      .trim();
+};
 
+const getProductType = (product) => {
+  return (
+      product?.loai ??
+      product?.phanLoai ??
+      product?.tenLoai ??
+      product?.category ??
+      ""
+  );
+};
+
+const isCoffinProduct = (product) => {
+  const rawType = getProductType(product);
+  const normalizedType =
+      normalizeVietnameseText(rawType);
+
+  /*
+   * Có dữ liệu loại thì chỉ kiểm tra loại.
+   */
+  if (normalizedType) {
+    return normalizedType === "quan tai" ||
+        normalizedType.startsWith("quan tai ");
+  }
+
+  /*
+   * Dữ liệu cũ chưa có loại:
+   * kiểm tra tên sản phẩm làm phương án dự phòng.
+   */
+  const productName = normalizeVietnameseText(
+      product?.ten ??
+      product?.tenSanPham ??
+      ""
+  );
+
+  return productName.includes("quan tai");
+};
+
+const orderHasCoffin = (products = []) => {
+  if (!Array.isArray(products)) {
+    return false;
+  }
+
+  return products.some(isCoffinProduct);
+};
 const normalizeStatus = (value) => {
   const status = normalizeText(value);
 
@@ -303,56 +355,119 @@ const normalizeDonHang = (dh) => {
       dh.maCode;
 
   const rawStatus =
-      dh.trangThaiRieng ?? // Sử dụng trạng thái riêng của đối tác
+      dh.trangThaiRieng ??
       dh.trangThai ??
       dh.trangThaiDonHang ??
       dh.status ??
       "Đã nhận";
 
+  const sanPhams = Array.isArray(dh.sanPhams)
+      ? dh.sanPhams
+      : Array.isArray(dh.chiTietDonHangs)
+          ? dh.chiTietDonHangs
+          : [];
+
+  const coQuanTaiTuSanPham =
+      orderHasCoffin(sanPhams);
+
+  const coQuanTaiTuBackend = toBoolean(
+      dh.coQuanTai ??
+      dh.hasCoffin
+  );
+
+  const coQuanTai =
+      coQuanTaiTuBackend ||
+      coQuanTaiTuSanPham;
+
+  const danhSachLoai = [
+    ...new Set(
+        sanPhams
+            .map(getProductType)
+            .map(type => String(type || "").trim())
+            .filter(Boolean)
+    )
+  ];
+
   return {
     ...dh,
+
     maDonHang,
-    maCode: dh.maCode ?? maDonHang,
+
+    maCode:
+        dh.maCode ??
+        maDonHang,
+
     tenKhachHang:
         dh.tenKhachHang ??
         dh.khachHang?.tenKhachHang ??
         dh.customerName ??
         "---",
+
     soDienThoai:
         dh.soDienThoai ??
         dh.soDienThoaiKH ??
         dh.khachHang?.soDienThoai ??
         dh.phone ??
         "Chưa có SĐT",
+
     tenNhanVien:
         dh.tenNhanVien ??
         dh.nhanVien?.hoTen ??
         dh.nhanVienPhuTrach ??
         "Chưa phân công",
+
     phuongThucThanhToan:
         dh.phuongThucThanhToan ??
         dh.tenPhuongThucThanhToan ??
         "Chưa cập nhật",
+
     ngayTaoDon:
         dh.ngayTaoDon ??
         dh.ngayDat ??
         dh.createdAt ??
         null,
+
     tongTien:
         dh.tongTien ??
         dh.tongCong ??
         dh.total ??
         0,
-    trangThai: rawStatus, // Service đã convert từ số sang text rồi
-    trangThaiTongThe: dh.trangThai ?? dh.trangThaiDonHang ?? dh.status, // Lưu trạng thái tổng thể cho reference
+
+    trangThai: rawStatus,
+
+    trangThaiTongThe:
+        dh.trangThai ??
+        dh.trangThaiDonHang ??
+        dh.status,
+
     coHopDong: toBoolean(
         dh.coHopDong ??
         dh.daCoHopDong ??
         dh.hasContract
     ),
+
+    sanPhams,
+
+    coQuanTai,
+
+    loaiSanPhamText:
+        danhSachLoai.length > 0
+            ? danhSachLoai.join(", ")
+            : "Chưa cập nhật"
   };
 };
+const requiresContract = (dh) => {
+  return dh?.coQuanTai === true;
+};
 
+const canProcessWithoutContract = (dh) => {
+  return !requiresContract(dh);
+};
+
+const hasRequiredContract = (dh) => {
+  return canProcessWithoutContract(dh) ||
+      dh?.coHopDong === true;
+};
 const fetchDonHangs = async (showSuccess = false) => {
   loading.value = true;
 
@@ -475,41 +590,88 @@ const openChiTiet = (dh) => {
 // ─────────────────────────────────────────────
 // Xử lý đơn hàng của đối tác
 // ─────────────────────────────────────────────
-const canStartProcessing = (dh) =>
-    dh.trangThai === "Đã nhận" && dh.coHopDong;
+const canStartProcessing = (dh) => {
+return (
+    dh.trangThai === "Đã nhận" &&
+    hasRequiredContract(dh)
+);
+};
 
-const canMarkDelivered = (dh) =>
-    dh.trangThai === "Đang xử lý" && dh.coHopDong;
+const canMarkDelivered = (dh) => {
+  return (
+      dh.trangThai === "Đang xử lý" &&
+      hasRequiredContract(dh)
+  );
+};
 
-const isPartnerActionEnabled = (dh) =>
-    canStartProcessing(dh) || canMarkDelivered(dh);
+const isPartnerActionEnabled = (dh) => {
+  return (
+      canStartProcessing(dh) ||
+      canMarkDelivered(dh)
+  );
+};
+
 
 const getPartnerActionLabel = (dh) => {
-  if (canStartProcessing(dh)) return "Bắt đầu xử lý";
-  if (canMarkDelivered(dh)) return "Báo đã giao";
+  if (canStartProcessing(dh)) {
+    return "Bắt đầu xử lý";
+  }
 
-  if (dh.trangThai === "Đã nhận" && !dh.coHopDong) {
+  if (canMarkDelivered(dh)) {
+    return "Báo đã giao";
+  }
+
+  /*
+   * Chỉ hiện Chờ hợp đồng khi có Quan tài.
+   */
+  if (
+      dh.trangThai === "Đã nhận" &&
+      requiresContract(dh) &&
+      !dh.coHopDong
+  ) {
     return "Chờ hợp đồng";
   }
 
-  if (dh.trangThai === "Đã giao") return "Đã giao hàng";
-  if (dh.trangThai === "Đã hủy") return "Đơn đã hủy";
-  if (dh.trangThai === "Từ chối") return "Đơn đã từ chối";
-  if (dh.trangThai === "Gặp sự cố") return "Gặp sự cố";
+  if (dh.trangThai === "Đã giao") {
+    return "Đã giao hàng";
+  }
+
+  if (dh.trangThai === "Đã hủy") {
+    return "Đơn đã hủy";
+  }
+
+  if (dh.trangThai === "Từ chối") {
+    return "Đơn đã từ chối";
+  }
+
+  if (dh.trangThai === "Gặp sự cố") {
+    return "Gặp sự cố";
+  }
 
   return "Chưa thể xử lý";
 };
 
 const openXuLy = (dh) => {
-  if (!dh.coHopDong) {
+  /*
+   * Chỉ chặn khi:
+   * - Có sản phẩm Quan tài
+   * - Chưa có hợp đồng
+   */
+  if (
+      requiresContract(dh) &&
+      !dh.coHopDong
+  ) {
     ElMessage.warning(
-        "Đơn hàng chưa có hợp đồng nên chưa thể xử lý"
+        "Đơn hàng có sản phẩm Quan tài nên cần hợp đồng trước khi xử lý"
     );
+
     return;
   }
 
   selectedDonHang.value = dh;
+
   xuLyForm.value.ngayGiaoDuKien = null;
+
   showXuLyDialog.value = true;
 };
 

@@ -1214,10 +1214,27 @@ public class DonHangService {
 
     @Transactional
     public void xuLyDonHangDoiTac(Integer maDonHang, Integer maDoiTac, LocalDate ngayGiaoDuKien) {
-        if (!hopDongRepository.existsByDonHang_MaDonHang(maDonHang)) {
-            throw new RuntimeException("Chưa có hợp đồng, không thể xử lý đơn hàng");
-        }
+        boolean coHopDong =
+                hopDongRepository
+                        .existsByDonHang_MaDonHang(
+                                maDonHang
+                        );
 
+        boolean coQuanTai =
+                donHangCoSanPhamQuanTai(
+                        maDonHang
+                );
+
+        /*
+         * Chỉ đơn có quan tài mới bắt buộc hợp đồng.
+         * Đơn sản phẩm thường được xử lý không cần hợp đồng.
+         */
+        if (coQuanTai && !coHopDong) {
+            throw new RuntimeException(
+                    "Đơn hàng có sản phẩm quan tài. "
+                            + "Cần tạo hợp đồng trước khi xử lý."
+            );
+        }
         List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHangAndDoiTac(maDonHang, maDoiTac);
         if (chiTiets.isEmpty()) {
             throw new RuntimeException("Đơn hàng không thuộc đối tác này");
@@ -1377,5 +1394,55 @@ public class DonHangService {
         } else {
             thongBaoService.taoThongBaoDaGiaiQuyetSuCoChoNhanVien(maDonHang, tenNguoiGiaiQuyet);
         }
+    }
+    private boolean donHangCoSanPhamQuanTai(
+            Integer maDonHang
+    ) {
+        List<ChiTietDonHang> chiTiets =
+                chiTietDonHangRepository
+                        .findByDonHang_MaDonHang(
+                                maDonHang
+                        );
+
+        return chiTiets.stream()
+                .map(ChiTietDonHang::getSanPham)
+                .filter(sanPham -> sanPham != null)
+                .anyMatch(this::laSanPhamQuanTai);
+    }
+
+    private boolean laSanPhamQuanTai(
+            SanPham sanPham
+    ) {
+        String loai = chuanHoaLoaiSanPham(
+                sanPham.getLoai()
+        );
+
+        String ten = chuanHoaLoaiSanPham(
+                sanPham.getTenSanPham()
+        );
+
+        return loai.contains("quan tai")
+                || ten.contains("quan tai");
+    }
+
+    private String chuanHoaLoaiSanPham(
+            String value
+    ) {
+        if (value == null) {
+            return "";
+        }
+
+        return java.text.Normalizer
+                .normalize(
+                        value,
+                        java.text.Normalizer.Form.NFD
+                )
+                .replaceAll("\\p{M}", "")
+                .replace("đ", "d")
+                .replace("Đ", "D")
+                .toLowerCase(
+                        java.util.Locale.ROOT
+                )
+                .trim();
     }
 }

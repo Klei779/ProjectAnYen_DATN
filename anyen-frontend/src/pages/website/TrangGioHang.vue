@@ -77,6 +77,26 @@
             <div class="cart-actions">
               <button
                   type="button"
+                  class="sidebar-order-button"
+                  :disabled="creatingOrder"
+                  @click="handleCreateOrder"
+              >
+                <i
+                    :class="
+        creatingOrder
+          ? 'fa-solid fa-spinner fa-spin'
+          : 'fa-solid fa-file-circle-plus'
+      "
+                ></i>
+
+                {{
+                  creatingOrder
+                      ? "Đang tạo đơn..."
+                      : "Tạo đơn hàng"
+                }}
+              </button>
+              <button
+                  type="button"
                   class="export-button"
                   :disabled="exporting"
                   @click="exportToExcel"
@@ -260,6 +280,116 @@
         </template>
       </div>
     </section>
+    <el-dialog
+        v-model="showOrderDialog"
+        title="Thông tin tạo đơn hàng"
+        width="560px"
+        append-to-body
+        :close-on-click-modal="false"
+    >
+      <div class="customer-order-form">
+        <div class="order-form-group">
+          <label>
+            Tên khách hàng
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.tenKhachHang"
+              maxlength="30"
+              placeholder="Nhập tên khách hàng"
+          />
+        </div>
+
+        <div class="order-form-group">
+          <label>
+            Số điện thoại
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.soDienThoai"
+              maxlength="10"
+              inputmode="numeric"
+              placeholder="Ví dụ: 0901234567"
+              @input="limitCustomerPhone"
+          />
+        </div>
+
+        <div class="order-form-group">
+          <label>
+            CCCD
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.cccd"
+              maxlength="12"
+              inputmode="numeric"
+              placeholder="Nhập đúng 12 chữ số"
+              @input="limitCustomerCCCD"
+          />
+        </div>
+
+        <div class="order-form-group">
+          <label>
+            Địa chỉ
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.diaChi"
+              maxlength="255"
+              placeholder="Nhập địa chỉ khách hàng"
+          />
+        </div>
+
+        <div class="order-form-group">
+          <label>Ghi chú</label>
+
+          <el-input
+              v-model="orderForm.ghiChu"
+              type="textarea"
+              :rows="3"
+              maxlength="500"
+              show-word-limit
+              placeholder="Ghi chú thêm cho đơn hàng"
+          />
+        </div>
+      </div>
+
+      <template #footer>
+        <button
+            type="button"
+            class="order-cancel-button"
+            :disabled="creatingOrder"
+            @click="showOrderDialog = false"
+        >
+          Hủy
+        </button>
+
+        <button
+            type="button"
+            class="order-submit-button"
+            :disabled="creatingOrder"
+            @click="submitCustomerOrder"
+        >
+          <i
+              :class="
+            creatingOrder
+              ? 'fa-solid fa-spinner fa-spin'
+              : 'fa-solid fa-check'
+          "
+          ></i>
+
+          {{
+            creatingOrder
+                ? "Đang tạo đơn..."
+                : "Xác nhận tạo đơn"
+          }}
+        </button>
+      </template>
+    </el-dialog>
   </main>
 </template>
 
@@ -272,7 +402,9 @@ import { useCart } from "../../services/useCart.js";
 
 import noImage from "../../assets/images/noimage.jpg";
 import logoAnYen from "../../assets/images/icon/logoAnYen.png";
-
+import {
+  taoDonHangKhachHang
+} from "../../services/donHangKhachHangService.js";
 const {
   cartItems,
   cartCount,
@@ -284,7 +416,388 @@ const {
 } = useCart();
 
 const exporting = ref(false);
+const showOrderDialog = ref(false);
+const creatingOrder = ref(false);
 
+const orderForm = ref({
+  tenKhachHang: "",
+  soDienThoai: "",
+  cccd: "",
+  diaChi: "",
+  ghiChu: ""
+});
+function onlyDigits(value = "") {
+  return String(value).replace(/\D/g, "");
+}
+
+function normalizeVietnamPhone(value = "") {
+  let phone = String(value)
+      .trim()
+      .replace(/\s+/g, "");
+
+  if (phone.startsWith("+84")) {
+    phone = "0" + phone.slice(3);
+  }
+
+  phone = phone.replace(/\D/g, "");
+
+  if (
+      phone.startsWith("84") &&
+      phone.length === 11
+  ) {
+    phone = "0" + phone.slice(2);
+  }
+
+  return phone;
+}
+
+function isValidVietnamPhone(value = "") {
+  const phone =
+      normalizeVietnamPhone(value);
+
+  return /^0(3|5|7|8|9)[0-9]{8}$/.test(
+      phone
+  );
+}
+
+function isValidCCCD(value = "") {
+  return /^[0-9]{12}$/.test(
+      String(value).trim()
+  );
+}
+
+function limitCustomerPhone() {
+  orderForm.value.soDienThoai =
+      normalizeVietnamPhone(
+          orderForm.value.soDienThoai
+      ).slice(0, 10);
+}
+
+function limitCustomerCCCD() {
+  orderForm.value.cccd =
+      onlyDigits(
+          orderForm.value.cccd
+      ).slice(0, 12);
+}
+function normalizeText(value = "") {
+  return String(value)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .toLowerCase()
+      .trim();
+}
+
+function isCoffinProduct(item) {
+  const categoryText = normalizeText(
+      [
+        item.loai,
+        item.subname
+      ]
+          .filter(Boolean)
+          .join(" ")
+  );
+
+  if (categoryText.includes("quan tai")) {
+    return true;
+  }
+
+  /*
+   * Dùng tên sản phẩm làm phương án dự phòng.
+   * Có ích cho dữ liệu cũ chưa có trường loai.
+   */
+  const productName =
+      normalizeText(item.name);
+
+  return productName.includes("quan tai");
+}
+
+const coffinItems = computed(() => {
+  return cartItems.value.filter(
+      isCoffinProduct
+  );
+});
+
+const hasCoffinProduct = computed(() => {
+  return coffinItems.value.length > 0;
+});
+async function handleCreateOrder() {
+  if (cartItems.value.length === 0) {
+    ElMessage.warning(
+        "Giỏ hàng chưa có sản phẩm"
+    );
+
+    return;
+  }
+
+  /*
+   * Có quan tài thì chặn ngay,
+   * không bắt khách nhập thông tin rồi mới báo.
+   */
+  if (hasCoffinProduct.value) {
+    const coffinNames = coffinItems.value
+        .map(item => item.name)
+        .filter(Boolean)
+        .join(", ");
+
+    await ElMessageBox.alert(
+        coffinNames
+            ? `Đơn hàng có sản phẩm quan tài: ${coffinNames}. Vui lòng liên hệ nhân viên An Yên để được tư vấn và tạo hợp đồng.`
+            : "Đơn hàng có sản phẩm quan tài. Vui lòng liên hệ nhân viên An Yên để được tư vấn và tạo hợp đồng.",
+        "Cần liên hệ nhân viên",
+        {
+          confirmButtonText: "Đã hiểu",
+          type: "warning",
+          closeOnClickModal: false,
+          closeOnPressEscape: false
+        }
+    );
+
+    return;
+  }
+
+  showOrderDialog.value = true;
+}
+function getTodayLocalDate() {
+  const date = new Date();
+
+  const year = date.getFullYear();
+
+  const month = String(
+      date.getMonth() + 1
+  ).padStart(2, "0");
+
+  const day = String(
+      date.getDate()
+  ).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
+function buildCustomerOrderPayload() {
+  return {
+    tenKhachHang:
+    orderForm.value.tenKhachHang,
+
+    soDienThoai:
+    orderForm.value.soDienThoai,
+
+    cccd:
+    orderForm.value.cccd,
+
+    diaChi:
+    orderForm.value.diaChi,
+
+    email: "",
+
+    ghiChu:
+    orderForm.value.ghiChu,
+
+    phuongThucThanhToan: 0,
+
+    trangThaiThanhToan: 0,
+
+    items: cartItems.value.map(item => ({
+      maSanPham:
+          Number(item.id),
+
+      soLuong:
+          Math.max(
+              1,
+              Number(item.quantity) || 1
+          )
+    }))
+  };
+}
+function resetOrderForm() {
+  orderForm.value = {
+    tenKhachHang: "",
+    soDienThoai: "",
+    cccd: "",
+    diaChi: "",
+    ghiChu: ""
+  };
+}
+
+async function submitCustomerOrder() {
+  if (creatingOrder.value) {
+    return;
+  }
+
+  // Chuẩn hóa dữ liệu
+  orderForm.value.tenKhachHang = String(
+      orderForm.value.tenKhachHang || ""
+  ).trim();
+
+  orderForm.value.soDienThoai = normalizeVietnamPhone(
+      orderForm.value.soDienThoai
+  ).slice(0, 10);
+
+  orderForm.value.cccd = onlyDigits(
+      orderForm.value.cccd
+  ).slice(0, 12);
+
+  orderForm.value.diaChi = String(
+      orderForm.value.diaChi || ""
+  ).trim();
+
+  orderForm.value.ghiChu = String(
+      orderForm.value.ghiChu || ""
+  ).trim();
+
+  /*
+   * 1. KIỂM TRA TÊN KHÁCH HÀNG
+   */
+  if (!orderForm.value.tenKhachHang) {
+    ElMessage.warning("Vui lòng nhập tên khách hàng");
+    return;
+  }
+
+  if (orderForm.value.tenKhachHang.length > 30) {
+    ElMessage.warning("Tên khách hàng tối đa 30 ký tự");
+    return;
+  }
+
+  /*
+   * 2. KIỂM TRA SỐ ĐIỆN THOẠI
+   */
+  if (!orderForm.value.soDienThoai) {
+    ElMessage.warning("Vui lòng nhập số điện thoại");
+    return;
+  }
+
+  if (!isValidVietnamPhone(orderForm.value.soDienThoai)) {
+    ElMessage.warning(
+        "Số điện thoại không hợp lệ. Ví dụ: 0901234567"
+    );
+    return;
+  }
+
+  /*
+   * 3. KIỂM TRA CCCD BẮT BUỘC
+   */
+  if (!orderForm.value.cccd) {
+    ElMessage.warning("Vui lòng nhập CCCD");
+    return;
+  }
+
+  if (!isValidCCCD(orderForm.value.cccd)) {
+    ElMessage.warning("CCCD phải gồm đúng 12 chữ số");
+    return;
+  }
+
+  /*
+   * 4. KIỂM TRA ĐỊA CHỈ BẮT BUỘC
+   */
+  if (!orderForm.value.diaChi) {
+    ElMessage.warning("Vui lòng nhập địa chỉ");
+    return;
+  }
+
+  if (orderForm.value.diaChi.length > 255) {
+    ElMessage.warning("Địa chỉ tối đa 255 ký tự");
+    return;
+  }
+
+  /*
+   * 5. KIỂM TRA GIỎ HÀNG
+   */
+  if (cartItems.value.length === 0) {
+    ElMessage.warning("Giỏ hàng chưa có sản phẩm");
+    showOrderDialog.value = false;
+    return;
+  }
+
+  /*
+   * 6. KIỂM TRA LẠI QUAN TÀI
+   *
+   * Dù đã kiểm tra ở handleCreateOrder,
+   * vẫn nên kiểm tra thêm lần nữa trước khi gọi API.
+   */
+  if (hasCoffinProduct.value) {
+    showOrderDialog.value = false;
+
+    const coffinNames = coffinItems.value
+        .map(item => item.name)
+        .filter(Boolean)
+        .join(", ");
+
+    await ElMessageBox.alert(
+        coffinNames
+            ? `Đơn hàng có sản phẩm quan tài: ${coffinNames}. Vui lòng liên hệ nhân viên An Yên để được tư vấn và tạo hợp đồng.`
+            : "Đơn hàng có sản phẩm quan tài. Vui lòng liên hệ nhân viên An Yên để được tư vấn và tạo hợp đồng.",
+        "Cần liên hệ nhân viên",
+        {
+          confirmButtonText: "Đã hiểu",
+          type: "warning",
+          closeOnClickModal: false
+        }
+    );
+
+    return;
+  }
+
+  /*
+   * 7. XÁC NHẬN TRƯỚC KHI TẠO
+   */
+  try {
+    await ElMessageBox.confirm(
+        `Bạn có chắc muốn tạo đơn hàng gồm ${cartCount.value} sản phẩm không?`,
+        "Xác nhận tạo đơn",
+        {
+          confirmButtonText: "Tạo đơn",
+          cancelButtonText: "Kiểm tra lại",
+          type: "info"
+        }
+    );
+  } catch {
+    return;
+  }
+
+  creatingOrder.value = true;
+
+  try {
+    const payload = buildCustomerOrderPayload();
+
+    console.log("Payload gửi tạo đơn:", payload);
+
+    const createdOrder =
+        await taoDonHangKhachHang(payload);
+
+    const orderCode =
+        createdOrder?.maCode ||
+        createdOrder?.maDonHang ||
+        "";
+
+    ElMessage.success(
+        orderCode
+            ? `Tạo đơn hàng ${orderCode} thành công`
+            : "Tạo đơn hàng thành công"
+    );
+
+    /*
+     * Chỉ xóa giỏ khi API thành công.
+     */
+    clearCart();
+
+    resetOrderForm();
+
+    showOrderDialog.value = false;
+  } catch (error) {
+    console.error("Lỗi tạo đơn hàng:", error);
+
+    const message =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Không thể tạo đơn hàng";
+
+    ElMessage.error(message);
+  } finally {
+    creatingOrder.value = false;
+  }
+}
 const totalPrice = computed(() => {
   return cartItems.value.reduce((total, product) => {
     const price = Number(product.price);

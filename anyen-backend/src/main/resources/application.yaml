@@ -86,10 +86,14 @@ app:
   public-base-url: ${APP_PUBLIC_BASE_URL:http://localhost:8080}
 
 
-jwt:
+
+  customer-order:
+    system-employee=website:
+  jwt:
   secret: ${JWT_SECRET:AnyenSecretKey2026LongDo123456789}
   guest-ttl-hours: ${GUEST_JWT_TTL_HOURS:48}
 
 chat:
   redis:
     ttl-hours: ${CHAT_REDIS_TTL_HOURS:48}
+

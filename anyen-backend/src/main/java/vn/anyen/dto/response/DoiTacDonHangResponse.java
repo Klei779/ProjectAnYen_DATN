@@ -45,6 +45,7 @@ public class DoiTacDonHangResponse {
         private BigDecimal donGia;
         private BigDecimal thanhTien;
         private String ngayGiaoDuKien;
+        private String loai;
     }
 
     @Getter

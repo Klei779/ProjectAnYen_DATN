@@ -62,6 +62,11 @@ public class SecurityConfig {
                                 "/api/ai/chat"
                         )
                         .permitAll()
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/khach-hang/don-hang"
+                                )
+                                .permitAll()
 
                         .requestMatchers(
                                 "/api/ai/yeu-cau-tu-van/**"

@@ -42,6 +42,23 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/geocoding/**").permitAll()
+                                /*
+                                 * PAYOO MOCK:
+                                 * QR từ điện thoại cần truy cập được.
+                                 *
+                                 * Chỉ dùng cho môi trường demo.
+                                 */
+                                .requestMatchers(
+                                        "/api/payoo-mock/**"
+                                )
+                                .permitAll()
+                                .requestMatchers(
+                                        "/api/admin/congno",
+                                        "/api/admin/congno/**"
+                                )
+                                .hasAuthority(
+                                        "ROLE_ADMIN"
+                                )
 
                         // CỰC QUAN TRỌNG: cho phép preflight OPTIONS
                         .requestMatchers(HttpMethod.OPTIONS, "/**")

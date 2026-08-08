@@ -84,6 +84,12 @@ export function useCart() {
                     product.maDoiTac ??
                     product.partnerId ??
                     null,
+                
+                doiTacDaMoQuy:
+                    product.doiTacDaMoQuy === true,
+
+                duocMuaTrucTiep:
+                    product.duocMuaTrucTiep === true,
 
                 price:
                     product.price ??

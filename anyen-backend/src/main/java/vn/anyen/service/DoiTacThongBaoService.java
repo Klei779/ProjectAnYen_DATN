@@ -33,7 +33,7 @@ import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 @RequiredArgsConstructor
 @Transactional
 public class DoiTacThongBaoService {
-
+    private final TaiChinhDoiTacService taiChinhDoiTacService;
     private final ThongBaoDoiTacRepository thongBaoRepository;
     private final DoiTacRepository doiTacRepository;
     private final DonHangRepository donHangRepository;
@@ -95,7 +95,27 @@ public class DoiTacThongBaoService {
         thongBao.setThoiGianXuLy(LocalDateTime.now());
 
         DonHang donHang = thongBao.getDonHang();
+        /*
+         * TRƯỚC KHI chấp nhận đơn:
+         *
+         * nếu đối tác mở Quỹ
+         * => khóa 100% giá trị phần đơn.
+         *
+         * Nếu không đủ tiền:
+         * khoaQuyChoDonHang() throw exception.
+         *
+         * Do method đang @Transactional nên
+         * thông báo cũng không bị chuyển sang
+         * Đã chấp nhận.
+         */
+        if (donHang != null) {
 
+            taiChinhDoiTacService
+                    .khoaQuyChoDonHang(
+                            donHang.getMaDonHang(),
+                            doiTac.getMaDoiTac()
+                    );
+        }
         thongBaoRepository.save(thongBao);
 
         if (donHang != null) {

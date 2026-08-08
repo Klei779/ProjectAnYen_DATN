@@ -62,14 +62,27 @@
 
               <button
                   class="main-wishlist-btn"
-                  :class="{ active: isWished }"
+                  :class="{
+      active:
+        canBuyDirectly &&
+        isInCart(product.id)
+    }"
                   type="button"
-                  aria-label="Thêm vào giỏ hàng"
-                  @click="toggleWish"
+                  :aria-label="
+      canBuyDirectly
+        ? 'Thêm vào giỏ hàng'
+        : 'Liên hệ tư vấn'
+    "
+                  @click="handleProductAction"
               >
-                <i class="fa-solid fa-cart-shopping"></i>
+                <i
+                    :class="
+        canBuyDirectly
+          ? 'fa-solid fa-cart-shopping'
+          : 'fa-solid fa-phone'
+      "
+                ></i>
               </button>
-
               <img
                   :src="selectedImage"
                   :alt="product.name"
@@ -284,12 +297,26 @@
               <button
                   class="summary-primary-btn"
                   type="button"
-                  @click="requestConsultation"
+                  @click="handleProductAction"
               >
-                <i class="fa-regular fa-calendar-check"></i>
-                ĐĂNG KÝ TƯ VẤN
-              </button>
+                <i
+                    :class="
+        canBuyDirectly
+          ? 'fa-solid fa-cart-shopping'
+          : 'fa-solid fa-headset'
+      "
+                ></i>
 
+                {{
+                  canBuyDirectly
+                      ? (
+                          isInCart(product.id)
+                              ? "ĐÃ CÓ TRONG GIỎ"
+                              : "MUA SẢN PHẨM"
+                      )
+                      : "LIÊN HỆ TƯ VẤN"
+                }}
+              </button>
               <a class="summary-outline-btn" href="tel:19001234">
                 <i class="fa-solid fa-phone"></i>
                 LIÊN HỆ NGAY
@@ -637,10 +664,22 @@ import {
   getProductById,
   getProducts
 } from "../../services/productService.js";
+import {
+  useCart
+} from "../../services/useCart.js"
 
 const route = useRoute();
 const router = useRouter();
+const {
+  isInCart,
+  addToCart
+} = useCart()
+const canBuyDirectly = computed(() => {
 
+  return Boolean(
+      product.value?.duocMuaTrucTiep
+  )
+})
 const loading = ref(true);
 const product = ref(null);
 const relatedProducts = ref([]);
@@ -745,7 +784,62 @@ const normalizeImage = (image) => {
 
   return `/images/${normalized}`;
 };
+const handleProductAction = () => {
 
+  if (!product.value) {
+    return
+  }
+
+
+  /*
+   * Chưa mở quỹ hoặc Quan tài.
+   */
+  if (!canBuyDirectly.value) {
+
+    router.push({
+      path: "/lien-he",
+
+      query: {
+        sanPham:
+        product.value.id
+      }
+    })
+
+    return
+  }
+
+
+  /*
+   * Có rồi thì vào giỏ.
+   */
+  if (
+      isInCart(
+          product.value.id
+      )
+  ) {
+
+    router.push(
+        "/gio-hang"
+    )
+
+    return
+  }
+
+
+  addToCart({
+    ...product.value,
+
+    image:
+        getProductImage(
+            product.value
+        )
+  })
+
+
+  ElMessage.success(
+      "Đã thêm sản phẩm vào giỏ hàng"
+  )
+}
 const getProductImages = (item) => {
   if (!item) return [DEFAULT_IMAGE];
 

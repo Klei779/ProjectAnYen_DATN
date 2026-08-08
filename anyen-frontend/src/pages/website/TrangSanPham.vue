@@ -180,26 +180,42 @@
                   >
     {{ item.badge.label }}
   </span>
-
-                  <button
-                      class="wishlist-btn"
-                      :class="{ active: isInCart(item.id) }"
-                      type="button"
-                      :aria-label="
-      isInCart(item.id)
-        ? 'Xóa khỏi giỏ hàng'
-        : 'Thêm vào giỏ hàng'
-    "
-                      @click.stop="toggleWish(item)"
-                  >
-                    <i class="fa-solid fa-cart-shopping"></i>
-                  </button>
                 </div>
 
                 <div class="product-info">
                   <h4 class="product-name">{{ item.name }}</h4>
                   <p class="product-subname">{{ item.subname }}</p>
                   <div class="product-price-row">
+                    <button
+                        class="product-action-btn"
+                        :class="
+      item.duocMuaTrucTiep
+        ? 'buy'
+        : 'contact'
+    "
+                        type="button"
+                        @click.stop="
+      handleProductAction(item)
+    "
+                    >
+                      <i
+                          :class="
+        item.duocMuaTrucTiep
+          ? 'fa-solid fa-cart-shopping'
+          : 'fa-solid fa-phone'
+      "
+                      ></i>
+
+                      {{
+                        item.duocMuaTrucTiep
+                            ? (
+                                isInCart(item.id)
+                                    ? "Đã thêm"
+                                    : "Mua"
+                            )
+                            : "Liên hệ"
+                      }}
+                    </button>
                     <span class="product-price">{{ formatPrice(item.price) }}</span>
                     <span v-if="item.oldPrice" class="product-old-price">{{ formatPrice(item.oldPrice) }}</span>
                   </div>
@@ -251,7 +267,7 @@ import { ElMessage } from 'element-plus'
 import { useCart } from '../../services/useCart.js'
 
 const router = useRouter()
-const { isInCart, toggleCart} = useCart()
+const { isInCart,  addToCart} = useCart()
 const isPriceOpen = ref(true)
 const isMaterialOpen = ref(true)
 const isReligionOpen = ref(true)
@@ -284,19 +300,53 @@ const trustItems = [
   { icon: 'fa-solid fa-headset', title: 'Tư vấn tận tâm', desc: 'Hỗ trợ 24/7' },
   { icon: 'fa-solid fa-rotate-left', title: 'Đổi trả dễ dàng', desc: 'Trong 7 ngày' }
 ]
-function toggleWish(product) {
-  const added = toggleCart({
+function handleProductAction(product) {
+
+  /*
+   * Chưa mở quỹ / quan tài
+   * => Liên hệ.
+   */
+  if (!product?.duocMuaTrucTiep) {
+
+    router.push({
+      path: '/lien-he',
+
+      query: {
+        sanPham:
+        product?.id
+      }
+    })
+
+    return
+  }
+
+
+  /*
+   * Đã có trong giỏ thì
+   * không thêm trùng.
+   */
+  if (isInCart(product.id)) {
+
+    ElMessage.info(
+        'Sản phẩm đã có trong giỏ hàng'
+    )
+
+    return
+  }
+
+
+  addToCart({
     ...product,
-    image: getProductImage(product)
+
+    image:
+        getProductImage(product)
   })
 
-  if (added) {
-    ElMessage.success('Đã thêm sản phẩm vào giỏ hàng')
-  } else {
-    ElMessage.info('Đã xóa sản phẩm khỏi giỏ hàng')
-  }
-}
-const formatPrice = (val) => {
+
+  ElMessage.success(
+      'Đã thêm sản phẩm vào giỏ hàng'
+  )
+}const formatPrice = (val) => {
   if (val === null || val === undefined) return 'Liên hệ'
   return Number(val).toLocaleString('vi-VN') + ' đ'
 }

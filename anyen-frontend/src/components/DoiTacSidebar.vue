@@ -63,6 +63,23 @@
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>
       </RouterLink>
+      <RouterLink
+          to="/doi-tac/quy-va-vi"
+          class="menu-item"
+          title="Quỹ & Ví"
+      >
+        <i
+            class="
+        fa-solid
+        fa-wallet
+        menu-icon
+      "
+        ></i>
+
+        <span class="sidebar-text">
+    Quỹ & Ví
+  </span>
+      </RouterLink>
       <RouterLink to="/doi-tac/thong-ke-doanh-thu" class="menu-item" title="Thống kê doanh thu">
         <i class="fa-solid fa-chart-line menu-icon"></i>
         <span class="sidebar-text">Thống kê doanh thu</span>

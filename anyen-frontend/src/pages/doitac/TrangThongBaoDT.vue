@@ -200,11 +200,33 @@
           </button>
         </div>
 
-        <p class="hint" v-if="isChoXacNhan(selectedNotification)">
+        <p
+            class="hint"
+            v-if="
+      isChoXacNhan(
+        selectedNotification
+      )
+    "
+        >
           <i class="fa-solid fa-lock"></i>
-          Nếu bạn chấp nhận đơn hàng, hệ thống sẽ chuyển đơn sang Quản lý đơn hàng.
-        </p>
 
+          Khi chấp nhận, hệ thống sẽ khóa
+
+          <strong>
+            {{
+              formatPrice(
+                  selectedNotification
+                      .product
+                      ?.price
+              )
+            }}
+          </strong>
+
+          trong Quỹ bảo đảm của bạn.
+
+          Khoản này chỉ được quyết toán
+          khi đơn hoàn tất.
+        </p>
         <p class="hint" v-else>
           <i class="fa-solid fa-circle-info"></i>
           Thông báo này đã được xử lý.

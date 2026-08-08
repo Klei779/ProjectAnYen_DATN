@@ -58,7 +58,7 @@ public class DonHangService {
     private final DoiTacThongBaoService doiTacThongBaoService;
     private final ThongBaoService thongBaoService;
     private final ThongBaoDoiTacRepository thongBaoDoiTacRepository;
-
+    private final TaiChinhDoiTacService taiChinhDoiTacService;
     private static final List<Integer> TRANG_THAI_ORDER = Arrays.asList(
             DonHang.TT_MOI_TAO,
             DonHang.TT_CHO_DOI_TAC_XAC_NHAN,
@@ -613,10 +613,34 @@ public class DonHangService {
             thongBaoService.taoThongBaoDonHangDangXuLy(
                     donHang.getMaDonHang()
             );
-        } else if (DonHang.TT_HOAN_THANH.equals(trangThaiMoi)) {
-            thongBaoService.taoThongBaoDonHangThanhToan(
-                    donHang.getMaDonHang()
+        } else if (
+                DonHang.TT_HOAN_THANH.equals(
+                        trangThaiMoi
+                )
+        ) {
+
+            /*
+             * Đối tác đã giao hàng và
+             * trực tiếp thu tiền khách.
+             *
+             * Nhân viên bấm Hoàn thành
+             * => mới được quyết toán Quỹ.
+             */
+            taiChinhDoiTacService
+                    .quyetToanDonHang(
+                            donHang.getMaDonHang()
+                    );
+
+
+            donHang.setTrangThaiThanhToan(
+                    DonHang.TTTT_DA_THANH_TOAN
             );
+
+
+            thongBaoService
+                    .taoThongBaoDonHangThanhToan(
+                            donHang.getMaDonHang()
+                    );
         }
 
         donHang.setTrangThai(trangThaiMoi);
@@ -765,26 +789,63 @@ public class DonHangService {
     }
 
     @Transactional
-    public DonHangResponse thanhToanDonHang(Integer maDonHang) {
-        DonHang donHang = donHangRepository.findById(maDonHang)
-                .orElseThrow(() -> new RuntimeException(
-                        "Không tìm thấy đơn hàng #" + maDonHang
-                ));
+    public DonHangResponse thanhToanDonHang(
+            Integer maDonHang
+    ) {
 
-        if (!DonHang.TT_DA_GIAO.equals(donHang.getTrangThai())) {
+        DonHang donHang =
+                donHangRepository
+                        .findById(maDonHang)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Không tìm thấy đơn hàng #"
+                                                + maDonHang
+                                )
+                        );
+
+
+        if (
+                !DonHang.TT_DA_GIAO.equals(
+                        donHang.getTrangThai()
+                )
+        ) {
+
             throw new RuntimeException(
-                    "Chỉ có thể thanh toán cho đơn hàng ở trạng thái Đã giao"
+                    "Chỉ có thể thanh toán cho đơn hàng "
+                            + "ở trạng thái Đã giao"
             );
         }
 
-        donHang.setTrangThai(DonHang.TT_DA_THANH_TOAN);
-        donHang.setTrangThaiThanhToan(DonHang.TTTT_DA_THANH_TOAN);
-        DonHang saved = donHangRepository.save(donHang);
 
-        donHang.setTrangThai(DonHang.TT_HOAN_THANH);
-        saved = donHangRepository.save(saved);
+        /*
+         * 20% An Yên
+         * 80% Ví đối tác.
+         */
+        taiChinhDoiTacService
+                .quyetToanDonHang(
+                        maDonHang
+                );
 
-        return mapToDonHangResponse(saved);
+
+        donHang.setTrangThaiThanhToan(
+                DonHang.TTTT_DA_THANH_TOAN
+        );
+
+
+        donHang.setTrangThai(
+                DonHang.TT_HOAN_THANH
+        );
+
+
+        DonHang saved =
+                donHangRepository.save(
+                        donHang
+                );
+
+
+        return mapToDonHangResponse(
+                saved
+        );
     }
 
     private DonHangResponse mapToDonHangResponse(DonHang donHang) {

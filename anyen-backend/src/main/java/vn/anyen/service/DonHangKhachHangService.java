@@ -10,6 +10,7 @@ import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DonHang;
+import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.KhachHang;
 import vn.anyen.entity.NhanVien;
 import vn.anyen.entity.SanPham;
@@ -18,6 +19,7 @@ import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.KhachHangRepository;
 import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.repository.SanPhamRepository;
+import vn.anyen.repository.DoiTacRepository;
 
 import java.math.BigDecimal;
 import java.text.Normalizer;
@@ -40,12 +42,19 @@ public class DonHangKhachHangService {
     private final NhanVienRepository nhanVienRepository;
     private final SanPhamRepository sanPhamRepository;
 
+    /*
+     * Dùng để kiểm tra đối tác của sản phẩm
+     * đã mở Quỹ bảo đảm hay chưa.
+     */
+    private final DoiTacRepository doiTacRepository;
+
     private final DoiTacThongBaoService doiTacThongBaoService;
 
     /*
      * Tái sử dụng hàm map DonHang -> DonHangResponse
      * đang có trong DonHangService.
      */
+
     private final DonHangService donHangService;
 
     /*
@@ -257,71 +266,131 @@ public class DonHangKhachHangService {
     private List<SanPhamDaKiemTra> validateVaLaySanPham(
             TaoDonHangRequest request
     ) {
+
+        /*
+         * 1. Đơn phải có ít nhất một sản phẩm.
+         */
         if (
                 request.getItems() == null
                         || request.getItems().isEmpty()
         ) {
+
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "Vui lòng chọn ít nhất 1 sản phẩm"
             );
         }
 
+
         List<SanPhamDaKiemTra> result =
                 new ArrayList<>();
 
+
+        /*
+         * Dùng để tránh một sản phẩm
+         * xuất hiện hai lần trong payload.
+         */
         Set<Integer> maSanPhamDaCo =
                 new HashSet<>();
+
 
         for (
                 TaoDonHangRequest.SanPhamTrongDonRequest item
                 : request.getItems()
         ) {
+
+            /*
+             * 2. Kiểm tra mã sản phẩm.
+             */
             if (
                     item == null
                             || item.getMaSanPham() == null
             ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Mã sản phẩm không hợp lệ"
                 );
             }
 
+
             /*
-             * Không cho một mã sản phẩm xuất hiện
-             * nhiều lần trong payload.
+             * 3. Không cho trùng sản phẩm.
              */
-            if (!maSanPhamDaCo.add(item.getMaSanPham())) {
+            if (
+                    !maSanPhamDaCo.add(
+                            item.getMaSanPham()
+                    )
+            ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
-                        "Sản phẩm #" + item.getMaSanPham()
+
+                        "Sản phẩm #"
+                                + item.getMaSanPham()
                                 + " bị trùng trong đơn hàng"
                 );
             }
 
-            Integer soLuongDat = item.getSoLuong();
 
-            if (soLuongDat == null || soLuongDat <= 0) {
+            /*
+             * 4. Kiểm tra số lượng.
+             */
+            Integer soLuongDat =
+                    item.getSoLuong();
+
+
+            if (
+                    soLuongDat == null
+                            || soLuongDat <= 0
+            ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Số lượng sản phẩm phải lớn hơn 0"
                 );
             }
 
-            SanPham sanPham = sanPhamRepository
-                    .findById(item.getMaSanPham())
-                    .orElseThrow(() -> new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Không tìm thấy sản phẩm #"
-                                    + item.getMaSanPham()
-                    ));
 
             /*
-             * Đơn khách tự tạo không được có quan tài.
+             * 5. Lấy sản phẩm từ database.
+             *
+             * Không tin dữ liệu frontend.
              */
-            if (laSanPhamQuanTai(sanPham)) {
+            SanPham sanPham =
+                    sanPhamRepository
+                            .findById(
+                                    item.getMaSanPham()
+                            )
+                            .orElseThrow(() ->
+                                    new ResponseStatusException(
+                                            HttpStatus.NOT_FOUND,
+
+                                            "Không tìm thấy sản phẩm #"
+                                                    + item.getMaSanPham()
+                                    )
+                            );
+
+
+            /*
+             * 6. Quan tài không được khách tự mua.
+             *
+             * Quan tài vẫn giữ luồng:
+             *
+             * Liên hệ
+             * -> tư vấn
+             * -> nhân viên tạo đơn
+             * -> hợp đồng.
+             */
+            if (
+                    laSanPhamQuanTai(
+                            sanPham
+                    )
+            ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
+
                         "Sản phẩm '"
                                 + sanPham.getTenSanPham()
                                 + "' thuộc loại Quan tài. "
@@ -330,14 +399,113 @@ public class DonHangKhachHangService {
                 );
             }
 
+
+            /*
+             * =====================================
+             * 7. KIỂM TRA QUỸ CỦA ĐỐI TÁC
+             * =====================================
+             *
+             * Sản phẩm khách tự mua trên website
+             * bắt buộc phải thuộc đối tác đã mở Quỹ.
+             *
+             * Chưa mở Quỹ:
+             * Website chỉ được hiển thị "Liên hệ".
+             */
+            if (
+                    sanPham.getMaDoiTac() == null
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+
+                        "Sản phẩm '"
+                                + sanPham.getTenSanPham()
+                                + "' chưa có đối tác cung cấp."
+                );
+            }
+
+
+            DoiTac doiTac =
+                    doiTacRepository
+                            .findById(
+                                    sanPham.getMaDoiTac()
+                            )
+                            .orElseThrow(() ->
+                                    new ResponseStatusException(
+                                            HttpStatus.BAD_REQUEST,
+
+                                            "Không tìm thấy đối tác cung cấp "
+                                                    + "sản phẩm '"
+                                                    + sanPham.getTenSanPham()
+                                                    + "'."
+                                    )
+                            );
+
+
+            /*
+             * Đối tác chưa mở Quỹ:
+             *
+             * Không cho khách lách frontend
+             * bằng cách tự gọi API/Postman.
+             */
+            if (
+                    !Boolean.TRUE.equals(
+                            doiTac.getDaMoQuy()
+                    )
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+
+                        "Sản phẩm '"
+                                + sanPham.getTenSanPham()
+                                + "' hiện chưa hỗ trợ mua trực tiếp. "
+                                + "Đối tác chưa mở Quỹ bảo đảm. "
+                                + "Vui lòng liên hệ để được tư vấn."
+                );
+            }
+
+
+            /*
+             * 8. Chỉ lấy sản phẩm đang bán.
+             *
+             * Theo database hiện tại:
+             *
+             * 0 = Ẩn
+             * 1 = Đang bán
+             * 2 = Chờ xác nhận
+             */
+            if (
+                    sanPham.getTrangThai() == null
+                            || sanPham.getTrangThai() != 1
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+
+                        "Sản phẩm '"
+                                + sanPham.getTenSanPham()
+                                + "' hiện không được phép đặt hàng."
+                );
+            }
+
+
+            /*
+             * 9. Kiểm tra tồn kho.
+             */
             Integer tonKho =
                     sanPham.getSoLuong() == null
                             ? 0
                             : sanPham.getSoLuong();
 
-            if (tonKho < soLuongDat) {
+
+            if (
+                    tonKho < soLuongDat
+            ) {
+
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
+
                         "Sản phẩm '"
                                 + sanPham.getTenSanPham()
                                 + "' không đủ tồn kho. Còn: "
@@ -345,11 +513,36 @@ public class DonHangKhachHangService {
                 );
             }
 
+
+            /*
+             * 10. Giá luôn lấy từ database.
+             */
             BigDecimal donGia =
                     sanPham.getGiaTien() == null
                             ? BigDecimal.ZERO
                             : sanPham.getGiaTien();
 
+
+            if (
+                    donGia.compareTo(
+                            BigDecimal.ZERO
+                    ) <= 0
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+
+                        "Sản phẩm '"
+                                + sanPham.getTenSanPham()
+                                + "' chưa có giá bán hợp lệ."
+                );
+            }
+
+
+            /*
+             * Đưa sản phẩm đã validate
+             * sang bước tạo chi tiết đơn.
+             */
             result.add(
                     new SanPhamDaKiemTra(
                             sanPham,
@@ -359,9 +552,9 @@ public class DonHangKhachHangService {
             );
         }
 
+
         return result;
     }
-
     private KhachHang taoKhachHang(
             ThongTinKhachHang thongTin,
             TaoDonHangRequest request,

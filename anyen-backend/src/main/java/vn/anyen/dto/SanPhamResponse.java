@@ -17,7 +17,22 @@ public class SanPhamResponse {
     private BigDecimal price;
     private BigDecimal oldPrice;
     private String image;
+    private Integer maDoiTac;
+
     private String tenDoiTac;
+
+    /*
+     * Đối tác đã bật cơ chế Quỹ hay chưa.
+     */
+    private Boolean doiTacDaMoQuy;
+
+    /*
+     * Frontend chỉ cần đọc biến này:
+     *
+     * true  => Mua
+     * false => Liên hệ
+     */
+    private Boolean duocMuaTrucTiep;
 
     private String tenTrangThai;
 

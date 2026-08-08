@@ -1195,3 +1195,48 @@
         gap:12px;
     }
 }
+.product-action-btn {
+    width: 100%;
+    min-height: 36px;
+
+    margin-top: 12px;
+
+    border-radius: 8px;
+    border: 1px solid #8a1023;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+
+/* Đối tác mở quỹ */
+.product-action-btn.buy {
+    background: #8a1023;
+    color: #ffffff;
+}
+
+.product-action-btn.buy:hover {
+    background: #6f0c1b;
+    transform: translateY(-1px);
+}
+
+
+/* Đối tác chưa mở quỹ */
+.product-action-btn.contact {
+    background: #ffffff;
+    color: #8a1023;
+}
+
+.product-action-btn.contact:hover {
+    background: #fff6f7;
+}

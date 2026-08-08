@@ -8,6 +8,8 @@ import AdminLayout from "../layouts/AdminLayout.vue";
 import HotlineLayout from "../layouts/HotlineLayout.vue";
 import TrangThongKeDoanhThuDT from "../pages/doitac/TrangThongKeDoanhThuDT.vue";
 import TrangThongKeDoanhThuNV from "../pages/nhanvien/TrangThongKeDoanhThuNV.vue";
+import TrangQuyVaVi
+    from "../pages/doitac/TrangQuyVaVi.vue"
 // Website
 import TrangChu from "../pages/website/TrangChu.vue";
 import TrangSanPham from "../pages/website/TrangSanPham.vue";
@@ -45,6 +47,8 @@ import TrangQLHopDongAdmin from "../pages/admin/TrangQLHopDong.vue";
 import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
 import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
 import TrangThongBaoAD from "../pages/admin/TrangThongBaoAD.vue";
+import TrangThanhToanCongNo
+    from "../pages/admin/TrangThanhToanCongNo.vue";
 // Hotline
 import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
 import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
@@ -158,6 +162,10 @@ const routes = [
                 component: TrangThongBao,
             },
             {
+                path: "quy-va-vi",
+                component: TrangQuyVaVi
+            },
+            {
                 path: "thong-ke-doanh-thu",
                 component: TrangThongKeDoanhThuDT,
             },
@@ -256,6 +264,11 @@ const routes = [
             {
                 path: "quan-ly-tin-tuc",
                 component: TrangQLTinTuc,
+            },
+            {
+                path: "quan-ly-cong-no",
+                name: "QuanLyCongNo",
+                component: TrangThanhToanCongNo,
             },
             {
                 path: "thong-ke-doanh-thu",

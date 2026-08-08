@@ -334,9 +334,46 @@ public class SanPhamService {
         return Sort.by(Sort.Direction.DESC, "maSanPham");
     }
 
-    private SanPhamResponse mapToResponse(SanPham sp) {
-        String tenDT = (sp.getMaDoiTac() != null) ? sanPhamRepository.findTenDoiTacByMaDoiTac(sp.getMaDoiTac()) : "Không rõ đối tác";
+    private SanPhamResponse mapToResponse(
+            SanPham sp
+    ) {
 
+        DoiTac doiTac =
+                sp.getMaDoiTac() == null
+                        ? null
+                        : doiTacRepository
+                        .findById(
+                                sp.getMaDoiTac()
+                        )
+                        .orElse(null);
+
+
+        String tenDT =
+                doiTac != null
+                        ? doiTac.getTenDoiTac()
+                        : "Không rõ đối tác";
+
+
+        /*
+         * Đối tác tự quyết định có mở Quỹ.
+         */
+        boolean doiTacDaMoQuy =
+                doiTac != null
+                        && Boolean.TRUE.equals(
+                        doiTac.getDaMoQuy()
+                );
+
+
+        /*
+         * Quan tài vẫn giữ luồng hiện tại:
+         * Liên hệ / tư vấn / hợp đồng.
+         */
+        boolean duocMuaTrucTiep =
+                doiTacDaMoQuy
+                        && !laSanPhamQuanTai(sp);
+
+
+        // ===== phần load chi tiết cũ giữ nguyên =====
         // Load chi tiết sản phẩm
         List<SanPhamChiTiet> chiTiets = sanPhamChiTietRepository.findByMaSanPhamOrderByThuTuAsc(sp.getMaSanPham());
         List<SanPhamResponse.SanPhamChiTietResponse> chiTietResponses = chiTiets.stream()
@@ -366,6 +403,17 @@ public class SanPhamService {
                 .price(sp.getGiaTien())
                 .oldPrice(sp.getKhuyenMai())
                 .image(sp.getHinhAnh())
+                .image(sp.getHinhAnh())
+
+                .maDoiTac(sp.getMaDoiTac())
+
+                .tenDoiTac(tenDT)
+
+                .doiTacDaMoQuy(doiTacDaMoQuy)
+
+                .duocMuaTrucTiep(duocMuaTrucTiep)
+
+                .loai(sp.getLoai())
                 .loai(sp.getLoai())
                 .vatLieu(sp.getVatLieu())
                 .tonGiao(sp.getTonGiao())
@@ -379,7 +427,6 @@ public class SanPhamService {
                 .nhaCungCap(sp.getMaDoiTac() != null ? "Đối tác #" + sp.getMaDoiTac() : "N/A")
                 .nhaSanXuat(sp.getCnsx())
                 .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_SAN_PHAM, sp.getTrangThai()))
-                .tenDoiTac(tenDT)
                 .soLuong(sp.getSoLuong())
                 .ngayCapNhat("N/A")
                 .discount(sp.getKhuyenMai() != null && sp.getGiaTien() != null
@@ -391,4 +438,32 @@ public class SanPhamService {
                 .sanPhamHinhAnhs(hinhAnhResponses)
                 .build();
     }
+    private boolean laSanPhamQuanTai(
+            SanPham sanPham
+    ) {
+
+        String loai =
+                sanPham.getLoai() == null
+                        ? ""
+                        : sanPham
+                        .getLoai()
+                        .trim()
+                        .toLowerCase();
+
+
+        String ten =
+                sanPham.getTenSanPham() == null
+                        ? ""
+                        : sanPham
+                        .getTenSanPham()
+                        .trim()
+                        .toLowerCase();
+
+
+        return loai.contains("quan tài")
+                || loai.contains("quan tai")
+                || ten.contains("quan tài")
+                || ten.contains("quan tai");
+    }
 }
+

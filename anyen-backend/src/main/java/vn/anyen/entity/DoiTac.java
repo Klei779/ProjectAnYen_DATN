@@ -2,7 +2,7 @@ package vn.anyen.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -59,6 +59,38 @@ public class DoiTac {
 
     @Column(name = "ConfirmationToken")
     private String confirmationToken;
+    @Builder.Default
+    @Column(name = "DaMoQuy", nullable = false)
+    private Boolean daMoQuy = false;
+    
+    @Builder.Default
+    @Column(
+            name = "SoDuQuy",
+            nullable = false,
+            precision = 18,
+            scale = 2
+    )
+    private BigDecimal soDuQuy = BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(
+            name = "SoDuQuyDangKhoa",
+            nullable = false,
+            precision = 18,
+            scale = 2
+    )
+    private BigDecimal soDuQuyDangKhoa =
+            BigDecimal.ZERO;
+
+    @Builder.Default
+    @Column(
+            name = "SoDuVi",
+            nullable = false,
+            precision = 18,
+            scale = 2
+    )
+    private BigDecimal soDuVi =
+            BigDecimal.ZERO;
 
     @Column(name = "CreatedAt", updatable = false)
     private LocalDateTime createdAt;

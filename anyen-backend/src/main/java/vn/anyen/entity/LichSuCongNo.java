@@ -33,6 +33,7 @@ public class LichSuCongNo {
 
     public static final Integer PT_TIEN_MAT = 1;
     public static final Integer PT_CHUYEN_KHOAN = 2;
+    public static final Integer PT_PAYOO = 3;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MaNhanVien")

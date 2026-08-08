@@ -8,16 +8,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import vn.anyen.dto.response.CongNoResponse;
+import vn.anyen.dto.response.CongNoTongQuanResponse;
+import vn.anyen.dto.response.LichSuCongNoResponse;
 
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.CongNo;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.entity.DonHang;
+import vn.anyen.entity.LichSuCongNo;
 
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.CongNoRepository;
 import vn.anyen.repository.DoiTacRepository;
 import vn.anyen.repository.DonHangRepository;
+import vn.anyen.repository.LichSuCongNoRepository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -25,6 +29,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +45,7 @@ public class CongNoService {
             chiTietDonHangRepository;
 
     private final DoiTacRepository doiTacRepository;
+    private final LichSuCongNoRepository lichSuCongNoRepository;
 
 
     // =================================================
@@ -723,6 +731,464 @@ public class CongNoService {
                     congNo
             );
         }
+    }
+
+    // =================================================
+// LẤY CÔNG NỢ THEO ĐỐI TÁC
+// =================================================
+
+    @Transactional(readOnly = true)
+    public List<CongNoResponse> getByDoiTac(
+            Integer maDoiTac
+    ) {
+
+        return congNoRepository
+                .findByDoiTac_MaDoiTac(maDoiTac)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+
+// =================================================
+// LẤY CÔNG NỢ THEO ĐƠN HÀNG
+// =================================================
+
+    @Transactional(readOnly = true)
+    public List<CongNoResponse> getByDonHang(
+            Integer maDonHang
+    ) {
+
+        return congNoRepository
+                .findByDonHang_MaDonHang(maDonHang)
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+
+// =================================================
+// TỔNG QUAN CÔNG NỢ
+// =================================================
+
+    @Transactional(readOnly = true)
+    public CongNoTongQuanResponse getTongQuan() {
+
+        LocalDate today = LocalDate.now();
+
+        // Các khoản đến hạn trong vòng 7 ngày
+        LocalDate dueLimit = today.plusDays(7);
+
+        List<CongNo> allCongNo =
+                congNoRepository.findAll();
+
+
+        BigDecimal tongConLai =
+                BigDecimal.ZERO;
+
+        BigDecimal denHan =
+                BigDecimal.ZERO;
+
+        BigDecimal quaHan =
+                BigDecimal.ZERO;
+
+
+        Set<Integer> doiTacConNo =
+                new java.util.HashSet<>();
+
+        Set<Integer> doiTacDenHan =
+                new java.util.HashSet<>();
+
+        Set<Integer> doiTacQuaHan =
+                new java.util.HashSet<>();
+
+
+        for (CongNo congNo : allCongNo) {
+
+            BigDecimal conLai =
+                    zero(congNo.getConLai());
+
+
+            // Đã thanh toán hết thì bỏ qua
+            if (
+                    conLai.compareTo(
+                            BigDecimal.ZERO
+                    ) <= 0
+            ) {
+                continue;
+            }
+
+
+            tongConLai =
+                    tongConLai.add(conLai);
+
+
+            if (congNo.getDoiTac() != null) {
+
+                doiTacConNo.add(
+                        congNo
+                                .getDoiTac()
+                                .getMaDoiTac()
+                );
+            }
+
+
+            LocalDate han =
+                    congNo.getHanThanhToan();
+
+
+            if (han == null) {
+                continue;
+            }
+
+
+            // ============================
+            // QUÁ HẠN
+            // ============================
+
+            if (han.isBefore(today)) {
+
+                quaHan =
+                        quaHan.add(conLai);
+
+
+                if (congNo.getDoiTac() != null) {
+
+                    doiTacQuaHan.add(
+                            congNo
+                                    .getDoiTac()
+                                    .getMaDoiTac()
+                    );
+                }
+
+            }
+
+            // ============================
+            // SẮP ĐẾN HẠN <= 7 NGÀY
+            // ============================
+
+            else if (!han.isAfter(dueLimit)) {
+
+                denHan =
+                        denHan.add(conLai);
+
+
+                if (congNo.getDoiTac() != null) {
+
+                    doiTacDenHan.add(
+                            congNo
+                                    .getDoiTac()
+                                    .getMaDoiTac()
+                    );
+                }
+            }
+        }
+
+
+        // ============================================
+        // TÍNH TIỀN ĐÃ THANH TOÁN TRONG THÁNG
+        // ============================================
+
+        YearMonth currentMonth =
+                YearMonth.now();
+
+
+        LocalDateTime startOfMonth =
+                currentMonth
+                        .atDay(1)
+                        .atStartOfDay();
+
+
+        LocalDateTime startOfNextMonth =
+                currentMonth
+                        .plusMonths(1)
+                        .atDay(1)
+                        .atStartOfDay();
+
+
+        BigDecimal daThanhToanThangNay =
+                BigDecimal.ZERO;
+
+        long soGiaoDichThangNay =
+                0L;
+
+
+        for (
+                LichSuCongNo lichSu :
+                lichSuCongNoRepository.findAll()
+        ) {
+
+            LocalDateTime ngayThanhToan =
+                    lichSu.getNgayThanhToan();
+
+
+            if (
+                    ngayThanhToan == null
+
+                            || ngayThanhToan.isBefore(
+                            startOfMonth
+                    )
+
+                            || !ngayThanhToan.isBefore(
+                            startOfNextMonth
+                    )
+            ) {
+                continue;
+            }
+
+
+            daThanhToanThangNay =
+                    daThanhToanThangNay.add(
+                            zero(
+                                    lichSu
+                                            .getSoTienThanhToan()
+                            )
+                    );
+
+
+            soGiaoDichThangNay++;
+        }
+
+
+        return CongNoTongQuanResponse
+                .builder()
+
+                .tongCongNoPhaiTra(
+                        tongConLai
+                )
+
+                .soDoiTacConNo(
+                        (long) doiTacConNo.size()
+                )
+
+                .denHanThanhToan(
+                        denHan
+                )
+
+                .soDoiTacDenHan(
+                        (long) doiTacDenHan.size()
+                )
+
+                .quaHanThanhToan(
+                        quaHan
+                )
+
+                .soDoiTacQuaHan(
+                        (long) doiTacQuaHan.size()
+                )
+
+                .daThanhToanThangNay(
+                        daThanhToanThangNay
+                )
+
+                .soGiaoDichThangNay(
+                        soGiaoDichThangNay
+                )
+
+                .build();
+    }
+
+
+// =================================================
+// LỊCH SỬ THANH TOÁN
+// =================================================
+
+    @Transactional(readOnly = true)
+    public Page<LichSuCongNoResponse> getLichSu(
+            int page,
+            int size
+    ) {
+
+        int pageSafe =
+                Math.max(page, 0);
+
+
+        int sizeSafe =
+                size <= 0
+                        ? 10
+                        : Math.min(size, 100);
+
+
+        Pageable pageable =
+                PageRequest.of(
+                        pageSafe,
+                        sizeSafe
+                );
+
+
+        return lichSuCongNoRepository
+
+                .findAllByOrderByNgayThanhToanDesc(
+                        pageable
+                )
+
+                .map(
+                        this::mapLichSuToResponse
+                );
+    }
+
+
+// =================================================
+// MAP LỊCH SỬ -> RESPONSE
+// =================================================
+
+    private LichSuCongNoResponse mapLichSuToResponse(
+            LichSuCongNo lichSu
+    ) {
+
+        CongNo congNo =
+                lichSu.getCongNo();
+
+
+        DoiTac doiTac =
+                congNo != null
+                        ? congNo.getDoiTac()
+                        : null;
+
+
+        DonHang donHang =
+                congNo != null
+                        ? congNo.getDonHang()
+                        : null;
+
+
+        String tenDoiTac =
+                "Không xác định";
+
+
+        if (doiTac != null) {
+
+            if (
+                    doiTac.getTenDoanhNghiep() != null
+
+                            && !doiTac
+                            .getTenDoanhNghiep()
+                            .isBlank()
+            ) {
+
+                tenDoiTac =
+                        doiTac.getTenDoanhNghiep();
+
+            }
+
+            else if (
+                    doiTac.getTenDoiTac() != null
+
+                            && !doiTac
+                            .getTenDoiTac()
+                            .isBlank()
+            ) {
+
+                tenDoiTac =
+                        doiTac.getTenDoiTac();
+            }
+        }
+
+
+        return LichSuCongNoResponse
+                .builder()
+
+                .maLichSuCongNo(
+                        lichSu
+                                .getMaLichSuCongNo()
+                )
+
+                .maCongNo(
+                        congNo != null
+                                ? congNo.getMaCongNo()
+                                : null
+                )
+
+                .maDonHang(
+                        donHang != null
+                                ? donHang.getMaDonHang()
+                                : null
+                )
+
+                .maDoiTac(
+                        doiTac != null
+                                ? doiTac.getMaDoiTac()
+                                : null
+                )
+
+                .tenDoiTac(
+                        tenDoiTac
+                )
+
+                .soTienThanhToan(
+                        zero(
+                                lichSu
+                                        .getSoTienThanhToan()
+                        )
+                )
+
+                .phuongThucThanhToan(
+                        lichSu
+                                .getPhuongThucThanhToan()
+                )
+
+                .phuongThucThanhToanText(
+                        getPhuongThucThanhToanText(
+                                lichSu
+                                        .getPhuongThucThanhToan()
+                        )
+                )
+
+                .ngayThanhToan(
+                        lichSu
+                                .getNgayThanhToan()
+                )
+
+                .maGiaoDich(
+                        lichSu
+                                .getMaGiaoDich()
+                )
+
+                .ghiChu(
+                        lichSu
+                                .getGhiChu()
+                )
+
+                .build();
+    }
+
+
+// =================================================
+// CHUYỂN PHƯƠNG THỨC THANH TOÁN -> TEXT
+// =================================================
+
+    private String getPhuongThucThanhToanText(
+            Integer phuongThuc
+    ) {
+
+        if (
+                LichSuCongNo.PT_TIEN_MAT
+                        .equals(phuongThuc)
+        ) {
+
+            return "Tiền mặt";
+        }
+
+
+        if (
+                LichSuCongNo.PT_CHUYEN_KHOAN
+                        .equals(phuongThuc)
+        ) {
+
+            return "Chuyển khoản";
+        }
+
+
+        if (
+                LichSuCongNo.PT_PAYOO
+                        .equals(phuongThuc)
+        ) {
+
+            return "Payoo Mock";
+        }
+
+
+        return "Không xác định";
     }
 
 

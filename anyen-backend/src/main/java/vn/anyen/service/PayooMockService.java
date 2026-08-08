@@ -205,10 +205,15 @@ public class PayooMockService {
             BigDecimal soTien
     ) {
 
+        // Kiểm tra số tiền >= mức tối thiểu
+        validateSoTien(soTien);
+
+
         CongNo congNo =
                 congNoRepository
                         .findById(maCongNo)
                         .orElseThrow(() ->
+
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Không tìm thấy công nợ"
@@ -221,6 +226,10 @@ public class PayooMockService {
                         congNo.getConLai()
                 );
 
+
+        // ================================
+        // ĐÃ THANH TOÁN ĐỦ
+        // ================================
 
         if (
                 conLai.compareTo(
@@ -235,6 +244,10 @@ public class PayooMockService {
         }
 
 
+        // ================================
+        // KHÔNG CHO TRẢ VƯỢT
+        // ================================
+
         if (
                 conLai.compareTo(
                         soTien
@@ -243,15 +256,59 @@ public class PayooMockService {
 
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-
-                    "Số tiền thanh toán vượt "
-                            + "công nợ còn lại"
+                    "Số tiền thanh toán vượt công nợ còn lại"
             );
         }
 
 
+        // =====================================
+        // KIỂM TRA SỐ TIỀN CÒN LẠI
+        // =====================================
+
+        BigDecimal conLaiSauThanhToan =
+                conLai.subtract(soTien);
+
+
+        /*
+         * Ví dụ:
+         *
+         * Công nợ = 100.000
+         * Thanh toán = 99.500
+         * Còn 500
+         *
+         * Lần sau Payoo yêu cầu tối thiểu 1000
+         * => không thể trả tiếp.
+         *
+         * Nên không cho trường hợp này.
+         */
+        if (
+                conLaiSauThanhToan
+                        .compareTo(
+                                BigDecimal.ZERO
+                        ) > 0
+
+                        &&
+
+                        conLaiSauThanhToan
+                                .compareTo(
+                                        new BigDecimal("1000")
+                                ) < 0
+        ) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Vui lòng thanh toán toàn bộ hoặc để số dư còn lại tối thiểu 1.000đ"
+            );
+        }
+
+
+        // =====================================
+        // TẠO GIAO DỊCH PAYOO
+        // =====================================
+
         PayooMockTransaction tx =
                 taoGiaoDich(
+
                         PayooMockTransaction
                                 .LOAI_THANH_TOAN_CONG_NO,
 
@@ -269,6 +326,14 @@ public class PayooMockService {
                 );
 
 
+        /*
+         * Chú ý:
+         *
+         * CHƯA trừ công nợ ở đây.
+         *
+         * Phải đợi Payoo callback thành công
+         * mới gọi xuLyCongNo().
+         */
         return map(tx);
     }
 
@@ -574,6 +639,7 @@ public class PayooMockService {
                                 tx.getMaCongNo()
                         )
                         .orElseThrow(() ->
+
                                 new ResponseStatusException(
                                         HttpStatus.NOT_FOUND,
                                         "Không tìm thấy công nợ"
@@ -587,9 +653,6 @@ public class PayooMockService {
                 );
 
 
-        /*
-         * Kiểm tra lại khi callback.
-         */
         if (
                 conLai.compareTo(
                         tx.getSoTien()
@@ -628,9 +691,7 @@ public class PayooMockService {
         );
 
 
-        /*
-         * Cập nhật trạng thái.
-         */
+        // Hết nợ
         if (
                 conLaiMoi.compareTo(
                         BigDecimal.ZERO
@@ -638,15 +699,14 @@ public class PayooMockService {
         ) {
 
             congNo.setTrangThai(
-                    CongNo
-                            .TT_DA_THANH_TOAN
+                    CongNo.TT_DA_THANH_TOAN
             );
 
         } else {
 
+            // Còn nợ
             congNo.setTrangThai(
-                    CongNo
-                            .TT_THANH_TOAN_MOT_PHAN
+                    CongNo.TT_THANH_TOAN_MOT_PHAN
             );
         }
 
@@ -656,11 +716,13 @@ public class PayooMockService {
         );
 
 
-        /*
-         * Lưu lịch sử.
-         */
+        // ================================
+        // LƯU LỊCH SỬ
+        // ================================
+
         LichSuCongNo lichSu =
-                LichSuCongNo.builder()
+                LichSuCongNo
+                        .builder()
 
                         .congNo(
                                 congNo
@@ -671,16 +733,12 @@ public class PayooMockService {
                         )
 
                         .phuongThucThanhToan(
-                                LichSuCongNo
-                                        .PT_PAYOO
+                                LichSuCongNo.PT_PAYOO
                         )
 
-                        /*
-                         * Demo nên có thể để null.
-                         * Sau này muốn lưu admin nào
-                         * thanh toán thì map Authentication.
-                         */
-                        .nhanVien(null)
+                        .nhanVien(
+                                null
+                        )
 
                         .maGiaoDich(
                                 tx.getMaGiaoDich()

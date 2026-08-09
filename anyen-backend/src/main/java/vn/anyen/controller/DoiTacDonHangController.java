@@ -37,6 +37,9 @@ public class DoiTacDonHangController {
 
         DoiTac doiTac = doiTacRepository.findByTenDangNhap(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác đăng nhập"));
+        if (!DoiTac.TT_DANG_HOAT_DONG.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Đối tác không hoạt động");
+        }
 
         return donHangService.getDoiTacDonHangs(
                 doiTac.getMaDoiTac(),
@@ -58,6 +61,9 @@ public class DoiTacDonHangController {
 
         DoiTac doiTac = doiTacRepository.findByTenDangNhap(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác đăng nhập"));
+        if (!DoiTac.TT_DANG_HOAT_DONG.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Đối tác không hoạt động");
+        }
 
         return donHangService.getDoiTacDonHangDetail(
                 maDonHang,
@@ -77,6 +83,9 @@ public class DoiTacDonHangController {
 
         DoiTac doiTac = doiTacRepository.findByTenDangNhap(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đối tác đăng nhập"));
+        if (!DoiTac.TT_DANG_HOAT_DONG.equals(doiTac.getTrangThai())) {
+            throw new RuntimeException("Đối tác không hoạt động");
+        }
 
         String ngayGiaoDuKienStr = body.get("ngayGiaoDuKien");
         if (ngayGiaoDuKienStr == null || ngayGiaoDuKienStr.trim().isEmpty()) {

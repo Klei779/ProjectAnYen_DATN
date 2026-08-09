@@ -112,6 +112,11 @@ public class AuthService {
 
                 DoiTac dt = optionalDt.get();
 
+                if (!DoiTac.TT_DANG_HOAT_DONG.equals(dt.getTrangThai())) {
+                    response.setSuccess(false);
+                    return response;
+                }
+
                 if (passwordEncoder.matches(
                         request.getMatKhau(),
                         dt.getMatKhau())) {

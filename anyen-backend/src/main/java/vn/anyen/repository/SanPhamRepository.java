@@ -13,12 +13,14 @@ public interface SanPhamRepository
         extends JpaRepository<SanPham, Integer>, JpaSpecificationExecutor<SanPham> {
 
     @Query("""
-            SELECT sp
-            FROM SanPham sp
-            WHERE sp.trangThai = 1
-            ORDER BY sp.maSanPham DESC
-            """)
-    List<SanPham> findAllVisibleForTaoDonHang();
+SELECT sp
+FROM SanPham sp, DoiTac dt
+WHERE sp.trangThai = 1
+  AND sp.maDoiTac = dt.maDoiTac
+  AND dt.trangThai = 1
+ORDER BY sp.maSanPham DESC
+""")
+List<SanPham> findAllVisibleForTaoDonHang();
 
     @Query("""
             SELECT sp.loai, COUNT(sp)

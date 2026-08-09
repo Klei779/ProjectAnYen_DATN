@@ -14,7 +14,7 @@ import vn.anyen.dto.SanPhamResponse;
 import vn.anyen.dto.request.SanPhamRequest;
 import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
 import vn.anyen.entity.DoiTac;
-import vn.anyen.entity.SanPham;
+
 import vn.anyen.entity.SanPhamChiTiet;
 import vn.anyen.entity.SanPhamHinhAnh;
 import vn.anyen.repository.DoiTacRepository;
@@ -22,6 +22,9 @@ import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.repository.SanPhamChiTietRepository;
 import vn.anyen.repository.SanPhamHinhAnhRepository;
 
+import vn.anyen.entity.SanPham;
+import jakarta.persistence.criteria.Subquery;
+import jakarta.persistence.criteria.Root;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,10 +62,19 @@ public class SanPhamService {
         Pageable pageable = PageRequest.of(pageIndex, size, buildSort(sortBy));
 
         Specification<SanPham> spec = (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
+    List<Predicate> predicates = new ArrayList<>();
 
-            // Chỉ load sản phẩm đã được duyệt (TRANG_THAI_DANG_BAN = 1)
-            predicates.add(cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_DANG_BAN));
+    // Filter only products with active partners (trangThai = 1)
+    // Create subquery to ensure the associated partner is active
+    Subquery<Integer> sub = query.subquery(Integer.class);
+    Root<DoiTac> dRoot = sub.from(DoiTac.class);
+    sub.select(dRoot.get("maDoiTac"))
+       .where(
+           cb.equal(dRoot.get("maDoiTac"), root.get("maDoiTac")),
+           cb.equal(dRoot.get("trangThai"), DoiTac.TT_DANG_HOAT_DONG)
+       );
+    predicates.add(cb.exists(sub));
+
             // Filter Keyword
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";

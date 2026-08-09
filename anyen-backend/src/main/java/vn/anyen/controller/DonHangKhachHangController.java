@@ -8,6 +8,8 @@ import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.service.DonHangKhachHangService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/khach-hang/don-hang")
 @RequiredArgsConstructor
@@ -17,16 +19,13 @@ public class DonHangKhachHangController {
             donHangKhachHangService;
 
     @PostMapping
-    public ResponseEntity<DonHangResponse>
-    taoDonHangKhachHang(
+    public ResponseEntity<List<DonHangResponse>> taoDonHang(
             @RequestBody TaoDonHangRequest request
     ) {
-        DonHangResponse response =
-                donHangKhachHangService
-                        .taoDonHangKhachHang(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
+        return ResponseEntity.ok(
+                donHangKhachHangService
+                        .taoDonHangKhachHang(request)
+        );
     }
 }

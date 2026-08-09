@@ -1,5 +1,7 @@
 package vn.anyen.service;
 
+import java.util.Map;
+import java.util.LinkedHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -8,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
+import vn.anyen.dto.response.DonHangResponse.ThongTinKhachHang;
+import vn.anyen.dto.response.DonHangResponse.SanPhamDaKiemTra;
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DonHang;
 import vn.anyen.entity.DoiTac;
@@ -67,40 +71,55 @@ public class DonHangKhachHangService {
     @Value("${app.customer-order.system-employee:website}")
     private String systemEmployeeUsername;
 
+
     @Transactional
-    public DonHangResponse taoDonHangKhachHang(
+    public List<DonHangResponse> taoDonHangKhachHang(
             TaoDonHangRequest request
     ) {
+
         /*
-         * 1. Kiểm tra thông tin khách hàng
+         * 1. Validate thông tin khách hàng
          */
         ThongTinKhachHang thongTinKhachHang =
                 validateThongTinKhachHang(request);
 
+
         /*
-         * 2. Kiểm tra sản phẩm, tồn kho và quan tài.
+         * 2. Validate toàn bộ sản phẩm.
          *
-         * Giá sản phẩm được lấy từ database,
-         * không lấy giá frontend gửi lên.
+         * Hàm này đã kiểm tra:
+         * - sản phẩm tồn tại
+         * - tồn kho
+         * - giá
+         * - đối tác
+         * - quỹ
+         * - trạng thái sản phẩm
          */
         List<SanPhamDaKiemTra> sanPhams =
                 validateVaLaySanPham(request);
 
+
         /*
-         * 3. Tìm nhân viên hệ thống phụ trách
-         * đơn khách tự tạo.
+         * 3. Tìm nhân viên hệ thống
          */
         NhanVien nhanVienHeThong = nhanVienRepository
                 .findByTenDangNhap(systemEmployeeUsername)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.SERVICE_UNAVAILABLE,
-                        "Chưa cấu hình nhân viên phụ trách đơn website. "
-                                + "Vui lòng tạo tài khoản nhân viên '"
-                                + systemEmployeeUsername + "'."
-                ));
+                .orElseThrow(() ->
+                        new ResponseStatusException(
+                                HttpStatus.SERVICE_UNAVAILABLE,
+                                "Chưa cấu hình nhân viên phụ trách đơn website. "
+                                        + "Vui lòng tạo tài khoản nhân viên '"
+                                        + systemEmployeeUsername
+                                        + "'."
+                        )
+                );
+
 
         /*
-         * 4. Tạo khách hàng
+         * 4. Chỉ tạo khách hàng 1 lần.
+         *
+         * Sau đó tất cả các đơn con đều sử dụng
+         * cùng khách hàng này.
          */
         KhachHang khachHang = taoKhachHang(
                 thongTinKhachHang,
@@ -108,69 +127,191 @@ public class DonHangKhachHangService {
                 nhanVienHeThong
         );
 
+
         /*
-         * 5. Tạo đơn hàng.
+         * =========================================
+         * 5. NHÓM SẢN PHẨM THEO ĐỐI TÁC
+         * =========================================
          *
-         * Không gọi HopDongRepository.
-         * Không tạo entity HopDong.
+         * Key:
+         *      maDoiTac
+         *
+         * Value:
+         *      danh sách sản phẩm của đối tác đó
          */
-        DonHang donHang = DonHang.builder()
-                .khachHang(khachHang)
-                .nhanVien(nhanVienHeThong)
-                .ngayTaoDon(
-                        LocalDate.now(
-                                ZoneId.of("Asia/Ho_Chi_Minh")
-                        )
-                )
-                .tongTien(BigDecimal.ZERO)
-                .trangThai(
-                        DonHang.TT_CHO_DOI_TAC_XAC_NHAN
-                )
-                .ghiChu(chuanHoaChuoi(request.getGhiChu()))
-                .phuongThucThanhToan(
-                        request.getPhuongThucThanhToan() != null
-                                ? request.getPhuongThucThanhToan()
-                                : DonHang.PT_CHUA_CHON
-                )
-                .trangThaiThanhToan(
-                        request.getTrangThaiThanhToan() != null
-                                ? request.getTrangThaiThanhToan()
-                                : DonHang.TTTT_CHUA_THANH_TOAN
-                )
-                .build();
+        Map<Integer, List<SanPhamDaKiemTra>> sanPhamTheoDoiTac =
+                new LinkedHashMap<>();
 
-        DonHang donHangDaTao =
-                donHangRepository.save(donHang);
 
-        /*
-         * 6. Tạo chi tiết và trừ tồn kho
-         */
-        BigDecimal tongTien =
-                taoChiTietVaTruTonKho(
-                        donHangDaTao,
-                        sanPhams
+        for (SanPhamDaKiemTra item : sanPhams) {
+
+            Integer maDoiTac =
+                    item.getSanPham().getMaDoiTac();
+
+
+            /*
+             * maDoiTac đã được validate ở
+             * validateVaLaySanPham(),
+             * nhưng check lại cho an toàn.
+             */
+            if (maDoiTac == null) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Sản phẩm '"
+                                + item.getSanPham().getTenSanPham()
+                                + "' chưa có đối tác cung cấp."
                 );
+            }
 
-        donHangDaTao.setTongTien(tongTien);
 
-        DonHang donHangDaLuu =
-                donHangRepository.save(donHangDaTao);
+            sanPhamTheoDoiTac
+                    .computeIfAbsent(
+                            maDoiTac,
+                            key -> new ArrayList<>()
+                    )
+                    .add(item);
+        }
 
-        /*
-         * 7. Thông báo cho các đối tác có sản phẩm
-         * trong đơn.
-         */
-        doiTacThongBaoService.taoThongBaoChoDonHang(
-                donHangDaLuu.getMaDonHang()
-        );
 
         /*
-         * DonHangService đã có hàm public
-         * getDonHangById để map response.
+         * 6. Danh sách đơn được tạo ra.
          */
-        return donHangService.getDonHangById(
-                donHangDaLuu.getMaDonHang()
-        );
+        List<DonHangResponse> ketQua =
+                new ArrayList<>();
+
+
+        /*
+         * =========================================
+         * 7. MỖI ĐỐI TÁC -> TẠO 1 ĐƠN HÀNG
+         * =========================================
+         */
+        for (
+                Map.Entry<Integer, List<SanPhamDaKiemTra>> entry
+                : sanPhamTheoDoiTac.entrySet()
+        ) {
+
+            Integer maDoiTac = entry.getKey();
+
+            List<SanPhamDaKiemTra> sanPhamCuaDoiTac =
+                    entry.getValue();
+
+
+            /*
+             * 7.1 Tạo đơn hàng riêng
+             */
+            DonHang donHang = DonHang.builder()
+                    .khachHang(khachHang)
+                    .nhanVien(nhanVienHeThong)
+
+                    .ngayTaoDon(
+                            LocalDate.now(
+                                    ZoneId.of(
+                                            "Asia/Ho_Chi_Minh"
+                                    )
+                            )
+                    )
+
+                    .tongTien(BigDecimal.ZERO)
+
+                    .trangThai(
+                            DonHang.TT_CHO_DOI_TAC_XAC_NHAN
+                    )
+
+                    .ghiChu(
+
+                                    request.getGhiChu()
+
+                    )
+
+                    .phuongThucThanhToan(
+                            request.getPhuongThucThanhToan()
+                                    != null
+
+                                    ? request.getPhuongThucThanhToan()
+
+                                    : DonHang.PT_CHUA_CHON
+                    )
+
+                    .trangThaiThanhToan(
+                            request.getTrangThaiThanhToan()
+                                    != null
+
+                                    ? request.getTrangThaiThanhToan()
+
+                                    : DonHang.TTTT_CHUA_THANH_TOAN
+                    )
+
+                    .build();
+
+
+            DonHang donHangDaTao =
+                    donHangRepository.save(donHang);
+
+
+            /*
+             * 7.2 Chỉ tạo chi tiết của
+             * đối tác hiện tại.
+             *
+             * Ví dụ:
+             *
+             * Đối tác 1:
+             * SP1
+             * SP2
+             *
+             * => đơn này chỉ có SP1 + SP2
+             */
+            BigDecimal tongTien =
+                    taoChiTietVaTruTonKho(
+                            donHangDaTao,
+                            sanPhamCuaDoiTac
+                    );
+
+
+            /*
+             * 7.3 Tổng tiền RIÊNG của đơn
+             */
+            donHangDaTao.setTongTien(
+                    tongTien
+            );
+
+
+            DonHang donHangDaLuu =
+                    donHangRepository.save(
+                            donHangDaTao
+                    );
+
+
+            /*
+             * 7.4 Thông báo.
+             *
+             * Vì đơn hiện tại chỉ chứa sản phẩm
+             * của 1 đối tác nên thông báo cũng
+             * chỉ liên quan tới đối tác đó.
+             */
+            doiTacThongBaoService
+                    .taoThongBaoChoDonHang(
+                            donHangDaLuu.getMaDonHang()
+                    );
+
+
+            /*
+             * 7.5 Map sang response
+             */
+            DonHangResponse response =
+                    donHangService.getDonHangById(
+                            donHangDaLuu.getMaDonHang()
+                    );
+
+
+            ketQua.add(response);
+        }
+
+
+        /*
+         * 8. Trả về tất cả đơn vừa tạo
+         */
+        return ketQua;
     }
 
     private ThongTinKhachHang validateThongTinKhachHang(
@@ -184,18 +325,17 @@ public class DonHangKhachHangService {
         }
 
         String tenKhachHang =
-                chuanHoaChuoi(request.getTenKhachHang());
+                request.getTenKhachHang();
 
         String soDienThoai =
-                chuanHoaSoDienThoai(
-                        request.getSoDienThoai()
-                );
+
+                        request.getSoDienThoai();
 
         String cccd =
-                chiLaySo(request.getCccd());
+                request.getCccd();
 
         String diaChi =
-                chuanHoaChuoi(request.getDiaChi());
+                request.getDiaChi();
 
         if (tenKhachHang.isEmpty()) {
             throw new ResponseStatusException(
@@ -562,14 +702,14 @@ public class DonHangKhachHangService {
     ) {
         KhachHang khachHang = KhachHang.builder()
                 .tenKhachHang(
-                        thongTin.tenKhachHang
+                        thongTin.getTenKhachHang()
                 )
                 .soDienThoai(
-                        thongTin.soDienThoai
+                        thongTin.getSoDienThoai()
                 )
-                .cccd(thongTin.cccd)
-                .email(chuanHoaChuoi(request.getEmail()))
-                .diaChi(thongTin.diaChi)
+                .cccd(thongTin.getCccd())
+                .email(request.getEmail())
+                .diaChi(thongTin.getDiaChi())
                 .maNhanVienPhuTrach(
                         nhanVien.getMaNhanVien()
                 )
@@ -590,7 +730,7 @@ public class DonHangKhachHangService {
                 BigDecimal.ZERO;
 
         for (SanPhamDaKiemTra item : sanPhams) {
-            SanPham sanPham = item.sanPham;
+            SanPham sanPham = item.getSanPham();
 
             /*
              * Kiểm tra tồn kho lại ngay trước khi trừ.
@@ -600,7 +740,7 @@ public class DonHangKhachHangService {
                             ? 0
                             : sanPham.getSoLuong();
 
-            if (tonKho < item.soLuong) {
+            if (tonKho < item.getSoLuong()) {
                 throw new ResponseStatusException(
                         HttpStatus.BAD_REQUEST,
                         "Sản phẩm '"
@@ -611,8 +751,8 @@ public class DonHangKhachHangService {
             }
 
             BigDecimal thanhTien =
-                    item.donGia.multiply(
-                            BigDecimal.valueOf(item.soLuong)
+                    item.getDonGia().multiply(
+                            BigDecimal.valueOf(item.getSoLuong())
                     );
 
             tongTien =
@@ -622,15 +762,15 @@ public class DonHangKhachHangService {
                     ChiTietDonHang.builder()
                             .donHang(donHang)
                             .sanPham(sanPham)
-                            .soLuong(item.soLuong)
-                            .giaTien(item.donGia)
+                            .soLuong(item.getSoLuong())
+                            .giaTien(item.getDonGia())
                             .trangThaiDoiTac(0)
                             .build();
 
             chiTietDonHangRepository.save(chiTiet);
 
             sanPham.setSoLuong(
-                    tonKho - item.soLuong
+                    tonKho - item.getSoLuong()
             );
 
             sanPhamRepository.save(sanPham);
@@ -643,110 +783,19 @@ public class DonHangKhachHangService {
             SanPham sanPham
     ) {
         String loai =
-                chuanHoaTiengViet(
+
                         sanPham.getLoai()
-                );
+                ;
 
         String tenSanPham =
-                chuanHoaTiengViet(
                         sanPham.getTenSanPham()
-                );
+                ;
 
-        return loai.contains("quan tai")
-                || tenSanPham.contains("quan tai");
+        return loai.contains("quan tài")
+                || tenSanPham.contains("quan tài")|| loai.contains("quan tai");
     }
 
-    private String chuanHoaTiengViet(
-            String value
-    ) {
-        if (value == null) {
-            return "";
-        }
 
-        return Normalizer
-                .normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .replace("đ", "d")
-                .replace("Đ", "D")
-                .toLowerCase(Locale.ROOT)
-                .trim();
-    }
 
-    private String chuanHoaSoDienThoai(
-            String value
-    ) {
-        String phone =
-                value == null
-                        ? ""
-                        : value.trim()
-                        .replaceAll("\\s+", "");
 
-        if (phone.startsWith("+84")) {
-            phone = "0" + phone.substring(3);
-        }
-
-        phone = phone.replaceAll("\\D", "");
-
-        if (
-                phone.startsWith("84")
-                        && phone.length() == 11
-        ) {
-            phone = "0" + phone.substring(2);
-        }
-
-        return phone;
-    }
-
-    private String chiLaySo(
-            String value
-    ) {
-        return value == null
-                ? ""
-                : value.replaceAll("\\D", "");
-    }
-
-    private String chuanHoaChuoi(
-            String value
-    ) {
-        return value == null
-                ? ""
-                : value.trim();
-    }
-
-    private static class ThongTinKhachHang {
-
-        private final String tenKhachHang;
-        private final String soDienThoai;
-        private final String cccd;
-        private final String diaChi;
-
-        private ThongTinKhachHang(
-                String tenKhachHang,
-                String soDienThoai,
-                String cccd,
-                String diaChi
-        ) {
-            this.tenKhachHang = tenKhachHang;
-            this.soDienThoai = soDienThoai;
-            this.cccd = cccd;
-            this.diaChi = diaChi;
-        }
-    }
-
-    private static class SanPhamDaKiemTra {
-
-        private final SanPham sanPham;
-        private final Integer soLuong;
-        private final BigDecimal donGia;
-
-        private SanPhamDaKiemTra(
-                SanPham sanPham,
-                Integer soLuong,
-                BigDecimal donGia
-        ) {
-            this.sanPham = sanPham;
-            this.soLuong = soLuong;
-            this.donGia = donGia;
-        }
-    }
 }

@@ -1,6 +1,7 @@
 package vn.anyen.dto.response;
 
 import lombok.*;
+import vn.anyen.entity.SanPham;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -77,4 +78,24 @@ public class DonHangResponse {
         private String color;
         private boolean done;
     }
-}
+    @Getter
+    @AllArgsConstructor
+    @Builder
+    public static class ThongTinKhachHang {
+
+        private final String tenKhachHang;
+        private final String soDienThoai;
+        private final String cccd;
+        private final String diaChi;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @Builder
+    public static class SanPhamDaKiemTra {
+
+        private final SanPham sanPham;
+        private final Integer soLuong;
+        private final BigDecimal donGia;
+    }
+    }

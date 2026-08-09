@@ -1087,11 +1087,15 @@ const apDungBoLoc = () => {
 
               <span>Hợp đồng:</span>
               <strong
-                  :class="dh.coHopDong
-                ? 'contract-success'
-                : 'contract-warning'"
+                  :class="!dh.coQuanTai ? 'contract-success': dh.coHopDong ? 'contract-success': 'contract-warning'"
               >
-                {{ dh.coHopDong ? "Đã có hợp đồng" : "Chưa có hợp đồng" }}
+                {{
+                  !dh.coQuanTai
+                      ? "Đơn không cần hợp đồng"
+                      : dh.coHopDong
+                          ? "Đã có hợp đồng"
+                          : "Chưa có hợp đồng"
+                }}
               </strong>
             </div>
 

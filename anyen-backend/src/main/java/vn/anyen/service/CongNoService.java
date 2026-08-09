@@ -24,6 +24,7 @@ import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.LichSuCongNoRepository;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +37,13 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class CongNoService {
+
+    /*
+     * Tỷ lệ trả cho đối tác: 80%
+     * (An Yên giữ 20% phí sàn)
+     */
+    private static final BigDecimal TY_LE_TRA_DOI_TAC =
+            new BigDecimal("0.80");
 
     private final CongNoRepository congNoRepository;
 
@@ -683,6 +691,16 @@ public class CongNoService {
             }
 
 
+            /*
+             * Tính số tiền cần trả cho đối tác = 80% giá trị
+             * (trừ 20% phí sàn An Yên)
+             */
+            BigDecimal tongTienCanTra =
+                    tongTien
+                            .multiply(TY_LE_TRA_DOI_TAC)
+                            .setScale(0, RoundingMode.HALF_UP);
+
+
             CongNo congNo =
                     CongNo
                             .builder()
@@ -696,7 +714,7 @@ public class CongNoService {
                             )
 
                             .tongTien(
-                                    tongTien
+                                    tongTienCanTra
                             )
 
                             .daThanhToan(
@@ -704,7 +722,7 @@ public class CongNoService {
                             )
 
                             .conLai(
-                                    tongTien
+                                    tongTienCanTra
                             )
 
                             .hanThanhToan(

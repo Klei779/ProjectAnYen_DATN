@@ -59,6 +59,7 @@ public class DonHangService {
     private final ThongBaoService thongBaoService;
     private final ThongBaoDoiTacRepository thongBaoDoiTacRepository;
     private final TaiChinhDoiTacService taiChinhDoiTacService;
+    private final CongNoService congNoService;
     private static final List<Integer> TRANG_THAI_ORDER = Arrays.asList(
             DonHang.TT_MOI_TAO,
             DonHang.TT_CHO_DOI_TAC_XAC_NHAN,
@@ -641,6 +642,11 @@ public class DonHangService {
                     .taoThongBaoDonHangThanhToan(
                             donHang.getMaDonHang()
                     );
+
+            // Tự động tạo công nợ cho các đối tác khi đơn hàng hoàn thành
+            congNoService.taoCongNoTuDonHang(
+                    donHang.getMaDonHang()
+            );
         }
 
         donHang.setTrangThai(trangThaiMoi);
@@ -834,6 +840,12 @@ public class DonHangService {
 
         donHang.setTrangThai(
                 DonHang.TT_HOAN_THANH
+        );
+
+
+        // Tự động tạo công nợ cho các đối tác khi đơn hàng hoàn thành
+        congNoService.taoCongNoTuDonHang(
+                maDonHang
         );
 
 
@@ -1307,12 +1319,24 @@ public class DonHangService {
             chiTietDonHangRepository.save(ct);
         }
 
-        // Cập nhật trạng thái đơn hàng từ "Đã nhận" sang "Xử lý"
+        // Chỉ cập nhật trạng thái đơn hàng từ "Đã nhận" sang "Xử lý" khi TẤT CẢ sản phẩm đều đang được xử lý (hoặc đã giao)
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn hàng"));
+                
         if (DonHang.TT_DA_XAC_NHAN.equals(donHang.getTrangThai())) {
-            donHang.setTrangThai(DonHang.TT_DANG_XU_LY);
-            donHangRepository.save(donHang);
+            List<ChiTietDonHang> tatCaChiTiet = chiTietDonHangRepository.findByDonHang_MaDonHang(maDonHang);
+            boolean tatCaDangXuLy = true;
+            for (ChiTietDonHang ct : tatCaChiTiet) {
+                if (ct.getTrangThaiDoiTac() == null || ct.getTrangThaiDoiTac() < 2) {
+                    tatCaDangXuLy = false;
+                    break;
+                }
+            }
+            
+            if (tatCaDangXuLy) {
+                donHang.setTrangThai(DonHang.TT_DANG_XU_LY);
+                donHangRepository.save(donHang);
+            }
         }
 
         thongBaoService.taoThongBaoDoiTacXuLyDonHang(maDonHang, maDoiTac, ngayGiaoDuKien);

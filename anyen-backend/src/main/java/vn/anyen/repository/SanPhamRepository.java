@@ -1,7 +1,9 @@
 package vn.anyen.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import vn.anyen.entity.SanPham;
@@ -95,4 +97,27 @@ List<SanPham> findAllVisibleForTaoDonHang();
             String tenSanPham
     );
 
+    /**
+     * Khóa sản phẩm khi nhiều đối tác cùng lúc bấm nhận đơn.
+     * Người lock được trước sẽ xử lý tồn kho trước.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        SELECT sp
+        FROM SanPham sp
+        WHERE sp.maSanPham = :id
+        """)
+    Optional<SanPham> findByIdForUpdate(
+            @Param("id") Integer id
+    );
+
+
+    /**
+     * Tìm các sản phẩm đang bán của đối tác khác.
+     * Dùng khi đối tác hiện tại từ chối đơn lẻ.
+     */
+    List<SanPham> findByTrangThaiAndMaDoiTacNot(
+            Integer trangThai,
+            Integer maDoiTac
+    );
 }

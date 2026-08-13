@@ -20,14 +20,17 @@ import vn.anyen.repository.HopDongRepository;
 import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
 import java.math.BigDecimal;
+import java.text.Normalizer;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
+import java.util.Set;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +49,8 @@ public class DoiTacThongBaoService {
     // Loai dùng String để khớp VARCHAR trong DB
     private static final String LOAI_DON_HANG = ThongBaoDoiTac.LOAI_DON_HANG;
     private static final String LOAI_DUYET_SAN_PHAM = ThongBaoDoiTac.LOAI_DUYET_SAN_PHAM;
+    public static final String LOAI_DON_HANG_THAY_THE =
+            "DON_HANG_THAY_THE";
 
     // TrangThaiThongBao dùng String để khớp VARCHAR trong DB
     private static final Integer CHO_XAC_NHAN = ThongBaoDoiTac.TRANG_THAI_CHO_XAC_NHAN;
@@ -58,6 +63,11 @@ public class DoiTacThongBaoService {
             "Sản phẩm\\s+\"([^\"]+)\"",
             Pattern.CASE_INSENSITIVE
     );
+    private static final Pattern CTDH_PATTERN =
+            Pattern.compile("\\[CTDH:(\\d+)\\]");
+
+    private static final Pattern SPSUGGEST_PATTERN =
+            Pattern.compile("\\[SPSUGGEST:(\\d+)\\]");
 
     @Transactional(readOnly = true)
     public List<DoiTacThongBaoResponse> getThongBao(Authentication authentication) {
@@ -74,7 +84,14 @@ public class DoiTacThongBaoService {
                         return mapToSanPhamThongBaoResponse(tb);
                     }
 
-                    return mapToThongBaoResponse(tb, doiTac.getMaDoiTac());
+                    if (LOAI_DON_HANG_THAY_THE.equals(tb.getLoai())) {
+                        return mapToThongBaoThayTheResponse(tb);
+                    }
+
+                    return mapToThongBaoResponse(
+                            tb,
+                            doiTac.getMaDoiTac()
+                    );
                 })
                 .toList();
     }
@@ -89,6 +106,16 @@ public class DoiTacThongBaoService {
                 getThongBaoCuaDoiTac(maThongBao, doiTac.getMaDoiTac());
 
         kiemTraChoXacNhan(thongBao);
+
+        if (LOAI_DON_HANG_THAY_THE.equals(
+                thongBao.getLoai()
+        )) {
+
+            return chapNhanDonThayThe(
+                    thongBao,
+                    doiTac
+            );
+        }
 
         thongBao.setTrangThaiThongBao(DA_CHAP_NHAN);
         thongBao.setDaDoc(true);
@@ -154,6 +181,51 @@ public class DoiTacThongBaoService {
 
         kiemTraChoXacNhan(thongBao);
 
+        /*
+         * Đối tác được mời thay thế chỉ từ chối lời mời.
+         * Không hoàn kho, không sửa đơn.
+         */
+        if (LOAI_DON_HANG_THAY_THE.equals(
+                thongBao.getLoai()
+        )) {
+
+            thongBao.setTrangThaiThongBao(
+                    DA_TU_CHOI
+            );
+
+            thongBao.setLyDoTuChoi(
+                    request.getLyDo()
+            );
+
+            thongBao.setDaDoc(true);
+
+            thongBao.setThoiGianXuLy(
+                    LocalDateTime.now()
+            );
+
+            thongBaoRepository.save(
+                    thongBao
+            );
+
+            return XuLyThongBaoResponse.builder()
+                    .success(true)
+                    .message(
+                            "Đã từ chối lời mời nhận đơn"
+                    )
+                    .redirectUrl(null)
+                    .maThongBao(
+                            thongBao.getMaThongBao()
+                    )
+                    .maDonHang(
+                            thongBao.getDonHang() != null
+                                    ? thongBao
+                                    .getDonHang()
+                                    .getMaDonHang()
+                                    : null
+                    )
+                    .build();
+        }
+
         thongBao.setTrangThaiThongBao(DA_TU_CHOI);
         thongBao.setLyDoTuChoi(request.getLyDo());
         thongBao.setDaDoc(true);
@@ -167,17 +239,61 @@ public class DoiTacThongBaoService {
                     donHang.getMaDonHang(), doiTac.getMaDoiTac());
 
             for (ChiTietDonHang chiTiet : chiTiets) {
-                // Cộng lại tồn kho cho sản phẩm
-                if (chiTiet.getSanPham() != null) {
-                    SanPham sanPham = chiTiet.getSanPham();
-                    Integer currentStock = sanPham.getSoLuong() != null ? sanPham.getSoLuong() : 0;
-                    Integer quantityToAdd = chiTiet.getSoLuong() != null ? chiTiet.getSoLuong() : 0;
-                    sanPham.setSoLuong(currentStock + quantityToAdd);
-                    sanPhamRepository.save(sanPham);
+
+                if (chiTiet.getSanPham() == null) {
+                    continue;
+                }
+
+                SanPham sanPham =
+                        chiTiet.getSanPham();
+
+                Integer currentStock =
+                        sanPham.getSoLuong() != null
+                                ? sanPham.getSoLuong()
+                                : 0;
+
+                Integer quantityToAdd =
+                        chiTiet.getSoLuong() != null
+                                ? chiTiet.getSoLuong()
+                                : 0;
+
+                /*
+                 * Hoàn kho A.
+                 */
+                sanPham.setSoLuong(
+                        currentStock + quantityToAdd
+                );
+
+                sanPhamRepository.save(
+                        sanPham
+                );
+
+
+                /*
+                 * 4 = đang tìm đối tác thay thế.
+                 */
+                chiTiet.setTrangThaiDoiTac(4);
+
+                chiTietDonHangRepository.save(
+                        chiTiet
+                );
+
+
+                /*
+                 * Chỉ đơn lẻ mới phát ra ngoài.
+                 */
+                if (!donHangCoSanPhamQuanTai(
+                        donHang.getMaDonHang()
+                )) {
+
+                    guiThongBaoChoDoiTacThayThe(
+                            donHang,
+                            chiTiet,
+                            doiTac
+                    );
                 }
             }
 
-            chiTietDonHangRepository.deleteAll(chiTiets);
             chiTietDonHangRepository.flush();
 
             // Nếu đơn hàng bị từ chối bởi ít nhất 1 đối tác, nó quay về trạng thái Mới tạo
@@ -204,13 +320,6 @@ public class DoiTacThongBaoService {
                             + "].";
 
             donHang.setGhiChu(ghiChuMoi.trim());
-            
-            // Tính lại tổng tiền sau khi xóa
-            List<ChiTietDonHang> remainingChiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(donHang.getMaDonHang());
-            BigDecimal tongTienMoi = remainingChiTiets.stream()
-                .map(ct -> ct.getGiaTien().multiply(BigDecimal.valueOf(ct.getSoLuong())))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-            donHang.setTongTien(tongTienMoi);
 
             donHangRepository.save(donHang);
 
@@ -541,6 +650,809 @@ public class DoiTacThongBaoService {
     // ========================
     // Private helpers
     // ========================
+
+    private DoiTacThongBaoResponse mapToThongBaoThayTheResponse(
+            ThongBaoDoiTac thongBao
+    ) {
+
+        Integer maChiTiet =
+                parseId(
+                        CTDH_PATTERN,
+                        thongBao.getNoiDung()
+                );
+
+        Integer maSanPham =
+                parseId(
+                        SPSUGGEST_PATTERN,
+                        thongBao.getNoiDung()
+                );
+
+        ChiTietDonHang chiTiet =
+                maChiTiet == null
+                        ? null
+                        : chiTietDonHangRepository
+                        .findById(maChiTiet)
+                        .orElse(null);
+
+        SanPham sanPham =
+                maSanPham == null
+                        ? null
+                        : sanPhamRepository
+                        .findById(maSanPham)
+                        .orElse(null);
+
+        DonHang donHang =
+                thongBao.getDonHang();
+
+        int soLuong =
+                chiTiet != null
+                        && chiTiet.getSoLuong() != null
+                        ? chiTiet.getSoLuong()
+                        : 0;
+
+        BigDecimal donGia =
+                chiTiet != null
+                        && chiTiet.getGiaTien() != null
+                        ? chiTiet.getGiaTien()
+                        : BigDecimal.ZERO;
+
+        String noiDung =
+                thongBao.getNoiDung() == null
+                        ? ""
+                        : thongBao.getNoiDung()
+                        .replaceAll(
+                                "\\s*\\[CTDH:\\d+\\]",
+                                ""
+                        )
+                        .replaceAll(
+                                "\\s*\\[SPSUGGEST:\\d+\\]",
+                                ""
+                        )
+                        .trim();
+
+        return DoiTacThongBaoResponse.builder()
+                .id(thongBao.getMaThongBao())
+                .category("order")
+                .type("order")
+                .icon("fa-solid fa-bell")
+                .title(thongBao.getTieuDe())
+                .desc(noiDung)
+                .actionText(
+                        CHO_XAC_NHAN.equals(
+                                thongBao.getTrangThaiThongBao()
+                        )
+                                ? "Nhận đơn"
+                                : "Đã xử lý"
+                )
+                .time(
+                        formatDateTime(
+                                thongBao.getThoiGianTao()
+                        )
+                )
+                .isNew(
+                        !Boolean.TRUE.equals(
+                                thongBao.getDaDoc()
+                        )
+                )
+                .trangThaiThongBao(
+                        thongBao.getTrangThaiThongBao()
+                )
+                .lyDoTuChoi(
+                        thongBao.getLyDoTuChoi()
+                )
+                .order(
+                        donHang == null
+                                ? null
+                                : DoiTacThongBaoResponse
+                                .OrderInfo.builder()
+                                .id(
+                                        donHang.getMaDonHang()
+                                )
+                                .code(
+                                        "#DH"
+                                                + String.format(
+                                                "%03d",
+                                                donHang.getMaDonHang()
+                                        )
+                                )
+                                .build()
+                )
+                .customer(
+                        DoiTacThongBaoResponse
+                                .CustomerInfo.builder()
+                                .name("Khách hàng")
+                                .build()
+                )
+                .product(
+                        DoiTacThongBaoResponse
+                                .ProductInfo.builder()
+                                .id(
+                                        sanPham != null
+                                                ? sanPham.getMaSanPham()
+                                                : null
+                                )
+                                .name(
+                                        sanPham != null
+                                                ? sanPham.getTenSanPham()
+                                                : "Sản phẩm"
+                                )
+                                .desc(
+                                        sanPham != null
+                                                && sanPham.getLoai() != null
+                                                ? sanPham.getLoai()
+                                                : ""
+                                )
+                                .quantity(soLuong)
+                                .price(
+                                        donGia.multiply(
+                                                BigDecimal.valueOf(
+                                                        soLuong
+                                                )
+                                        )
+                                )
+                                .image(
+                                        sanPham != null
+                                                ? sanPham.getHinhAnh()
+                                                : null
+                                )
+                                .build()
+                )
+                .build();
+    }
+
+    private Integer parseId(
+            Pattern pattern,
+            String text
+    ) {
+
+        if (text == null) {
+            return null;
+        }
+
+        Matcher matcher =
+                pattern.matcher(text);
+
+        if (!matcher.find()) {
+            return null;
+        }
+
+        try {
+            return Integer.valueOf(
+                    matcher.group(1)
+            );
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private XuLyThongBaoResponse chapNhanDonThayThe(
+            ThongBaoDoiTac thongBao,
+            DoiTac doiTac
+    ) {
+
+        Integer maChiTiet =
+                parseId(
+                        CTDH_PATTERN,
+                        thongBao.getNoiDung()
+                );
+
+        Integer maSanPhamDeXuat =
+                parseId(
+                        SPSUGGEST_PATTERN,
+                        thongBao.getNoiDung()
+                );
+
+        if (
+                maChiTiet == null
+                        || maSanPhamDeXuat == null
+        ) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Thông báo nhận đơn không hợp lệ"
+            );
+        }
+
+
+        /*
+         * LOCK dòng ChiTietDonHang.
+         *
+         * B/C/D ai tới trước thì giữ lock trước.
+         */
+        ChiTietDonHang chiTiet =
+                chiTietDonHangRepository
+                        .findByIdForUpdate(
+                                maChiTiet
+                        )
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Sản phẩm cần thay thế không còn tồn tại"
+                                )
+                        );
+
+
+        /*
+         * 4 = đang chờ đối tác khác nhận.
+         */
+        if (
+                chiTiet.getTrangThaiDoiTac() == null
+                        || chiTiet.getTrangThaiDoiTac() != 4
+        ) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Đã có đối tác khác nhận đơn trước bạn"
+            );
+        }
+
+
+        SanPham sanPhamMoi =
+                sanPhamRepository
+                        .findByIdForUpdate(
+                                maSanPhamDeXuat
+                        )
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Sản phẩm không còn tồn tại"
+                                )
+                        );
+
+
+        /*
+         * Không cho đối tác giả request
+         * bằng sản phẩm của người khác.
+         */
+        if (
+                sanPhamMoi.getMaDoiTac() == null
+                        || !sanPhamMoi
+                        .getMaDoiTac()
+                        .equals(
+                                doiTac.getMaDoiTac()
+                        )
+        ) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Sản phẩm không thuộc đối tác"
+            );
+        }
+
+
+        int soLuong =
+                chiTiet.getSoLuong() == null
+                        ? 0
+                        : chiTiet.getSoLuong();
+
+        int tonKho =
+                sanPhamMoi.getSoLuong() == null
+                        ? 0
+                        : sanPhamMoi.getSoLuong();
+
+        if (tonKho < soLuong) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Sản phẩm không còn đủ tồn kho"
+            );
+        }
+
+
+        BigDecimal giaTri =
+                (chiTiet.getGiaTien() == null
+                        ? BigDecimal.ZERO
+                        : chiTiet.getGiaTien())
+                        .multiply(
+                                BigDecimal.valueOf(
+                                        soLuong
+                                )
+                        );
+
+        /*
+         * Check lại quỹ tại đúng thời điểm nhận.
+         */
+        if (!duHanMucNhanDon(
+                doiTac,
+                giaTri
+        )) {
+
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Hạn mức quỹ không đủ để nhận đơn"
+            );
+        }
+
+
+        /*
+         * Trừ kho đối tác thắng.
+         */
+        sanPhamMoi.setSoLuong(
+                tonKho - soLuong
+        );
+
+        sanPhamRepository.save(
+                sanPhamMoi
+        );
+
+
+        /*
+         * Không tạo ChiTietDonHang mới.
+         *
+         * Chỉ thay sản phẩm cũ bằng
+         * sản phẩm của đối tác thắng.
+         */
+        chiTiet.setSanPham(
+                sanPhamMoi
+        );
+
+        chiTiet.setTrangThaiDoiTac(1);
+
+        chiTietDonHangRepository
+                .saveAndFlush(
+                        chiTiet
+                );
+
+
+        DonHang donHang =
+                chiTiet.getDonHang();
+
+
+        /*
+         * Khóa quỹ người thắng.
+         */
+        taiChinhDoiTacService
+                .khoaQuyChoDonHang(
+                        donHang.getMaDonHang(),
+                        doiTac.getMaDoiTac()
+                );
+
+
+        thongBao.setTrangThaiThongBao(
+                DA_CHAP_NHAN
+        );
+
+        thongBao.setDaDoc(true);
+
+        thongBao.setThoiGianXuLy(
+                LocalDateTime.now()
+        );
+
+        thongBaoRepository.save(
+                thongBao
+        );
+
+
+        /*
+         * Các đối tác còn lại thua.
+         */
+        List<ThongBaoDoiTac> loiMoiKhac =
+                thongBaoRepository
+                        .findByDonHang_MaDonHangAndLoai(
+                                donHang.getMaDonHang(),
+                                LOAI_DON_HANG_THAY_THE
+                        );
+
+        String marker =
+                "[CTDH:"
+                        + maChiTiet
+                        + "]";
+
+        for (ThongBaoDoiTac item : loiMoiKhac) {
+
+            if (item.getMaThongBao()
+                    .equals(
+                            thongBao.getMaThongBao()
+                    )) {
+                continue;
+            }
+
+            if (
+                    item.getNoiDung() != null
+                            && item.getNoiDung()
+                            .contains(marker)
+                            && CHO_XAC_NHAN.equals(
+                            item.getTrangThaiThongBao()
+                    )
+            ) {
+
+                item.setTrangThaiThongBao(
+                        DA_TU_CHOI
+                );
+
+                item.setDaDoc(true);
+
+                item.setLyDoTuChoi(
+                        "Đã có đối tác khác nhận đơn"
+                );
+
+                item.setThoiGianXuLy(
+                        LocalDateTime.now()
+                );
+
+                thongBaoRepository.save(
+                        item
+                );
+            }
+        }
+
+
+        capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(
+                donHang
+        );
+
+
+        return XuLyThongBaoResponse.builder()
+                .success(true)
+                .message(
+                        "Bạn đã nhận đơn thành công"
+                )
+                .redirectUrl(
+                        "/doi-tac/quan-ly-don-hang"
+                )
+                .maThongBao(
+                        thongBao.getMaThongBao()
+                )
+                .maDonHang(
+                        donHang.getMaDonHang()
+                )
+                .build();
+    }
+
+    private boolean donHangCoSanPhamQuanTai(
+            Integer maDonHang
+    ) {
+
+        return chiTietDonHangRepository
+                .findByDonHang_MaDonHang(
+                        maDonHang
+                )
+                .stream()
+                .map(
+                        ChiTietDonHang::getSanPham
+                )
+                .filter(sp -> sp != null)
+                .anyMatch(
+                        this::laSanPhamQuanTai
+                );
+    }
+
+    private boolean laSanPhamQuanTai(
+            SanPham sanPham
+    ) {
+
+        String ten =
+                chuanHoa(
+                        sanPham.getTenSanPham()
+                );
+
+        String loai =
+                chuanHoa(
+                        sanPham.getLoai()
+                );
+
+        return ten.contains("quan tai")
+                || loai.contains("quan tai");
+    }
+
+    private String chuanHoa(
+            String value
+    ) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return Normalizer
+                .normalize(
+                        value,
+                        Normalizer.Form.NFD
+                )
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
+
+    private boolean cungSanPham(
+            SanPham a,
+            SanPham b
+    ) {
+
+        if (a == null || b == null) {
+            return false;
+        }
+
+        String tenA =
+                chuanHoa(
+                        a.getTenSanPham()
+                );
+
+        String tenB =
+                chuanHoa(
+                        b.getTenSanPham()
+                );
+
+        String loaiA =
+                chuanHoa(
+                        a.getLoai()
+                );
+
+        String loaiB =
+                chuanHoa(
+                        b.getLoai()
+                );
+
+        return tenA.equals(tenB)
+                && (
+                loaiA.isBlank()
+                        || loaiB.isBlank()
+                        || loaiA.equals(loaiB)
+        );
+    }
+
+    private boolean duHanMucNhanDon(
+            DoiTac doiTac,
+            BigDecimal giaTri
+    ) {
+
+        if (!Boolean.TRUE.equals(
+                doiTac.getDaMoQuy()
+        )) {
+            return false;
+        }
+
+        BigDecimal soDu =
+                doiTac.getSoDuQuy() == null
+                        ? BigDecimal.ZERO
+                        : doiTac.getSoDuQuy();
+
+        BigDecimal dangKhoa =
+                doiTac.getSoDuQuyDangKhoa() == null
+                        ? BigDecimal.ZERO
+                        : doiTac.getSoDuQuyDangKhoa();
+
+        BigDecimal khaDung =
+                soDu.subtract(
+                        dangKhoa
+                );
+
+        return khaDung.compareTo(
+                giaTri
+        ) >= 0;
+    }
+
+    private void guiThongBaoChoDoiTacThayThe(
+            DonHang donHang,
+            ChiTietDonHang chiTietCanThay,
+            DoiTac doiTacTuChoi
+    ) {
+
+        SanPham sanPhamGoc = chiTietCanThay.getSanPham();
+
+        if (sanPhamGoc == null) {
+            return;
+        }
+
+        int soLuong =
+                chiTietCanThay.getSoLuong() == null
+                        ? 0
+                        : chiTietCanThay.getSoLuong();
+
+        if (soLuong <= 0) {
+            return;
+        }
+
+        BigDecimal donGia =
+                chiTietCanThay.getGiaTien() == null
+                        ? BigDecimal.ZERO
+                        : chiTietCanThay.getGiaTien();
+
+        BigDecimal giaTriDon =
+                donGia.multiply(
+                        BigDecimal.valueOf(soLuong)
+                );
+
+        /*
+         * Tìm sản phẩm đang bán của các đối tác khác.
+         */
+        List<SanPham> danhSachUngVien =
+                sanPhamRepository
+                        .findByTrangThaiAndMaDoiTacNot(
+                                SanPham.TRANG_THAI_DANG_BAN,
+                                doiTacTuChoi.getMaDoiTac()
+                        );
+
+        /*
+         * Tránh trường hợp một đối tác có 2 sản phẩm
+         * cùng tên và bị gửi 2 notification.
+         */
+        Set<Integer> doiTacDaGui =
+                new HashSet<>();
+
+
+        for (SanPham sanPhamKhac : danhSachUngVien) {
+
+            /*
+             * =================================================
+             * 1. PHẢI CÙNG SẢN PHẨM
+             * =================================================
+             */
+            if (!cungSanPham(
+                    sanPhamGoc,
+                    sanPhamKhac
+            )) {
+                continue;
+            }
+
+
+            /*
+             * =================================================
+             * 2. PHẢI ĐỦ TỒN KHO
+             * =================================================
+             */
+            int tonKho =
+                    sanPhamKhac.getSoLuong() == null
+                            ? 0
+                            : sanPhamKhac.getSoLuong();
+
+            if (tonKho < soLuong) {
+                continue;
+            }
+
+
+            Integer maDoiTacNhan =
+                    sanPhamKhac.getMaDoiTac();
+
+            if (maDoiTacNhan == null) {
+                continue;
+            }
+
+
+            /*
+             * Một đối tác chỉ nhận 1 thông báo
+             * cho một dòng sản phẩm đang tranh.
+             */
+            if (doiTacDaGui.contains(maDoiTacNhan)) {
+                continue;
+            }
+
+
+            DoiTac doiTacNhan =
+                    doiTacRepository
+                            .findById(maDoiTacNhan)
+                            .orElse(null);
+
+            if (doiTacNhan == null) {
+                continue;
+            }
+
+
+            /*
+             * =================================================
+             * 3. ĐỐI TÁC PHẢI ĐANG HOẠT ĐỘNG
+             * =================================================
+             */
+            if (!DoiTac.TT_DANG_HOAT_DONG.equals(
+                    doiTacNhan.getTrangThai()
+            )) {
+                continue;
+            }
+
+
+            /*
+             * =================================================
+             * 4. PHẢI ĐÃ MỞ / NẠP QUỸ
+             * =================================================
+             */
+            if (!Boolean.TRUE.equals(
+                    doiTacNhan.getDaMoQuy()
+            )) {
+                continue;
+            }
+
+
+            /*
+             * =================================================
+             * 5. HẠN MỨC QUỸ PHẢI ĐỦ
+             * =================================================
+             */
+            if (!duHanMucNhanDon(
+                    doiTacNhan,
+                    giaTriDon
+            )) {
+                continue;
+            }
+
+
+            /*
+             * ID thật trong ChiTietDonHang project của bạn
+             * là maDonHangChiTiet.
+             */
+            Integer maChiTiet =
+                    chiTietCanThay
+                            .getMaDonHangChiTiet();
+
+
+            /*
+             * Marker dùng nội bộ để lúc B/C/D bấm nhận
+             * backend biết:
+             *
+             * CTDH       = dòng nào đang tranh
+             * SPSUGGEST  = sản phẩm nào của đối tác này
+             */
+            String noiDung =
+                    "Khách đang cần "
+                            + soLuong
+                            + " x "
+                            + sanPhamGoc.getTenSanPham()
+                            + ". Giá trị đơn: "
+                            + giaTriDon.toPlainString()
+                            + " đ"
+                            + " [CTDH:"
+                            + maChiTiet
+                            + "]"
+                            + " [SPSUGGEST:"
+                            + sanPhamKhac.getMaSanPham()
+                            + "]";
+
+
+            ThongBaoDoiTac thongBaoMoi =
+                    ThongBaoDoiTac.builder()
+
+                            .doiTac(
+                                    doiTacNhan
+                            )
+
+                            .donHang(
+                                    donHang
+                            )
+
+                            .loai(
+                                    LOAI_DON_HANG_THAY_THE
+                            )
+
+                            .tieuDe(
+                                    "Khách đang cần sản phẩm"
+                            )
+
+                            .noiDung(
+                                    noiDung
+                            )
+
+                            .trangThaiThongBao(
+                                    CHO_XAC_NHAN
+                            )
+
+                            .daDoc(false)
+
+                            .thoiGianTao(
+                                    LocalDateTime.now()
+                            )
+
+                            .build();
+
+
+            thongBaoMoi =
+                    thongBaoRepository.save(
+                            thongBaoMoi
+                    );
+
+
+            /*
+             * WebSocket + Web Push.
+             */
+            realtimeService.guiThongBaoDoiTac(
+                    doiTacNhan.getMaDoiTac(),
+                    thongBaoMoi
+            );
+
+
+            doiTacDaGui.add(
+                    doiTacNhan.getMaDoiTac()
+            );
+        }
+    }
 
     private DoiTac getDoiTacDangNhap(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {

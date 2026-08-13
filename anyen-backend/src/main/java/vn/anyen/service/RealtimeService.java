@@ -12,23 +12,164 @@ public class RealtimeService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    public void guiThongBaoNhanVien(Integer maNhanVien, ThongBao thongBao) {
+    /*
+     * Web Push:
+     * dùng để đẩy notification ra ngoài browser/Windows
+     * giống Zalo.
+     */
+    private final PushNotificationService pushNotificationService;
+
+
+    // =========================================================
+    // THÔNG BÁO NHÂN VIÊN
+    // =========================================================
+    public void guiThongBaoNhanVien(
+            Integer maNhanVien,
+            ThongBao thongBao
+    ) {
+
         if (maNhanVien != null) {
-            messagingTemplate.convertAndSend("/topic/nhanvien/" + maNhanVien, "Có thông báo mới");
+
+            messagingTemplate.convertAndSend(
+                    "/topic/nhanvien/" + maNhanVien,
+                    "Có thông báo mới"
+            );
+
         } else {
-            messagingTemplate.convertAndSend("/topic/nhanvien", "Có thông báo mới chung");
+
+            messagingTemplate.convertAndSend(
+                    "/topic/nhanvien",
+                    "Có thông báo mới chung"
+            );
         }
     }
 
-    public void guiThongBaoDoiTac(Integer maDoiTac, ThongBaoDoiTac thongBaoDoiTac) {
-        if (maDoiTac != null) {
-            messagingTemplate.convertAndSend("/topic/doitac/" + maDoiTac, "Có thông báo mới");
+
+    // =========================================================
+    // THÔNG BÁO ĐỐI TÁC
+    // =========================================================
+    public void guiThongBaoDoiTac(
+            Integer maDoiTac,
+            ThongBaoDoiTac thongBaoDoiTac
+    ) {
+
+        if (maDoiTac == null) {
+            return;
+        }
+
+
+        /*
+         * 1. GIỮ NGUYÊN LUỒNG CŨ
+         *
+         * WebSocket này đang giúp đối tác
+         * nhận notification ngay trong website.
+         */
+        messagingTemplate.convertAndSend(
+                "/topic/doitac/" + maDoiTac,
+                "Có thông báo mới"
+        );
+
+
+        /*
+         * 2. THÊM WEB PUSH
+         *
+         * Đây là phần giúp notification
+         * nổi ngoài màn hình giống Zalo.
+         *
+         * PushNotificationService đã chạy @Async,
+         * nên không làm chậm luồng nghiệp vụ.
+         */
+        if (thongBaoDoiTac != null) {
+
+            pushNotificationService.guiThongBaoDoiTac(
+                    maDoiTac,
+
+                    thongBaoDoiTac.getTieuDe(),
+
+                    thongBaoDoiTac.getNoiDung(),
+
+                    "/doi-tac/thong-bao",
+
+                    "doi-tac-thong-bao-"
+                            + thongBaoDoiTac.getMaThongBao(),
+
+                    // ID thông báo
+                    thongBaoDoiTac.getMaThongBao(),
+
+                    // CTDH - tạm thời lấy từ nội dung [CTDH:xx]
+                    layIdTrongNoiDung(
+                            thongBaoDoiTac.getNoiDung(),
+                            "[CTDH:"
+                    ),
+
+                    // Sản phẩm gợi ý - lấy từ [SPSUGGEST:xx]
+                    layIdTrongNoiDung(
+                            thongBaoDoiTac.getNoiDung(),
+                            "[SPSUGGEST:"
+                    )
+            );
         }
     }
 
-    public void guiThongBaoXoaDoiTac(Integer maDoiTac, Integer maDonHang) {
+
+    // =========================================================
+    // XÓA THÔNG BÁO ĐƠN HÀNG ĐỐI TÁC
+    // =========================================================
+    public void guiThongBaoXoaDoiTac(
+            Integer maDoiTac,
+            Integer maDonHang
+    ) {
+
         if (maDoiTac != null) {
-            messagingTemplate.convertAndSend("/topic/doitac/" + maDoiTac + "/delete/" + maDonHang, "Xóa thông báo đơn hàng");
+
+            messagingTemplate.convertAndSend(
+
+                    "/topic/doitac/"
+                            + maDoiTac
+                            + "/delete/"
+                            + maDonHang,
+
+                    "Xóa thông báo đơn hàng"
+            );
+        }
+    }
+
+    private Integer layIdTrongNoiDung(
+            String noiDung,
+            String prefix
+    ) {
+
+        if (noiDung == null || prefix == null) {
+            return null;
+        }
+
+        int start =
+                noiDung.indexOf(prefix);
+
+        if (start < 0) {
+            return null;
+        }
+
+        start += prefix.length();
+
+        int end =
+                noiDung.indexOf("]", start);
+
+        if (end < 0) {
+            return null;
+        }
+
+        try {
+
+            return Integer.valueOf(
+                    noiDung
+                            .substring(start, end)
+                            .trim()
+            );
+
+        } catch (NumberFormatException e) {
+
+            return null;
         }
     }
 }

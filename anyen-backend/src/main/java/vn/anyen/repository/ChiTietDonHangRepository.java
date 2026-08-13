@@ -1,12 +1,15 @@
 package vn.anyen.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import vn.anyen.entity.ChiTietDonHang;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ChiTietDonHangRepository
         extends JpaRepository<ChiTietDonHang, Integer> {
@@ -44,5 +47,15 @@ public interface ChiTietDonHangRepository
             @Param("maSanPham") Integer maSanPham,
             @Param("hoanThanh") Integer hoanThanh,
             @Param("daHuy") Integer daHuy
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+       SELECT ct
+       FROM ChiTietDonHang ct
+       WHERE ct.maDonHangChiTiet = :id
+       """)
+    Optional<ChiTietDonHang> findByIdForUpdate(
+            @Param("id") Integer id
     );
 }

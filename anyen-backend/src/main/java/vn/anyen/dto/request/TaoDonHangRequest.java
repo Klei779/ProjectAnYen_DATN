@@ -21,6 +21,10 @@ public class TaoDonHangRequest {
     private String cccd;
     private String email;
     private String diaChi;
+    private String soNhaDuong;
+    private String tinhThanh;
+    private String quanHuyen;
+    private String phuongXa;
 
     private LocalDate ngayTaoDon;
     private String ghiChu;

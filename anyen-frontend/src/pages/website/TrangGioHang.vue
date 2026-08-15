@@ -77,7 +77,7 @@
             <div class="cart-actions">
               <button
                   type="button"
-                  class="sidebar-order-button"
+                  class="btn btn-danger"
                   :disabled="creatingOrder"
                   @click="handleCreateOrder"
               >
@@ -333,14 +333,50 @@
 
         <div class="order-form-group">
           <label>
+            Số nhà đường
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.soNhaDuong"
+              maxlength="255"
+              placeholder="Nhập số nhà đường"
+          />
+        </div>
+        <div class="order-form-group">
+          <label>
+            Phường xá
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.phuongXa"
+              maxlength="50"
+              placeholder="Nhập địa chỉ phường xá"
+          />
+        </div>
+        <div class="order-form-group">
+          <label>
+            Quận huyện
+            <span>*</span>
+          </label>
+
+          <el-input
+              v-model="orderForm.quanHuyen"
+              maxlength="50"
+              placeholder="Nhập quận huyện"
+          />
+        </div>
+        <div class="order-form-group">
+          <label>
             Địa chỉ
             <span>*</span>
           </label>
 
           <el-input
-              v-model="orderForm.diaChi"
-              maxlength="255"
-              placeholder="Nhập địa chỉ khách hàng"
+              v-model="orderForm.tinhThanh"
+              maxlength="50"
+              placeholder="Nhập tỉnh thành"
           />
         </div>
 
@@ -359,18 +395,17 @@
       </div>
 
       <template #footer>
+        <div class="row">
         <button
-            type="button"
-            class="order-cancel-button"
+            class="btn btn-danger col-2 text-center"
             :disabled="creatingOrder"
             @click="showOrderDialog = false"
         >
           Hủy
         </button>
-
+<div class="col-6"></div>
         <button
-            type="button"
-            class="order-submit-button"
+            class="btn btn-danger col-4 text-center"
             :disabled="creatingOrder"
             @click="submitCustomerOrder"
         >
@@ -388,6 +423,7 @@
                 : "Xác nhận tạo đơn"
           }}
         </button>
+        </div>
       </template>
     </el-dialog>
   </main>
@@ -423,7 +459,10 @@ const orderForm = ref({
   tenKhachHang: "",
   soDienThoai: "",
   cccd: "",
-  diaChi: "",
+  soNhaDuong: "",
+  phuongXa: "",
+  quanHuyen: "",
+  tinhThanh: "",
   ghiChu: ""
 });
 function onlyDigits(value = "") {
@@ -586,8 +625,17 @@ function buildCustomerOrderPayload() {
     cccd:
     orderForm.value.cccd,
 
-    diaChi:
-    orderForm.value.diaChi,
+    soNhaDuong:
+    orderForm.value.soNhaDuong,
+
+    phuongXa:
+    orderForm.value.phuongXa,
+
+    quanHuyen:
+    orderForm.value.quanHuyen,
+
+    tinhThanh:
+    orderForm.value.tinhThanh,
 
     email: "",
 
@@ -615,7 +663,10 @@ function resetOrderForm() {
     tenKhachHang: "",
     soDienThoai: "",
     cccd: "",
-    diaChi: "",
+    soNhaDuong:"",
+    phuongXa:"",
+    quanHuyen:"",
+    tinhThanh:"",
     ghiChu: ""
   };
 }
@@ -638,8 +689,20 @@ async function submitCustomerOrder() {
       orderForm.value.cccd
   ).slice(0, 12);
 
-  orderForm.value.diaChi = String(
-      orderForm.value.diaChi || ""
+  orderForm.value.soNhaDuong = String(
+      orderForm.value.soNhaDuong || ""
+  ).trim();
+
+  orderForm.value.tinhThanh = String(
+      orderForm.value.tinhThanh || ""
+  ).trim();
+
+  orderForm.value.phuongXa = String(
+      orderForm.value.phuongXa || ""
+  ).trim();
+
+  orderForm.value.quanHuyen = String(
+      orderForm.value.quanHuyen || ""
   ).trim();
 
   orderForm.value.ghiChu = String(
@@ -690,16 +753,45 @@ async function submitCustomerOrder() {
   /*
    * 4. KIỂM TRA ĐỊA CHỈ BẮT BUỘC
    */
-  if (!orderForm.value.diaChi) {
-    ElMessage.warning("Vui lòng nhập địa chỉ");
+  if (!orderForm.value.soNhaDuong) {
+    ElMessage.warning("Vui lòng nhập số nhà");
     return;
   }
 
-  if (orderForm.value.diaChi.length > 255) {
-    ElMessage.warning("Địa chỉ tối đa 255 ký tự");
+  if (orderForm.value.soNhaDuong.length > 255) {
+    ElMessage.warning("Số nhà tối đa 255 ký tự");
     return;
   }
 
+  if (!orderForm.value.quanHuyen) {
+    ElMessage.warning("Vui lòng nhập quận huyện");
+    return;
+  }
+
+  if (orderForm.value.quanHuyen.length > 50) {
+    ElMessage.warning("Quận huyện tối đa 50 ký tự");
+    return;
+  }
+
+  if (!orderForm.value.phuongXa) {
+    ElMessage.warning("Vui lòng nhập phường xá");
+    return;
+  }
+
+  if (orderForm.value.phuongXa.length > 50) {
+    ElMessage.warning("Phường xá tối đa 50 ký tự");
+    return;
+  }
+
+  if (!orderForm.value.tinhThanh) {
+    ElMessage.warning("Vui lòng nhập tỉnh thành");
+    return;
+  }
+
+  if (orderForm.value.tinhThanh.length > 50) {
+    ElMessage.warning("Tỉnh thành tối đa 50 ký tự");
+    return;
+  }
   /*
    * 5. KIỂM TRA GIỎ HÀNG
    */

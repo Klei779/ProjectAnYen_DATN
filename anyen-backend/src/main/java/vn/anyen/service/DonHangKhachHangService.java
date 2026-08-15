@@ -10,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
-import vn.anyen.dto.response.DonHangResponse.ThongTinKhachHang;
 import vn.anyen.dto.response.DonHangResponse.SanPhamDaKiemTra;
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DonHang;
@@ -80,7 +79,7 @@ public class DonHangKhachHangService {
         /*
          * 1. Validate thông tin khách hàng
          */
-        ThongTinKhachHang thongTinKhachHang =
+        ThongTinKhachHangInput thongTinKhachHang =
                 validateThongTinKhachHang(request);
 
 
@@ -220,7 +219,7 @@ public class DonHangKhachHangService {
 
                     .ghiChu(
 
-                                    request.getGhiChu()
+                            request.getGhiChu()
 
                     )
 
@@ -314,7 +313,7 @@ public class DonHangKhachHangService {
         return ketQua;
     }
 
-    private ThongTinKhachHang validateThongTinKhachHang(
+    private ThongTinKhachHangInput validateThongTinKhachHang(
             TaoDonHangRequest request
     ) {
         if (request == null) {
@@ -324,18 +323,13 @@ public class DonHangKhachHangService {
             );
         }
 
-        String tenKhachHang =
-                request.getTenKhachHang();
-
-        String soDienThoai =
-
-                        request.getSoDienThoai();
-
-        String cccd =
-                request.getCccd();
-
-        String diaChi =
-                request.getDiaChi();
+        String tenKhachHang = trimToEmpty(request.getTenKhachHang());
+        String soDienThoai = trimToEmpty(request.getSoDienThoai());
+        String cccd = trimToEmpty(request.getCccd());
+        String soNhaDuong = trimToEmpty(request.getSoNhaDuong());
+        String phuongXa = trimToEmpty(request.getPhuongXa());
+        String quanHuyen = trimToEmpty(request.getQuanHuyen());
+        String tinhThanh = trimToEmpty(request.getTinhThanh());
 
         if (tenKhachHang.isEmpty()) {
             throw new ResponseStatusException(
@@ -381,26 +375,53 @@ public class DonHangKhachHangService {
             );
         }
 
-        if (diaChi.isEmpty()) {
+        if (soNhaDuong.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Địa chỉ không được để trống"
+                    "Số nhà, tên đường không được để trống"
             );
         }
 
-        if (diaChi.length() > 255) {
+        if (soNhaDuong.length() > 255) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Địa chỉ tối đa 255 ký tự"
+                    "Số nhà, tên đường tối đa 255 ký tự"
             );
         }
 
-        return new ThongTinKhachHang(
+        validateThanhPhanDiaChi(phuongXa, "Phường/xã");
+        validateThanhPhanDiaChi(quanHuyen, "Quận/huyện");
+        validateThanhPhanDiaChi(tinhThanh, "Tỉnh/thành phố");
+
+        return new ThongTinKhachHangInput(
                 tenKhachHang,
                 soDienThoai,
                 cccd,
-                diaChi
+                soNhaDuong,
+                phuongXa,
+                quanHuyen,
+                tinhThanh
         );
+    }
+
+    private void validateThanhPhanDiaChi(String value, String tenTruong) {
+        if (value.isEmpty()) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    tenTruong + " không được để trống"
+            );
+        }
+
+        if (value.length() > 100) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    tenTruong + " tối đa 100 ký tự"
+            );
+        }
+    }
+
+    private String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
     }
 
     private List<SanPhamDaKiemTra> validateVaLaySanPham(
@@ -696,7 +717,7 @@ public class DonHangKhachHangService {
         return result;
     }
     private KhachHang taoKhachHang(
-            ThongTinKhachHang thongTin,
+            ThongTinKhachHangInput thongTin,
             TaoDonHangRequest request,
             NhanVien nhanVien
     ) {
@@ -708,8 +729,11 @@ public class DonHangKhachHangService {
                         thongTin.getSoDienThoai()
                 )
                 .cccd(thongTin.getCccd())
-                .email(request.getEmail())
-                .diaChi(thongTin.getDiaChi())
+                .email(trimToEmpty(request.getEmail()))
+                .soNhaDuong(thongTin.getSoNhaDuong())
+                .phuongXa(thongTin.getPhuongXa())
+                .quanHuyen(thongTin.getQuanHuyen())
+                .tinhThanh(thongTin.getTinhThanh())
                 .maNhanVienPhuTrach(
                         nhanVien.getMaNhanVien()
                 )
@@ -784,15 +808,51 @@ public class DonHangKhachHangService {
     ) {
         String loai =
 
-                        sanPham.getLoai()
+                sanPham.getLoai()
                 ;
 
         String tenSanPham =
-                        sanPham.getTenSanPham()
+                sanPham.getTenSanPham()
                 ;
 
         return loai.contains("quan tài")
                 || tenSanPham.contains("quan tài")|| loai.contains("quan tai");
+    }
+
+    private static class ThongTinKhachHangInput {
+        private final String tenKhachHang;
+        private final String soDienThoai;
+        private final String cccd;
+        private final String soNhaDuong;
+        private final String phuongXa;
+        private final String quanHuyen;
+        private final String tinhThanh;
+
+        private ThongTinKhachHangInput(
+                String tenKhachHang,
+                String soDienThoai,
+                String cccd,
+                String soNhaDuong,
+                String phuongXa,
+                String quanHuyen,
+                String tinhThanh
+        ) {
+            this.tenKhachHang = tenKhachHang;
+            this.soDienThoai = soDienThoai;
+            this.cccd = cccd;
+            this.soNhaDuong = soNhaDuong;
+            this.phuongXa = phuongXa;
+            this.quanHuyen = quanHuyen;
+            this.tinhThanh = tinhThanh;
+        }
+
+        private String getTenKhachHang() { return tenKhachHang; }
+        private String getSoDienThoai() { return soDienThoai; }
+        private String getCccd() { return cccd; }
+        private String getSoNhaDuong() { return soNhaDuong; }
+        private String getPhuongXa() { return phuongXa; }
+        private String getQuanHuyen() { return quanHuyen; }
+        private String getTinhThanh() { return tinhThanh; }
     }
 
 

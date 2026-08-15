@@ -285,7 +285,10 @@ public class HoaDonCuaToiService {
             response.put("ten", "Không có");
             response.put("soDienThoai", "Không có");
             response.put("email", "Không có");
-            response.put("diaChi", "Không có");
+            response.put("soNhaDuong", "Không có");
+            response.put("quanHuyen", "Không có");
+            response.put("tinhThanh", "Không có");
+            response.put("phuongXa", "Không có");
 
             return response;
         }
@@ -315,9 +318,30 @@ public class HoaDonCuaToiService {
         );
 
         response.put(
-                "diaChi",
+                "soNhaDuong",
                 safeText(
-                        khachHang.getDiaChi(),
+                        khachHang.getSoNhaDuong(),
+                        "Không có"
+                )
+        );
+        response.put(
+                "tinhThanh",
+                safeText(
+                        khachHang.getTinhThanh(),
+                        "Không có"
+                )
+        );
+        response.put(
+                "phuongXa",
+                safeText(
+                        khachHang.getPhuongXa(),
+                        "Không có"
+                )
+        );
+        response.put(
+                "quanHuyen",
+                safeText(
+                        khachHang.getQuanHuyen(),
                         "Không có"
                 )
         );

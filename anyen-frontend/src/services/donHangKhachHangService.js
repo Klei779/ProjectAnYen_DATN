@@ -22,9 +22,24 @@ function normalizeCustomerOrderPayload(
                 payload.cccd || ""
             ).trim(),
 
-        diaChi:
+        soNhaDuong:
             String(
-                payload.diaChi || ""
+                payload.soNhaDuong || ""
+            ).trim(),
+
+        tinhThanh:
+            String(
+                payload.tinhThanh || ""
+            ).trim(),
+
+        quanHuyen:
+            String(
+                payload.quanHuyen || ""
+            ).trim(),
+
+        phuongXa:
+            String(
+                payload.phuongXa || ""
             ).trim(),
 
         email:

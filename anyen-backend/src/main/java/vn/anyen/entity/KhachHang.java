@@ -24,8 +24,20 @@ public class KhachHang {
     @Column(name = "cccd")
     private String cccd;
 
-    @Column(name = "DiaChi")
+    @Column(name="DiaChi")
     private String diaChi;
+
+    @Column(name = "SoNhaDuong")
+    private String soNhaDuong;
+
+    @Column(name = "PhuongXa")
+    private String phuongXa;
+
+    @Column(name = "QuanHuyen")
+    private String quanHuyen;
+
+    @Column(name = "TinhThanh")
+    private String tinhThanh;
 
     @Column(name = "email")
     private String email;

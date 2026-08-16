@@ -1698,3 +1698,45 @@
         width: 100%;
     }
 }
+
+/* =========================================
+   TÊN COMBO - KHÔNG CHẠY NGANG
+========================================= */
+
+.form-group input {
+    min-width: 0;
+}
+
+
+/* =========================================
+   MÔ TẢ + QUYỀN LỢI
+   CỐ ĐỊNH 4 DÒNG
+========================================= */
+
+.fixed-four-lines {
+    width: 100%;
+
+    height: 132px;
+    min-height: 132px;
+    max-height: 132px;
+
+    box-sizing: border-box;
+
+    resize: none;
+
+    /*
+     * Không cho xuất hiện scrollbar
+     * và không cho nội dung kéo khung dài ra.
+     */
+    overflow-x: hidden;
+    overflow-y: hidden;
+
+    /*
+     * Chữ dài tự động xuống dòng.
+     */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+
+    line-height: 1.55;
+}

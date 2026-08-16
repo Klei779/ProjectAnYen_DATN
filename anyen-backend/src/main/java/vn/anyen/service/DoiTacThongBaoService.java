@@ -19,6 +19,7 @@ import vn.anyen.repository.DonHangRepository;
 import vn.anyen.repository.HopDongRepository;
 import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.repository.ThongBaoDoiTacRepository;
+
 import java.math.BigDecimal;
 import java.text.Normalizer;
 import java.time.LocalDate;
@@ -452,17 +453,17 @@ public class DoiTacThongBaoService {
         // 0 = chưa nhận, 1 = đã nhận, 2 = đang xử lý, 3 = đã giao
         List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(maDonHang);
         boolean coSanPhamCuaDoiTac = false;
-        
+
         Integer trangThaiDoiTacMoi = null;
         if (DonHang.TT_DANG_XU_LY.equals(request.getTrangThai())) {
             trangThaiDoiTacMoi = 2; // đang xử lý
         } else if (DonHang.TT_DA_GIAO.equals(request.getTrangThai())) {
             trangThaiDoiTacMoi = 3; // đã giao
         }
-        
+
         if (trangThaiDoiTacMoi != null) {
             for (ChiTietDonHang chiTiet : chiTiets) {
-                if (chiTiet.getSanPham() != null && chiTiet.getSanPham().getMaDoiTac() != null 
+                if (chiTiet.getSanPham() != null && chiTiet.getSanPham().getMaDoiTac() != null
                         && chiTiet.getSanPham().getMaDoiTac().equals(doiTac.getMaDoiTac())) {
                     chiTiet.setTrangThaiDoiTac(trangThaiDoiTacMoi);
                     chiTietDonHangRepository.save(chiTiet);
@@ -482,13 +483,13 @@ public class DoiTacThongBaoService {
         List<Integer> maDoiTacs = chiTietDonHangRepository.findMaDoiTacsByDonHang(maDonHang);
         boolean tatCaCungTrangThai = true;
         Integer trangThaiTongThe = null;
-        
+
         for (Integer maDoiTacTrongDon : maDoiTacs) {
             List<ChiTietDonHang> chiTietsCuaDoiTac = chiTiets.stream()
                     .filter(ct -> ct.getSanPham() != null && ct.getSanPham().getMaDoiTac() != null
                             && ct.getSanPham().getMaDoiTac().equals(maDoiTacTrongDon))
                     .toList();
-            
+
             // Xác định trạng thái của đối tác này
             Integer trangThaiCuaDoiTac = null;
             if (chiTietsCuaDoiTac.stream().allMatch(ct -> ct.getTrangThaiDoiTac() != null && ct.getTrangThaiDoiTac() == 3)) {
@@ -502,7 +503,7 @@ public class DoiTacThongBaoService {
                 tatCaCungTrangThai = false;
                 break;
             }
-            
+
             if (trangThaiTongThe == null) {
                 trangThaiTongThe = trangThaiCuaDoiTac;
             } else if (!trangThaiTongThe.equals(trangThaiCuaDoiTac)) {
@@ -518,7 +519,7 @@ public class DoiTacThongBaoService {
             // Nếu không đồng bộ, giữ nguyên trạng thái hiện tại hoặc chuyển sang DANG_XU_LY nếu có ít nhất 1 đối tác đang xử lý
             boolean coDoiTacDangXuLy = chiTiets.stream()
                     .anyMatch(ct -> ct.getTrangThaiDoiTac() != null && ct.getTrangThaiDoiTac() == 2);
-            
+
             if (coDoiTacDangXuLy && !DonHang.TT_DANG_XU_LY.equals(donHang.getTrangThai())) {
                 donHang.setTrangThai(DonHang.TT_DANG_XU_LY);
             }
@@ -565,8 +566,8 @@ public class DoiTacThongBaoService {
                     .donHang(donHang)
                     .loai(LOAI_DON_HANG)
                     .tieuDe("Đã tạo hợp đồng #" + maDonHangText)
-                    .noiDung("Hợp đồng cho đơn hàng " + maDonHangText + 
-                            " của khách hàng " + tenKhachHang + 
+                    .noiDung("Hợp đồng cho đơn hàng " + maDonHangText +
+                            " của khách hàng " + tenKhachHang +
                             " đã được tạo. Vui lòng xử lý đơn hàng.")
                     .trangThaiThongBao(DA_CHAP_NHAN)
                     .daDoc(false)
@@ -1025,6 +1026,16 @@ public class DoiTacThongBaoService {
 
         /*
          * Các đối tác còn lại thua.
+         *
+         * Ví dụ:
+         * ĐT2 từ chối.
+         * ĐT3 + ĐT4 được mời thay thế.
+         *
+         * ĐT3 nhận trước:
+         * - lời mời cũ của ĐT4 vẫn được giữ lại làm lịch sử
+         * - lời mời cũ chuyển DA_TU_CHOI
+         * - tạo THÊM một thông báo mới cho ĐT4:
+         *   "Đơn hàng đã có đối tác tiếp nhận"
          */
         List<ThongBaoDoiTac> loiMoiKhac =
                 thongBaoRepository
@@ -1040,13 +1051,27 @@ public class DoiTacThongBaoService {
 
         for (ThongBaoDoiTac item : loiMoiKhac) {
 
-            if (item.getMaThongBao()
-                    .equals(
-                            thongBao.getMaThongBao()
-                    )) {
+            /*
+             * Bỏ qua notification của người thắng.
+             *
+             * Ví dụ ĐT3 thắng
+             * => không xử lý notification của ĐT3.
+             */
+            if (
+                    item.getMaThongBao()
+                            .equals(
+                                    thongBao.getMaThongBao()
+                            )
+            ) {
                 continue;
             }
 
+            /*
+             * Chỉ xử lý lời mời:
+             *
+             * - cùng ChiTietDonHang
+             * - vẫn đang CHO_XAC_NHAN
+             */
             if (
                     item.getNoiDung() != null
                             && item.getNoiDung()
@@ -1056,6 +1081,31 @@ public class DoiTacThongBaoService {
                     )
             ) {
 
+                /*
+                 * Lấy sản phẩm gợi ý của đối tác thua.
+                 *
+                 * Ví dụ:
+                 * ĐT4 có [SPSUGGEST:10]
+                 */
+                Integer maSanPhamGoiYItem =
+                        parseId(
+                                SPSUGGEST_PATTERN,
+                                item.getNoiDung()
+                        );
+
+
+                /*
+                 * =========================================
+                 * 1. ĐÓNG LỜI MỜI CŨ
+                 * =========================================
+                 *
+                 * KHÔNG sửa title.
+                 * KHÔNG sửa nội dung.
+                 *
+                 * Như vậy lịch sử:
+                 * "Khách đang cần sản phẩm"
+                 * vẫn còn nguyên.
+                 */
                 item.setTrangThaiThongBao(
                         DA_TU_CHOI
                 );
@@ -1063,7 +1113,7 @@ public class DoiTacThongBaoService {
                 item.setDaDoc(true);
 
                 item.setLyDoTuChoi(
-                        "Đã có đối tác khác nhận đơn"
+                        "Đã có đối tác khác tiếp nhận đơn"
                 );
 
                 item.setThoiGianXuLy(
@@ -1073,6 +1123,132 @@ public class DoiTacThongBaoService {
                 thongBaoRepository.save(
                         item
                 );
+
+
+                /*
+                 * =========================================
+                 * 2. TẠO THÊM THÔNG BÁO MỚI
+                 * =========================================
+                 */
+
+                String noiDungKetQua =
+                        "Đơn hàng #DH"
+                                + String.format(
+                                "%03d",
+                                donHang.getMaDonHang()
+                        )
+                                + " đã được đối tác khác tiếp nhận."
+                                + " [CTDH:"
+                                + maChiTiet
+                                + "]";
+
+
+                /*
+                 * Giữ SPSUGGEST vì mapper thông báo
+                 * thay thế hiện tại đang parse marker này.
+                 */
+                if (maSanPhamGoiYItem != null) {
+
+                    noiDungKetQua +=
+                            " [SPSUGGEST:"
+                                    + maSanPhamGoiYItem
+                                    + "]";
+                }
+
+
+                ThongBaoDoiTac thongBaoKetQua =
+                        ThongBaoDoiTac.builder()
+
+                                /*
+                                 * Người nhận là đối tác thua.
+                                 *
+                                 * Ví dụ ĐT4.
+                                 */
+                                .doiTac(
+                                        item.getDoiTac()
+                                )
+
+                                .donHang(
+                                        donHang
+                                )
+
+                                /*
+                                 * Vẫn thuộc luồng đơn thay thế.
+                                 */
+                                .loai(
+                                        LOAI_DON_HANG_THAY_THE
+                                )
+
+                                .tieuDe(
+                                        "Đơn hàng đã có đối tác tiếp nhận"
+                                )
+
+                                .noiDung(
+                                        noiDungKetQua
+                                )
+
+                                /*
+                                 * Không còn quyền nhận đơn.
+                                 */
+                                .trangThaiThongBao(
+                                        DA_TU_CHOI
+                                )
+
+                                /*
+                                 * Đây là thông báo MỚI
+                                 * nên để false.
+                                 *
+                                 * => chuông web báo chưa đọc.
+                                 */
+                                .daDoc(false)
+
+                                .lyDoTuChoi(
+                                        "Đã có đối tác khác tiếp nhận đơn"
+                                )
+
+                                .thoiGianTao(
+                                        LocalDateTime.now()
+                                )
+
+                                .thoiGianXuLy(
+                                        LocalDateTime.now()
+                                )
+
+                                .build();
+
+
+                /*
+                 * Lưu thành một ROW MỚI
+                 * trong thongbaodoitac.
+                 */
+                ThongBaoDoiTac thongBaoKetQuaDaLuu =
+                        thongBaoRepository.save(
+                                thongBaoKetQua
+                        );
+
+
+                /*
+                 * =========================================
+                 * 3. REALTIME + PUSH WINDOWS
+                 * =========================================
+                 */
+                if (item.getDoiTac() != null) {
+
+                    realtimeService
+                            .guiThongBaoDonThayTheDaCoNguoiNhan(
+                                    item.getDoiTac()
+                                            .getMaDoiTac(),
+
+                                    donHang.getMaDonHang(),
+
+                                    /*
+                                     * ID của thông báo MỚI,
+                                     * không phải lời mời cũ.
+                                     */
+                                    thongBaoKetQuaDaLuu
+                                            .getMaThongBao()
+                            );
+                }
             }
         }
 
@@ -1703,7 +1879,7 @@ public class DoiTacThongBaoService {
                     .allMatch(ct -> ct.getTrangThaiDoiTac() != null && ct.getTrangThaiDoiTac() == 2);
             boolean tatCaDaNhan = chiTiets.stream()
                     .allMatch(ct -> ct.getTrangThaiDoiTac() != null && ct.getTrangThaiDoiTac() == 1);
-            
+
             if (tatCaDaGiao) {
                 trangThaiRieng = "Đã giao";
             } else if (tatCaDangXuLy) {
@@ -1761,7 +1937,7 @@ public class DoiTacThongBaoService {
 
     private void capNhatTrangThaiDonHangKhiTatCaDoiTacChapNhan(DonHang donHang) {
         List<ChiTietDonHang> chiTiets = chiTietDonHangRepository.findByDonHang_MaDonHang(donHang.getMaDonHang());
-        
+
         if (chiTiets == null || chiTiets.isEmpty()) {
             return;
         }
@@ -1780,7 +1956,7 @@ public class DoiTacThongBaoService {
             // Chuyển sang trạng thái Đã xác nhận và gửi thông báo yêu cầu tạo hợp đồng
             donHang.setTrangThai(DonHang.TT_DA_XAC_NHAN);
             donHangRepository.save(donHang);
-            
+
             // Gửi thông báo yêu cầu tạo hợp đồng cho nhân viên
             thongBaoService.taoThongBaoYeuCauTaoHopDong(donHang.getMaDonHang());
         }
@@ -1872,9 +2048,9 @@ public class DoiTacThongBaoService {
         if (doiTac == null) {
             return;
         }
-        String tieuDe = "Sản phẩm: " + sanPham.getTenSanPham() + " bị từ chối duyệt" ;
+        String tieuDe = "Sản phẩm: " + sanPham.getTenSanPham() + " bị từ chối duyệt";
         // Bắt buộc phải có format [MASP:ID] ở cuối để hàm mapToSanPhamThongBaoResponse parse được ảnh/thông tin sản phẩm
-        String noiDung = "Lý do: " + lyDoTuChoi + "[MASP:" + sanPham.getMaSanPham() +"]";
+        String noiDung = "Lý do: " + lyDoTuChoi + "[MASP:" + sanPham.getMaSanPham() + "]";
         ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
                 .doiTac(doiTac)
                 .donHang(null) // Từ chối sản phẩm nên không có đơn hàng
@@ -1888,6 +2064,7 @@ public class DoiTacThongBaoService {
                 .build();
         thongBaoRepository.save(thongBao);
     }
+
     public void taoThongBaoDuyetSanPham(SanPham sanPham) {
         if (sanPham == null || sanPham.getMaDoiTac() == null) {
             return;
@@ -1900,7 +2077,7 @@ public class DoiTacThongBaoService {
 
         String tieuDe = "Sản phẩm: " + sanPham.getTenSanPham() + " đã được duyệt và đang bán hiện tại";
         // Bắt buộc phải có format [MASP:ID] ở cuối để hàm mapToSanPhamThongBaoResponse parse được ảnh/thông tin sản phẩm
-        String noiDung = "[MASP:" + sanPham.getMaSanPham() +"]"+ "MASP: SP#" + sanPham.getMaSanPham() +  " Đã được đuyệt";
+        String noiDung = "[MASP:" + sanPham.getMaSanPham() + "]" + "MASP: SP#" + sanPham.getMaSanPham() + " Đã được đuyệt";
         ThongBaoDoiTac thongBao = ThongBaoDoiTac.builder()
                 .doiTac(doiTac)
                 .donHang(null) // Từ chối sản phẩm nên không có đơn hàng

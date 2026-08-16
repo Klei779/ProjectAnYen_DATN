@@ -114,7 +114,12 @@
       <el-form label-position="top">
         <div class="dialog-grid">
           <el-form-item label="Tên combo *" class="full-width">
-            <el-input v-model="form.tenCombo" maxlength="255" show-word-limit/>
+            <el-input
+                v-model="form.tenCombo"
+                :maxlength="50"
+                show-word-limit
+                placeholder="Tên combo tối đa 50 ký tự"
+            />
           </el-form-item>
 
           <el-form-item label="Giá combo *">
@@ -140,7 +145,15 @@
           </el-form-item>
 
           <el-form-item label="Mô tả" class="full-width">
-            <el-input v-model="form.moTa" type="textarea" :rows="3" maxlength="5000" show-word-limit/>
+            <el-input
+                v-model="form.moTa"
+                type="textarea"
+                :rows="4"
+                :maxlength="220"
+                show-word-limit
+                resize="none"
+                class="fixed-combo-textarea"
+            />
           </el-form-item>
 
           <el-form-item class="full-width product-picker">
@@ -869,5 +882,18 @@ function getErrorMessage(error, fallback) {
     width: 100%;
     height: 40px;
   }
+}
+
+:deep(.fixed-combo-textarea .el-textarea__inner) {
+  height: 132px !important;
+  min-height: 132px !important;
+  max-height: 132px !important;
+
+  resize: none !important;
+  overflow-x: hidden;
+
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 </style>

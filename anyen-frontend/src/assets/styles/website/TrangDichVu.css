@@ -627,3 +627,26 @@
         height: auto;
     }
 }
+
+.package-card {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.package-card h3,
+.package-card h5 {
+    max-width: 100%;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.package-benefit-list li span {
+    flex: 1;
+    min-width: 0;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}

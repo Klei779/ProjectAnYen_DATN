@@ -24,9 +24,14 @@
             <span>Tên combo <b>*</b></span>
 
             <input
-                v-model.trim="form.tenCombo"
-                maxlength="255"
+                :value="form.tenCombo"
+                :maxlength="50"
                 placeholder="Ví dụ: Gói tang lễ cơ bản"
+                @input="handleSingleLineInput(
+      'tenCombo',
+      $event,
+      50
+    )"
             />
           </label>
 
@@ -145,10 +150,16 @@
             <span>Mô tả combo</span>
 
             <textarea
-                v-model.trim="form.moTa"
-                rows="5"
-                maxlength="5000"
+                :value="form.moTa"
+                rows="4"
+                maxlength="220"
+                class="fixed-four-lines"
                 placeholder="Nhập mô tả ngắn cho combo"
+                @input="handleFourLineInput(
+      'moTa',
+      $event,
+      220
+    )"
             ></textarea>
           </label>
 
@@ -159,10 +170,16 @@
 
             <textarea
                 id="ghiChu"
-                v-model="form.ghiChu"
-                rows="6"
-                maxlength="10000"
+                :value="form.ghiChu"
+                rows="4"
+                maxlength="220"
+                class="fixed-four-lines"
                 placeholder="Mỗi quyền lợi nhập trên một dòng"
+                @input="handleFourLineInput(
+      'ghiChu',
+      $event,
+      220
+    )"
             ></textarea>
 
             <small>
@@ -380,147 +397,147 @@
         </button>
       </footer>
     </form>
-<!--    <Teleport to="body">-->
-<!--      <div-->
-<!--          v-if="showDetailPopup && activeDetailProduct"-->
-<!--          class="detail-popup-overlay"-->
-<!--          @click.self="closeDetailPopup"-->
-<!--      >-->
-<!--        <section class="detail-popup">-->
-<!--          <header class="detail-popup-header">-->
-<!--            <div>-->
-<!--              <span>NỘI DUNG CHI TIẾT GÓI</span>-->
+    <!--    <Teleport to="body">-->
+    <!--      <div-->
+    <!--          v-if="showDetailPopup && activeDetailProduct"-->
+    <!--          class="detail-popup-overlay"-->
+    <!--          @click.self="closeDetailPopup"-->
+    <!--      >-->
+    <!--        <section class="detail-popup">-->
+    <!--          <header class="detail-popup-header">-->
+    <!--            <div>-->
+    <!--              <span>NỘI DUNG CHI TIẾT GÓI</span>-->
 
-<!--              <h3>-->
-<!--                {{ activeDetailProduct.tenSanPham }}-->
-<!--              </h3>-->
+    <!--              <h3>-->
+    <!--                {{ activeDetailProduct.tenSanPham }}-->
+    <!--              </h3>-->
 
-<!--              <p>-->
-<!--                Nhập mô tả và chọn hình ảnh hiển thị-->
-<!--                khi khách hàng xem chi tiết dịch vụ.-->
-<!--              </p>-->
-<!--            </div>-->
+    <!--              <p>-->
+    <!--                Nhập mô tả và chọn hình ảnh hiển thị-->
+    <!--                khi khách hàng xem chi tiết dịch vụ.-->
+    <!--              </p>-->
+    <!--            </div>-->
 
-<!--            <button-->
-<!--                type="button"-->
-<!--                class="detail-popup-close"-->
-<!--                @click="closeDetailPopup"-->
-<!--            >-->
-<!--              ×-->
-<!--            </button>-->
-<!--          </header>-->
+    <!--            <button-->
+    <!--                type="button"-->
+    <!--                class="detail-popup-close"-->
+    <!--                @click="closeDetailPopup"-->
+    <!--            >-->
+    <!--              ×-->
+    <!--            </button>-->
+    <!--          </header>-->
 
-<!--          <div class="detail-popup-body">-->
-<!--            &lt;!&ndash; MÔ TẢ &ndash;&gt;-->
-<!--            <label class="popup-description">-->
-<!--              <span>Mô tả chi tiết</span>-->
+    <!--          <div class="detail-popup-body">-->
+    <!--            &lt;!&ndash; MÔ TẢ &ndash;&gt;-->
+    <!--            <label class="popup-description">-->
+    <!--              <span>Mô tả chi tiết</span>-->
 
-<!--              <textarea-->
-<!--                  v-model="-->
-<!--                detailDescriptions[-->
-<!--                  activeDetailProduct.maSanPham-->
-<!--                ]-->
-<!--              "-->
-<!--                  rows="7"-->
-<!--                  maxlength="5000"-->
-<!--                  placeholder="Ví dụ: Sản phẩm được chuẩn bị trang nghiêm, phù hợp với từng nghi thức..."-->
-<!--              ></textarea>-->
-<!--            </label>-->
+    <!--              <textarea-->
+    <!--                  v-model="-->
+    <!--                detailDescriptions[-->
+    <!--                  activeDetailProduct.maSanPham-->
+    <!--                ]-->
+    <!--              "-->
+    <!--                  rows="7"-->
+    <!--                  maxlength="5000"-->
+    <!--                  placeholder="Ví dụ: Sản phẩm được chuẩn bị trang nghiêm, phù hợp với từng nghi thức..."-->
+    <!--              ></textarea>-->
+    <!--            </label>-->
 
-<!--            &lt;!&ndash; HÌNH ẢNH &ndash;&gt;-->
-<!--            <div class="popup-images">-->
-<!--              <div class="popup-image-toolbar">-->
-<!--                <div>-->
-<!--                  <strong>Hình ảnh chi tiết</strong>-->
+    <!--            &lt;!&ndash; HÌNH ẢNH &ndash;&gt;-->
+    <!--            <div class="popup-images">-->
+    <!--              <div class="popup-image-toolbar">-->
+    <!--                <div>-->
+    <!--                  <strong>Hình ảnh chi tiết</strong>-->
 
-<!--                  <small>-->
-<!--                    Đã chọn-->
-<!--                    {{-->
-<!--                      detailImages[-->
-<!--                          activeDetailProduct.maSanPham-->
-<!--                          ]?.length || 0-->
-<!--                    }}-->
-<!--                    / {{ MAX_DETAIL_IMAGES }} ảnh-->
-<!--                  </small>-->
-<!--                </div>-->
+    <!--                  <small>-->
+    <!--                    Đã chọn-->
+    <!--                    {{-->
+    <!--                      detailImages[-->
+    <!--                          activeDetailProduct.maSanPham-->
+    <!--                          ]?.length || 0-->
+    <!--                    }}-->
+    <!--                    / {{ MAX_DETAIL_IMAGES }} ảnh-->
+    <!--                  </small>-->
+    <!--                </div>-->
 
-<!--                <label class="popup-select-image">-->
-<!--                  Chọn hình ảnh-->
+    <!--                <label class="popup-select-image">-->
+    <!--                  Chọn hình ảnh-->
 
-<!--                  <input-->
-<!--                      type="file"-->
-<!--                      accept="image/jpeg,image/png,image/webp"-->
-<!--                      multiple-->
-<!--                      hidden-->
-<!--                      @change="-->
-<!--                    event => handleDetailImageSelect(-->
-<!--                      activeDetailProduct,-->
-<!--                      event-->
-<!--                    )-->
-<!--                  "-->
-<!--                  />-->
-<!--                </label>-->
-<!--              </div>-->
+    <!--                  <input-->
+    <!--                      type="file"-->
+    <!--                      accept="image/jpeg,image/png,image/webp"-->
+    <!--                      multiple-->
+    <!--                      hidden-->
+    <!--                      @change="-->
+    <!--                    event => handleDetailImageSelect(-->
+    <!--                      activeDetailProduct,-->
+    <!--                      event-->
+    <!--                    )-->
+    <!--                  "-->
+    <!--                  />-->
+    <!--                </label>-->
+    <!--              </div>-->
 
-<!--              <div-->
-<!--                  v-if="-->
-<!--                detailImages[-->
-<!--                  activeDetailProduct.maSanPham-->
-<!--                ]?.length-->
-<!--              "-->
-<!--                  class="popup-image-grid"-->
-<!--              >-->
-<!--                <article-->
-<!--                    v-for="(image, index) in-->
-<!--                  detailImages[-->
-<!--                    activeDetailProduct.maSanPham-->
-<!--                  ]"-->
-<!--                    :key="image.key"-->
-<!--                    class="popup-image-card"-->
-<!--                >-->
-<!--                  <img-->
-<!--                      :src="image.preview || fallbackImage"-->
-<!--                      :alt="image.file.name"-->
-<!--                  />-->
+    <!--              <div-->
+    <!--                  v-if="-->
+    <!--                detailImages[-->
+    <!--                  activeDetailProduct.maSanPham-->
+    <!--                ]?.length-->
+    <!--              "-->
+    <!--                  class="popup-image-grid"-->
+    <!--              >-->
+    <!--                <article-->
+    <!--                    v-for="(image, index) in-->
+    <!--                  detailImages[-->
+    <!--                    activeDetailProduct.maSanPham-->
+    <!--                  ]"-->
+    <!--                    :key="image.key"-->
+    <!--                    class="popup-image-card"-->
+    <!--                >-->
+    <!--                  <img-->
+    <!--                      :src="image.preview || fallbackImage"-->
+    <!--                      :alt="image.file.name"-->
+    <!--                  />-->
 
-<!--                  <span :title="image.file.name">-->
-<!--                {{ image.file.name }}-->
-<!--              </span>-->
+    <!--                  <span :title="image.file.name">-->
+    <!--                {{ image.file.name }}-->
+    <!--              </span>-->
 
-<!--                  <button-->
-<!--                      type="button"-->
-<!--                      @click="-->
-<!--                    removeDetailImage(-->
-<!--                      activeDetailProduct.maSanPham,-->
-<!--                      index-->
-<!--                    )-->
-<!--                  "-->
-<!--                  >-->
-<!--                    ×-->
-<!--                  </button>-->
-<!--                </article>-->
-<!--              </div>-->
+    <!--                  <button-->
+    <!--                      type="button"-->
+    <!--                      @click="-->
+    <!--                    removeDetailImage(-->
+    <!--                      activeDetailProduct.maSanPham,-->
+    <!--                      index-->
+    <!--                    )-->
+    <!--                  "-->
+    <!--                  >-->
+    <!--                    ×-->
+    <!--                  </button>-->
+    <!--                </article>-->
+    <!--              </div>-->
 
-<!--              <div-->
-<!--                  v-else-->
-<!--                  class="popup-image-empty"-->
-<!--              >-->
-<!--                Hình ảnh được chọn sẽ hiển thị tại đây.-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </div>-->
+    <!--              <div-->
+    <!--                  v-else-->
+    <!--                  class="popup-image-empty"-->
+    <!--              >-->
+    <!--                Hình ảnh được chọn sẽ hiển thị tại đây.-->
+    <!--              </div>-->
+    <!--            </div>-->
+    <!--          </div>-->
 
-<!--          <footer class="detail-popup-footer">-->
-<!--            <button-->
-<!--                type="button"-->
-<!--                @click="closeDetailPopup"-->
-<!--            >-->
-<!--              Hoàn tất-->
-<!--            </button>-->
-<!--          </footer>-->
-<!--        </section>-->
-<!--      </div>-->
-<!--    </Teleport>-->
+    <!--          <footer class="detail-popup-footer">-->
+    <!--            <button-->
+    <!--                type="button"-->
+    <!--                @click="closeDetailPopup"-->
+    <!--            >-->
+    <!--              Hoàn tất-->
+    <!--            </button>-->
+    <!--          </footer>-->
+    <!--        </section>-->
+    <!--      </div>-->
+    <!--    </Teleport>-->
   </section>
 </template>
 
@@ -532,8 +549,8 @@ import {
   ref
 } from "vue";
 
-import { useRouter } from "vue-router";
-import { ElMessage } from "element-plus";
+import {useRouter} from "vue-router";
+import {ElMessage} from "element-plus";
 
 import {
   createComboDoiTac,
@@ -1033,10 +1050,108 @@ function convertGhiChuToHtml(value) {
       .join("")}</ul>`;
 }
 
+/*
+ * Input 1 dòng.
+ *
+ * - Tối đa maxLength ký tự.
+ * - Nếu chữ đã vượt chiều rộng thật của ô input
+ *   thì trả lại giá trị trước đó.
+ * - Không cho input chạy ngang.
+ */
+function handleSingleLineInput(
+    field,
+    event,
+    maxLength
+) {
+  const element = event.target;
+
+  const previousValue =
+      String(form[field] || "");
+
+  const nextValue =
+      String(element.value || "")
+          .slice(0, maxLength);
+
+  /*
+   * Giá trị mới đang nằm trực tiếp trong input,
+   * nên có thể kiểm tra scrollWidth ngay.
+   */
+  if (
+      element.scrollWidth >
+      element.clientWidth + 2
+  ) {
+    element.value = previousValue;
+    return;
+  }
+
+  form[field] = nextValue;
+}
+
+
+/*
+ * Textarea cố định khoảng 4 dòng.
+ *
+ * Nếu text:
+ * - tự wrap thành dòng thứ 5
+ * - hoặc người dùng Enter sang dòng thứ 5
+ *
+ * => không nhận ký tự đó.
+ */
+function handleFourLineInput(
+    field,
+    event,
+    maxLength
+) {
+  const element = event.target;
+
+  const previousValue =
+      String(form[field] || "");
+
+  const nextValue =
+      String(element.value || "")
+          .slice(0, maxLength);
+
+  /*
+   * clientHeight = chiều cao cố định của textarea.
+   * scrollHeight > clientHeight
+   * nghĩa là nội dung đã muốn tạo thêm dòng.
+   */
+  if (
+      element.scrollHeight >
+      element.clientHeight + 2
+  ) {
+    element.value = previousValue;
+    return;
+  }
+
+  form[field] = nextValue;
+}
+
 async function submitCombo() {
   if (form.tenCombo.trim().length < 3) {
     ElMessage.warning(
         "Tên combo phải có ít nhất 3 ký tự"
+    );
+    return;
+  }
+
+  if (form.tenCombo.trim().length > 50) {
+    ElMessage.warning(
+        "Tên combo không được vượt quá 50 ký tự"
+    );
+    return;
+  }
+
+  if (form.moTa.length > 220) {
+    ElMessage.warning(
+        "Mô tả combo không được vượt quá 220 ký tự"
+    );
+    return;
+  }
+
+  if (form.ghiChu.length > 220) {
+    ElMessage.warning(
+        "Quyền lợi combo không được vượt quá 220 ký tự"
     );
     return;
   }

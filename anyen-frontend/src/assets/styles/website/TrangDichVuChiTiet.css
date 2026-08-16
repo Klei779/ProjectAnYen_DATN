@@ -99,7 +99,11 @@ img {
 
 .detail-layout {
     display: grid;
-    grid-template-columns: 40% 60%;
+
+    grid-template-columns:
+        minmax(0, 40%)
+        minmax(0, 60%);
+
     gap: 30px;
     align-items: start;
     margin-bottom: 28px;
@@ -237,6 +241,34 @@ img {
 
 .service-info {
     padding-top: 4px;
+
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
+.badge {
+    max-width: 100%;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.service-info h1 {
+    max-width: 100%;
+
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.service-info p {
+    max-width: 620px;
+
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
 }
 
 .badge {

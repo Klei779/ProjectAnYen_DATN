@@ -72,15 +72,10 @@
             <button
                 class="btn-password"
                 type="button"
-                @click="showDoiMatKhau = !showDoiMatKhau"
+                @click="showDoiMatKhau = true"
             >
               <i class="fa-solid fa-key"></i>
-
-              {{
-                showDoiMatKhau
-                    ? "Ẩn đổi mật khẩu"
-                    : "Đổi mật khẩu"
-              }}
+              Đổi mật khẩu
             </button>
           </div>
         </div>
@@ -339,12 +334,9 @@
         </div>
 
         <!-- ĐỔI MẬT KHẨU -->
-        <div
-            v-if="showDoiMatKhau"
-            class="password-section"
-        >
-          <DoiMatKhau />
-        </div>
+        <DoiMatKhau
+            v-model="showDoiMatKhau"
+        />
       </main>
     </div>
   </div>
@@ -1187,25 +1179,6 @@ function getErrorMessage(error, fallback) {
 .btn-outline:disabled {
   cursor: not-allowed;
   opacity: 0.7;
-}
-
-/* =========================
-   MẬT KHẨU
-========================= */
-.password-section {
-  opacity: 0.7;
-}
-
-/* =========================
-   M  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid #eef2f7;
-}
-
-.password-section :deep(.change-password-card) {
-  max-width: 100%;
-  border: 1px solid #eef2f7;
-  box-shadow: none;
 }
 
 /* =========================

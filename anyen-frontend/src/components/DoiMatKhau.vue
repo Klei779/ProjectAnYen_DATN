@@ -1,12 +1,53 @@
 <script setup>
-import { ref } from "vue";
-import { ElMessage } from "element-plus";
+import {
+  ref,
+  computed
+} from "vue";
+
+import {
+  ElMessage
+} from "element-plus";
+
 import api from "../api/api.js";
 
+
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false,
+  },
+});
+
+
+const emit = defineEmits([
+  "update:modelValue",
+]);
+
+
+/*
+ * Nhận trạng thái mở/đóng
+ * từ trang cha.
+ */
+const dialogVisible = computed({
+  get() {
+    return props.modelValue;
+  },
+
+  set(value) {
+    emit(
+        "update:modelValue",
+        value
+    );
+  },
+});
+
+
 const loading = ref(false);
+
 const showOldPassword = ref(false);
 const showNewPassword = ref(false);
 const showConfirmPassword = ref(false);
+
 
 const form = ref({
   matKhauCu: "",
@@ -14,15 +55,33 @@ const form = ref({
   xacNhanMatKhau: "",
 });
 
+
 const resetForm = () => {
+
   form.value = {
     matKhauCu: "",
     matKhauMoi: "",
     xacNhanMatKhau: "",
   };
+
+  showOldPassword.value = false;
+  showNewPassword.value = false;
+  showConfirmPassword.value = false;
 };
 
+
+const closeDialog = () => {
+
+  if (loading.value) {
+    return;
+  }
+
+  dialogVisible.value = false;
+};
+
+
 const getErrorMessage = (error) => {
+
   return (
       error.response?.data?.message ||
       error.response?.data?.error ||
@@ -31,175 +90,322 @@ const getErrorMessage = (error) => {
   );
 };
 
+
 const handleDoiMatKhau = async () => {
-  const matKhauCu = form.value.matKhauCu.trim();
-  const matKhauMoi = form.value.matKhauMoi.trim();
-  const xacNhanMatKhau = form.value.xacNhanMatKhau.trim();
+
+  const matKhauCu =
+      form.value.matKhauCu.trim();
+
+  const matKhauMoi =
+      form.value.matKhauMoi.trim();
+
+  const xacNhanMatKhau =
+      form.value.xacNhanMatKhau.trim();
+
 
   if (!matKhauCu) {
-    ElMessage.warning("Vui lòng nhập mật khẩu cũ");
+    ElMessage.warning(
+        "Vui lòng nhập mật khẩu cũ"
+    );
     return;
   }
+
 
   if (!matKhauMoi) {
-    ElMessage.warning("Vui lòng nhập mật khẩu mới");
+    ElMessage.warning(
+        "Vui lòng nhập mật khẩu mới"
+    );
     return;
   }
+
 
   if (matKhauMoi.length < 6) {
-    ElMessage.warning("Mật khẩu mới phải có ít nhất 6 ký tự");
+    ElMessage.warning(
+        "Mật khẩu mới phải có ít nhất 6 ký tự"
+    );
     return;
   }
+
 
   if (!xacNhanMatKhau) {
-    ElMessage.warning("Vui lòng xác nhận mật khẩu mới");
+    ElMessage.warning(
+        "Vui lòng xác nhận mật khẩu mới"
+    );
     return;
   }
 
-  if (matKhauMoi !== xacNhanMatKhau) {
-    ElMessage.error("Xác nhận mật khẩu không khớp");
+
+  if (
+      matKhauMoi !==
+      xacNhanMatKhau
+  ) {
+
+    ElMessage.error(
+        "Xác nhận mật khẩu không khớp"
+    );
+
     return;
   }
 
-  if (matKhauCu === matKhauMoi) {
-    ElMessage.warning("Mật khẩu mới không được trùng mật khẩu cũ");
+
+  if (
+      matKhauCu ===
+      matKhauMoi
+  ) {
+
+    ElMessage.warning(
+        "Mật khẩu mới không được trùng mật khẩu cũ"
+    );
+
     return;
   }
+
 
   try {
+
     loading.value = true;
 
-    const response = await api.put("/api/tai-khoan/doi-mat-khau", {
-      matKhauCu,
-      matKhauMoi,
-      xacNhanMatKhau,
-    });
 
-    ElMessage.success(response.data?.message || "Đổi mật khẩu thành công");
-    resetForm();
+    const response =
+        await api.put(
+            "/api/tai-khoan/doi-mat-khau",
+            {
+              matKhauCu,
+              matKhauMoi,
+              xacNhanMatKhau,
+            }
+        );
+
+
+    ElMessage.success(
+        response.data?.message ||
+        "Đổi mật khẩu thành công"
+    );
+
+
+    /*
+     * Thành công
+     * => đóng popup.
+     */
+    dialogVisible.value = false;
+
+
   } catch (error) {
-    console.error("Lỗi đổi mật khẩu:", error);
-    ElMessage.error(getErrorMessage(error));
+
+    console.error(
+        "Lỗi đổi mật khẩu:",
+        error
+    );
+
+
+    ElMessage.error(
+        getErrorMessage(error)
+    );
+
+
   } finally {
+
     loading.value = false;
+
   }
 };
 </script>
 
 <template>
-  <div class="change-password-card">
-    <div class="card-header">
-      <div>
-        <h3>Thay đổi mật khẩu</h3>
-        <p>Cập nhật mật khẩu đăng nhập cho tài khoản hiện tại</p>
-      </div>
+
+  <el-dialog
+      v-model="dialogVisible"
+      title="Thay đổi mật khẩu"
+      width="500px"
+      :close-on-click-modal="false"
+      :close-on-press-escape="!loading"
+      :show-close="!loading"
+      :append-to-body="true"
+      :z-index="10070"
+      @closed="resetForm"
+  >
+
+    <div class="popup-description">
+      Cập nhật mật khẩu đăng nhập
+      cho tài khoản hiện tại
     </div>
 
+
     <div class="form-body">
+
+      <!-- MẬT KHẨU CŨ -->
       <div class="form-group">
-        <label>Mật khẩu cũ <span>*</span></label>
+
+        <label>
+          Mật khẩu cũ
+          <span>*</span>
+        </label>
 
         <div class="password-input">
+
           <input
               v-model="form.matKhauCu"
-              :type="showOldPassword ? 'text' : 'password'"
+              :type="
+              showOldPassword
+                ? 'text'
+                : 'password'
+            "
               placeholder="Nhập mật khẩu cũ"
               autocomplete="current-password"
+              :disabled="loading"
           />
 
-          <button type="button" @click="showOldPassword = !showOldPassword">
-            {{ showOldPassword ? "Ẩn" : "Hiện" }}
+          <button
+              type="button"
+              :disabled="loading"
+              @click="
+              showOldPassword =
+                !showOldPassword
+            "
+          >
+            {{
+              showOldPassword
+                  ? "Ẩn"
+                  : "Hiện"
+            }}
           </button>
+
         </div>
       </div>
 
+
+      <!-- MẬT KHẨU MỚI -->
       <div class="form-group">
-        <label>Mật khẩu mới <span>*</span></label>
+
+        <label>
+          Mật khẩu mới
+          <span>*</span>
+        </label>
 
         <div class="password-input">
+
           <input
               v-model="form.matKhauMoi"
-              :type="showNewPassword ? 'text' : 'password'"
+              :type="
+              showNewPassword
+                ? 'text'
+                : 'password'
+            "
               placeholder="Nhập mật khẩu mới"
               autocomplete="new-password"
+              :disabled="loading"
           />
 
-          <button type="button" @click="showNewPassword = !showNewPassword">
-            {{ showNewPassword ? "Ẩn" : "Hiện" }}
+          <button
+              type="button"
+              :disabled="loading"
+              @click="
+              showNewPassword =
+                !showNewPassword
+            "
+          >
+            {{
+              showNewPassword
+                  ? "Ẩn"
+                  : "Hiện"
+            }}
           </button>
+
         </div>
 
-        <small>Mật khẩu mới phải có ít nhất 6 ký tự</small>
+        <small>
+          Mật khẩu mới phải có
+          ít nhất 6 ký tự
+        </small>
+
       </div>
 
+
+      <!-- XÁC NHẬN -->
       <div class="form-group">
-        <label>Xác nhận mật khẩu mới <span>*</span></label>
+
+        <label>
+          Xác nhận mật khẩu mới
+          <span>*</span>
+        </label>
 
         <div class="password-input">
+
           <input
               v-model="form.xacNhanMatKhau"
-              :type="showConfirmPassword ? 'text' : 'password'"
+              :type="
+              showConfirmPassword
+                ? 'text'
+                : 'password'
+            "
               placeholder="Nhập lại mật khẩu mới"
               autocomplete="new-password"
-              @keyup.enter="handleDoiMatKhau"
+              :disabled="loading"
+              @keyup.enter="
+              handleDoiMatKhau
+            "
           />
 
-          <button type="button" @click="showConfirmPassword = !showConfirmPassword">
-            {{ showConfirmPassword ? "Ẩn" : "Hiện" }}
+          <button
+              type="button"
+              :disabled="loading"
+              @click="
+              showConfirmPassword =
+                !showConfirmPassword
+            "
+          >
+            {{
+              showConfirmPassword
+                  ? "Ẩn"
+                  : "Hiện"
+            }}
           </button>
+
         </div>
       </div>
 
-      <div class="form-actions">
-        <button
-            type="button"
-            class="btn-reset"
+    </div>
+
+
+    <template #footer>
+
+      <div class="dialog-footer">
+
+        <el-button
+            :disabled="loading"
+            @click="closeDialog"
+        >
+          Hủy
+        </el-button>
+
+
+        <el-button
             :disabled="loading"
             @click="resetForm"
         >
           Làm mới
-        </button>
+        </el-button>
 
-        <button
-            type="button"
-            class="btn-submit"
-            :disabled="loading"
+
+        <el-button
+            type="success"
+            :loading="loading"
             @click="handleDoiMatKhau"
         >
-          {{ loading ? "Đang đổi..." : "Đổi mật khẩu" }}
-        </button>
+          Đổi mật khẩu
+        </el-button>
+
       </div>
-    </div>
-  </div>
+
+    </template>
+
+  </el-dialog>
+
 </template>
 
 <style scoped>
-.change-password-card {
-  width: 100%;
-  max-width: 560px;
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #edf0f2;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  padding: 24px;
-  box-sizing: border-box;
-}
-
-.card-header {
-  margin-bottom: 22px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #eef1f4;
-}
-
-.card-header h3 {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 800;
-  color: #1f2937;
-}
-
-.card-header p {
-  margin: 6px 0 0;
+.popup-description {
+  margin-bottom: 20px;
   font-size: 13px;
   color: #6b7280;
 }
@@ -207,7 +413,7 @@ const handleDoiMatKhau = async () => {
 .form-body {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 .form-group label {
@@ -232,6 +438,7 @@ const handleDoiMatKhau = async () => {
 .password-input {
   display: flex;
   align-items: center;
+  width: 100%;
   height: 42px;
   border: 1px solid #d9dee3;
   border-radius: 8px;
@@ -247,13 +454,13 @@ const handleDoiMatKhau = async () => {
 
 .password-input input {
   flex: 1;
+  min-width: 0;
   height: 100%;
   border: none;
   outline: none;
   padding: 0 12px;
   font-size: 14px;
   background: transparent;
-  box-sizing: border-box;
 }
 
 .password-input button {
@@ -268,67 +475,18 @@ const handleDoiMatKhau = async () => {
   cursor: pointer;
 }
 
-.password-input button:hover {
+.password-input button:hover:not(:disabled) {
   background: #e8f8ef;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-.btn-reset,
-.btn-submit {
-  height: 40px;
-  border-radius: 8px;
-  padding: 0 18px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-reset {
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #374151;
-}
-
-.btn-reset:hover {
-  background: #f3f4f6;
-}
-
-.btn-submit {
-  border: 1px solid #17934a;
-  background: #17934a;
-  color: #ffffff;
-}
-
-.btn-submit:hover {
-  background: #137d3e;
-}
-
-.btn-reset:disabled,
-.btn-submit:disabled {
-  opacity: 0.65;
+.password-input button:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
 }
 
-@media (max-width: 768px) {
-  .change-password-card {
-    max-width: 100%;
-    padding: 18px;
-  }
-
-  .form-actions {
-    flex-direction: column;
-  }
-
-  .btn-reset,
-  .btn-submit {
-    width: 100%;
-  }
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>

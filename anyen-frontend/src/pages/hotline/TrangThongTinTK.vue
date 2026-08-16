@@ -72,15 +72,10 @@
             <button
                 class="btn-password"
                 type="button"
-                @click="showDoiMatKhau = !showDoiMatKhau"
+                @click="showDoiMatKhau = true"
             >
               <i class="fa-solid fa-key"></i>
-
-              {{
-                showDoiMatKhau
-                    ? "Ẩn đổi mật khẩu"
-                    : "Đổi mật khẩu"
-              }}
+              Đổi mật khẩu
             </button>
           </div>
         </div>
@@ -339,12 +334,9 @@
         </div>
 
         <!-- ĐỔI MẬT KHẨU -->
-        <div
-            v-if="showDoiMatKhau"
-            class="password-section"
-        >
-          <DoiMatKhau />
-        </div>
+        <DoiMatKhau
+            v-model="showDoiMatKhau"
+        />
       </main>
     </div>
   </div>

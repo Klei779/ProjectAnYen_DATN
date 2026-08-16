@@ -172,4 +172,47 @@ public class RealtimeService {
             return null;
         }
     }
+
+    public void guiThongBaoDonThayTheDaCoNguoiNhan(
+            Integer maDoiTac,
+            Integer maDonHang,
+            Integer maThongBao
+    ) {
+
+        if (maDoiTac == null) {
+            return;
+        }
+
+        /*
+         * Nếu đối tác đang mở web
+         * thì frontend nhận realtime để reload thông báo.
+         */
+        messagingTemplate.convertAndSend(
+                "/topic/doitac/" + maDoiTac,
+                "Đơn thay thế đã có đối tác tiếp nhận"
+        );
+
+        /*
+         * Push ra Windows/browser.
+         *
+         * 2 tham số cuối để null
+         * => đây KHÔNG phải notification mời thay thế
+         * => không hiện nút Xác nhận / Từ chối.
+         */
+        pushNotificationService.guiThongBaoDoiTac(
+                maDoiTac,
+                "Đơn hàng đã có đối tác tiếp nhận",
+                "Đơn hàng #DH"
+                        + String.format("%03d", maDonHang)
+                        + " đã được đối tác khác tiếp nhận.",
+                "/doi-tac/thong-bao",
+                "replacement-taken-"
+                        + maDonHang
+                        + "-"
+                        + maDoiTac,
+                maThongBao,
+                null,
+                null
+        );
+    }
 }

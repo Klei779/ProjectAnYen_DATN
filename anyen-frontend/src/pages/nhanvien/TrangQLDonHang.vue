@@ -696,7 +696,7 @@ const xemHoaDon = (dh) => {
 // ── Stepper trạng thái ─────────────────────────────
 const STEPS = [
   "Mới tạo",
-  "xác nhận",
+  "Xác nhận",
   "Đã nhận",
   "Xử lý",
   "Đã giao",
@@ -704,29 +704,101 @@ const STEPS = [
   "Hoàn thành",
 ];
 
+/*
+ * Chuẩn hóa trạng thái trước khi đem so sánh.
+ * Tránh trường hợp backend / merge code trả:
+ * "xác nhận", "Xác nhận", "Đang xử lý", ...
+ */
+const normalizeStepStatus = (value) => {
+  const status = String(value ?? "").trim().toLowerCase();
+
+  if (status === "mới tạo") {
+    return "Mới tạo";
+  }
+
+  if (
+      status === "xác nhận" ||
+      status === "đã xác nhận" ||
+      status === "chờ đối tác xác nhận"
+  ) {
+    return "Xác nhận";
+  }
+
+  if (status === "đã nhận") {
+    return "Đã nhận";
+  }
+
+  if (
+      status === "xử lý" ||
+      status === "đang xử lý"
+  ) {
+    return "Xử lý";
+  }
+
+  if (status === "đã giao") {
+    return "Đã giao";
+  }
+
+  if (
+      status === "thanh toán" ||
+      status === "chờ thanh toán" ||
+      status === "đã thanh toán"
+  ) {
+    return "Thanh toán";
+  }
+
+  if (status === "hoàn thành") {
+    return "Hoàn thành";
+  }
+
+  return String(value ?? "").trim();
+};
+
 const getStepIndex = (trangThai) => {
-  return STEPS.indexOf(trangThai);
+  return STEPS.indexOf(
+      normalizeStepStatus(trangThai)
+  );
 };
 
 const isStepCompleted = (dh, stepName) => {
-  if (dh.trangThai === "Đã hủy") return false;
+  if (
+      dh.trangThai === "Đã hủy" ||
+      dh.trangThai === "Từ chối" ||
+      dh.trangThai === "Gặp sự cố"
+  ) {
+    return false;
+  }
 
-  const currentIdx = getStepIndex(dh.trangThai);
-  const targetIdx = getStepIndex(stepName);
+  const currentIdx =
+      getStepIndex(dh.trangThai);
 
-  return currentIdx >= 0 && targetIdx < currentIdx;
+  const targetIdx =
+      getStepIndex(stepName);
+
+  return (
+      currentIdx >= 0 &&
+      targetIdx >= 0 &&
+      targetIdx < currentIdx
+  );
 };
 
 const isStepActive = (dh, stepName) => {
-  return dh.trangThai === stepName;
+  return (
+      normalizeStepStatus(dh.trangThai) ===
+      normalizeStepStatus(stepName)
+  );
 };
 
 const isLineCompleted = (dh, targetStep) => {
-  return isStepCompleted(dh, targetStep) || isStepActive(dh, targetStep);
+  return (
+      isStepCompleted(dh, targetStep) ||
+      isStepActive(dh, targetStep)
+  );
 };
 
 const nextStatus = (dh) => {
-  const currentIdx = getStepIndex(dh.trangThai);
+  const currentIdx =
+      getStepIndex(dh.trangThai);
 
   if (
       currentIdx >= 0 &&
@@ -741,14 +813,21 @@ const nextStatus = (dh) => {
 
 // ── Badge class ─────────────────────────────
 const trangThaiBadgeClass = (tt) => {
-  if (tt === "Mới tạo") return "badge-yellow";
-  if (tt === "tác xác nhận") return "badge-pink";
-  if (tt === "Đã nhận") return "badge-blue";
-  if (tt === "Xử lý") return "badge-orange";
-  if (tt === "Đã giao") return "badge-teal";
-  if (tt === "Thanh toán") return "badge-indigo";
-  if (tt === "Hoàn thành") return "badge-green";
-  if (tt === "Đã hủy" || tt === "Từ chối" || tt === "Gặp sự cố") {
+  const status = normalizeStepStatus(tt);
+
+  if (status === "Mới tạo") return "badge-yellow";
+  if (status === "Xác nhận") return "badge-pink";
+  if (status === "Đã nhận") return "badge-blue";
+  if (status === "Xử lý") return "badge-orange";
+  if (status === "Đã giao") return "badge-teal";
+  if (status === "Thanh toán") return "badge-indigo";
+  if (status === "Hoàn thành") return "badge-green";
+
+  if (
+      tt === "Đã hủy" ||
+      tt === "Từ chối" ||
+      tt === "Gặp sự cố"
+  ) {
     return "badge-red";
   }
 

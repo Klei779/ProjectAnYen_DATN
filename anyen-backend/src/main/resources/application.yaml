@@ -99,6 +99,6 @@ chat:
 
 webpush:
   vapid:
-    public-key: ${WEBPUSH_VAPID_PUBLIC_KEY:}
-    private-key: ${WEBPUSH_VAPID_PRIVATE_KEY:}
+    public-key: ${WEBPUSH_VAPID_PUBLIC_KEY:BJhHrzXcmBFYYfz4T2m6hE6fxTEHzxJZS_AZ9Na_ABYK1vF1ViEHJ6kpeh9b-x7l2sgiMPEPWFbaZzsXgDyOSvM}
+    private-key: ${WEBPUSH_VAPID_PRIVATE_KEY:Jy__q5AtjpLeBWA8KjCs_cmIEMP61FDJuO9ljuNAKSI}
     subject: ${WEBPUSH_VAPID_SUBJECT:mailto:admin@anyen.vn}

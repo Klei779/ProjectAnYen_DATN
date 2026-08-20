@@ -76,9 +76,9 @@
           <h2>Dịch vụ của chúng tôi</h2>
 
           <div class="heading-decoration" aria-hidden="true">
-            <span></span>
+
             <img :src="flowerIcon" alt="" />
-            <span></span>
+
           </div>
         </div>
 

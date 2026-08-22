@@ -27,7 +27,7 @@
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
     "sockjs-client": "^1.6.1",
-    "vue": "^3.5.34",
+    "vue": "^3.5.41",
     "vue-router": "^5.1.0",
     "vue-turnstile": "^1.0.11",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"

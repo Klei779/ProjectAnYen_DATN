@@ -53,4 +53,12 @@ public class QuanLyNhanVienController {
     public QuanLyNhanVienResponse nghiViecNhanVien(@PathVariable Integer maNhanVien) {
         return quanLyNhanVienService.nghiViecNhanVien(maNhanVien);
     }
+    @PutMapping("/khoa/{maNhanVien}")
+    public QuanLyNhanVienResponse khoaTaiKhoan(@PathVariable Integer maNhanVien) {
+        return quanLyNhanVienService.khoaTaiKhoan(maNhanVien);
+    }
+    @PutMapping("/mo-khoa/{maNhanVien}")
+    public QuanLyNhanVienResponse moKhoaTaiKhoan(@PathVariable Integer maNhanVien) {
+        return quanLyNhanVienService.moKhoaTaiKhoan(maNhanVien);
+    }
 }

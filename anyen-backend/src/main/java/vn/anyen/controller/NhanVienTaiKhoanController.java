@@ -7,6 +7,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.request.CapNhatTaiKhoanNVRequest;
+import vn.anyen.dto.request.CapNhatViTriRequest;
 import vn.anyen.dto.response.TaiKhoanNhanVienResponse;
 import vn.anyen.service.TaiKhoanNhanVienService;
 
@@ -21,7 +22,10 @@ public class NhanVienTaiKhoanController {
     public TaiKhoanNhanVienResponse getTaiKhoan(Authentication authentication) {
         return taiKhoanNhanVienService.getTaiKhoan(getTenDangNhap(authentication));
     }
-
+@PostMapping("/location")
+public TaiKhoanNhanVienResponse capNhatViTri(Authentication authentication, @RequestBody CapNhatViTriRequest request){
+        return taiKhoanNhanVienService.capNhatViTri(getTenDangNhap(authentication),request);
+}
     @PutMapping("/me")
     public TaiKhoanNhanVienResponse capNhatTaiKhoan(
             Authentication authentication,
@@ -43,4 +47,5 @@ public class NhanVienTaiKhoanController {
 
         return authentication.getName();
     }
+
 }

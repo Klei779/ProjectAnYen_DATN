@@ -117,6 +117,34 @@ public class QuanLyNhanVienService {
         nhanVien.setTrangThai(NhanVien.TRANG_THAI_NGHI_VIEC);
         return mapToResponse(nhanVienRepository.save(nhanVien));
     }
+    @Transactional
+    public QuanLyNhanVienResponse khoaTaiKhoan(Integer maNhanVien) {
+        NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy nhân viên với mã: " + maNhanVien
+                ));
+
+        if (NhanVien.TRANG_THAI_KHOA.equals(nhanVien.getTrangThai())) {
+            throw new RuntimeException("Nhân viên này đã khóa từ trước");
+        }
+
+        nhanVien.setTrangThai(NhanVien.TRANG_THAI_KHOA);
+        return mapToResponse(nhanVienRepository.save(nhanVien));
+    }
+    @Transactional
+    public QuanLyNhanVienResponse moKhoaTaiKhoan(Integer maNhanVien) {
+        NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
+                .orElseThrow(() -> new RuntimeException(
+                        "Không tìm thấy nhân viên với mã: " + maNhanVien
+                ));
+
+        if (NhanVien.TRANG_THAI_HOAT_DONG.equals(nhanVien.getTrangThai())) {
+            throw new RuntimeException("Nhân viên này đã mở khóa");
+        }
+
+        nhanVien.setTrangThai(NhanVien.TRANG_THAI_HOAT_DONG);
+        return mapToResponse(nhanVienRepository.save(nhanVien));
+    }
 
     @Transactional(readOnly = true)
     public List<QuanLyNhanVienResponse> getAllNhanVien() {

@@ -75,32 +75,10 @@ public class DonHangKhachHangService {
     public List<DonHangResponse> taoDonHangKhachHang(
             TaoDonHangRequest request
     ) {
-
-        /*
-         * 1. Validate thông tin khách hàng
-         */
         ThongTinKhachHangInput thongTinKhachHang =
                 validateThongTinKhachHang(request);
-
-
-        /*
-         * 2. Validate toàn bộ sản phẩm.
-         *
-         * Hàm này đã kiểm tra:
-         * - sản phẩm tồn tại
-         * - tồn kho
-         * - giá
-         * - đối tác
-         * - quỹ
-         * - trạng thái sản phẩm
-         */
         List<SanPhamDaKiemTra> sanPhams =
                 validateVaLaySanPham(request);
-
-
-        /*
-         * 3. Tìm nhân viên hệ thống
-         */
         NhanVien nhanVienHeThong = nhanVienRepository
                 .findByTenDangNhap(systemEmployeeUsername)
                 .orElseThrow(() ->
@@ -113,13 +91,6 @@ public class DonHangKhachHangService {
                         )
                 );
 
-
-        /*
-         * 4. Chỉ tạo khách hàng 1 lần.
-         *
-         * Sau đó tất cả các đơn con đều sử dụng
-         * cùng khách hàng này.
-         */
         KhachHang khachHang = taoKhachHang(
                 thongTinKhachHang,
                 request,
@@ -734,6 +705,10 @@ public class DonHangKhachHangService {
                 .phuongXa(thongTin.getPhuongXa())
                 .quanHuyen(thongTin.getQuanHuyen())
                 .tinhThanh(thongTin.getTinhThanh())
+                .diaChi(thongTin.getSoNhaDuong() + ", "
+                        + thongTin.getPhuongXa() + ", "
+                        + thongTin.getQuanHuyen() + ", "
+                        + thongTin.getTinhThanh())
                 .maNhanVienPhuTrach(
                         nhanVien.getMaNhanVien()
                 )

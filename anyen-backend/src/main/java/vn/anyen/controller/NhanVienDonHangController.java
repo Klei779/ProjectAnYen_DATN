@@ -8,13 +8,16 @@ import org.springframework.web.bind.annotation.*;
 import vn.anyen.dto.request.BaoCaoSuCoRequest;
 import vn.anyen.dto.request.CapNhatTrangThaiDonHangRequest;
 import vn.anyen.dto.request.HuyDonHangRequest;
+import vn.anyen.dto.request.SoTienRequest;
 import vn.anyen.dto.request.TaoDonHangRequest;
 import vn.anyen.dto.response.DonHangResponse;
 import vn.anyen.dto.response.NhanVienDeXuatResponse;
+import vn.anyen.dto.response.PayooMockResponse;
 import vn.anyen.dto.response.SanPhamTaoDonHangResponse;
 import vn.anyen.entity.NhanVien;
 import vn.anyen.repository.NhanVienRepository;
 import vn.anyen.service.DonHangService;
+import vn.anyen.service.PayooMockService;
 import vn.anyen.service.SanPhamService;
 
 import java.math.BigDecimal;
@@ -33,6 +36,7 @@ public class NhanVienDonHangController {
     private final DonHangService donHangService;
     private final SanPhamService sanPhamService;
     private final NhanVienRepository nhanVienRepository;
+    private final PayooMockService payooMockService;
 
     @GetMapping
     public ResponseEntity<List<DonHangResponse>> getDonHangCuaToi(
@@ -199,5 +203,17 @@ public class NhanVienDonHangController {
     ) {
         donHangService.giaiQuyetSuCo(maDonHang, authentication);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{maDonHang}/payoo")
+    public ResponseEntity<PayooMockResponse> taoPayooThanhToan(
+            @PathVariable Integer maDonHang,
+            @Valid @RequestBody SoTienRequest request
+    ) {
+        PayooMockResponse response = payooMockService.taoThanhToanDonHang(
+                maDonHang,
+                request.getSoTien()
+        );
+        return ResponseEntity.ok(response);
     }
 }

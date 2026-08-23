@@ -37,6 +37,7 @@ public class HoaDon {
     public static final Integer PT_CHUA_CHON = 0;
     public static final Integer PT_TIEN_MAT = 1;
     public static final Integer PT_CHUYEN_KHOAN = 2;
+    public static final Integer PT_PAYOO = 3;
 
     @Column(name = "PhuongThucThanhToan")
     private Integer phuongThucThanhToan;

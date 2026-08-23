@@ -559,343 +559,165 @@
     }
 }
 
-/* ================================
-   POPUP CHỌN PHƯƠNG THỨC THANH TOÁN
-================================ */
+/* =====================================================
+   POPUP QR PAYOO MOCK
+===================================================== */
 
-.payment-method-content {
-  padding: 4px 0 10px;
-}
-
-.payment-order-info {
-  margin: 0 0 20px;
-  color: #4b5563;
-  font-size: 14px;
+.payoo-box {
+  padding: 4px 15px 20px;
   text-align: center;
 }
 
-.payment-order-info strong {
-  color: #1f2937;
+.payoo-logo {
+  color: #e0202b;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 1px;
 }
 
-.payment-method-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.payoo-sub {
+  margin-top: 2px;
+  color: #899197;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
 }
 
-.payment-method-card {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: #ffffff;
+.payoo-title {
+  margin-top: 23px;
+  color: #3c454a;
+  font-size: 16px;
+}
+
+.payoo-description {
+  margin: 6px 0 16px;
+  color: #777f85;
+  font-size: 13px;
+}
+
+.payoo-qr {
+  width: 250px;
+  max-width: 100%;
+  padding: 10px;
+  border: 2px solid #eee;
+  border-radius: 14px;
   cursor: pointer;
-  text-align: left;
-  transition: 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-.payment-method-card:hover {
-  border-color: #47715d;
-  background: #f7faf8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(71, 113, 93, 0.1);
+.payoo-qr:hover {
+  transform: scale(1.025);
+  border-color: #e0202b;
+  box-shadow: 0 10px 35px rgba(224, 32, 43, 0.15);
 }
 
-.payment-method-icon {
-  width: 46px;
-  height: 46px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: #edf5f0;
-  color: #47715d;
-  font-size: 23px;
-}
-
-.payment-method-text {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.payment-method-text strong {
-  color: #1f2937;
-  font-size: 15px;
-}
-
-.payment-method-text span {
-  color: #6b7280;
+.qr-hint {
+  margin-top: 9px;
+  color: #e0202b;
   font-size: 13px;
-  line-height: 1.4;
+  font-weight: 700;
 }
 
-/* ================================
-   POPUP QR
-================================ */
-
-.qr-payment-content {
-  text-align: center;
-}
-
-.qr-payment-content > p {
-  margin: 0;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.payment-qr-image {
-  display: block;
-  width: 100%;
-  max-width: 290px;
-  margin: 18px auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-}
-
-.bank-payment-info {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 10px;
-  background: #f7f8f7;
-  text-align: left;
-}
-
-.bank-payment-info > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.bank-payment-info span {
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.bank-payment-info strong {
-  color: #1f2937;
-  font-size: 14px;
-}
-
-/* ================================
-   XÁC NHẬN TIỀN MẶT
-================================ */
-
-.cash-confirm-content {
-  text-align: center;
-  padding: 8px 0;
-}
-
-.cash-confirm-icon {
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #edf5f0;
-  color: #47715d;
-  font-size: 28px;
-}
-
-.cash-confirm-content p {
-  margin: 0;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.cash-payment-total {
+.payoo-amount {
   margin-top: 18px;
-  padding: 14px;
+  color: #8a1023;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.payoo-code {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  color: #7d858a;
+  font-size: 11px;
+}
+
+.payoo-code strong {
+  color: #555e64;
+  font-family: monospace;
+  overflow-wrap: anywhere;
+}
+
+.mock-note {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-radius: 10px;
-  background: #f7f8f7;
-}
-
-.cash-payment-total span {
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.cash-payment-total strong {
-  color: #47715d;
-  font-size: 17px;
-}
-
-@media (max-width: 576px) {
-  .payment-method-card {
-    padding: 13px;
-  }
-
-  .payment-method-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-  }
-
-  .payment-method-text strong {
-    font-size: 14px;
-  }
-
-  .payment-method-text span {
-    font-size: 12px;
-  }
-
-  .payment-qr-image {
-    max-width: 240px;
-  }
-}
-
-/* ── Payment Dialog Styles ── */
-.payment-dialog-content {
-  padding: 20px 0;
-}
-
-.payment-info {
-  margin-bottom: 20px;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.payment-methods {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.payment-method-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: #fff;
-}
-
-.payment-method-card:hover {
-  border-color: #10b981;
-  background: #f0fdf4;
-}
-
-.payment-method-card.selected {
-  border-color: #10b981;
-  background: #ecfdf5;
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-}
-
-.payment-icon {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 10px;
-  background: #f3f4f6;
-  color: #6b7280;
-  font-size: 24px;
-}
-
-.payment-method-card.selected .payment-icon {
-  background: #10b981;
-  color: #fff;
-}
-
-.payment-details h4 {
-  margin: 0 0 4px 0;
-  color: #1f2937;
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.payment-details p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-/* ── Transfer Dialog Styles ── */
-.transfer-dialog-content {
-  padding: 20px 0;
-}
-
-.transfer-info {
-  margin-bottom: 20px;
-  color: #4b5563;
-  font-size: 14px;
-  line-height: 1.6;
-}
-
-.qr-section {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 24px;
-}
-
-.qr-placeholder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 24px;
-  border: 2px dashed #e5e7eb;
-  border-radius: 12px;
-  background: #f9fafb;
-}
-
-.qr-placeholder .el-icon {
-  color: #9ca3af;
-}
-
-.qr-placeholder p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.bank-info {
-  padding: 16px;
-  background: #f3f4f6;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 11px;
   border-radius: 8px;
+  background: #fff8e9;
+  color: #826c3d;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
 }
 
-.bank-info p {
-  margin: 8px 0;
-  color: #4b5563;
-  font-size: 14px;
+/* =====================================================
+   PROCESS
+===================================================== */
+
+.processing-state {
+  padding: 45px 10px 30px;
 }
 
-.bank-info b {
-  color: #1f2937;
-  font-weight: 600;
+.processing-state > i {
+  color: #e0202b;
+  font-size: 50px;
 }
 
-.order-code {
-  margin-top: 12px;
-  color: #6b7280;
+.processing-state h3 {
+  margin: 18px 0 7px;
+  color: #3c454a;
+  font-size: 18px;
+}
+
+.processing-state p {
+  color: #7c8489;
   font-size: 13px;
-  font-weight: 500;
 }
 
-.payment-qr-image {
-  max-width: 300px;
-  border-radius: 8px;
-  margin: 0 auto;
+.processing-state strong {
   display: block;
+  margin-top: 13px;
+  color: #8a1023;
+  font-size: 22px;
+}
+
+/* =====================================================
+   SUCCESS
+===================================================== */
+
+.success-state {
+  padding: 40px 10px 25px;
+}
+
+.success-state > i {
+  color: #259c55;
+  font-size: 65px;
+}
+
+.success-state h3 {
+  margin: 16px 0 10px;
+  color: #259c55;
+  font-size: 18px;
+}
+
+.success-state > strong {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 24px;
+  color: #1f2937;
+}
+
+.success-state p {
+  max-width: 300px;
+  margin: 0 auto 12px;
+  color: #747c81;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.success-state small {
+  color: #949a9e;
+  font-family: monospace;
 }

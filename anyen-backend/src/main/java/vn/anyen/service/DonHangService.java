@@ -262,6 +262,10 @@ public class DonHangService {
                 .cccd(request.getCccd())
                 .email(request.getEmail())
                 .diaChi(request.getDiaChi())
+                .soNhaDuong(request.getSoNhaDuong())
+                .phuongXa(request.getPhuongXa())
+                .quanHuyen(request.getQuanHuyen())
+                .tinhThanh(request.getTinhThanh())
                 .maNhanVienPhuTrach(nhanVien.getMaNhanVien())
                 .ngayDangKy(LocalDateTime.now())
                 .nguonDangKy("Tạo từ đơn hàng")
@@ -323,6 +327,18 @@ public class DonHangService {
         khachHang.setCccd(request.getCccd());
         khachHang.setEmail(request.getEmail());
         khachHang.setDiaChi(request.getDiaChi());
+        if (request.getSoNhaDuong() != null) {
+            khachHang.setSoNhaDuong(request.getSoNhaDuong().trim());
+        }
+        if (request.getPhuongXa() != null) {
+            khachHang.setPhuongXa(request.getPhuongXa().trim());
+        }
+        if (request.getQuanHuyen() != null) {
+            khachHang.setQuanHuyen(request.getQuanHuyen().trim());
+        }
+        if (request.getTinhThanh() != null) {
+            khachHang.setTinhThanh(request.getTinhThanh().trim());
+        }
     }
 
     private List<ChiTietDonHang> hoanTonKhoVaXoaChiTietCu(DonHang donHang) {

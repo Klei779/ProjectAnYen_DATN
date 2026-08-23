@@ -52,6 +52,7 @@ public class DonHang {
     public static final Integer PT_CHUA_CHON = 0;
     public static final Integer PT_TIEN_MAT = 1;
     public static final Integer PT_CHUYEN_KHOAN = 2;
+    public static final Integer PT_PAYOO = 3;
 
     public static final Integer TTTT_CHUA_THANH_TOAN = 0;
     public static final Integer TTTT_DA_THANH_TOAN = 1;

@@ -10,8 +10,10 @@ import vn.anyen.entity.*;
 import vn.anyen.repository.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -29,6 +31,15 @@ public class PayooMockService {
 
     private final LichSuCongNoRepository
             lichSuCongNoRepository;
+
+    private final DonHangRepository
+            donHangRepository;
+
+    private final DonHangService
+            donHangService;
+
+    private final HoaDonRepository
+            hoaDonRepository;
 
 
     // =================================================
@@ -339,6 +350,62 @@ public class PayooMockService {
 
 
     // =================================================
+    // THANH TOÁN ĐƠN HÀNG
+    // =================================================
+
+    @Transactional
+    public PayooMockResponse taoThanhToanDonHang(
+            Integer maDonHang,
+            BigDecimal soTien
+    ) {
+
+        validateSoTien(soTien);
+
+        DonHang donHang =
+                donHangRepository
+                        .findById(maDonHang)
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Không tìm thấy đơn hàng #" + maDonHang
+                                )
+                        );
+
+        if (
+                DonHang.TT_HOAN_THANH
+                        .equals(
+                                donHang.getTrangThai()
+                        )
+        ) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Đơn hàng đã hoàn thành trước đó"
+            );
+        }
+
+        PayooMockTransaction tx =
+                taoGiaoDich(
+                        PayooMockTransaction
+                                .LOAI_THANH_TOAN_DON_HANG,
+
+                        null,
+
+                        null,
+
+                        maDonHang,
+
+                        soTien,
+
+                        "Thanh toán đơn hàng #"
+                                + (donHang.getMaDonHang())
+                                + " qua Payoo Mock"
+                );
+
+        return map(tx);
+    }
+
+
+    // =================================================
     // XEM GIAO DỊCH
     // =================================================
 
@@ -445,6 +512,11 @@ public class PayooMockService {
             case PayooMockTransaction
                          .LOAI_THANH_TOAN_CONG_NO
                     -> xuLyCongNo(tx);
+
+
+            case PayooMockTransaction
+                         .LOAI_THANH_TOAN_DON_HANG
+                    -> xuLyDonHang(tx);
 
 
             default ->
@@ -758,6 +830,60 @@ public class PayooMockService {
 
 
     // =================================================
+    // CALLBACK THANH TOÁN ĐƠN HÀNG
+    // =================================================
+
+    private void xuLyDonHang(
+            PayooMockTransaction tx
+    ) {
+
+        if (tx.getMaDonHang() == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Giao dịch không có mã đơn hàng"
+            );
+        }
+
+        DonHang donHang =
+                donHangRepository
+                        .findById(tx.getMaDonHang())
+                        .orElseThrow(() ->
+                                new ResponseStatusException(
+                                        HttpStatus.NOT_FOUND,
+                                        "Không tìm thấy đơn hàng #" + tx.getMaDonHang()
+                                )
+                        );
+
+        // Thiết lập phương thức thanh toán Payoo
+        donHang.setPhuongThucThanhToan(DonHang.PT_PAYOO);
+        donHangRepository.save(donHang);
+
+        // Cập nhật trạng thái sang Hoàn thành (quyết toán Quỹ, tạo công nợ và thông báo)
+        donHangService.capNhatTrangThai(
+                donHang.getMaDonHang(),
+                DonHang.TT_HOAN_THANH
+        );
+
+        // Tự động tạo hóa đơn nếu chưa có
+        List<HoaDon> hoaDons = hoaDonRepository.findAll();
+        boolean daCoHoaDon = hoaDons.stream()
+                .anyMatch(hd -> hd.getDonHang() != null && hd.getDonHang().getMaDonHang().equals(donHang.getMaDonHang()));
+
+        if (!daCoHoaDon) {
+            HoaDon hoaDon = HoaDon.builder()
+                    .donHang(donHang)
+                    .ngayIn(LocalDate.now())
+                    .tongTien(tx.getSoTien())
+                    .phuongThucThanhToan(HoaDon.PT_PAYOO)
+                    .trangThai(HoaDon.TT_DA_TAO)
+                    .build();
+
+            hoaDonRepository.save(hoaDon);
+        }
+    }
+
+
+    // =================================================
     // TẠO MÃ GIAO DỊCH
     // =================================================
 
@@ -765,6 +891,17 @@ public class PayooMockService {
             String loai,
             Integer maDoiTac,
             Integer maCongNo,
+            BigDecimal soTien,
+            String noiDung
+    ) {
+        return taoGiaoDich(loai, maDoiTac, maCongNo, null, soTien, noiDung);
+    }
+
+    private PayooMockTransaction taoGiaoDich(
+            String loai,
+            Integer maDoiTac,
+            Integer maCongNo,
+            Integer maDonHang,
             BigDecimal soTien,
             String noiDung
     ) {
@@ -788,6 +925,9 @@ public class PayooMockService {
 
                     case PayooMockTransaction.LOAI_THANH_TOAN_CONG_NO ->
                             "PAYOO-CN";
+
+                    case PayooMockTransaction.LOAI_THANH_TOAN_DON_HANG ->
+                            "PAYOO-DH";
 
                     default ->
                             "PAYOO";
@@ -836,6 +976,10 @@ public class PayooMockService {
 
                         .maCongNo(
                                 maCongNo
+                        )
+
+                        .maDonHang(
+                                maDonHang
                         )
 
                         .soTien(
@@ -967,6 +1111,10 @@ public class PayooMockService {
 
                 .maCongNo(
                         tx.getMaCongNo()
+                )
+
+                .maDonHang(
+                        tx.getMaDonHang()
                 )
 
                 .soTien(

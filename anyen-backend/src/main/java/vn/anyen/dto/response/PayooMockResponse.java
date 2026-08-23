@@ -20,6 +20,8 @@ public class PayooMockResponse {
 
     private Integer maCongNo;
 
+    private Integer maDonHang;
+
     private BigDecimal soTien;
 
     private Integer trangThai;

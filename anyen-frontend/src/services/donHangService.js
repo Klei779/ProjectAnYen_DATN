@@ -20,6 +20,7 @@ const PAYMENT_METHOD_LABELS = Object.freeze({
   0: "Chưa chọn",
   1: "Tiền mặt",
   2: "Chuyển khoản",
+  3: "Payoo Mock",
 });
 
 const PAYMENT_STATUS_LABELS = Object.freeze({
@@ -209,7 +210,7 @@ export async function getSanPhamTaoDonHang() {
 }
 
 export async function getKhachHangTaoDonHang() {
-  const response = await api.get("/api/nhan-vien/khach-hang");
+  const response = await api.get("/api/nhan-vien/khach-hang?all=true");
   return response.data?.items || response.data || [];
 }
 
@@ -231,6 +232,13 @@ export async function capNhatTrangThai(maDonHang, trangThai) {
 export async function getChiTietDonHang(maDonHang) {
   const response = await api.get(`/api/don-hang/${maDonHang}/chi-tiet`);
   return response.data || [];
+}
+
+export async function taoPayooDonHang(maDonHang, soTien) {
+  const response = await api.post(`${API_URL}/${maDonHang}/payoo`, {
+    soTien: Number(soTien),
+  });
+  return response.data;
 }
 
 export function formatCurrency(value) {

@@ -18,6 +18,10 @@ public class KhachHangRequest {
 
     private String cccd;
     private String diaChi;
+    private String soNhaDuong;
+    private String phuongXa;
+    private String quanHuyen;
+    private String tinhThanh;
 
     @Email(message = "Email không đúng định dạng")
     private String email;

@@ -19,41 +19,34 @@
             Thông tin khách hàng
           </div>
 
-          <div class="form-group autocomplete-wrap">
-            <label>Tên / SĐT khách hàng <span>*</span></label>
-            <input
-                v-model="customerKeyword"
-                type="text"
-                placeholder="Nhập tên hoặc số điện thoại khách hàng"
-                @input="handleCustomerKeywordInput"
-            />
-
-            <div
-                v-if="showCustomerSuggestions && customerSuggestions.length > 0"
-                class="suggestion-box"
-            >
-              <div
-                  v-for="kh in customerSuggestions"
-                  :key="kh.maKhachHang"
-                  class="suggestion-item"
-                  @click="selectCustomer(kh)"
-              >
-                <strong>{{ kh.tenKhachHang }}</strong>
-                <span> — {{ kh.soDienThoai }}</span>
-                <small> — {{ kh.diaChi }}</small>
-              </div>
-            </div>
-          </div>
-
           <div class="form-row-2">
-            <div class="form-group">
+            <div class="form-group autocomplete-wrap">
               <label>Tên khách hàng <span>*</span></label>
               <input
                   v-model="form.tenKhachHang"
                   type="text"
-                  maxlength="30"
-                  placeholder="Tối đa 30 ký tự"
+                  maxlength="50"
+                  placeholder="Nhập tên khách hàng"
+                  autocomplete="off"
+                  @input="handleCustomerNameInput"
+                  @focus="handleCustomerNameFocus"
               />
+
+              <div
+                  v-if="showCustomerSuggestions && customerSuggestions.length > 0"
+                  class="suggestion-box"
+              >
+                <div
+                    v-for="kh in customerSuggestions"
+                    :key="kh.maKhachHang"
+                    class="suggestion-item"
+                    @mousedown.prevent="selectCustomer(kh)"
+                >
+                  <strong>{{ kh.tenKhachHang }}</strong>
+                  <span v-if="kh.soDienThoai"> — {{ kh.soDienThoai }}</span>
+                  <small v-if="getCustomerAddressSummary(kh)"> — {{ getCustomerAddressSummary(kh) }}</small>
+                </div>
+              </div>
             </div>
 
             <div class="form-group">
@@ -86,19 +79,55 @@
               <label>Email</label>
               <input
                   v-model="form.email"
-                  type="text"
+                  type="email"
+                  maxlength="100"
                   placeholder="Nhập email"
               />
             </div>
           </div>
 
+          <!-- SỐ NHÀ, TÊN ĐƯỜNG -->
           <div class="form-group">
-            <label>Địa chỉ</label>
+            <label>Số nhà, tên đường</label>
             <input
-                v-model="form.diaChi"
+                v-model="form.soNhaDuong"
                 type="text"
-                maxlength="40"
-                placeholder="Tối đa 40 ký tự"
+                maxlength="255"
+                placeholder="Ví dụ: 123 Nguyễn Văn Linh"
+            />
+          </div>
+
+          <!-- PHƯỜNG/XÃ & QUẬN/HUYỆN -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>Phường/Xã</label>
+              <input
+                  v-model="form.phuongXa"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Ví dụ: Phường Tân Phong"
+              />
+            </div>
+
+            <div class="form-group">
+              <label>Quận/Huyện</label>
+              <input
+                  v-model="form.quanHuyen"
+                  type="text"
+                  maxlength="100"
+                  placeholder="Ví dụ: Quận 7"
+              />
+            </div>
+          </div>
+
+          <!-- TỈNH/THÀNH PHỐ -->
+          <div class="form-group">
+            <label>Tỉnh/Thành phố</label>
+            <input
+                v-model="form.tinhThanh"
+                type="text"
+                maxlength="100"
+                placeholder="Ví dụ: Thành phố Hồ Chí Minh"
             />
           </div>
         </div>
@@ -389,7 +418,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 import {
   getKhachHangTaoDonHang,
   getSanPhamTaoDonHang
@@ -413,7 +442,6 @@ const allCustomers = ref([]);
 const productLoading = ref(false);
 const productError = ref("");
 
-const customerKeyword = ref("");
 const showCustomerSuggestions = ref(false);
 
 const showProductModal = ref(false);
@@ -440,6 +468,10 @@ const form = ref({
   soDienThoai: "",
   cccd: "",
   email: "",
+  soNhaDuong: "",
+  phuongXa: "",
+  quanHuyen: "",
+  tinhThanh: "",
   diaChi: "",
   nhanVienPhuTrach: tenNhanVienDangNhap,
   ngayTaoDon: today,
@@ -532,7 +564,31 @@ function normalizeCustomer(kh) {
     cccd: onlyDigits(kh.cccd ?? kh.CCCD ?? "").slice(0, 12),
     email: kh.email ?? kh.Email ?? "",
     diaChi: kh.diaChi ?? kh.DiaChi ?? "",
+    soNhaDuong: kh.soNhaDuong ?? kh.SoNhaDuong ?? "",
+    phuongXa: kh.phuongXa ?? kh.PhuongXa ?? "",
+    quanHuyen: kh.quanHuyen ?? kh.QuanHuyen ?? "",
+    tinhThanh: kh.tinhThanh ?? kh.TinhThanh ?? "",
   };
+}
+
+function getCustomerAddressSummary(kh) {
+  const parts = [kh.soNhaDuong, kh.phuongXa, kh.quanHuyen, kh.tinhThanh]
+    .map(s => String(s || "").trim())
+    .filter(Boolean);
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+  return kh.diaChi || "";
+}
+
+function formatFullAddress(soNhaDuong, phuongXa, quanHuyen, tinhThanh, fallbackDiaChi = "") {
+  const parts = [soNhaDuong, phuongXa, quanHuyen, tinhThanh]
+    .map(s => String(s || "").trim())
+    .filter(Boolean);
+  if (parts.length > 0) {
+    return parts.join(", ");
+  }
+  return String(fallbackDiaChi || "").trim();
 }
 
 function rebuildPartners() {
@@ -571,37 +627,71 @@ async function loadProductsFromDatabase() {
   }
 }
 
+function removeVietnameseTones(str = "") {
+  return String(str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D")
+    .toLowerCase()
+    .trim();
+}
+
 async function loadCustomersFromDatabase() {
   try {
     const data = await getKhachHangTaoDonHang();
-
-    allCustomers.value = (data || []).map(normalizeCustomer);
+    const list = Array.isArray(data) ? data : (data?.items || data?.content || []);
+    allCustomers.value = list.map(normalizeCustomer);
+    console.log("Đã tải danh sách khách hàng:", allCustomers.value.length, allCustomers.value);
   } catch (error) {
     console.error("Lỗi tải danh sách khách hàng:", error);
-
     allCustomers.value = [];
+  }
+}
+
+function handleWindowClick(event) {
+  const target = event.target;
+  if (!target || !target.closest || !target.closest(".autocomplete-wrap")) {
+    showCustomerSuggestions.value = false;
   }
 }
 
 onMounted(() => {
   loadProductsFromDatabase();
   loadCustomersFromDatabase();
+  window.addEventListener("click", handleWindowClick);
+});
+
+onUnmounted(() => {
+  window.removeEventListener("click", handleWindowClick);
 });
 
 const customerSuggestions = computed(() => {
-  const keyword = customerKeyword.value.trim().toLowerCase();
+  const rawKeyword = String(form.value.tenKhachHang || "").trim();
+  if (!rawKeyword) return [];
 
-  if (!keyword) return [];
+  const keywordNormalized = removeVietnameseTones(rawKeyword);
+  const keywordLower = rawKeyword.toLowerCase();
 
   return allCustomers.value
       .filter((kh) => {
-        const ten = String(kh.tenKhachHang || "").toLowerCase();
-        const sdt = String(kh.soDienThoai || "");
-        const cccd = String(kh.cccd || "");
+        const rawTen = String(kh.tenKhachHang || "");
+        const rawSdt = String(kh.soDienThoai || "");
+        const rawCccd = String(kh.cccd || "");
 
-        return ten.includes(keyword) || sdt.includes(keyword) || cccd.includes(keyword);
+        const tenNormalized = removeVietnameseTones(rawTen);
+        const sdtNormalized = rawSdt.toLowerCase();
+        const cccdNormalized = rawCccd.toLowerCase();
+
+        return (
+          rawTen.toLowerCase().includes(keywordLower) ||
+          tenNormalized.includes(keywordNormalized) ||
+          sdtNormalized.includes(keywordLower) ||
+          sdtNormalized.includes(keywordNormalized) ||
+          cccdNormalized.includes(keywordLower)
+        );
       })
-      .slice(0, 5);
+      .slice(0, 8);
 });
 
 const filteredPartnerProducts = computed(() => {
@@ -670,11 +760,15 @@ function formatMoney(value) {
   return new Intl.NumberFormat("vi-VN").format(value || 0) + " ₫";
 }
 
-function handleCustomerKeywordInput() {
+function handleCustomerNameInput() {
   form.value.maKhachHang = null;
-  form.value.tenKhachHang = customerKeyword.value;
+  showCustomerSuggestions.value = String(form.value.tenKhachHang || "").trim().length > 0;
+}
 
-  showCustomerSuggestions.value = customerKeyword.value.trim().length > 0;
+function handleCustomerNameFocus() {
+  if (String(form.value.tenKhachHang || "").trim().length > 0) {
+    showCustomerSuggestions.value = true;
+  }
 }
 
 function selectCustomer(kh) {
@@ -683,9 +777,12 @@ function selectCustomer(kh) {
   form.value.soDienThoai = normalizeVietnamPhone(kh.soDienThoai || "").slice(0, 10);
   form.value.cccd = onlyDigits(kh.cccd || "").slice(0, 12);
   form.value.email = kh.email || "";
-  form.value.diaChi = kh.diaChi || "";
+  form.value.soNhaDuong = kh.soNhaDuong || "";
+  form.value.phuongXa = kh.phuongXa || "";
+  form.value.quanHuyen = kh.quanHuyen || "";
+  form.value.tinhThanh = kh.tinhThanh || "";
+  form.value.diaChi = kh.diaChi || formatFullAddress(kh.soNhaDuong, kh.phuongXa, kh.quanHuyen, kh.tinhThanh);
 
-  customerKeyword.value = kh.tenKhachHang || "";
   showCustomerSuggestions.value = false;
 }
 
@@ -828,7 +925,17 @@ function submitOrder() {
   form.value.soDienThoai = normalizeVietnamPhone(form.value.soDienThoai).slice(0, 10);
   form.value.cccd = onlyDigits(form.value.cccd).slice(0, 12);
   form.value.email = String(form.value.email || "").trim();
-  form.value.diaChi = String(form.value.diaChi || "").trim();
+  form.value.soNhaDuong = String(form.value.soNhaDuong || "").trim();
+  form.value.phuongXa = String(form.value.phuongXa || "").trim();
+  form.value.quanHuyen = String(form.value.quanHuyen || "").trim();
+  form.value.tinhThanh = String(form.value.tinhThanh || "").trim();
+  form.value.diaChi = formatFullAddress(
+    form.value.soNhaDuong,
+    form.value.phuongXa,
+    form.value.quanHuyen,
+    form.value.tinhThanh,
+    form.value.diaChi
+  );
   form.value.ghiChu = String(form.value.ghiChu || "").trim();
 
   if (!form.value.tenKhachHang) {
@@ -836,8 +943,8 @@ function submitOrder() {
     return;
   }
 
-  if (form.value.tenKhachHang.length > 30) {
-    alert("Tên khách hàng tối đa 30 ký tự");
+  if (form.value.tenKhachHang.length > 50) {
+    alert("Tên khách hàng tối đa 50 ký tự");
     return;
   }
 
@@ -856,8 +963,28 @@ function submitOrder() {
     return;
   }
 
-  if (form.value.diaChi && form.value.diaChi.length > 40) {
-    alert("Địa chỉ tối đa 40 ký tự");
+  if (form.value.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.value.email)) {
+    alert("Email không đúng định dạng");
+    return;
+  }
+
+  if (form.value.soNhaDuong && form.value.soNhaDuong.length > 255) {
+    alert("Số nhà, tên đường không được vượt quá 255 ký tự");
+    return;
+  }
+
+  if (form.value.phuongXa && form.value.phuongXa.length > 100) {
+    alert("Phường/Xã không được vượt quá 100 ký tự");
+    return;
+  }
+
+  if (form.value.quanHuyen && form.value.quanHuyen.length > 100) {
+    alert("Quận/Huyện không được vượt quá 100 ký tự");
+    return;
+  }
+
+  if (form.value.tinhThanh && form.value.tinhThanh.length > 100) {
+    alert("Tỉnh/Thành phố không được vượt quá 100 ký tự");
     return;
   }
 

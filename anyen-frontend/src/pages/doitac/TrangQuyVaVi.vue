@@ -472,7 +472,7 @@
         </div>
 
         <div class="payoo-sub">
-          CỔNG THANH TOÁN MÔ PHỎNG
+          CỔNG THANH TOÁN TRỰC TUYẾN
         </div>
 
 
@@ -486,7 +486,7 @@
           </h3>
 
           <p class="payoo-description">
-            Nhấn vào QR để giả lập Payoo nhận tiền.
+            Quét mã QR hoặc nhấn vào mã để thanh toán.
           </p>
 
 
@@ -525,14 +525,6 @@
                 currentTransaction?.maGiaoDich
               }}
             </strong>
-          </div>
-
-
-          <div class="mock-note">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-
-            Đây là Payoo giả lập phục vụ demo đồ án.
-            Không phát sinh giao dịch thật.
           </div>
 
         </template>

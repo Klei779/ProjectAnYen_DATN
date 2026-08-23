@@ -31,6 +31,9 @@ public class PayooMockTransaction {
     public static final String LOAI_THANH_TOAN_CONG_NO =
             "THANH_TOAN_CONG_NO";
 
+    public static final String LOAI_THANH_TOAN_DON_HANG =
+            "THANH_TOAN_DON_HANG";
+
 
     // =========================
     // TRẠNG THÁI
@@ -67,6 +70,10 @@ public class PayooMockTransaction {
 
     @Column(name = "MaCongNo")
     private Integer maCongNo;
+
+
+    @Column(name = "MaDonHang")
+    private Integer maDonHang;
 
 
     @Column(

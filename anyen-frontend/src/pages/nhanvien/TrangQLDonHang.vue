@@ -3,6 +3,7 @@ import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import QRCode from "qrcode";
 
 import PopTaoDonHang from "./PopTaoDonHang.vue";
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
@@ -18,7 +19,9 @@ import {
   formatDate,
   formatCurrency,
   getTrangThaiDonHangText,
+  taoPayooDonHang,
 } from "../../services/donHangService.js";
+import { confirmPayooTransaction } from "../../services/payooMockService.js";
 import api from "../../api/api.js";
 
 import {
@@ -42,11 +45,13 @@ const showCreateOrder = ref(false);
 const showChiTiet = ref(false);
 const selectedDonHang = ref(null);
 
-const showPaymentDialog = ref(false);
-const showCashConfirmDialog = ref(false);
-const showTransferDialog = ref(false);
+// ── Trạng thái Payoo Mock ─────────────────────────
+const showPayooDialog = ref(false);
+const payooStatus = ref("waiting"); // waiting | processing | success
+const payooQrImage = ref("");
+const currentPayooTransaction = ref(null);
+const payooSubmitting = ref(false);
 const selectedOrderForPayment = ref(null);
-const selectedPaymentMethod = ref(null);
 
 const showTaoHoaDon = ref(false);
 const selectedDonHangHoaDon = ref(null);
@@ -87,22 +92,6 @@ const loadDonHangs = async () => {
     loading.value = false;
   }
 };
-
-// ── Cấu hình tài khoản nhận tiền ─────────────────────────────
-// VPBank có BIN/NAPAS ID là 970432.
-// Quick Link VietQR sẽ tạo mã QR chuyển khoản thật để ứng dụng ngân hàng quét.
-const BANK_CONFIG = Object.freeze({
-  bankId: "970432",
-  bankName: "VPBank",
-  accountNumber: "140213032008",
-
-  // Chỉ điền khi đây đúng chính xác tên chủ tài khoản tại ngân hàng.
-  // Để trống vẫn quét và chuyển khoản bình thường; app ngân hàng sẽ
-  // tự tra cứu và hiển thị tên người nhận thật trước khi xác nhận.
-  accountName: "",
-});
-
-const qrLoadFailed = ref(false);
 
 const getOrderCode = (order) => {
   return String(
@@ -146,71 +135,6 @@ const getOrderAmount = (order) => {
   return Number.isFinite(amount)
       ? Math.max(0, Math.round(amount))
       : 0;
-};
-
-const toTransferText = (value) => {
-  return String(value ?? "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .replace(/Đ/g, "D")
-      .replace(/đ/g, "d")
-      .replace(/[^a-zA-Z0-9 ]/g, " ")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toUpperCase()
-      .slice(0, 50);
-};
-
-const transferContent = computed(() => {
-  const orderCode = getOrderCode(selectedOrderForPayment.value);
-
-  return toTransferText(
-      orderCode
-          ? `THANH TOAN DON ${orderCode}`
-          : "THANH TOAN DON HANG"
-  );
-});
-
-const qrPaymentUrl = computed(() => {
-  const order = selectedOrderForPayment.value;
-
-  if (!order) return "";
-
-  const amount = getOrderAmount(order);
-
-  if (amount <= 0) return "";
-
-  const params = new URLSearchParams({
-    amount: String(amount),
-    addInfo: transferContent.value,
-  });
-
-  if (BANK_CONFIG.accountName.trim()) {
-    params.set("accountName", BANK_CONFIG.accountName.trim());
-  }
-
-  return (
-      `https://img.vietqr.io/image/` +
-      `${BANK_CONFIG.bankId}-${BANK_CONFIG.accountNumber}-compact2.png?` +
-      params.toString()
-  );
-});
-
-const handleQrLoad = () => {
-  qrLoadFailed.value = false;
-};
-
-const handleQrError = (event) => {
-  qrLoadFailed.value = true;
-
-  console.error(
-      "Không tải được ảnh VietQR:",
-      event?.target?.src
-  );
-
-  ElMessage.error(
-      "Không tải được mã VietQR. Hãy kiểm tra kết nối Internet và thử lại."
-  );
 };
 
 let stompClient = null;
@@ -881,179 +805,101 @@ const doUpdateStatus = async (dh, next) => {
   }
 };
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const resetPayoo = () => {
+  payooStatus.value = "waiting";
+  payooQrImage.value = "";
+  currentPayooTransaction.value = null;
+  selectedOrderForPayment.value = null;
+  payooSubmitting.value = false;
+};
+
 const updateNextStatus = async (dh) => {
   const next = nextStatus(dh);
 
   if (!next) return;
 
-  if (dh.trangThai === "Thanh toán") {
-    if (dh.phuongThucThanhToan === "Chuyển khoản") {
-      selectedOrderForPayment.value = dh;
-      showPaymentDialog.value = true;
-      return;
-    }
-
-    if (dh.phuongThucThanhToan === "Tiền mặt") {
-      selectedOrderForPayment.value = dh;
-      showCashConfirmDialog.value = true;
-      return;
-    }
+  if (dh.trangThai === "Đã giao" || dh.trangThai === "Thanh toán") {
+    await openPaymentDialog(dh);
+    return;
   }
 
   await doUpdateStatus(dh, next);
 };
 
-const confirmPayment = async () => {
-  if (!selectedOrderForPayment.value) return;
-
-  const order = selectedOrderForPayment.value;
-
-  await doUpdateStatus(order, "Hoàn thành");
-
-  await loadDonHangs();
-
-  const donMoi = donHangs.value.find(
-      x => getMaDonHang(x) === getMaDonHang(order)
-  );
-
-  showPaymentDialog.value = false;
-  selectedOrderForPayment.value = null;
-
-  if (donMoi) {
-    xemHoaDon(donMoi);
-  }
-};
-
-const confirmCashPayment = async () => {
-  if (!selectedOrderForPayment.value) return;
-
-  const order = selectedOrderForPayment.value;
-
-  const updated = await doUpdateStatus(order, "Hoàn thành");
-
-  if (!updated) {
-    return;
-  }
-
-  const invoiceCreated = await createInvoiceForOrder(order, 1);
-
-  if (!invoiceCreated) {
-    return;
-  }
-
-  await loadDonHangs();
-
-  showCashConfirmDialog.value = false;
-  selectedOrderForPayment.value = null;
-  selectedPaymentMethod.value = null;
-
-  ElMessage.success(
-      "Đơn hàng đã hoàn thành và hóa đơn tiền mặt đã được tạo."
-  );
-};
-
-const confirmTransferPayment = async () => {
-  if (!selectedOrderForPayment.value) return;
-
-  const order = selectedOrderForPayment.value;
-
-  const updated = await doUpdateStatus(order, "Hoàn thành");
-
-  if (!updated) {
-    return;
-  }
-
-  const invoiceCreated = await createInvoiceForOrder(order, 2);
-
-  if (!invoiceCreated) {
-    return;
-  }
-
-  await loadDonHangs();
-
-  showTransferDialog.value = false;
-  selectedOrderForPayment.value = null;
-  selectedPaymentMethod.value = null;
-
-  ElMessage.success(
-      "Đơn hàng đã hoàn thành và hóa đơn chuyển khoản đã được tạo."
-  );
-};
-
-const openPaymentDialog = (dh) => {
+const openPaymentDialog = async (dh) => {
   selectedOrderForPayment.value = dh;
-  selectedPaymentMethod.value = null;
-  qrLoadFailed.value = false;
-  showPaymentDialog.value = true;
-};
+  const amount = getOrderAmount(dh);
 
-const confirmPaymentMethod = async () => {
-  if (!selectedPaymentMethod.value) {
-    ElMessage.warning("Vui lòng chọn phương thức thanh toán");
+  if (amount < 1000) {
+    ElMessage.warning("Số tiền đơn hàng tối thiểu là 1.000đ để thanh toán qua Payoo");
     return;
   }
 
-  const order = selectedOrderForPayment.value;
-
-  if (!order) {
-    ElMessage.error("Không tìm thấy dữ liệu đơn hàng");
-    return;
-  }
-
-  if (
-      selectedPaymentMethod.value === "TRANSFER" &&
-      getOrderAmount(order) <= 0
-  ) {
-    ElMessage.error(
-        "Tổng tiền đơn hàng không hợp lệ nên chưa thể tạo mã VietQR"
-    );
-    return;
-  }
-
-  showPaymentDialog.value = false;
-  await nextTick();
-
-  if (selectedPaymentMethod.value === "COD") {
-    showCashConfirmDialog.value = true;
-    return;
-  }
-
-  qrLoadFailed.value = false;
-  showTransferDialog.value = true;
-
-  console.log("Dữ liệu đơn thanh toán:", order);
-  console.log("URL VietQR:", qrPaymentUrl.value);
-};
-const createInvoiceForOrder = async (
-    order,
-    phuongThucThanhToan
-) => {
+  payooSubmitting.value = true;
   try {
-    const maDonHang = getMaDonHang(order);
+    const maDonHang = getMaDonHang(dh);
+    const transaction = await taoPayooDonHang(maDonHang, amount);
+    currentPayooTransaction.value = transaction;
 
-    if (!maDonHang) {
-      ElMessage.error("Không tìm thấy mã đơn hàng để tạo hóa đơn");
-      return false;
-    }
+    const qrContent = [
+      "PAYOO MOCK",
+      `MA_GIAO_DICH=${transaction.maGiaoDich}`,
+      `LOAI=${transaction.loaiGiaoDich}`,
+      `SO_TIEN=${transaction.soTien}`
+    ].join("|");
 
-    await api.post("/api/nhan-vien/hoa-don", {
-      maDonHang,
-      ngayIn: new Date().toISOString().split("T")[0],
-      phuongThucThanhToan,
-      trangThai: 1,
+    payooQrImage.value = await QRCode.toDataURL(qrContent, {
+      width: 270,
+      margin: 2
     });
 
-    return true;
+    payooStatus.value = "waiting";
+    showPayooDialog.value = true;
   } catch (error) {
-    console.error("Lỗi khi tạo hóa đơn:", error);
-
+    console.error("Không tạo được Payoo:", error);
     ElMessage.error(
-        error.response?.data?.message ||
-        error.response?.data ||
-        "Không thể tạo hóa đơn tự động"
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.response?.data ||
+        "Không tạo được giao dịch Payoo"
+    );
+  } finally {
+    payooSubmitting.value = false;
+  }
+};
+
+const handlePayooQrClick = async () => {
+  if (!currentPayooTransaction.value?.maGiaoDich) return;
+  if (payooStatus.value !== "waiting") return;
+
+  payooStatus.value = "processing";
+
+  try {
+    await delay(1200);
+
+    const result = await confirmPayooTransaction(
+        currentPayooTransaction.value.maGiaoDich
     );
 
-    return false;
+    currentPayooTransaction.value = result;
+    payooStatus.value = "success";
+
+    await loadDonHangs();
+    ElMessage.success("Thanh toán đơn hàng thành công");
+
+    await delay(1700);
+    showPayooDialog.value = false;
+    resetPayoo();
+  } catch (error) {
+    console.error("Callback Payoo lỗi:", error);
+    payooStatus.value = "waiting";
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Thanh toán Payoo thất bại"
+    );
   }
 };
 </script>
@@ -1469,162 +1315,75 @@ const createInvoiceForOrder = async (
       </template>
     </el-dialog>
 
-    <!-- ── Popup chọn phương thức thanh toán ── -->
+    <!-- =====================================================
+         POPUP QR PAYOO
+    ====================================================== -->
     <el-dialog
-        v-model="showPaymentDialog"
-        title="Chọn phương thức thanh toán"
-        width="500px"
+        v-model="showPayooDialog"
+        width="440px"
+        :show-close="payooStatus !== 'processing'"
         :close-on-click-modal="false"
+        :close-on-press-escape="payooStatus !== 'processing'"
         :append-to-body="true"
         :z-index="10070"
     >
-      <div class="payment-dialog-content">
-        <p class="payment-info">
-          Đơn hàng <b>
-          #{{
-            selectedOrderForPayment?.maCode ||
-            selectedOrderForPayment?.maDonHang ||
-            selectedOrderForPayment?.MaDonHang
-          }}
-        </b> đã được giao.
-          Vui lòng chọn phương thức thanh toán.
-        </p>
+      <div class="payoo-box">
+        <div class="payoo-logo">PAYOO</div>
+        <div class="payoo-sub">CỔNG THANH TOÁN TRỰC TUYẾN</div>
 
-        <div class="payment-methods">
-          <div
-              class="payment-method-card"
-              :class="{ selected: selectedPaymentMethod === 'COD' }"
-              @click="selectedPaymentMethod = 'COD'"
-          >
-            <div class="payment-icon">
-              <el-icon><Wallet /></el-icon>
-            </div>
-            <div class="payment-details">
-              <h4>Tiền mặt (COD)</h4>
-              <p>Khách hàng thanh toán bằng tiền mặt khi nhận hàng</p>
-            </div>
-          </div>
-
-          <div
-              class="payment-method-card"
-              :class="{ selected: selectedPaymentMethod === 'TRANSFER' }"
-              @click="selectedPaymentMethod = 'TRANSFER'"
-          >
-            <div class="payment-icon">
-              <el-icon><Tickets /></el-icon>
-            </div>
-            <div class="payment-details">
-              <h4>Chuyển khoản</h4>
-              <p>Khách hàng thanh toán qua mã QR hoặc chuyển khoản</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <template #footer>
-        <el-button @click="showPaymentDialog = false">Hủy</el-button>
-        <el-button
-            type="primary"
-            :disabled="!selectedPaymentMethod"
-            @click="confirmPaymentMethod"
-        >
-          Tiếp tục
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ── Popup xác nhận thanh toán COD ── -->
-    <el-dialog
-        v-model="showCashConfirmDialog"
-        title="Xác nhận thanh toán tiền mặt"
-        width="400px"
-        :close-on-click-modal="false"
-        :append-to-body="true"
-        :z-index="10070"
-    >
-      <div class="cash-confirm-content">
-        <p>Bạn xác nhận khách hàng đã thanh toán <b>tiền mặt</b> cho đơn hàng này?</p>
-        <p class="order-code">#{{ selectedOrderForPayment?.maDonHang }}</p>
-      </div>
-
-      <template #footer>
-        <el-button @click="showCashConfirmDialog = false">Hủy</el-button>
-        <el-button type="primary" @click="confirmCashPayment">
-          Xác nhận đã thanh toán
-        </el-button>
-      </template>
-    </el-dialog>
-
-    <!-- ── Popup thanh toán chuyển khoản ── -->
-    <el-dialog
-        v-model="showTransferDialog"
-        title="Thanh toán chuyển khoản"
-        width="500px"
-        :close-on-click-modal="false"
-        :append-to-body="true"
-        :z-index="10070"
-    >
-      <div class="transfer-dialog-content">
-        <p class="transfer-info">
-          Vui lòng quét mã QR hoặc chuyển khoản theo thông tin bên dưới:
-        </p>
-
-        <div class="qr-section">
-          <div
-              v-if="qrLoadFailed"
-              class="qr-error"
-          >
-            Không tải được mã QR. Vui lòng kiểm tra mạng rồi mở lại popup.
-          </div>
+        <!-- WAITING -->
+        <template v-if="payooStatus === 'waiting'">
+          <h3 class="payoo-title">
+            THANH TOÁN ĐƠN HÀNG #{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}
+          </h3>
+          <p class="payoo-description">Quét mã QR hoặc nhấn vào mã để thanh toán.</p>
 
           <img
-              v-else-if="qrPaymentUrl"
-              :key="qrPaymentUrl"
-              :src="qrPaymentUrl"
-              alt="Mã VietQR thanh toán đơn hàng"
-              class="payment-qr-image"
-              @load="handleQrLoad"
-              @error="handleQrError"
+              v-if="payooQrImage"
+              :src="payooQrImage"
+              class="payoo-qr"
+              alt="QR Payoo"
+              @click="handlePayooQrClick"
           />
 
-          <div
-              v-else
-              class="qr-error"
-          >
-            Không tạo được mã QR vì tổng tiền đơn hàng không hợp lệ.
+          <div class="qr-hint">
+            <i class="fa-solid fa-hand-pointer"></i>
+            Nhấn vào QR để thanh toán
           </div>
-        </div>
 
-        <div class="bank-info">
-          <p><b>Ngân hàng:</b> {{ BANK_CONFIG.bankName }}</p>
-          <p><b>Số tài khoản:</b> {{ BANK_CONFIG.accountNumber }}</p>
-          <p>
-            <b>Chủ tài khoản:</b>
-            {{ BANK_CONFIG.accountName || "Kiểm tra tên người nhận trên ứng dụng ngân hàng" }}
-          </p>
-          <p>
-            <b>Số tiền:</b>
-            {{ formatCurrency(getOrderAmount(selectedOrderForPayment)) }}
-          </p>
-          <p><b>Nội dung:</b> {{ transferContent }}</p>
+          <div class="payoo-amount">
+            {{ formatCurrency(currentPayooTransaction?.soTien) }}
+          </div>
 
-          <p
-              class="payment-note"
-              style="margin-top: 12px; color: #f59e0b; font-size: 13px;"
-          >
-            <i class="fa-solid fa-circle-info"></i>
-            Trước khi xác nhận chuyển khoản, hãy kiểm tra đúng tên người nhận,
-            số tiền và nội dung trên ứng dụng ngân hàng.
-          </p>
-        </div>
+          <div class="payoo-code">
+            <span>Mã giao dịch</span>
+            <strong>{{ currentPayooTransaction?.maGiaoDich }}</strong>
+          </div>
+        </template>
+
+        <!-- PROCESSING -->
+        <template v-else-if="payooStatus === 'processing'">
+          <div class="processing-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <h3>Payoo đang xử lý...</h3>
+            <p>Đang xác nhận giao dịch</p>
+            <strong>{{ formatCurrency(currentPayooTransaction?.soTien) }}</strong>
+          </div>
+        </template>
+
+        <!-- SUCCESS -->
+        <template v-else-if="payooStatus === 'success'">
+          <div class="success-state">
+            <i class="fa-solid fa-circle-check"></i>
+            <h3>Thanh toán thành công</h3>
+            <strong>{{ formatCurrency(currentPayooTransaction?.soTien) }}</strong>
+            <p>
+              Payoo đã xác nhận giao dịch. Đơn hàng đã chuyển sang trạng thái Hoàn thành.
+            </p>
+            <small>{{ currentPayooTransaction?.maGiaoDich }}</small>
+          </div>
+        </template>
       </div>
-
-      <template #footer>
-        <el-button @click="showTransferDialog = false">Đóng</el-button>
-        <el-button type="primary" @click="confirmTransferPayment">
-          Xác nhận đã thanh toán
-        </el-button>
-      </template>
     </el-dialog>
   </div>
 </template>

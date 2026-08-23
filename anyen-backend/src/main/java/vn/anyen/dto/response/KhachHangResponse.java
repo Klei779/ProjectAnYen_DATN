@@ -13,6 +13,10 @@ public class KhachHangResponse {
     private String tenKhachHang;
     private String cccd;
     private String diaChi;
+    private String soNhaDuong;
+    private String phuongXa;
+    private String quanHuyen;
+    private String tinhThanh;
     private String email;
     private String soDienThoai;
     private Integer maNhanVienPhuTrach;

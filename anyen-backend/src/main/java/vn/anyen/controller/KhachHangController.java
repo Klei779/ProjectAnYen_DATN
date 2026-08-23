@@ -32,8 +32,12 @@ public class KhachHangController {
 
     @GetMapping
     public List<KhachHangResponse> getAll(
-            @RequestHeader("Authorization") String authHeader
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @RequestParam(value = "all", required = false, defaultValue = "false") boolean all
     ) {
+        if (all) {
+            return khachHangService.getAll();
+        }
         Integer userId = getUserIdFromHeader(authHeader);
         return khachHangService.getByNhanVien(userId);
     }

@@ -55,6 +55,7 @@ const canBaoCaoSuCo = (order) => {
   const status = normalizeStatus(order?.trangThai ?? order?.TrangThai ?? "");
 
   return ![
+    "Chờ xác nhận",
     "Đã hủy",
     "Hoàn thành",
     "Từ chối",
@@ -275,7 +276,7 @@ const orderHasCoffin = (products = []) => {
 const normalizeStatus = (value) => {
   const status = normalizeText(value);
 
-  if (!status) return "Đã nhận";
+  if (!status) return "Chờ xác nhận";
 
   // Xử lý số trạng thái
   if (value === 11 || value === "11") return "Gặp sự cố";
@@ -359,7 +360,7 @@ const normalizeDonHang = (dh) => {
       dh.trangThai ??
       dh.trangThaiDonHang ??
       dh.status ??
-      "Đã nhận";
+      "Chờ xác nhận";
 
   const sanPhams = Array.isArray(dh.sanPhams)
       ? dh.sanPhams

@@ -21,3 +21,11 @@ export async function nghiViecNhanVien(maNhanVien) {
     const response = await api.put(`${API_URL}/nghi-viec/${maNhanVien}`);
     return response.data;
 }
+export async function khoaTaiKhoanNhanVien(maNhanVien) {
+    const response = await api.put(`${API_URL}/khoa/${maNhanVien}`);
+    return response.data;
+}
+export async function moKhoaTaiKhoanNhanVien(maNhanVien) {
+    const response = await api.put(`${API_URL}/mo-khoa/${maNhanVien}`);
+    return response.data;
+}

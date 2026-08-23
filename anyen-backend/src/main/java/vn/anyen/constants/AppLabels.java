@@ -7,7 +7,8 @@ public class AppLabels {
 
     public static final String[] TRANG_THAI_NHAN_VIEN = {
             "Nghỉ việc",
-            "Đang hoạt động"
+            "Đang hoạt động",
+            "Đang khóa tài khoản"
     };
     public static final String[] TRANG_THAI_THONG_BAO = {
             "Chưa đọc",

@@ -62,9 +62,10 @@
 }
 
 .hero-flower {
-    width: 122px;
+    width: 200px;
     display: block;
-    margin: 16px auto 14px;
+    margin: -20px auto -15px;
+    object-fit: contain;
 }
 
 .hero h1 {

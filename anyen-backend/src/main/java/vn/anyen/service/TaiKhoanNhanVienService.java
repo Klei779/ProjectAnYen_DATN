@@ -6,9 +6,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.constants.AppLabels;
 import vn.anyen.dto.request.CapNhatTaiKhoanNVRequest;
+import vn.anyen.dto.request.CapNhatViTriRequest;
 import vn.anyen.dto.response.TaiKhoanNhanVienResponse;
 import vn.anyen.entity.NhanVien;
 import vn.anyen.repository.NhanVienRepository;
+
+import java.math.BigDecimal;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +41,19 @@ public class TaiKhoanNhanVienService {
         NhanVien saved = nhanVienRepository.save(nhanVien);
         return toResponse(saved);
     }
+    public TaiKhoanNhanVienResponse capNhatViTri(
+            String tenDangNhap,
+            CapNhatViTriRequest request
+    ) {
+        NhanVien nhanVien = findByTenDangNhap(tenDangNhap);
 
+        nhanVien.setLatitude(request.getLatitude());
+        nhanVien.setLongitude(request.getLongitude());
+
+        NhanVien saved = nhanVienRepository.save(nhanVien);
+
+        return toResponse(saved);
+    }
     private NhanVien findByTenDangNhap(String tenDangNhap) {
         return nhanVienRepository.findByTenDangNhap(tenDangNhap)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -68,6 +83,8 @@ public class TaiKhoanNhanVienService {
                 .trangThai(nv.getTrangThai())
                 .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_NHAN_VIEN,nv.getTrangThai()))
                 .tenVaiTro(AppLabels.getLabel(AppLabels.TEN_VAI_TRO,nv.getVaiTro()))
+                .latitude(nv.getLatitude())
+                .longitude(nv.getLongitude())
                 .build();
     }
 

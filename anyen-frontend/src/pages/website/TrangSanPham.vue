@@ -188,36 +188,21 @@
                   <div class="product-price-row">
                     <button
                         class="product-action-btn"
-                        :class="
-      item.duocMuaTrucTiep
-        ? 'buy'
-        : 'contact'
-    "
+                        :class="item.duocMuaTrucTiep ? (isInCart(item.id) ? 'remove-from-cart' : 'buy') : 'contact'"
                         type="button"
-                        @click.stop="
-      handleProductAction(item)
-    "
+                        @click.stop="handleProductAction(item)"
                     >
-                      <i
-                          :class="
-        item.duocMuaTrucTiep
-          ? 'fa-solid fa-cart-shopping'
-          : 'fa-solid fa-phone'
-      "
-                      ></i>
-
+                      <i :class="item.duocMuaTrucTiep ? 'fa-solid fa-cart-shopping' : 'fa-solid fa-phone'"></i>
                       {{
                         item.duocMuaTrucTiep
-                            ? (
-                                isInCart(item.id)
-                                    ? "Đã thêm"
-                                    : "Mua"
-                            )
+                            ? (isInCart(item.id) ? "Xóa khỏi giỏ hàng" : "Thêm vào giỏ hàng")
                             : "Liên hệ"
                       }}
                     </button>
-                    <span class="product-price">{{ formatPrice(item.price) }}</span>
-                    <span v-if="item.oldPrice" class="product-old-price">{{ formatPrice(item.oldPrice) }}</span>
+                    <div class="price-group">
+                      <span class="product-price">{{ formatPrice(item.price) }}</span>
+                      <span v-if="item.oldPrice" class="product-old-price">{{ formatPrice(item.oldPrice) }}</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -267,7 +252,7 @@ import { ElMessage } from 'element-plus'
 import { useCart } from '../../services/useCart.js'
 
 const router = useRouter()
-const { isInCart,  addToCart} = useCart()
+const { isInCart,  addToCart, removeFromCart } = useCart()
 const isPriceOpen = ref(true)
 const isMaterialOpen = ref(true)
 const isReligionOpen = ref(true)
@@ -323,12 +308,14 @@ function handleProductAction(product) {
 
   /*
    * Đã có trong giỏ thì
-   * không thêm trùng.
+   * xóa khỏi giỏ.
    */
   if (isInCart(product.id)) {
 
+    removeFromCart(product.id)
+    
     ElMessage.info(
-        'Sản phẩm đã có trong giỏ hàng'
+        'Đã xóa sản phẩm khỏi giỏ hàng'
     )
 
     return

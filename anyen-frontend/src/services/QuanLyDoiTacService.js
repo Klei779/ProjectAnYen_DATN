@@ -1,4 +1,5 @@
 import api from "../api/api.js";
+import axios from "axios";
 
 const API_URL = "/api/nhan-vien/quanlydoitac";
 const AUTH_API_URL = "/api/auth/doi-tac";
@@ -32,7 +33,7 @@ export async function updateTrangThaiDoiTac(
     maDoiTac,
     trangThai
 ) {
-    const response = await axios.put(
+    const response = await api.put(
         `${API_URL}/${maDoiTac}/trang-thai`,
         null,
         {
@@ -48,3 +49,4 @@ export async function deleteDoiTac(maDoiTac) {
     const response = await api.delete(`${API_URL}/${maDoiTac}`);
     return response.data;
 }
+

@@ -6,6 +6,8 @@ import {
   getAllNhanVien,
   nghiViecNhanVien,
   updateNhanVien,
+    khoaTaiKhoanNhanVien,
+  moKhoaTaiKhoanNhanVien,
 } from "../../services/QuanLyNhanVienService.js";
 
 /* =========================
@@ -813,6 +815,86 @@ async function confirmNghiViec(employee) {
     loadingStates[id] = false;
   }
 }
+async function confirmKhoaTaiKhoan(employee) {
+  if (!isAdmin.value) {
+    return;
+  }
+
+  const accepted = confirm(
+      `Bạn xác nhận khóa tài khoản nhân viên [${employee.hoTen}]?`
+  );
+
+  if (!accepted) {
+    return;
+  }
+
+  const id =
+      employee.maNhanVien;
+
+  loadingStates[id] = true;
+
+  try {
+    await khoaTaiKhoanNhanVien(id);
+
+    alert(
+        "Đã cập nhật trạng thái khóa thành công."
+    );
+
+    await fetchDanhSachNhanVien();
+  } catch (error) {
+    console.error(
+        "Lỗi cập nhật khóa tài khoản:",
+        error
+    );
+
+    alert(
+        error.response?.data?.message ||
+        "Không thể cập nhật trạng thái nhân viên."
+    );
+  } finally {
+    loadingStates[id] = false;
+  }
+}
+async function confirmMoKhoaTaiKhoan(employee) {
+  if (!isAdmin.value) {
+    return;
+  }
+
+  const accepted = confirm(
+      `Bạn xác nhận mở khóa tài khoản nhân viên [${employee.hoTen}]?`
+  );
+
+  if (!accepted) {
+    return;
+  }
+
+  const id =
+      employee.maNhanVien;
+
+  loadingStates[id] = true;
+
+  try {
+    await moKhoaTaiKhoanNhanVien(id);
+
+    alert(
+        "Đã cập nhật trạng thái mở khóa thành công."
+    );
+
+    await fetchDanhSachNhanVien();
+  } catch (error) {
+    console.error(
+        "Lỗi cập nhật khóa tài khoản:",
+        error
+    );
+
+    alert(
+        error.response?.data?.message ||
+        "Không thể cập nhật trạng thái nhân viên."
+    );
+  } finally {
+    loadingStates[id] = false;
+  }
+}
 
 /* =========================
    CHUYỂN TRANG
@@ -1023,6 +1105,9 @@ function changePage(page) {
               <th class="text-center">
                 Hành động
               </th>
+              <th class="text-center">
+              Khóa tài khoàn
+              </th>
             </tr>
             </thead>
 
@@ -1186,7 +1271,7 @@ Không có quyền
                     v-if="
                       isAdmin &&
                       Number(employee.trangThai) === 1 &&
-                      Number(employee.vaiTro) !== 1
+                      Number(employee.vaiTro) !== 1 ||   Number(employee.trangThai) === 2
                     "
                     class="danger-btn"
                     type="button"
@@ -1240,6 +1325,72 @@ Không có quyền
                     Không có quyền
                   </span>
               </td>
+              <td
+                                data-label="Hành động"
+                                class="text-center"
+                            >
+                            <button
+                               v-if="
+                                 isAdmin &&
+                                 Number(employee.trangThai) === 1 &&
+                                 Number(employee.vaiTro) !== 1
+                               "
+                               class="warning-btn"
+                               type="button"
+                               :disabled="loadingStates[employee.maNhanVien]"
+                               @click="confirmKhoaTaiKhoan(employee)"
+                             >
+                               <i
+                                 class="fa-solid"
+                                 :class="
+                                   loadingStates[employee.maNhanVien]
+                                     ? 'fa-spinner fa-spin'
+                                     : 'fa-user-slash'
+                                 "
+                               ></i>
+
+                               Khóa tài khoản
+                             </button>
+
+                             <!-- ==================== MỞ KHÓA ==================== -->
+                             <button
+                               v-else-if="
+                                 isAdmin &&
+                                 Number(employee.trangThai) === 2 &&
+                                 Number(employee.vaiTro) !== 1 &&
+                                 Number(employee.vaiTro) !== 0
+                               "
+                               class="success-btn"
+                               type="button"
+                               :disabled="loadingStates[employee.maNhanVien]"
+                               @click="confirmMoKhoaTaiKhoan(employee)"
+                             >
+                               <i
+                                 class="fa-solid"
+                                 :class="
+                                   loadingStates[employee.maNhanVien]
+                                     ? 'fa-spinner fa-spin'
+                                     : 'fa-user-check'
+                                 "
+                               ></i>
+
+                               Mở khóa
+                             </button>
+
+                             <span
+                               v-else-if="Number(employee.vaiTro) === 1"
+                               class="muted-action"
+                             >
+                               Không có quyền
+                             </span>
+
+                             <span
+                               v-else
+                               class="muted-action"
+                             >
+                               Không có quyền
+                             </span>
+                            </td>
             </tr>
 
             <!-- KHÔNG CÓ DỮ LIỆU -->
@@ -2663,5 +2814,47 @@ button:disabled {
     padding-right: 18px;
     padding-left: 18px;
   }
+}
+.warning-btn {
+  background-color: #fff7d6;
+  color: #b77900;
+  border: 1.5px solid #d99a00;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.warning-btn:hover {
+  background-color: #ffefb0;
+  border-color: #b77900;
+}
+
+.warning-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.success-btn {
+  background-color: #e8f7ee;
+  color: #218838;
+  border: 1.5px solid #28a745;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.success-btn:hover {
+  background-color: #d4f0df;
+  border-color: #218838;
+}
+
+.success-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.muted-action {
+  color: #999;
+  font-size: 14px;
 }
 </style>

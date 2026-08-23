@@ -75,6 +75,9 @@ public class SanPhamService {
        );
     predicates.add(cb.exists(sub));
 
+    // Filter only active products (trangThai = 1)
+    predicates.add(cb.equal(root.get("trangThai"), SanPham.TRANG_THAI_DANG_BAN));
+
             // Filter Keyword
             if (keyword != null && !keyword.isBlank()) {
                 String kw = "%" + keyword.trim().toLowerCase() + "%";

@@ -112,6 +112,32 @@
       </div>
     </section>
 
+
+    <!-- ================= THỐNG KÊ ================= -->
+    <section class="statistics-section">
+      <div class="statistics-container">
+        <article
+            v-for="(statistic, index) in statistics"
+            :key="statistic.number"
+            class="statistic-item"
+        >
+          <div class="statistic-icon">
+            <i :class="statistic.icon"></i>
+          </div>
+
+          <div class="statistic-content">
+            <strong>{{ statistic.number }}</strong>
+            <span>{{ statistic.label }}</span>
+          </div>
+
+          <div
+              v-if="index < statistics.length - 1"
+              class="statistic-divider"
+          ></div>
+        </article>
+      </div>
+    </section>
+
     <!-- ================= VỀ AN YÊN ================= -->
     <section class="about-section">
       <div
@@ -172,30 +198,6 @@
       </div>
     </section>
 
-    <!-- ================= THỐNG KÊ ================= -->
-    <section class="statistics-section">
-      <div class="statistics-container">
-        <article
-            v-for="(statistic, index) in statistics"
-            :key="statistic.number"
-            class="statistic-item"
-        >
-          <div class="statistic-icon">
-            <i :class="statistic.icon"></i>
-          </div>
-
-          <div class="statistic-content">
-            <strong>{{ statistic.number }}</strong>
-            <span>{{ statistic.label }}</span>
-          </div>
-
-          <div
-              v-if="index < statistics.length - 1"
-              class="statistic-divider"
-          ></div>
-        </article>
-      </div>
-    </section>
 
   </div>
 </template>

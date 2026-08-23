@@ -55,6 +55,7 @@ const canBaoCaoSuCo = (order) => {
   const status = normalizeStatus(order?.trangThai ?? order?.TrangThai ?? "");
 
   return ![
+    "Chờ xác nhận",
     "Đã hủy",
     "Hoàn thành",
     "Từ chối",

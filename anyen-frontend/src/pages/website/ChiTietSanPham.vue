@@ -296,6 +296,7 @@
 
               <button
                   class="summary-primary-btn"
+                  :class="{ 'remove-from-cart': canBuyDirectly && isInCart(product.id) }"
                   type="button"
                   @click="handleProductAction"
               >
@@ -311,8 +312,8 @@
                   canBuyDirectly
                       ? (
                           isInCart(product.id)
-                              ? "ĐÃ CÓ TRONG GIỎ"
-                              : "MUA SẢN PHẨM"
+                              ? "XÓA KHỎI GIỎ HÀNG"
+                              : "THÊM VÀO GIỎ HÀNG"
                       )
                       : "LIÊN HỆ TƯ VẤN"
                 }}
@@ -672,7 +673,8 @@ const route = useRoute();
 const router = useRouter();
 const {
   isInCart,
-  addToCart
+  addToCart,
+  removeFromCart
 } = useCart()
 const canBuyDirectly = computed(() => {
 
@@ -810,18 +812,11 @@ const handleProductAction = () => {
 
 
   /*
-   * Có rồi thì vào giỏ.
+   * Có rồi thì xóa khỏi giỏ
    */
-  if (
-      isInCart(
-          product.value.id
-      )
-  ) {
-
-    router.push(
-        "/gio-hang"
-    )
-
+  if (isInCart(product.value.id)) {
+    removeFromCart(product.value.id)
+    ElMessage.info("Đã xóa sản phẩm khỏi giỏ hàng")
     return
   }
 
@@ -1677,6 +1672,16 @@ onMounted(loadProduct);
 
 .summary-primary-btn:hover {
   background: var(--primary-dark);
+}
+
+.summary-primary-btn.remove-from-cart {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+
+.summary-primary-btn.remove-from-cart:hover {
+  background: rgba(138, 16, 35, 0.04);
 }
 
 .summary-outline-btn {

@@ -112,10 +112,7 @@
             <b>{{ selectedNotification.order.date }}</b>
           </div>
 
-          <div class="info-row">
-            <span>Trạng thái</span>
-            <em>{{ selectedNotification.order.status }}</em>
-          </div>
+
 
           <div class="info-row">
             <span>Phương thức thanh toán</span>

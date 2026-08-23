@@ -584,6 +584,13 @@
 
 .product-price-row {
     display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.price-group {
+    display: flex;
     align-items: baseline;
     gap: 8px;
 }
@@ -1227,6 +1234,17 @@
 
 .product-action-btn.buy:hover {
     background: #6f0c1b;
+    transform: translateY(-1px);
+}
+
+/* Sản phẩm đã thêm vào giỏ (Xóa khỏi giỏ) */
+.product-action-btn.remove-from-cart {
+    background: transparent;
+    color: #8a1023;
+}
+
+.product-action-btn.remove-from-cart:hover {
+    background: #fff6f7;
     transform: translateY(-1px);
 }
 

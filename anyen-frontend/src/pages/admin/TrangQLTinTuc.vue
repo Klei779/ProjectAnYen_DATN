@@ -538,16 +538,24 @@
                       v-model="form.noiDung"
                       class="form-control code-editor"
                       :class="{
-                        'is-invalid': errors.noiDung
-                      }"
+      'is-invalid': errors.noiDung
+    }"
                       rows="18"
+                      maxlength="10000"
+                      wrap="soft"
                       placeholder="<h2>Tiêu đề</h2><p>Nội dung...</p>"
                       @input="delete errors.noiDung"
                   ></textarea>
 
-                  <small class="text-danger">
-                    {{ errors.noiDung }}
-                  </small>
+                  <div class="d-flex justify-content-between">
+                    <small class="text-danger">
+                      {{ errors.noiDung }}
+                    </small>
+
+                    <small class="text-muted">
+                      {{ form.noiDung.length }}/10000
+                    </small>
+                  </div>
                 </div>
               </div>
 
@@ -1112,9 +1120,19 @@ function validate() {
         "Vui lòng nhập tiêu đề.";
   }
 
+  if (form.tieuDe.length > 150) {
+    errors.tieuDe =
+        "Tiêu đề không được vượt quá 150 ký tự.";
+  }
+
   if (!form.tomTat.trim()) {
     errors.tomTat =
         "Vui lòng nhập tóm tắt.";
+  }
+
+  if (form.tomTat.length > 500) {
+    errors.tomTat =
+        "Tóm tắt không được vượt quá 500 ký tự.";
   }
 
   if (!form.noiDung.trim()) {
@@ -1122,18 +1140,18 @@ function validate() {
         "Vui lòng nhập nội dung.";
   }
 
-  if (
-      ![1, 2, 3, 4].includes(
-          Number(form.loaiTin)
-      )
-  ) {
+  if (form.noiDung.length > 10000) {
+    errors.noiDung =
+        "Nội dung không được vượt quá 10.000 ký tự.";
+  }
+
+  if (![1, 2, 3, 4].includes(Number(form.loaiTin))) {
     errors.loaiTin =
         "Vui lòng chọn loại tin.";
   }
 
   return Object.keys(errors).length === 0;
 }
-
 async function saveNews() {
   if (!validate()) {
     showNotice(

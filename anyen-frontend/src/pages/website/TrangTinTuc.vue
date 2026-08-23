@@ -389,6 +389,15 @@ onMounted(() => {
   color: #8b5e3c;
   font-size: 20px;
   line-height: 1.4;
+
+  /* Không cho chuỗi dài phá layout */
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow: hidden;
+
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .date {
@@ -403,6 +412,10 @@ onMounted(() => {
 
   color: #555555;
   line-height: 1.6;
+
+  /* Chặn spam chuỗi dài */
+  overflow-wrap: anywhere;
+  word-break: break-word;
 
   display: -webkit-box;
   -webkit-box-orient: vertical;

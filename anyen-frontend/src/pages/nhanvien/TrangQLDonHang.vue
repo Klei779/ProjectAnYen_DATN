@@ -805,6 +805,25 @@ const doUpdateStatus = async (dh, next) => {
   }
 };
 
+// Gửi đơn hàng cho đối tác (từ trạng thái "Mới tạo" → "Chờ đối tác xác nhận")
+const guiDonChoDoiTac = async (dh) => {
+  try {
+    const maDonHang = getMaDonHang(dh);
+    await api.put(`/api/don-hang/${maDonHang}/gui-doi-tac`);
+
+    ElMessage.success("Đã gửi đơn hàng cho đối tác thành công");
+    await loadDonHangs();
+  } catch (error) {
+    console.error("Lỗi khi gửi đơn cho đối tác:", error);
+
+    ElMessage.error(
+        error.response?.data?.message ||
+        error.response?.data ||
+        "Gửi đơn hàng cho đối tác thất bại"
+    );
+  }
+};
+
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const resetPayoo = () => {
@@ -816,10 +835,17 @@ const resetPayoo = () => {
 };
 
 const updateNextStatus = async (dh) => {
+  // Trạng thái "Mới tạo": dùng API gui-doi-tac riêng biệt
+  if (dh.trangThai === "Mới tạo") {
+    await guiDonChoDoiTac(dh);
+    return;
+  }
+
   const next = nextStatus(dh);
 
   if (!next) return;
 
+  // Trạng thái "Đã giao" hoặc "Thanh toán": mở dialog thanh toán
   if (dh.trangThai === "Đã giao" || dh.trangThai === "Thanh toán") {
     await openPaymentDialog(dh);
     return;

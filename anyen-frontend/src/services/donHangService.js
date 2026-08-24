@@ -16,6 +16,26 @@ const ORDER_STATUS_LABELS = Object.freeze({
   11: "Gặp sự cố",
 });
 
+// Alias: ánh xạ các tên hiển thị trong STEPS (frontend) -> mã số backend
+// Cần thiết vì STEPS dùng tên ngắn/khác với ORDER_STATUS_LABELS
+const ORDER_STATUS_ALIAS = Object.freeze({
+  "mới tạo": 1,
+  "xác nhận": 3,          // STEPS "Xác nhận" = backend TT_DA_XAC_NHAN (3)
+  "đã xác nhận": 3,
+  "chờ đối tác xác nhận": 2,
+  "đã nhận": 3,
+  "xử lý": 4,
+  "đang xử lý": 4,
+  "đã giao": 9,
+  "thanh toán": 5,        // STEPS "Thanh toán" = backend TT_CHO_THANH_TOAN (5)
+  "chờ thanh toán": 5,
+  "đã thanh toán": 10,
+  "hoàn thành": 6,
+  "đã hủy": 7,
+  "từ chối": 8,
+  "gặp sự cố": 11,
+});
+
 const PAYMENT_METHOD_LABELS = Object.freeze({
   0: "Chưa chọn",
   1: "Tiền mặt",
@@ -61,9 +81,29 @@ function toCode(value, reverseMap, fallback = 0) {
 }
 
 export function getTrangThaiDonHangCode(value) {
-  const code = toCode(value, ORDER_STATUS_CODES, 0);
+  // Nếu đã là số hợp lệ, trả về luôn
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.trunc(value);
+  }
 
-  // Dữ liệu cũ từng lưu 0. Trong nghiệp vụ hiện tại trạng thái hợp lệ bắt đầu từ 1.
+  const text = String(value ?? "").trim();
+
+  // Nếu là chuỗi số
+  if (/^\d+$/.test(text)) {
+    const n = Number(text);
+    return n > 0 ? n : 1;
+  }
+
+  // Tra bảng alias trước (tên ngắn dùng trong STEPS như "Xác nhận", "Thanh toán"...)
+  const normalized = text.toLocaleLowerCase("vi-VN");
+  if (ORDER_STATUS_ALIAS[normalized] !== undefined) {
+    return ORDER_STATUS_ALIAS[normalized];
+  }
+
+  // Tra bảng reverse map chính (tên đầy đủ từ backend)
+  const code = ORDER_STATUS_CODES[normalized] ?? 0;
+
+  // Dữ liệu cũ từng lưu 0. Trạng thái hợp lệ bắt đầu từ 1.
   return code === 0 ? 1 : code;
 }
 

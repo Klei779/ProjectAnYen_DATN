@@ -441,11 +441,10 @@
               </div>
             </div>
 
-            <h6>Tạo Payoo Mock</h6>
+            <h6>Tạo QR</h6>
 
             <p>
-              Hệ thống tạo mã giao dịch và QR để mô phỏng
-              cổng thanh toán Payoo.
+              Hệ thống tạo mã giao dịch.
             </p>
           </div>
 

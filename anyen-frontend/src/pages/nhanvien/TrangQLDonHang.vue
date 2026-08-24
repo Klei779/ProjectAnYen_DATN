@@ -1354,15 +1354,13 @@ const handlePayooQrClick = async () => {
         :z-index="10070"
     >
       <div class="payoo-box">
-        <div class="payoo-logo">PAYOO</div>
-        <div class="payoo-sub">CỔNG THANH TOÁN TRỰC TUYẾN</div>
 
         <!-- WAITING -->
         <template v-if="payooStatus === 'waiting'">
           <h3 class="payoo-title">
             THANH TOÁN ĐƠN HÀNG #{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}
           </h3>
-          <p class="payoo-description">Quét mã QR hoặc nhấn vào mã để thanh toán.</p>
+          <p class="payoo-description">Quét mã QR để thanh toán.</p>
 
           <img
               v-if="payooQrImage"
@@ -1371,11 +1369,6 @@ const handlePayooQrClick = async () => {
               alt="QR Payoo"
               @click="handlePayooQrClick"
           />
-
-          <div class="qr-hint">
-            <i class="fa-solid fa-hand-pointer"></i>
-            Nhấn vào QR để thanh toán
-          </div>
 
           <div class="payoo-amount">
             {{ formatCurrency(currentPayooTransaction?.soTien) }}
@@ -1391,7 +1384,7 @@ const handlePayooQrClick = async () => {
         <template v-else-if="payooStatus === 'processing'">
           <div class="processing-state">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            <h3>Payoo đang xử lý...</h3>
+            <h3>Đang xử lý...</h3>
             <p>Đang xác nhận giao dịch</p>
             <strong>{{ formatCurrency(currentPayooTransaction?.soTien) }}</strong>
           </div>
@@ -1404,7 +1397,7 @@ const handlePayooQrClick = async () => {
             <h3>Thanh toán thành công</h3>
             <strong>{{ formatCurrency(currentPayooTransaction?.soTien) }}</strong>
             <p>
-              Payoo đã xác nhận giao dịch. Đơn hàng đã chuyển sang trạng thái Hoàn thành.
+              Đã xác nhận giao dịch. Đơn hàng đã chuyển sang trạng thái Hoàn thành.
             </p>
             <small>{{ currentPayooTransaction?.maGiaoDich }}</small>
           </div>

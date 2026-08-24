@@ -13,7 +13,7 @@
         <h2>Quỹ & Ví</h2>
 
         <p>
-          Quản lý Quỹ bảo đảm, Ví đối tác và giao dịch Payoo Mock.
+          Quản lý Quỹ bảo đảm, Ví đối tác.
         </p>
       </div>
 
@@ -190,12 +190,6 @@
 
           </div>
 
-
-          <p class="action-note">
-            <i class="fa-solid fa-qrcode"></i>
-            Nạp Quỹ sử dụng QR Payoo Mock.
-          </p>
-
         </template>
 
 
@@ -343,7 +337,7 @@
         <p class="action-note">
           <i class="fa-solid fa-circle-info"></i>
 
-          Tiền trong Ví có thể rút qua Payoo hoặc chuyển vào Quỹ.
+          Tiền trong Ví có thể chuyển vào Quỹ.
         </p>
 
       </section>
@@ -356,7 +350,7 @@
     ====================================================== -->
     <el-dialog
         v-model="depositVisible"
-        title="Nạp Quỹ qua Payoo"
+        title="Nạp Quỹ qua QR"
         width="430px"
         :close-on-click-modal="false"
     >
@@ -407,17 +401,6 @@
 
         </div>
 
-
-        <div class="dialog-note">
-          <i class="fa-solid fa-qrcode"></i>
-
-          <span>
-            Sau khi tạo giao dịch, hệ thống sẽ hiển thị
-            QR Payoo Mock. Nhấn vào QR để giả lập Payoo
-            xác nhận đã nhận tiền.
-          </span>
-        </div>
-
       </div>
 
 
@@ -447,7 +430,7 @@
           {{
             submitting
                 ? "Đang tạo..."
-                : "Tạo QR Payoo"
+                : "Tạo QR"
           }}
         </button>
 
@@ -455,10 +438,6 @@
 
     </el-dialog>
 
-
-    <!-- =====================================================
-         POPUP QR PAYOO
-    ====================================================== -->
     <el-dialog
         v-model="qrVisible"
         width="440px"
@@ -468,14 +447,6 @@
     >
 
       <div class="payoo-box">
-
-        <div class="payoo-logo">
-          PAYOO
-        </div>
-
-        <div class="payoo-sub">
-          CỔNG THANH TOÁN TRỰC TUYẾN
-        </div>
 
 
         <!-- WAITING -->
@@ -488,7 +459,7 @@
           </h3>
 
           <p class="payoo-description">
-            Quét mã QR hoặc nhấn vào mã để thanh toán.
+            Quét mã QR để thanh toán.
           </p>
 
 
@@ -499,14 +470,6 @@
               alt="QR Payoo"
               @click="handleQrClick"
           />
-
-
-          <div class="qr-hint">
-            <i class="fa-solid fa-hand-pointer"></i>
-
-            Nhấn vào QR để thanh toán
-          </div>
-
 
           <div class="payoo-amount">
             {{
@@ -542,7 +505,7 @@
             <i class="fa-solid fa-spinner fa-spin"></i>
 
             <h3>
-              Payoo đang xử lý...
+              Đang xử lý...
             </h3>
 
             <p>
@@ -584,7 +547,7 @@
             </strong>
 
             <p>
-              Payoo đã xác nhận giao dịch.
+              Đã xác nhận giao dịch.
               Số dư Quỹ đã được cập nhật.
             </p>
 
@@ -610,22 +573,14 @@
         v-model="withdrawVisible"
         :title="
         withdrawType === 'fund'
-          ? 'Rút Quỹ qua Payoo'
-          : 'Rút Ví qua Payoo'
+          ? 'Rút Quỹ '
+          : 'Rút Ví '
       "
         width="430px"
         :close-on-click-modal="false"
     >
 
       <div class="money-form">
-
-        <div class="payoo-mini">
-          <strong>PAYOO</strong>
-
-          <span>
-            Chuyển tiền mô phỏng
-          </span>
-        </div>
 
 
         <div class="available-box">
@@ -666,16 +621,6 @@
             class="money-input"
         />
 
-
-        <div class="dialog-note">
-          <i class="fa-solid fa-building-columns"></i>
-
-          <span>
-            Payoo Mock sẽ giả lập chuyển tiền
-            về tài khoản ngân hàng của đối tác.
-          </span>
-        </div>
-
       </div>
 
 
@@ -704,7 +649,7 @@
 
           {{
             submitting
-                ? "Payoo đang xử lý..."
+                ? "Đang xử lý..."
                 : "Xác nhận rút"
           }}
         </button>
@@ -775,17 +720,6 @@
             :controls="false"
             class="money-input"
         />
-
-
-        <div class="dialog-note green-note">
-          <i class="fa-solid fa-circle-info"></i>
-
-          <span>
-            Đây là giao dịch nội bộ:
-            Ví giảm và Quỹ tăng tương ứng.
-            Không cần Payoo.
-          </span>
-        </div>
 
       </div>
 

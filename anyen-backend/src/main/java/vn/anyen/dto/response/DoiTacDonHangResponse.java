@@ -21,6 +21,8 @@ public class DoiTacDonHangResponse {
     private String diaChi;
     private String ngayDat;
     private String nhanVien;
+    private String tenDangNhapNhanVien;
+    private String phuongThucThanhToan;
     private String ghiChu;
     private String trangThai;
     private String trangThaiRieng; // Trạng thái riêng của đối tác (chưa xử lý/đang xử lý/đã giao)

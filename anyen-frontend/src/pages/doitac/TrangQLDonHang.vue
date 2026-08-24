@@ -10,12 +10,15 @@ import { useRoute } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Client } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import QRCode from "qrcode";
 
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
 import {
   getDonHangsDoiTac,
   xuLyDonHang,
 } from "../../services/doitacDonHangService.js";
+import { taoPayooDonHang } from "../../services/donHangService.js";
+import { confirmPayooTransaction } from "../../services/payooMockService.js";
 import api from "../../api/api.js";
 
 import {
@@ -45,6 +48,14 @@ const showXuLyDialog = ref(false);
 const xuLyForm = ref({
   ngayGiaoDuKien: null,
 });
+
+// ── Trạng thái Payoo Mock ─────────────────────────
+const showPayooDialog = ref(false);
+const payooStatus = ref("waiting"); // waiting | processing | success
+const payooQrImage = ref("");
+const currentPayooTransaction = ref(null);
+const payooSubmitting = ref(false);
+const selectedOrderForPayment = ref(null);
 
 // ── Báo cáo sự cố ─────────────────────────────
 const showSuCoDialog = ref(false);
@@ -208,13 +219,45 @@ const pageSize = ref(4);
 const donHangs = ref([]);
 
 // ─────────────────────────────────────────────
-// Stepper cho đối tác - chỉ hiển thị 3 trạng thái riêng
+// Stepper cho đối tác:
+// - Đơn hàng thông thường: 3 bước riêng của đối tác (Đã nhận -> Đang xử lý -> Đã giao)
+// - Đơn hàng Website (người tạo là website): thêm Thanh toán và Hoàn thành
 // ─────────────────────────────────────────────
-const STEPS = [
+const isWebsiteOrder = (dh) => {
+  const username = String(
+    dh?.tenDangNhapNhanVien ??
+    dh?.nhanVienTenDangNhap ??
+    dh?.nhanVien?.tenDangNhap ??
+    ""
+  ).trim().toLowerCase();
+
+  const employeeName = String(
+    dh?.tenNhanVien ??
+    dh?.nhanVien?.hoTen ??
+    dh?.nhanVien ??
+    ""
+  ).trim().toLowerCase();
+
+  return username === "website" || employeeName === "website";
+};
+
+const DEFAULT_STEPS = [
   "Đã nhận",
   "Đang xử lý",
   "Đã giao",
 ];
+
+const WEBSITE_STEPS = [
+  "Đã nhận",
+  "Đang xử lý",
+  "Đã giao",
+  "Thanh toán",
+  "Hoàn thành",
+];
+
+const getOrderSteps = (dh) => {
+  return isWebsiteOrder(dh) ? WEBSITE_STEPS : DEFAULT_STEPS;
+};
 
 const normalizeText = (value) =>
     String(value ?? "")
@@ -356,12 +399,52 @@ const normalizeDonHang = (dh) => {
       dh.id ??
       dh.maCode;
 
-  const rawStatus =
-      dh.trangThaiRieng ??
+  // Trạng thái tổng thể của đơn hàng (do hệ thống/nhân viên quản lý)
+  const overallStatus =
       dh.trangThai ??
       dh.trangThaiDonHang ??
       dh.status ??
-      "Chờ xác nhận";
+      "";
+
+  // Trạng thái riêng của đối tác (Đã nhận, Đang xử lý, Đã giao)
+  const partnerStatus = dh.trangThaiRieng ?? "";
+
+  // Kiểm tra nhân viên phụ trách có phải tài khoản 'website' không
+  const nhanVienUsername = String(
+      dh.tenDangNhapNhanVien ??
+      dh.nhanVienTenDangNhap ??
+      dh.nhanVien?.tenDangNhap ??
+      ""
+  ).trim().toLowerCase();
+
+  const nhanVienName = String(
+      dh.tenNhanVien ??
+      dh.nhanVien?.hoTen ??
+      dh.nhanVien ??
+      ""
+  ).trim().toLowerCase();
+
+  const isWebsite = nhanVienUsername === "website" || nhanVienName === "website";
+
+  // Các trạng thái chỉ có ở đơn hàng website (thanh toán Payoo, hoàn thành)
+  const overallNorm = String(overallStatus).trim().toLowerCase();
+  const isPaymentOrDone =
+      overallNorm === "thanh toán" ||
+      overallNorm === "hoàn thành" ||
+      overallNorm === "chờ thanh toán" ||
+      overallNorm.includes("hoàn thành") ||
+      overallNorm.includes("thanh toán");
+
+  /*
+   * Logic chọn trạng thái hiển thị:
+   * - Nếu là đơn hàng website VÀ trạng thái tổng đã là Thanh toán/Hoàn thành
+   *   → ưu tiên trạng thái tổng thể để stepper tự động cập nhật
+   * - Còn lại ưu tiên trangThaiRieng của đối tác (3 bước riêng)
+   */
+  const rawStatus =
+      (isWebsite && isPaymentOrDone)
+          ? (dh.trangThai ?? dh.trangThaiDonHang ?? dh.status ?? "Chờ xác nhận")
+          : (partnerStatus || overallStatus || "Chờ xác nhận");
 
   const sanPhams = Array.isArray(dh.sanPhams)
       ? dh.sanPhams
@@ -416,7 +499,15 @@ const normalizeDonHang = (dh) => {
         dh.tenNhanVien ??
         dh.nhanVien?.hoTen ??
         dh.nhanVienPhuTrach ??
+        dh.nhanVien ??
         "Chưa phân công",
+
+    tenDangNhapNhanVien:
+        dh.tenDangNhapNhanVien ??
+        dh.nhanVienTenDangNhap ??
+        dh.nhanVien?.tenDangNhap ??
+        dh.tenDangNhap ??
+        "",
 
     phuongThucThanhToan:
         dh.phuongThucThanhToan ??
@@ -590,13 +681,25 @@ const openChiTiet = (dh) => {
 };
 
 // ─────────────────────────────────────────────
-// Xử lý đơn hàng của đối tác
+// Xử lý đơn hàng của đối tác & Thanh toán Payoo
 // ─────────────────────────────────────────────
+const canPaymentOrder = (dh) => {
+  if (!isWebsiteOrder(dh)) return false;
+  const status = normalizeStatus(dh?.trangThai);
+  return (
+    status === "Đã giao" ||
+    status === "Thanh toán" ||
+    dh?.trangThai === "Đã giao" ||
+    dh?.trangThai === "Thanh toán" ||
+    dh?.trangThai === "Chờ thanh toán"
+  );
+};
+
 const canStartProcessing = (dh) => {
-return (
-    dh.trangThai === "Đã nhận" &&
-    hasRequiredContract(dh)
-);
+  return (
+      dh.trangThai === "Đã nhận" &&
+      hasRequiredContract(dh)
+  );
 };
 
 const canMarkDelivered = (dh) => {
@@ -609,10 +712,10 @@ const canMarkDelivered = (dh) => {
 const isPartnerActionEnabled = (dh) => {
   return (
       canStartProcessing(dh) ||
-      canMarkDelivered(dh)
+      canMarkDelivered(dh) ||
+      canPaymentOrder(dh)
   );
 };
-
 
 const getPartnerActionLabel = (dh) => {
   if (canStartProcessing(dh)) {
@@ -621,6 +724,10 @@ const getPartnerActionLabel = (dh) => {
 
   if (canMarkDelivered(dh)) {
     return "Báo đã giao";
+  }
+
+  if (canPaymentOrder(dh)) {
+    return "Thanh toán";
   }
 
   /*
@@ -636,6 +743,10 @@ const getPartnerActionLabel = (dh) => {
 
   if (dh.trangThai === "Đã giao") {
     return "Đã giao hàng";
+  }
+
+  if (dh.trangThai === "Hoàn thành") {
+    return "Hoàn thành";
   }
 
   if (dh.trangThai === "Đã hủy") {
@@ -736,6 +847,127 @@ const baoDaGiao = async (dh) => {
   }
 };
 
+const getOrderAmount = (order) => {
+  const rawAmount =
+      order?.tongTien ??
+      order?.TongTien ??
+      order?.tongCong ??
+      order?.thanhTien ??
+      order?.ThanhTien ??
+      order?.totalAmount ??
+      order?.total ??
+      0;
+
+  if (typeof rawAmount === "number") {
+    return Number.isFinite(rawAmount)
+        ? Math.max(0, Math.round(rawAmount))
+        : 0;
+  }
+
+  let value = String(rawAmount)
+      .replace(/[₫đ\s]/gi, "")
+      .trim();
+
+  // Dạng tiền hiển thị Việt Nam: 1.250.000
+  if (/^\d{1,3}(\.\d{3})+$/.test(value)) {
+    value = value.replace(/\./g, "");
+  } else {
+    // Dạng BigDecimal từ backend: 1250000.00
+    value = value.replace(/,/g, "");
+  }
+
+  const amount = Number(value);
+
+  return Number.isFinite(amount)
+      ? Math.max(0, Math.round(amount))
+      : 0;
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const resetPayoo = () => {
+  payooStatus.value = "waiting";
+  payooQrImage.value = "";
+  currentPayooTransaction.value = null;
+  selectedOrderForPayment.value = null;
+  payooSubmitting.value = false;
+};
+
+const openPaymentDialog = async (dh) => {
+  selectedOrderForPayment.value = dh;
+  const amount = getOrderAmount(dh);
+
+  if (amount < 1000) {
+    ElMessage.warning("Số tiền đơn hàng tối thiểu là 1.000đ để thanh toán qua Payoo");
+    return;
+  }
+
+  payooSubmitting.value = true;
+  try {
+    const maDonHang = dh?.maDonHang ?? dh?.MaDonHang ?? dh?.id;
+    const transaction = await taoPayooDonHang(maDonHang, amount);
+    currentPayooTransaction.value = transaction;
+
+    const qrContent = [
+      "PAYOO MOCK",
+      `MA_GIAO_DICH=${transaction.maGiaoDich}`,
+      `LOAI=${transaction.loaiGiaoDich}`,
+      `SO_TIEN=${transaction.soTien}`
+    ].join("|");
+
+    payooQrImage.value = await QRCode.toDataURL(qrContent, {
+      width: 270,
+      margin: 2
+    });
+
+    payooStatus.value = "waiting";
+    showPayooDialog.value = true;
+  } catch (error) {
+    console.error("Không tạo được Payoo:", error);
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.response?.data ||
+        "Không tạo được giao dịch Payoo"
+    );
+  } finally {
+    payooSubmitting.value = false;
+  }
+};
+
+const handlePayooQrClick = async () => {
+  if (!currentPayooTransaction.value?.maGiaoDich) return;
+  if (payooStatus.value !== "waiting") return;
+
+  payooStatus.value = "processing";
+
+  try {
+    await delay(1200);
+
+    const result = await confirmPayooTransaction(
+        currentPayooTransaction.value.maGiaoDich
+    );
+
+    currentPayooTransaction.value = result;
+    payooStatus.value = "success";
+
+    await fetchDonHangs();
+    ElMessage.success("Thanh toán đơn hàng thành công");
+
+    await delay(1700);
+    showPayooDialog.value = false;
+    resetPayoo();
+  } catch (error) {
+    console.error("Callback Payoo lỗi:", error);
+    payooStatus.value = "waiting";
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Thanh toán Payoo thất bại"
+    );
+  }
+};
+
 const handlePartnerAction = (dh) => {
   if (canStartProcessing(dh)) {
     openXuLy(dh);
@@ -744,30 +976,101 @@ const handlePartnerAction = (dh) => {
 
   if (canMarkDelivered(dh)) {
     baoDaGiao(dh);
+    return;
+  }
+
+  if (canPaymentOrder(dh)) {
+    openPaymentDialog(dh);
   }
 };
 
 // ─────────────────────────────────────────────
 // Stepper
 // ─────────────────────────────────────────────
-const getStepIndex = (trangThai) =>
-    STEPS.indexOf(normalizeStatus(trangThai));
+const normalizeStepName = (value) => {
+  const status = String(value ?? "").trim().toLowerCase();
+
+  if (status === "mới tạo") return "Mới tạo";
+  if (
+      status === "xác nhận" ||
+      status === "đã xác nhận" ||
+      status === "chờ đối tác xác nhận" ||
+      status === "chờ xác nhận"
+  ) {
+    return "Xác nhận";
+  }
+
+  if (status === "đã nhận") return "Đã nhận";
+
+  if (
+      status === "xử lý" ||
+      status === "đang xử lý" ||
+      status.includes("đang xử lý") ||
+      status.includes("đang chuẩn bị")
+  ) {
+    return "Đang xử lý";
+  }
+
+  if (status === "đã giao" || status.includes("đã giao")) return "Đã giao";
+
+  if (
+      status === "thanh toán" ||
+      status === "chờ thanh toán" ||
+      status.includes("chờ thanh toán") ||
+      status.includes("thanh toán")
+  ) {
+    return "Thanh toán";
+  }
+
+  if (
+      status.includes("hoàn thành") ||
+      status.includes("hoàn tất") ||
+      status === "xong"
+  ) {
+    return "Hoàn thành";
+  }
+
+  return String(value ?? "").trim();
+};
 
 const isTerminalFailedStatus = (dh) =>
-    ["Đã hủy", "Từ chối", "Gặp sự cố"].includes(dh.trangThai);
+    ["Đã hủy", "Từ chối", "Gặp sự cố"].includes(dh?.trangThai) ||
+    ["Đã hủy", "Từ chối", "Gặp sự cố"].includes(normalizeStatus(dh?.trangThai));
 
 const isStepCompleted = (dh, stepName) => {
   if (isTerminalFailedStatus(dh)) return false;
 
-  const currentIndex = getStepIndex(dh.trangThai);
-  const stepIndex = getStepIndex(stepName);
+  const currentStatusNorm = normalizeStepName(dh.trangThai);
+  const targetStepNorm = normalizeStepName(stepName);
+  const steps = getOrderSteps(dh);
 
-  return currentIndex >= 0 && stepIndex < currentIndex;
+  // Đối với đơn hàng thông thường: nếu đã sang Thanh toán hoặc Hoàn thành thì cả 3 bước đối tác đều hoàn thành
+  if (!isWebsiteOrder(dh)) {
+    if (currentStatusNorm === "Thanh toán" || currentStatusNorm === "Hoàn thành") {
+      return true;
+    }
+  }
+
+  const currentIdx = steps.indexOf(currentStatusNorm);
+  const targetIdx = steps.indexOf(targetStepNorm);
+
+  return currentIdx >= 0 && targetIdx >= 0 && targetIdx < currentIdx;
 };
 
-const isStepActive = (dh, stepName) =>
-    !isTerminalFailedStatus(dh) &&
-    normalizeStatus(dh.trangThai) === stepName;
+const isStepActive = (dh, stepName) => {
+  if (isTerminalFailedStatus(dh)) return false;
+
+  const currentStatusNorm = normalizeStepName(dh.trangThai);
+  const targetStepNorm = normalizeStepName(stepName);
+
+  if (!isWebsiteOrder(dh)) {
+    if (currentStatusNorm === "Thanh toán" || currentStatusNorm === "Hoàn thành") {
+      return false;
+    }
+  }
+
+  return currentStatusNorm === targetStepNorm;
+};
 
 const isLineCompleted = (dh, targetStep) =>
     isStepCompleted(dh, targetStep) ||
@@ -779,6 +1082,8 @@ const trangThaiBadgeClass = (status) => {
   if (normalized === "Đã nhận") return "badge-blue";
   if (normalized === "Đang xử lý") return "badge-orange";
   if (normalized === "Đã giao") return "badge-teal";
+  if (normalized === "Thanh toán") return "badge-indigo";
+  if (normalized === "Hoàn thành") return "badge-green";
   if (["Đã hủy", "Từ chối", "Gặp sự cố"].includes(normalized)) {
     return "badge-red";
   }
@@ -1004,7 +1309,7 @@ const apDungBoLoc = () => {
           <div class="card-stepper">
             <div class="stepper-track">
               <template
-                  v-for="(step, index) in STEPS"
+                  v-for="(step, index) in getOrderSteps(dh)"
                   :key="step"
               >
                 <div
@@ -1031,12 +1336,12 @@ const apDungBoLoc = () => {
                 </div>
 
                 <div
-                    v-if="index < STEPS.length - 1"
+                    v-if="index < getOrderSteps(dh).length - 1"
                     class="step-line"
                     :class="{
                   completed: isLineCompleted(
                     dh,
-                    STEPS[index + 1]
+                    getOrderSteps(dh)[index + 1]
                   ),
                 }"
                 ></div>
@@ -1298,6 +1603,77 @@ const apDungBoLoc = () => {
           Xác nhận báo cáo
         </el-button>
       </template>
+    </el-dialog>
+
+    <!-- =====================================================
+         POPUP QR PAYOO
+    ====================================================== -->
+    <el-dialog
+        v-model="showPayooDialog"
+        width="440px"
+        :show-close="payooStatus !== 'processing'"
+        :close-on-click-modal="false"
+        :close-on-press-escape="payooStatus !== 'processing'"
+        :append-to-body="true"
+        :z-index="10070"
+    >
+      <div class="payoo-box">
+        <div class="payoo-logo">PAYOO</div>
+        <div class="payoo-sub">CỔNG THANH TOÁN TRỰC TUYẾN</div>
+
+        <!-- WAITING -->
+        <template v-if="payooStatus === 'waiting'">
+          <h3 class="payoo-title">
+            THANH TOÁN ĐƠN HÀNG #{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}
+          </h3>
+          <p class="payoo-description">Quét mã QR hoặc nhấn vào mã để thanh toán.</p>
+
+          <img
+              v-if="payooQrImage"
+              :src="payooQrImage"
+              class="payoo-qr"
+              alt="QR Payoo"
+              @click="handlePayooQrClick"
+          />
+
+          <div class="qr-hint">
+            <i class="fa-solid fa-hand-pointer"></i>
+            Nhấn vào QR để thanh toán
+          </div>
+
+          <div class="payoo-amount">
+            {{ formatMoney(currentPayooTransaction?.soTien) }}
+          </div>
+
+          <div class="payoo-code">
+            <span>Mã giao dịch</span>
+            <strong>{{ currentPayooTransaction?.maGiaoDich }}</strong>
+          </div>
+        </template>
+
+        <!-- PROCESSING -->
+        <template v-else-if="payooStatus === 'processing'">
+          <div class="processing-state">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <h3>Payoo đang xử lý...</h3>
+            <p>Đang xác nhận giao dịch</p>
+            <strong>{{ formatMoney(currentPayooTransaction?.soTien) }}</strong>
+          </div>
+        </template>
+
+        <!-- SUCCESS -->
+        <template v-else-if="payooStatus === 'success'">
+          <div class="success-state">
+            <i class="fa-solid fa-circle-check"></i>
+            <h3>Thanh toán thành công</h3>
+            <strong>{{ formatMoney(currentPayooTransaction?.soTien) }}</strong>
+            <p>
+              Payoo đã xác nhận giao dịch. Đơn hàng đã chuyển sang trạng thái Hoàn thành.
+            </p>
+            <small>{{ currentPayooTransaction?.maGiaoDich }}</small>
+          </div>
+        </template>
+      </div>
     </el-dialog>
   </div>
 </template>

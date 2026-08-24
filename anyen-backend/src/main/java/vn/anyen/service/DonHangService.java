@@ -1271,6 +1271,14 @@ public class DonHangService {
                                 ? nhanVien.getHoTen()
                                 : ""
                 )
+                .tenDangNhapNhanVien(
+                        nhanVien != null
+                                ? nhanVien.getTenDangNhap()
+                                : ""
+                )
+                .phuongThucThanhToan(
+                        getPhuongThucThanhToanString(donHang.getPhuongThucThanhToan())
+                )
 
                 .ghiChu(donHang.getGhiChu())
                 .trangThai(getTrangThaiString(donHang.getTrangThai()))
@@ -1282,6 +1290,16 @@ public class DonHangService {
 
                 .sanPhams(sanPhams)
                 .build();
+    }
+
+    private String getPhuongThucThanhToanString(Integer pt) {
+        if (pt == null) return "Chưa cập nhật";
+        return switch (pt) {
+            case 1 -> "Tiền mặt";
+            case 2 -> "Chuyển khoản";
+            case 3 -> "Payoo";
+            default -> "Chưa cập nhật";
+        };
     }
 
     @Transactional(readOnly = true)

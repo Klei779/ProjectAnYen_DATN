@@ -899,3 +899,167 @@
     margin: 0 auto;
     display: block;
 }
+
+/* =====================================================
+   POPUP QR PAYOO MOCK
+===================================================== */
+
+.payoo-box {
+  padding: 4px 15px 20px;
+  text-align: center;
+}
+
+.payoo-logo {
+  color: #e0202b;
+  font-size: 32px;
+  font-weight: 900;
+  letter-spacing: 1px;
+}
+
+.payoo-sub {
+  margin-top: 2px;
+  color: #899197;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.payoo-title {
+  margin-top: 23px;
+  color: #3c454a;
+  font-size: 16px;
+}
+
+.payoo-description {
+  margin: 6px 0 16px;
+  color: #777f85;
+  font-size: 13px;
+}
+
+.payoo-qr {
+  width: 250px;
+  max-width: 100%;
+  padding: 10px;
+  border: 2px solid #eee;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.payoo-qr:hover {
+  transform: scale(1.025);
+  border-color: #e0202b;
+  box-shadow: 0 10px 35px rgba(224, 32, 43, 0.15);
+}
+
+.qr-hint {
+  margin-top: 9px;
+  color: #e0202b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.payoo-amount {
+  margin-top: 18px;
+  color: #8a1023;
+  font-size: 25px;
+  font-weight: 900;
+}
+
+.payoo-code {
+  display: grid;
+  gap: 4px;
+  margin-top: 10px;
+  color: #7d858a;
+  font-size: 11px;
+}
+
+.payoo-code strong {
+  color: #555e64;
+  font-family: monospace;
+  overflow-wrap: anywhere;
+}
+
+.mock-note {
+  display: flex;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 11px;
+  border-radius: 8px;
+  background: #fff8e9;
+  color: #826c3d;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+/* =====================================================
+   PROCESS
+===================================================== */
+
+.processing-state {
+  padding: 45px 10px 30px;
+}
+
+.processing-state > i {
+  color: #e0202b;
+  font-size: 50px;
+}
+
+.processing-state h3 {
+  margin: 18px 0 7px;
+  color: #3c454a;
+  font-size: 18px;
+}
+
+.processing-state p {
+  color: #7c8489;
+  font-size: 13px;
+}
+
+.processing-state strong {
+  display: block;
+  margin-top: 13px;
+  color: #8a1023;
+  font-size: 22px;
+}
+
+/* =====================================================
+   SUCCESS
+===================================================== */
+
+.success-state {
+  padding: 40px 10px 25px;
+}
+
+.success-state > i {
+  color: #259c55;
+  font-size: 65px;
+}
+
+.success-state h3 {
+  margin: 16px 0 10px;
+  color: #3c454a;
+  font-size: 20px;
+}
+
+.success-state strong {
+  display: block;
+  color: #259c55;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.success-state p {
+  margin: 12px auto;
+  max-width: 320px;
+  color: #747d83;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.success-state small {
+  color: #a4adb3;
+  font-size: 11px;
+  font-family: monospace;
+}

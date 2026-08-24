@@ -1909,6 +1909,10 @@ public class DoiTacThongBaoService {
                 .nhanVien(donHang.getNhanVien() != null
                         ? donHang.getNhanVien().getHoTen()
                         : "")
+                .tenDangNhapNhanVien(donHang.getNhanVien() != null
+                        ? donHang.getNhanVien().getTenDangNhap()
+                        : "")
+                .phuongThucThanhToan(getPhuongThucThanhToanString(donHang.getPhuongThucThanhToan()))
                 .ghiChu(donHang.getGhiChu())
                 .trangThai(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                 .trangThaiRieng(trangThaiRieng)
@@ -1917,6 +1921,16 @@ public class DoiTacThongBaoService {
                 .lyDoSuCo(donHang.getLyDoSuCo())
                 .sanPhams(sanPhams)
                 .build();
+    }
+
+    private String getPhuongThucThanhToanString(Integer pt) {
+        if (pt == null) return "Chưa cập nhật";
+        return switch (pt) {
+            case 1 -> "Tiền mặt";
+            case 2 -> "Chuyển khoản";
+            case 3 -> "Payoo";
+            default -> "Chưa cập nhật";
+        };
     }
 
     private String formatDateTime(LocalDateTime dateTime) {

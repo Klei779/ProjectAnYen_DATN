@@ -62,7 +62,7 @@ public class QuanLyNhanVienService {
     @Transactional
     public QuanLyNhanVienResponse capNhatNhanVien(
             Integer maNhanVien,
-            QuanLyNhanVienRequest request
+            CapNhatNhanVienRequest request
     ) {
         NhanVien nhanVien = nhanVienRepository.findById(maNhanVien)
                 .orElseThrow(() -> new RuntimeException(

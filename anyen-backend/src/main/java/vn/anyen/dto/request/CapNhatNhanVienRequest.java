@@ -52,4 +52,18 @@ public class CapNhatNhanVienRequest {
     @Min(value = 1, message = "Vai trò không hợp lệ")
     @Max(value = 3, message = "Vai trò không hợp lệ")
     private Integer vaiTro;
+            @NotBlank(message = "Quận Huyện không được để trống")
+            @Size(max = 100, message = "Quận Huyện tối đa 100 ký tự")
+            private String quanHuyen;
+
+            @NotBlank(message = "Tỉnh thành không được để trống")
+            @Size(max = 100, message = "Tỉnh thành tối đa 100 ký tự")
+            private String tinhThanh;
+
+            @NotBlank(message = "Phường xá không được để trống")
+            @Size(max = 100, message = "Phường xá tối đa 100 ký tự")
+            private String phuongXa;
+            @NotBlank(message = "Số nhà đường không được để trống")
+            @Size(max = 100, message = "Số nhà đường tối đa 100 ký tự")
+            private String soNhaDuong;
 }

@@ -44,7 +44,7 @@ public class QuanLyNhanVienController {
     @PutMapping("/{maNhanVien}")
     public QuanLyNhanVienResponse capNhatNhanVien(
             @PathVariable Integer maNhanVien,
-            @Valid @RequestBody QuanLyNhanVienRequest request
+            @Valid @RequestBody CapNhatNhanVienRequest request
     ) {
         return quanLyNhanVienService.capNhatNhanVien(maNhanVien, request);
     }

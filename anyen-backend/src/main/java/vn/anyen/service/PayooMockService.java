@@ -41,6 +41,9 @@ public class PayooMockService {
     private final HoaDonRepository
             hoaDonRepository;
 
+    private final LichSuGiaoDichDoiTacRepository
+            lichSuGiaoDichDoiTacRepository;
+
 
     // =================================================
     // NẠP QUỸ
@@ -442,106 +445,124 @@ public class PayooMockService {
             String maGiaoDich
     ) {
 
-        PayooMockTransaction tx =
-                getTransaction(
-                        maGiaoDich
+        try {
+            System.out.println("=== XÁC NHẬN THANH CÔNG START ===");
+            System.out.println("MaGiaoDich: " + maGiaoDich);
+
+            PayooMockTransaction tx =
+                    getTransaction(
+                            maGiaoDich
+                    );
+
+            System.out.println("LoaiGiaoDich: " + tx.getLoaiGiaoDich());
+            System.out.println("TrangThai: " + tx.getTrangThai());
+
+
+            /*
+             * Chống xử lý 2 lần.
+             */
+            if (
+                    PayooMockTransaction
+                            .TT_THANH_CONG
+                            .equals(
+                                    tx.getTrangThai()
+                            )
+            ) {
+
+                System.out.println("Giao dịch đã thành công trước đó");
+                return map(tx);
+            }
+
+
+            if (
+                    PayooMockTransaction
+                            .TT_THAT_BAI
+                            .equals(
+                                    tx.getTrangThai()
+                            )
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Giao dịch đã thất bại"
                 );
+            }
 
 
-        /*
-         * Chống xử lý 2 lần.
-         */
-        if (
-                PayooMockTransaction
-                        .TT_THANH_CONG
-                        .equals(
-                                tx.getTrangThai()
-                        )
-        ) {
+            tx.setTrangThai(
+                    PayooMockTransaction
+                            .TT_DANG_XU_LY
+            );
+
+
+            payooRepository.save(tx);
+
+
+            /*
+             * Xử lý nghiệp vụ tùy loại.
+             */
+            switch (
+                    tx.getLoaiGiaoDich()
+            ) {
+
+                case PayooMockTransaction
+                             .LOAI_NAP_QUY
+                        -> xuLyNapQuy(tx);
+
+
+                case PayooMockTransaction
+                             .LOAI_RUT_QUY
+                        -> xuLyRutQuy(tx);
+
+
+                case PayooMockTransaction
+                             .LOAI_RUT_VI
+                        -> xuLyRutVi(tx);
+
+
+                case PayooMockTransaction
+                             .LOAI_THANH_TOAN_CONG_NO
+                        -> xuLyCongNo(tx);
+
+
+                case PayooMockTransaction
+                             .LOAI_THANH_TOAN_DON_HANG
+                        -> xuLyDonHang(tx);
+
+
+                default ->
+                        throw new ResponseStatusException(
+                                HttpStatus.BAD_REQUEST,
+                                "Loại giao dịch Payoo không hợp lệ"
+                        );
+            }
+
+
+            tx.setTrangThai(
+                    PayooMockTransaction
+                            .TT_THANH_CONG
+            );
+
+
+            tx.setCompletedAt(
+                    LocalDateTime.now()
+            );
+
+
+            payooRepository.save(tx);
+
+            System.out.println("=== XÁC NHẬN THANH CÔNG END ===");
+            System.out.println("Transaction đã hoàn tất và sẽ commit");
+
 
             return map(tx);
+
+        } catch (Exception e) {
+            System.out.println("=== XÁC NHẬN THANH CÔNG LỖI ===");
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-
-
-        if (
-                PayooMockTransaction
-                        .TT_THAT_BAI
-                        .equals(
-                                tx.getTrangThai()
-                        )
-        ) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Giao dịch đã thất bại"
-            );
-        }
-
-
-        tx.setTrangThai(
-                PayooMockTransaction
-                        .TT_DANG_XU_LY
-        );
-
-
-        payooRepository.save(tx);
-
-
-        /*
-         * Xử lý nghiệp vụ tùy loại.
-         */
-        switch (
-                tx.getLoaiGiaoDich()
-        ) {
-
-            case PayooMockTransaction
-                         .LOAI_NAP_QUY
-                    -> xuLyNapQuy(tx);
-
-
-            case PayooMockTransaction
-                         .LOAI_RUT_QUY
-                    -> xuLyRutQuy(tx);
-
-
-            case PayooMockTransaction
-                         .LOAI_RUT_VI
-                    -> xuLyRutVi(tx);
-
-
-            case PayooMockTransaction
-                         .LOAI_THANH_TOAN_CONG_NO
-                    -> xuLyCongNo(tx);
-
-
-            case PayooMockTransaction
-                         .LOAI_THANH_TOAN_DON_HANG
-                    -> xuLyDonHang(tx);
-
-
-            default ->
-                    throw new ResponseStatusException(
-                            HttpStatus.BAD_REQUEST,
-                            "Loại giao dịch Payoo không hợp lệ"
-                    );
-        }
-
-
-        tx.setTrangThai(
-                PayooMockTransaction
-                        .TT_THANH_CONG
-        );
-
-
-        tx.setCompletedAt(
-                LocalDateTime.now()
-        );
-
-
-        payooRepository.save(tx);
-
-
-        return map(tx);
     }
 
 
@@ -586,6 +607,15 @@ public class PayooMockService {
         doiTacRepository.save(
                 doiTac
         );
+
+
+        ghiNhanLichSuGiaoDich(
+                doiTac,
+                "QUY",
+                "+",
+                tx.getSoTien(),
+                "Nạp Quỹ qua Payoo"
+        );
     }
 
 
@@ -597,57 +627,109 @@ public class PayooMockService {
             PayooMockTransaction tx
     ) {
 
-        DoiTac doiTac =
-                getDoiTac(
-                        tx.getMaDoiTac()
+        try {
+            DoiTac doiTac =
+                    getDoiTac(
+                            tx.getMaDoiTac()
+                    );
+
+
+            BigDecimal soDuQuy =
+                    zero(
+                            doiTac.getSoDuQuy()
+                    );
+
+
+            BigDecimal dangKhoa =
+                    zero(
+                            doiTac
+                                    .getSoDuQuyDangKhoa()
+                    );
+
+
+            BigDecimal khaDung =
+                    soDuQuy.subtract(
+                            dangKhoa
+                    );
+
+
+            /*
+             * Kiểm tra lại lúc Payoo callback.
+             */
+            if (
+                    khaDung.compareTo(
+                            tx.getSoTien()
+                    ) < 0
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Quỹ khả dụng không còn đủ để rút"
                 );
+            }
 
 
-        BigDecimal soDuQuy =
-                zero(
-                        doiTac.getSoDuQuy()
-                );
+            System.out.println("=== RÚT QUỸ DEBUG ===");
+            System.out.println("Trước khi rút - SoDuQuy: " + doiTac.getSoDuQuy());
+            System.out.println("Trước khi rút - SoDuVi: " + doiTac.getSoDuVi());
+            System.out.println("Số tiền rút: " + tx.getSoTien());
 
 
-        BigDecimal dangKhoa =
-                zero(
-                        doiTac
-                                .getSoDuQuyDangKhoa()
-                );
-
-
-        BigDecimal khaDung =
-                soDuQuy.subtract(
-                        dangKhoa
-                );
-
-
-        /*
-         * Kiểm tra lại lúc Payoo callback.
-         */
-        if (
-                khaDung.compareTo(
-                        tx.getSoTien()
-                ) < 0
-        ) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Quỹ khả dụng không còn đủ để rút"
+            // Rút từ Quỹ: trừ Quỹ
+            doiTac.setSoDuQuy(
+                    soDuQuy.subtract(
+                            tx.getSoTien()
+                    )
             );
+
+
+            // Chuyển vào Ví: cộng Ví
+            doiTac.setSoDuVi(
+                    zero(doiTac.getSoDuVi()).add(
+                            tx.getSoTien()
+                    )
+            );
+
+
+            System.out.println("Sau khi rút - SoDuQuy: " + doiTac.getSoDuQuy());
+            System.out.println("Sau khi rút - SoDuVi: " + doiTac.getSoDuVi());
+
+
+            doiTacRepository.save(
+                    doiTac
+            );
+
+            doiTacRepository.flush();
+
+            System.out.println("Đã flush doiTac");
+
+
+            // Ghi nhận lịch sử: trừ Quỹ
+            ghiNhanLichSuGiaoDich(
+                    doiTac,
+                    "QUY",
+                    "-",
+                    tx.getSoTien(),
+                    "Rút từ Quỹ vào Ví"
+            );
+
+            // Ghi nhận lịch sử: cộng Ví
+            ghiNhanLichSuGiaoDich(
+                    doiTac,
+                    "VI",
+                    "+",
+                    tx.getSoTien(),
+                    "Nhận từ Quỹ"
+            );
+
+            System.out.println("=== RÚT QUỸ THÀNH CÔNG ===");
+
+        } catch (Exception e) {
+            System.out.println("=== RÚT QUỸ LỖI ===");
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-
-
-        doiTac.setSoDuQuy(
-                soDuQuy.subtract(
-                        tx.getSoTien()
-                )
-        );
-
-
-        doiTacRepository.save(
-                doiTac
-        );
     }
 
 
@@ -659,41 +741,72 @@ public class PayooMockService {
             PayooMockTransaction tx
     ) {
 
-        DoiTac doiTac =
-                getDoiTac(
-                        tx.getMaDoiTac()
+        try {
+            DoiTac doiTac =
+                    getDoiTac(
+                            tx.getMaDoiTac()
+                    );
+
+
+            BigDecimal soDuVi =
+                    zero(
+                            doiTac.getSoDuVi()
+                    );
+
+
+            if (
+                    soDuVi.compareTo(
+                            tx.getSoTien()
+                    ) < 0
+            ) {
+
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST,
+                        "Số dư Ví không còn đủ để rút"
                 );
+            }
 
 
-        BigDecimal soDuVi =
-                zero(
-                        doiTac.getSoDuVi()
-                );
+            System.out.println("=== RÚT VÍ DEBUG ===");
+            System.out.println("Trước khi rút - SoDuVi: " + doiTac.getSoDuVi());
+            System.out.println("Số tiền rút: " + tx.getSoTien());
 
 
-        if (
-                soDuVi.compareTo(
-                        tx.getSoTien()
-                ) < 0
-        ) {
-
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Số dư Ví không còn đủ để rút"
+            doiTac.setSoDuVi(
+                    soDuVi.subtract(
+                            tx.getSoTien()
+                    )
             );
+
+
+            System.out.println("Sau khi rút - SoDuVi: " + doiTac.getSoDuVi());
+
+
+            doiTacRepository.save(
+                    doiTac
+            );
+
+            doiTacRepository.flush();
+
+            System.out.println("Đã flush doiTac");
+
+
+            ghiNhanLichSuGiaoDich(
+                    doiTac,
+                    "VI",
+                    "-",
+                    tx.getSoTien(),
+                    "Rút Ví qua Payoo"
+            );
+
+            System.out.println("=== RÚT VÍ THÀNH CÔNG ===");
+
+        } catch (Exception e) {
+            System.out.println("=== RÚT VÍ LỖI ===");
+            System.out.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
         }
-
-
-        doiTac.setSoDuVi(
-                soDuVi.subtract(
-                        tx.getSoTien()
-                )
-        );
-
-
-        doiTacRepository.save(
-                doiTac
-        );
     }
 
 
@@ -1065,6 +1178,33 @@ public class PayooMockService {
         return value == null
                 ? BigDecimal.ZERO
                 : value;
+    }
+
+
+    // =====================================
+    // GHI NHẬN LỊCH SỬ GIAO DỊCH
+    // =====================================
+
+    private void ghiNhanLichSuGiaoDich(
+            DoiTac doiTac,
+            String loaiVi,
+            String loaiGiaoDich,
+            BigDecimal soTien,
+            String noiDung
+    ) {
+
+        LichSuGiaoDichDoiTac lichSu =
+                new LichSuGiaoDichDoiTac();
+
+        lichSu.setDoiTac(doiTac);
+        lichSu.setLoaiVi(loaiVi);
+        lichSu.setLoaiGiaoDich(loaiGiaoDich);
+        lichSu.setSoTien(soTien);
+        lichSu.setNoiDung(noiDung);
+
+        lichSuGiaoDichDoiTacRepository.save(
+                lichSu
+        );
     }
 
 

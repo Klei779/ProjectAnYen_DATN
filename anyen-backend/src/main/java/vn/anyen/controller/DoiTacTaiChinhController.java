@@ -8,8 +8,11 @@ import vn.anyen.dto.request.SoTienRequest;
 import vn.anyen.dto.response.DoiTacTaiChinhResponse;
 import vn.anyen.dto.response.PayooMockResponse;
 import vn.anyen.entity.DoiTac;
+import vn.anyen.entity.LichSuGiaoDichDoiTac;
 import vn.anyen.service.PayooMockService;
 import vn.anyen.service.TaiChinhDoiTacService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping(
@@ -30,10 +33,17 @@ public class DoiTacTaiChinhController {
             Authentication authentication
     ) {
 
-        return taiChinhDoiTacService
+        DoiTacTaiChinhResponse response = taiChinhDoiTacService
                 .getThongTin(
                         authentication
                 );
+
+        System.out.println("=== GET TÀI CHÍNH DEBUG ===");
+        System.out.println("SoDuQuy: " + response.getSoDuQuy());
+        System.out.println("SoDuQuyDangKhoa: " + response.getSoDuQuyDangKhoa());
+        System.out.println("SoDuVi: " + response.getSoDuVi());
+
+        return response;
     }
 
 
@@ -158,6 +168,24 @@ public class DoiTacTaiChinhController {
                 .chuyenViVaoQuy(
                         authentication,
                         request.getSoTien()
+                );
+    }
+
+
+    // =============================
+    // LỊCH SỬ GIAO DỊCH
+    // =============================
+
+    @GetMapping(
+            "/lich-su-giao-dich"
+    )
+    public List<LichSuGiaoDichDoiTac> getLichSuGiaoDich(
+            Authentication authentication
+    ) {
+
+        return taiChinhDoiTacService
+                .getLichSuGiaoDich(
+                        authentication
                 );
     }
 }

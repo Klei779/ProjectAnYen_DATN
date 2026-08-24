@@ -17,19 +17,21 @@
         </p>
       </div>
 
-      <button
-          class="refresh-btn"
-          type="button"
-          :disabled="loading"
-          @click="loadData"
-      >
-        <i
-            class="fa-solid fa-rotate"
-            :class="{ 'fa-spin': loading }"
-        ></i>
+      <div class="header-actions">
+        <button
+            class="refresh-btn"
+            type="button"
+            :disabled="loading"
+            @click="loadData"
+        >
+          <i
+              class="fa-solid fa-rotate"
+              :class="{ 'fa-spin': loading }"
+          ></i>
 
-        Làm mới
-      </button>
+          Làm mới
+        </button>
+      </div>
     </div>
 
 
@@ -822,6 +824,88 @@
 
     </el-dialog>
 
+    <!-- =====================================================
+         LỊCH SỬ GIAO DỊCH
+    ====================================================== -->
+    <section class="finance-card history-card">
+      <div class="card-head">
+        <div class="icon-box history-icon">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <div class="head-info">
+          <span>Lịch sử giao dịch</span>
+          <h3>{{ historyList.length }} giao dịch</h3>
+        </div>
+      </div>
+
+      <!-- Loading -->
+      <div
+          v-if="historyLoading"
+          class="empty-state"
+      >
+        <div class="empty-state-icon loading-icon">
+          <i class="fa-solid fa-spinner fa-spin"></i>
+        </div>
+        <span>Đang tải lịch sử giao dịch...</span>
+      </div>
+
+      <!-- Không có dữ liệu -->
+      <div
+          v-else-if="!historyList.length"
+          class="empty-state"
+      >
+        <div class="empty-state-icon">
+          <i class="fa-regular fa-folder-open"></i>
+        </div>
+        <span>Chưa có lịch sử giao dịch</span>
+      </div>
+
+      <!-- Timeline -->
+      <div
+          v-else
+          class="history-timeline"
+      >
+        <div
+            v-for="(item, index) in historyList"
+            :key="index"
+            class="timeline-item"
+        >
+          <div
+              class="timeline-icon"
+              :class="classByTransaction(item.loaiVi, item.loaiGiaoDich)"
+          >
+            <i
+                class="fa-solid"
+                :class="iconByTransaction(item.loaiVi, item.loaiGiaoDich)"
+            ></i>
+          </div>
+
+          <div class="timeline-content">
+            <div class="timeline-top">
+              <h4>
+                {{ item.loaiVi === "QUY" ? "Quỹ bảo đảm" : "Ví đối tác" }}
+              </h4>
+              <span>
+                {{ formatDateTime(item.thoiGian) }}
+              </span>
+            </div>
+
+            <p>
+              {{ item.noiDung || "Giao dịch" }}
+            </p>
+
+            <div class="timeline-amount">
+              <span
+                  :class="item.loaiGiaoDich === '+' ? 'amount-plus' : 'amount-minus'"
+              >
+                {{ item.loaiGiaoDich }}{{ formatMoney(item.soTien) }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div>
 </template>
 
@@ -851,7 +935,8 @@ import {
   taoPayooNapQuy,
   taoPayooRutQuy,
   taoPayooRutVi,
-  chuyenViVaoQuy
+  chuyenViVaoQuy,
+  getLichSuGiaoDich
 } from "../../services/taiChinhDoiTacService.js"
 
 
@@ -929,6 +1014,18 @@ const qrImage =
  */
 const payooStatus =
     ref("waiting")
+
+
+// =====================================================
+// LỊCH SỬ GIAO DỊCH
+// =====================================================
+
+const historyLoading =
+    ref(false)
+
+
+const historyList =
+    ref([])
 
 
 // =====================================================
@@ -1014,8 +1111,15 @@ const loadData = async () => {
 
   try {
 
-    finance.value =
+    const result =
         await getTaiChinhDoiTac()
+
+    console.log("=== LOAD DATA DEBUG ===")
+    console.log("SoDuQuy:", result?.soDuQuy)
+    console.log("SoDuQuyDangKhoa:", result?.soDuQuyDangKhoa)
+    console.log("SoDuVi:", result?.soDuVi)
+
+    finance.value = result
 
   } catch (error) {
 
@@ -1037,6 +1141,86 @@ const loadData = async () => {
     loading.value =
         false
   }
+}
+
+
+// =====================================================
+// LOAD LỊCH SỬ GIAO DỊCH
+// =====================================================
+
+const loadHistory = async () => {
+
+  historyLoading.value =
+      true
+
+
+  try {
+
+    const response =
+        await getLichSuGiaoDich()
+
+    historyList.value =
+        response || []
+
+  } catch (error) {
+
+    console.error(
+        "Lỗi tải lịch sử giao dịch:",
+        error
+    )
+
+
+    ElMessage.error(
+        getErrorMessage(
+            error,
+            "Không tải được lịch sử giao dịch"
+        )
+    )
+
+  } finally {
+
+    historyLoading.value =
+        false
+  }
+}
+
+
+// =====================================================
+// HELPER FUNCTIONS CHO TIMELINE
+// =====================================================
+
+const iconByTransaction = (loaiVi, loaiGiaoDich) => {
+  if (loaiVi === "QUY") {
+    if (loaiGiaoDich === "+") return "fa-plus-circle";
+    return "fa-minus-circle";
+  }
+  if (loaiVi === "VI") {
+    if (loaiGiaoDich === "+") return "fa-arrow-down";
+    return "fa-arrow-up";
+  }
+  return "fa-exchange-alt";
+}
+
+const classByTransaction = (loaiVi, loaiGiaoDich) => {
+  if (loaiVi === "QUY") {
+    return loaiGiaoDich === "+" ? "green" : "orange";
+  }
+  if (loaiVi === "VI") {
+    return loaiGiaoDich === "+" ? "blue" : "red";
+  }
+  return "purple";
+}
+
+const formatDateTime = (dateTime) => {
+  if (!dateTime) return "---";
+  const date = new Date(dateTime);
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 
@@ -1293,6 +1477,12 @@ const handleQrClick = async () => {
      * Lấy số dư Quỹ mới.
      */
     await loadData()
+
+
+    /*
+     * Làm mới lịch sử giao dịch.
+     */
+    await loadHistory()
 
 
     ElMessage.success(
@@ -1565,6 +1755,9 @@ const handleWithdraw = async () => {
     await loadData()
 
 
+    await loadHistory()
+
+
     ElMessage.success(
         withdrawType.value === "fund"
             ? "Rút Quỹ thành công"
@@ -1710,6 +1903,9 @@ const handleTransfer = async () => {
         false
 
 
+    await loadHistory()
+
+
     ElMessage.success(
         "Chuyển tiền từ Ví vào Quỹ thành công"
     )
@@ -1741,9 +1937,10 @@ const handleTransfer = async () => {
 // MOUNT
 // =====================================================
 
-onMounted(
-    loadData
-)
+onMounted(() => {
+  loadData()
+  loadHistory()
+})
 
 </script>
 
@@ -1795,6 +1992,16 @@ onMounted(
 
 
 /* =====================================================
+   HEADER ACTIONS
+===================================================== */
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* =====================================================
    REFRESH
 ===================================================== */
 
@@ -1819,6 +2026,114 @@ onMounted(
 .refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* =====================================================
+   LỊCH SỬ GIAO DỊCH
+===================================================== */
+
+.history-card {
+  margin-top: 20px;
+}
+
+.history-icon {
+  background: #e0e7ff;
+  color: #4f46e5;
+}
+
+.history-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 15px 0;
+}
+
+.timeline-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.timeline-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.timeline-icon.green {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+.timeline-icon.orange {
+  color: #ea580c;
+  background: #ffedd5;
+}
+
+.timeline-icon.blue {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.timeline-icon.red {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.timeline-content {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.timeline-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.timeline-top h4 {
+  margin: 0;
+  color: #1f2937;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.timeline-top span {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.timeline-content p {
+  margin: 0 0 8px;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+.timeline-amount {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.amount-plus {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+.amount-minus {
+  color: #dc2626;
+  background: #fee2e2;
 }
 
 

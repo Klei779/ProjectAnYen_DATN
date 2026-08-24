@@ -8,9 +8,11 @@ import vn.anyen.dto.response.DoiTacTaiChinhResponse;
 import vn.anyen.entity.ChiTietDonHang;
 import vn.anyen.entity.DamBaoDonHangDoiTac;
 import vn.anyen.entity.DoiTac;
+import vn.anyen.entity.LichSuGiaoDichDoiTac;
 import vn.anyen.repository.ChiTietDonHangRepository;
 import vn.anyen.repository.DamBaoDonHangDoiTacRepository;
 import vn.anyen.repository.DoiTacRepository;
+import vn.anyen.repository.LichSuGiaoDichDoiTacRepository;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -34,6 +36,9 @@ public class TaiChinhDoiTacService {
 
     private final DamBaoDonHangDoiTacRepository
             damBaoRepository;
+
+    private final LichSuGiaoDichDoiTacRepository
+            lichSuGiaoDichDoiTacRepository;
 
 
     // =====================================
@@ -135,6 +140,15 @@ public class TaiChinhDoiTacService {
 
 
         doiTacRepository.save(doiTac);
+
+
+        ghiNhanLichSuGiaoDich(
+                doiTac,
+                "QUY",
+                "+",
+                soTien,
+                "Nạp Quỹ qua Payoo"
+        );
 
 
         return mapResponse(doiTac);
@@ -514,6 +528,26 @@ public class TaiChinhDoiTacService {
 
 
             /*
+             * Ghi nhận lịch sử giao dịch.
+             */
+            ghiNhanLichSuGiaoDich(
+                    doiTac,
+                    "QUY",
+                    "-",
+                    soTienKhoa,
+                    "Quyết toán đơn hàng #" + maDonHang
+            );
+
+            ghiNhanLichSuGiaoDich(
+                    doiTac,
+                    "VI",
+                    "+",
+                    tienVaoVi,
+                    "Nhận từ quyết toán đơn #" + maDonHang
+            );
+
+
+            /*
              * Ghi lại kết quả quyết toán.
              */
             damBao.setPhiSan(
@@ -689,6 +723,39 @@ public class TaiChinhDoiTacService {
                         '.'
                 );
     }
+
+
+    // =====================================
+    // GHI NHẬN LỊCH SỬ GIAO DỊCH
+    // =====================================
+
+    private void ghiNhanLichSuGiaoDich(
+            DoiTac doiTac,
+            String loaiVi,
+            String loaiGiaoDich,
+            BigDecimal soTien,
+            String noiDung
+    ) {
+
+        LichSuGiaoDichDoiTac lichSu =
+                new LichSuGiaoDichDoiTac();
+
+        lichSu.setDoiTac(doiTac);
+        lichSu.setLoaiVi(loaiVi);
+        lichSu.setLoaiGiaoDich(loaiGiaoDich);
+        lichSu.setSoTien(soTien);
+        lichSu.setNoiDung(noiDung);
+
+        lichSuGiaoDichDoiTacRepository.save(
+                lichSu
+        );
+    }
+
+
+    // =====================================
+    // CHUYỂN VÍ -> QUỸ
+    // =====================================
+
     @Transactional
     public DoiTacTaiChinhResponse chuyenViVaoQuy(
             Authentication authentication,
@@ -778,8 +845,46 @@ public class TaiChinhDoiTacService {
         );
 
 
+        ghiNhanLichSuGiaoDich(
+                doiTac,
+                "VI",
+                "-",
+                soTien,
+                "Chuyển từ Ví vào Quỹ"
+        );
+
+        ghiNhanLichSuGiaoDich(
+                doiTac,
+                "QUY",
+                "+",
+                soTien,
+                "Nhận từ Ví"
+        );
+
+
         return mapResponse(
                 doiTac
         );
+    }
+
+
+    // =====================================
+    // LẤY LỊCH SỬ GIAO DỊCH
+    // =====================================
+
+    @Transactional(readOnly = true)
+    public List<LichSuGiaoDichDoiTac> getLichSuGiaoDich(
+            Authentication authentication
+    ) {
+
+        DoiTac doiTac =
+                getDoiTacDangNhap(
+                        authentication
+                );
+
+        return lichSuGiaoDichDoiTacRepository
+                .findByDoiTac_MaDoiTacOrderByThoiGianDesc(
+                        doiTac.getMaDoiTac()
+                );
     }
 }

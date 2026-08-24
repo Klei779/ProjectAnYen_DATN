@@ -110,3 +110,18 @@ export async function chuyenViVaoQuy(
 
     return response.data
 }
+
+
+// ===============================
+// LẤY LỊCH SỬ GIAO DỊCH
+// ===============================
+
+export async function getLichSuGiaoDich() {
+
+    const response =
+        await api.get(
+            `${API_URL}/lich-su-giao-dich`
+        )
+
+    return response.data
+}

@@ -1660,7 +1660,7 @@ const handleWithdraw = async () => {
 
 
     ElMessage.info(
-        "Payoo đang xử lý chuyển tiền..."
+        "Đang xử lý chuyển tiền..."
     )
 
 

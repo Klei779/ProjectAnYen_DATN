@@ -55,13 +55,6 @@
               Về chúng tôi
             </RouterLink>
 
-            <button
-                class="hero-play-button"
-                type="button"
-                aria-label="Xem video giới thiệu"
-            >
-              <i class="fa-solid fa-play"></i>
-            </button>
           </div>
         </div>
       </div>

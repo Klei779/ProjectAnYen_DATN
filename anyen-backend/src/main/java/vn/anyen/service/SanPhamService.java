@@ -478,7 +478,11 @@ public class SanPhamService {
         return loai.contains("quan tài")
                 || loai.contains("quan tai")
                 || ten.contains("quan tài")
-                || ten.contains("quan tai");
+                || ten.contains("quan tai")
+                || loai.contains("dịch vụ")
+                || loai.contains("dich vu")
+                || ten.contains("dịch vụ")
+                || ten.contains("dich vu");
     }
 }
 

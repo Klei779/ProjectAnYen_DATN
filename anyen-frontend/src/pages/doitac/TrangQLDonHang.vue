@@ -250,7 +250,8 @@ const isCoffinProduct = (product) => {
    */
   if (normalizedType) {
     return normalizedType === "quan tai" ||
-        normalizedType.startsWith("quan tai ");
+        normalizedType.startsWith("quan tai ")||normalizedType === "dich vu" ||
+    normalizedType.startsWith("dich vu ");
   }
 
   /*
@@ -263,7 +264,7 @@ const isCoffinProduct = (product) => {
       ""
   );
 
-  return productName.includes("quan tai");
+  return productName.includes("quan tai")|| productName.includes("dich vu");
 };
 
 const orderHasCoffin = (products = []) => {

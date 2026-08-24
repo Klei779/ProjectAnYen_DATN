@@ -149,31 +149,15 @@ public class DonHangKhachHangService {
          */
         List<DonHangResponse> ketQua =
                 new ArrayList<>();
-
-
-        /*
-         * =========================================
-         * 7. MỖI ĐỐI TÁC -> TẠO 1 ĐƠN HÀNG
-         * =========================================
-         */
         for (
                 Map.Entry<Integer, List<SanPhamDaKiemTra>> entry
                 : sanPhamTheoDoiTac.entrySet()
         ) {
-
-            Integer maDoiTac = entry.getKey();
-
             List<SanPhamDaKiemTra> sanPhamCuaDoiTac =
                     entry.getValue();
-
-
-            /*
-             * 7.1 Tạo đơn hàng riêng
-             */
             DonHang donHang = DonHang.builder()
                     .khachHang(khachHang)
                     .nhanVien(nhanVienHeThong)
-
                     .ngayTaoDon(
                             LocalDate.now(
                                     ZoneId.of(
@@ -272,12 +256,8 @@ public class DonHangKhachHangService {
                     donHangService.getDonHangById(
                             donHangDaLuu.getMaDonHang()
                     );
-
-
             ketQua.add(response);
         }
-
-
         /*
          * 8. Trả về tất cả đơn vừa tạo
          */
@@ -791,7 +771,8 @@ public class DonHangKhachHangService {
                 ;
 
         return loai.contains("quan tài")
-                || tenSanPham.contains("quan tài")|| loai.contains("quan tai");
+                || tenSanPham.contains("quan tài")|| loai.contains("quan tai")||loai.contains("dịch vụ")
+                || tenSanPham.contains("dịch vụ")||loai.contains("dich vu");
     }
 
     private static class ThongTinKhachHangInput {

@@ -538,7 +538,7 @@ function isCoffinProduct(item) {
           .join(" ")
   );
 
-  if (categoryText.includes("quan tai")) {
+  if (categoryText.includes("quan tai")||categoryText.includes("dich vu")) {
     return true;
   }
 
@@ -549,7 +549,7 @@ function isCoffinProduct(item) {
   const productName =
       normalizeText(item.name);
 
-  return productName.includes("quan tai");
+  return productName.includes("quan tai")||productName.includes("dich vu") ;
 }
 
 const coffinItems = computed(() => {

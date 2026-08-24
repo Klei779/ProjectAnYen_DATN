@@ -168,16 +168,6 @@
           </el-select>
         </div>
 
-        <el-button
-            type="danger"
-            class="btn-thanh-toan"
-            :disabled="payableDebts.length === 0"
-            @click="openPaymentDialog()"
-        >
-          <i class="fa-solid fa-plus mr-1"></i>
-
-          Thanh toán công nợ
-        </el-button>
       </div>
 
       <!-- ========================= -->

@@ -137,11 +137,28 @@
             <!-- TOOLBAR -->
             <div class="product-toolbar">
               <div class="product-count">
-                Tất cả sản phẩm (<strong>{{ totalProducts }}</strong>)
+                <span v-if="isNearbyMode">
+                  <i class="fa-solid fa-location-dot text-danger mr-1"></i>
+                  Sản phẩm theo đối tác gần bạn (<strong>{{ totalProducts }}</strong>)
+                </span>
+                <span v-else>Tất cả sản phẩm (<strong>{{ totalProducts }}</strong>)</span>
               </div>
               <div class="toolbar-actions">
+                <button
+                    class="nearby-toggle-btn"
+                    :class="{ active: isNearbyMode, loading: loadingLocation }"
+                    type="button"
+                    title="Tìm các sản phẩm từ các đối tác gần vị trí của bạn nhất"
+                    @click="toggleNearbyMode"
+                >
+                  <i v-if="loadingLocation" class="fa-solid fa-spinner fa-spin"></i>
+                  <i v-else class="fa-solid fa-location-crosshairs"></i>
+                  <span>{{ isNearbyMode ? 'Đang lọc: Gần bạn' : 'Tìm gần bạn' }}</span>
+                  <i v-if="isNearbyMode" class="fa-solid fa-xmark nearby-clear-btn" title="Tắt tìm gần" @click.stop="toggleNearbyMode"></i>
+                </button>
+
                 <span class="sort-label">Sắp xếp theo:</span>
-                <el-select v-model="sortBy" class="sort-select">
+                <el-select v-model="sortBy" class="sort-select" :disabled="isNearbyMode">
                   <el-option label="Mới nhất" value="newest" />
                   <el-option label="Cũ nhất" value="oldest" />
                   <el-option label="Giá tăng dần" value="price_asc" />
@@ -150,10 +167,17 @@
               </div>
             </div>
 
+            <!-- BANNER GỢI Ý KHI ĐANG Ở CHẾ ĐỘ GẦN BẠN -->
+            <div v-if="isNearbyMode" class="nearby-alert-banner">
+              <i class="fa-solid fa-circle-info"></i>
+              <span>Danh sách sản phẩm được sắp xếp ưu tiên theo đối tác gần vị trí hiện tại của bạn nhất để thuận tiện vận chuyển và phục vụ.</span>
+              <button class="nearby-exit-btn" @click="toggleNearbyMode">Xem tất cả</button>
+            </div>
+
             <!-- LOADING OVERLAY -->
             <div v-if="loading" class="loading-overlay">
               <i class="fa-solid fa-spinner fa-spin"></i>
-              <span>Đang tải...</span>
+              <span>{{ loadingLocation ? 'Đang xác định vị trí...' : 'Đang tải...' }}</span>
             </div>
 
             <!-- PRODUCT GRID -->
@@ -161,7 +185,7 @@
               <!-- Không có kết quả -->
               <div v-if="products.length === 0" class="empty-state">
                 <i class="fa-solid fa-box-open"></i>
-                <p>Không tìm thấy sản phẩm phù hợp</p>
+                <p>{{ isNearbyMode ? 'Không tìm thấy đối tác nào có sản phẩm gần vị trí của bạn' : 'Không tìm thấy sản phẩm phù hợp' }}</p>
               </div>
               <!-- LOAD SAN PHAM -->
               <div v-for="item in products" :key="item.id" class="product-card" @click="goToProductDetail(item.id)">
@@ -174,17 +198,30 @@
                   />
 
                   <span
-                      v-if="item.badge"
+                      v-if="item.khoangCachText"
+                      class="product-badge nearby-distance-badge"
+                  >
+                    <i class="fa-solid fa-location-dot"></i> {{ item.khoangCachText }}
+                  </span>
+                  <span
+                      v-else-if="item.badge"
                       class="product-badge"
                       :class="item.badge.type"
                   >
-    {{ item.badge.label }}
-  </span>
+                    {{ item.badge.label }}
+                  </span>
                 </div>
 
                 <div class="product-info">
                   <h4 class="product-name">{{ item.name }}</h4>
                   <p class="product-subname">{{ item.subname }}</p>
+                  
+                  <div v-if="item.tenDoiTac && item.tenDoiTac !== 'Không rõ đối tác'" class="product-partner-tag">
+                    <i class="fa-solid fa-store"></i>
+                    <span class="partner-name">{{ item.tenDoiTac }}</span>
+                    <span v-if="item.khoangCachText" class="partner-distance"> • {{ item.khoangCachText }}</span>
+                  </div>
+
                   <div class="product-price-row">
                     <button
                         class="product-action-btn"
@@ -209,7 +246,7 @@
             </div>
 
             <!-- PAGINATION -->
-            <div class="pagination-wrapper">
+            <div v-if="!isNearbyMode" class="pagination-wrapper">
               <el-pagination background layout="prev, pager, next" :total="totalProducts"
                              :page-size="pageSize" :current-page="currentPage"
                              @current-change="currentPage = $event" />
@@ -246,7 +283,7 @@ import { ref, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import heroSectionTrangSanPham from '../../assets/images/TrangSanPham/heroSection_TrangSanPham.png'
 import flowerIcon from '../../assets/images/icon/flower_icon.png'
-import { getProducts, getFilterOptions } from '../../services/productService.js'
+import { getProducts, getFilterOptions, getNearbyProducts, saveGuestLocation } from '../../services/productService.js'
 import noImage from '../../assets/images/noimage.jpg'
 import { ElMessage } from 'element-plus'
 import { useCart } from '../../services/useCart.js'
@@ -258,6 +295,9 @@ const isMaterialOpen = ref(true)
 const isReligionOpen = ref(true)
 const loading = ref(false)
 const showFilter = ref(false)
+
+const isNearbyMode = ref(false)
+const loadingLocation = ref(false)
 
 const keyword = ref('')
 const sortBy = ref('newest')
@@ -278,6 +318,82 @@ const filtersReady = ref(false)
 let reloadTimer = null
 let ignoreAutoWatch = false
 let settingPageForFilter = false
+
+function getOrCreateSessionId() {
+  let sid = sessionStorage.getItem('anyen_guest_session')
+  if (!sid) {
+    sid = 'guest_' + Math.random().toString(36).substring(2, 11) + '_' + Date.now()
+    sessionStorage.setItem('anyen_guest_session', sid)
+  }
+  return sid
+}
+
+async function toggleNearbyMode() {
+  if (isNearbyMode.value) {
+    isNearbyMode.value = false
+    await loadProducts()
+    ElMessage.info('Đã quay lại danh sách tất cả sản phẩm')
+    return
+  }
+
+  if (!navigator.geolocation) {
+    ElMessage.error('Trình duyệt của bạn không hỗ trợ Geolocation (định vị vị trí)')
+    return
+  }
+
+  loadingLocation.value = true
+  loading.value = true
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const latitude = position.coords.latitude
+      const longitude = position.coords.longitude
+      const sessionId = getOrCreateSessionId()
+
+      try {
+        // Lưu tạm tọa độ vào Redis
+        await saveGuestLocation(sessionId, latitude, longitude)
+
+        // Lấy danh sách sản phẩm theo đối tác gần nhất
+        const { items, total } = await getNearbyProducts(sessionId)
+        products.value = items
+        totalProducts.value = total
+        isNearbyMode.value = true
+
+        ElMessage.success({
+          message: 'Đã tìm thấy sản phẩm từ các đối tác gần bạn nhất!',
+          duration: 3500
+        })
+      } catch (error) {
+        console.error('Lỗi khi lấy sản phẩm gần:', error)
+        ElMessage.error('Không thể tìm kiếm sản phẩm gần bạn lúc này. Vui lòng thử lại sau.')
+      } finally {
+        loadingLocation.value = false
+        loading.value = false
+      }
+    },
+    (error) => {
+      loadingLocation.value = false
+      loading.value = false
+      console.error('Lỗi lấy vị trí geolocation:', error)
+
+      let msg = 'Không thể lấy được vị trí hiện tại của bạn.'
+      if (error.code === 1) {
+        msg = 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trình duyệt truy cập vị trí để tìm sản phẩm gần bạn.'
+      } else if (error.code === 2) {
+        msg = 'Không xác định được vị trí của thiết bị.'
+      } else if (error.code === 3) {
+        msg = 'Quá thời gian lấy vị trí.'
+      }
+      ElMessage.warning(msg)
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 60000
+    }
+  )
+}
 
 const trustItems = [
   { icon: 'fa-solid fa-medal', title: 'Sản phẩm chất lượng', desc: 'Được tuyển chọn kỹ lưỡng' },
@@ -458,6 +574,11 @@ async function loadProducts() {
 function queueLoad(resetPage = true) {
   if (!filtersReady.value || ignoreAutoWatch) return
 
+  // Nếu người dùng chủ động lọc, thoát chế độ tìm gần
+  if (isNearbyMode.value) {
+    isNearbyMode.value = false
+  }
+
   clearTimeout(reloadTimer)
 
   if (resetPage && currentPage.value !== 1) {
@@ -473,6 +594,7 @@ function queueLoad(resetPage = true) {
 function resetFilter() {
   ignoreAutoWatch = true
 
+  isNearbyMode.value = false
   selectedCategoryId.value = null
   selectedColor.value = null
   priceRange.value = [0, 999_999_999]

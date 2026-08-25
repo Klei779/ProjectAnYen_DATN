@@ -2,11 +2,13 @@ package vn.anyen.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import vn.anyen.dto.SanPhamPageResponse;
-import vn.anyen.service.SanPhamService;
-import vn.anyen.dto.request.SanPhamRequest;
-import vn.anyen.dto.SanPhamResponse;
+import vn.anyen.dto.GuestLocationRequest;
 import vn.anyen.dto.SanPhamFilterResponse;
+import vn.anyen.dto.SanPhamPageResponse;
+import vn.anyen.dto.SanPhamResponse;
+import vn.anyen.dto.request.SanPhamRequest;
+import vn.anyen.service.GuestLocationRedisService;
+import vn.anyen.service.SanPhamService;
 
 import java.math.BigDecimal;
 
@@ -16,8 +18,21 @@ import java.math.BigDecimal;
 public class SanPhamController {
 
     private final SanPhamService sanPhamService;
+    private final GuestLocationRedisService guestLocationRedisService;
 
 //END POINT GET api/san-pham
+
+    // POST guest location to store in Redis
+    @PostMapping("/vi-tri-guest")
+    public void saveGuestLocation(@RequestBody GuestLocationRequest request) {
+        guestLocationRedisService.saveLocation(request.getSessionId(), request.getLatitude(), request.getLongitude());
+    }
+
+    // GET nearest products based on guest location from Redis
+    @GetMapping("/gan-nhat")
+    public SanPhamPageResponse getSanPhamGanNhat(@RequestParam String sessionId) {
+        return sanPhamService.getSanPhamGanNhat(sessionId);
+    }
     @GetMapping
     public SanPhamPageResponse getSanPham(
             @RequestParam(required = false) String keyword,

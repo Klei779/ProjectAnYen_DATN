@@ -28,6 +28,7 @@ import jakarta.persistence.criteria.Root;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -42,6 +43,110 @@ public class SanPhamService {
     private final DoiTacThongBaoService doiTacThongBaoService;
     private final SanPhamChiTietRepository sanPhamChiTietRepository;
     private final SanPhamHinhAnhRepository sanPhamHinhAnhRepository;
+    private final GuestLocationRedisService guestLocationRedisService;
+
+    public SanPhamPageResponse getSanPhamGanNhat(String sessionId) {
+        GuestLocationRedisService.GuestLocation location = guestLocationRedisService.getLocation(sessionId);
+        if (location == null) {
+            return getSanPham(null, null, null, null, null, null, null, null, 1, 16);
+        }
+
+        List<DoiTac> doiTacList = doiTacRepository.findDoiTacCoToaDoDangHoatDong();
+        if (doiTacList.isEmpty()) {
+            return getSanPham(null, null, null, null, null, null, null, null, 1, 16);
+        }
+
+        // Tính khoảng cách tới từng đối tác
+        Map<Integer, Double> partnerDistanceMap = doiTacList.stream()
+                .collect(Collectors.toMap(
+                        DoiTac::getMaDoiTac,
+                        dt -> calculateDistance(
+                                location.getLatitude(),
+                                location.getLongitude(),
+                                dt.getLatitude(),
+                                dt.getLongitude()
+                        )
+                ));
+
+        Map<Integer, DoiTac> partnerMap = doiTacList.stream()
+                .collect(Collectors.toMap(DoiTac::getMaDoiTac, Function.identity()));
+
+        List<Integer> sortedPartnerIds = doiTacList.stream()
+                .sorted(Comparator.comparing(dt -> partnerDistanceMap.get(dt.getMaDoiTac())))
+                .map(DoiTac::getMaDoiTac)
+                .toList();
+
+        List<SanPham> sanPhams = sanPhamRepository.findByTrangThaiAndMaDoiTacIn(
+                SanPham.TRANG_THAI_DANG_BAN,
+                sortedPartnerIds
+        );
+
+        List<SanPhamResponse> items = sanPhams.stream()
+                .map(sp -> {
+                    SanPhamResponse resp = mapToResponse(sp);
+                    DoiTac dt = partnerMap.get(sp.getMaDoiTac());
+                    if (dt != null && partnerDistanceMap.containsKey(sp.getMaDoiTac())) {
+                        double dist = partnerDistanceMap.get(sp.getMaDoiTac());
+                        resp.setKhoangCach(dist);
+                        resp.setKhoangCachText(formatDistance(dist));
+                        resp.setDiaChiDoiTac(dt.getDiaChi());
+                    }
+                    return resp;
+                })
+                .sorted(Comparator
+                        .comparing((SanPhamResponse sp) -> sp.getKhoangCach() != null ? sp.getKhoangCach() : Double.MAX_VALUE)
+                        .thenComparing(Comparator.comparing(SanPhamResponse::getId).reversed())
+                )
+                .toList();
+
+        return SanPhamPageResponse.builder()
+                .items(items)
+                .total((long) items.size())
+                .build();
+    }
+
+    private double calculateDistance(
+            BigDecimal lat1,
+            BigDecimal lng1,
+            BigDecimal lat2,
+            BigDecimal lng2
+    ) {
+        final double R = 6371.0; // km
+
+        double latitude1 = lat1.doubleValue();
+        double longitude1 = lng1.doubleValue();
+        double latitude2 = lat2.doubleValue();
+        double longitude2 = lng2.doubleValue();
+
+        double latDistance =
+                Math.toRadians(latitude2 - latitude1);
+
+        double lonDistance =
+                Math.toRadians(longitude2 - longitude1);
+
+        double a =
+                Math.sin(latDistance / 2)
+                        * Math.sin(latDistance / 2)
+                        + Math.cos(Math.toRadians(latitude1))
+                        * Math.cos(Math.toRadians(latitude2))
+                        * Math.sin(lonDistance / 2)
+                        * Math.sin(lonDistance / 2);
+
+        double c =
+                2 * Math.atan2(
+                        Math.sqrt(a),
+                        Math.sqrt(1 - a)
+                );
+
+        return R * c;
+    }
+
+    private String formatDistance(double distance) {
+        if (distance < 1) {
+            return String.format("%.0f m", distance * 1000);
+        }
+        return String.format("%.1f km", distance);
+    }
 //XỬ LÝ LOGIC LOAD SẢN PHẨM
     public SanPhamPageResponse getSanPham(
             String keyword,

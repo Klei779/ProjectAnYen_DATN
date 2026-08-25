@@ -15,6 +15,7 @@ import java.util.List;
 public class TaoDonHangRequest {
 
     private Integer maKhachHang;
+    private String sessionId;
 
     private String tenKhachHang;
     private String soDienThoai;

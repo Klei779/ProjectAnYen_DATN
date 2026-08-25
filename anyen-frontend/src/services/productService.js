@@ -44,6 +44,25 @@ export async function getProductById(id) {
   return response.data;
 }
 
+export async function saveGuestLocation(sessionId, latitude, longitude) {
+  const response = await api.post(`${API_URL}/vi-tri-guest`, {
+    sessionId,
+    latitude,
+    longitude,
+  });
+  return response.data;
+}
+
+export async function getNearbyProducts(sessionId) {
+  const response = await api.get(`${API_URL}/gan-nhat`, {
+    params: { sessionId },
+  });
+  return {
+    items: response.data.items || [],
+    total: response.data.total || 0,
+  };
+}
+
 export async function getFilterOptions() {
   const response = await api.get(`${API_URL}/bo-loc`);
   const data = response.data || {};

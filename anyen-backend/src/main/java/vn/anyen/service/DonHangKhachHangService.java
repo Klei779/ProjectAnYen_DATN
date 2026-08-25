@@ -59,6 +59,7 @@ public class DonHangKhachHangService {
      */
 
     private final DonHangService donHangService;
+    private final GuestLocationRedisService guestLocationRedisService;
 
     /*
      * Đơn khách tạo trên website sẽ được giao tạm
@@ -672,6 +673,17 @@ public class DonHangKhachHangService {
             TaoDonHangRequest request,
             NhanVien nhanVien
     ) {
+        BigDecimal latitude = null;
+        BigDecimal longitude = null;
+        if (request.getSessionId() != null && !request.getSessionId().isBlank()) {
+            GuestLocationRedisService.GuestLocation loc =
+                    guestLocationRedisService.getLocation(request.getSessionId());
+            if (loc != null) {
+                latitude = loc.getLatitude();
+                longitude = loc.getLongitude();
+            }
+        }
+
         KhachHang khachHang = KhachHang.builder()
                 .tenKhachHang(
                         thongTin.getTenKhachHang()
@@ -696,6 +708,8 @@ public class DonHangKhachHangService {
                 .nguonDangKy(
                         "Khách hàng tự tạo đơn từ website"
                 )
+                .latitude(latitude)
+                .longitude(longitude)
                 .build();
 
         return khachHangRepository.save(khachHang);

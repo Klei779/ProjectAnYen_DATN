@@ -120,4 +120,9 @@ List<SanPham> findAllVisibleForTaoDonHang();
             Integer trangThai,
             Integer maDoiTac
     );
+
+    List<SanPham> findByTrangThaiAndMaDoiTacIn(
+            Integer trangThai,
+            List<Integer> maDoiTacList
+    );
 }

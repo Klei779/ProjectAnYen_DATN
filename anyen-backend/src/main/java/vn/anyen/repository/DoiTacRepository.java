@@ -87,4 +87,13 @@ public interface DoiTacRepository
             @Param("maDoiTac")
             Integer maDoiTac
     );
+
+    @Query("""
+            SELECT dt
+            FROM DoiTac dt
+            WHERE dt.latitude IS NOT NULL
+              AND dt.longitude IS NOT NULL
+              AND dt.trangThai = 1
+            """)
+    List<DoiTac> findDoiTacCoToaDoDangHoatDong();
 }

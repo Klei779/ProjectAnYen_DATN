@@ -20,6 +20,9 @@ public class SanPhamResponse {
     private Integer maDoiTac;
 
     private String tenDoiTac;
+    private String diaChiDoiTac;
+    private Double khoangCach;
+    private String khoangCachText;
 
     /*
      * Đối tác đã bật cơ chế Quỹ hay chưa.

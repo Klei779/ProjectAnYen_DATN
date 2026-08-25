@@ -44,6 +44,12 @@ public class DoiTac {
     @Column(name = "DiaChi")
     private String diaChi;
 
+    @Column(name = "Latitude")
+    private BigDecimal latitude;
+
+    @Column(name = "Longitude")
+    private BigDecimal longitude;
+
     // TrangThai constants (theo database mới)
     // 0 = Ngừng hoạt động
     // 1 = Đang hoạt động

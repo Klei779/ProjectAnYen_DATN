@@ -7,6 +7,14 @@ function normalizeCustomerOrderPayload(
     payload = {}
 ) {
     return {
+        sessionId:
+            String(
+                payload.sessionId ||
+                sessionStorage.getItem("anyen_guest_session") ||
+                localStorage.getItem("anyen_guest_session") ||
+                ""
+            ).trim(),
+
         tenKhachHang:
             String(
                 payload.tenKhachHang || ""

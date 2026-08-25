@@ -98,62 +98,16 @@
             </div>
           </div>
 
-          <!-- CHI TIẾT DỊCH VỤ -->
-          <div class="content-card">
-            <h2>CHI TIẾT DỊCH VỤ</h2>
-
-            <p class="section-desc">
-              {{ service.tenCombo }} bao gồm đầy đủ các hạng mục cần thiết cho một lễ tang trang trọng.
-            </p>
-
-            <!-- TRANG TRÍ: 3 HÌNH NGANG -->
-            <div
-                v-for="item in trangTriItems"
-                :key="item.comboChiTietId"
-                class="trang-tri-section"
-            >
-              <h3>{{ item.noiDung }} <span v-if="item.soLuong > 1" class="combo-quantity-badge">× {{ item.soLuong }}</span></h3>
-
-              <p>
-                Các mẫu trang trí sảnh tang được chuẩn bị trang nghiêm, phù hợp với từng gói dịch vụ.
-              </p>
-
-              <div class="trang-tri-images">
-                <div
-                    v-for="(img, index) in getTrangTriImages(item)"
-                    :key="img.maHinhAnh || index"
-                    class="trang-tri-image-frame"
-                >
-                  <img
-                      :src="img.hinhAnh"
-                      :alt="img.tenHinhAnh"
-                      @error="setFakeImage"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <!-- CÁC MỤC CÒN LẠI -->
-            <div class="service-item-grid">
-              <div
-                  v-for="item in normalDetailItems"
-                  :key="item.comboChiTietId"
-                  class="service-item-card"
-              >
-                <div class="service-item-text">
-                  <span class="item-type">{{ getLoaiText(item.loai) }}</span>
-                  <h4>{{ item.noiDung }} <span v-if="item.soLuong > 1" class="combo-quantity-badge">× {{ item.soLuong }}</span></h4>
-                  <p>{{ getImageName(item) }}</p>
-                </div>
-
-                <div class="service-card-image-frame">
-                  <img
-                      :src="getFirstImage(item)"
-                      :alt="item.noiDung"
-                      @error="setFakeImage"
-                  />
-                </div>
-              </div>
+          <!-- CHI TIẾT DỊCH VỤ DẠNG HÌNH ẢNH BAO QUÁT -->
+          <div class="service-overview-section">
+            <div class="service-overview-image-frame">
+              <img
+                  :src="serviceOverviewImage"
+                  :alt="service.tenCombo || 'Chi tiết gói dịch vụ'"
+                  class="service-overview-image"
+                  loading="lazy"
+                  @error="handleOverviewImageError"
+              />
             </div>
           </div>
 
@@ -510,6 +464,57 @@ const loadComboChiTiet = async () => {
   }
 }
 
+const removeVietnameseTones = (str) => {
+  if (!str) return ''
+  str = str.replace(/à|á|ạ|ả|ã|â|ầ|ấ|ậ|ẩ|ẫ|ă|ằ|ắ|ặ|ẳ|ẵ/g, 'a')
+  str = str.replace(/è|é|ẹ|ẻ|ẽ|ê|ề|ế|ệ|ể|ễ/g, 'e')
+  str = str.replace(/ì|í|ị|ỉ|ĩ/g, 'i')
+  str = str.replace(/ò|ó|ọ|ỏ|õ|ô|ồ|ố|ộ|ổ|ỗ|ơ|ờ|ớ|ợ|ở|ỡ/g, 'o')
+  str = str.replace(/ù|ú|ụ|ủ|ũ|ư|ừ|ứ|ự|ử|ữ/g, 'u')
+  str = str.replace(/ỳ|ý|ỵ|ỷ|ỹ/g, 'y')
+  str = str.replace(/đ/g, 'd')
+  return str.toLowerCase().trim()
+}
+
+const serviceOverviewImage = computed(() => {
+  const id = String(route.params.id || '').trim()
+  const name = removeVietnameseTones(service.value?.tenCombo || '')
+
+  // 1. Ánh xạ theo tên gói
+  if (name.includes('an lac') || name.includes('tiet kiem')) {
+    return '/images/TrangDichVuChiTiet/goi-an-lac.png'
+  }
+  if (name.includes('an tam') || name.includes('tieu chuan')) {
+    return '/images/TrangDichVuChiTiet/goi-an-tam.png'
+  }
+  if (name.includes('truyen thong')) {
+    return '/images/TrangDichVuChiTiet/goi-truyen-thong.png'
+  }
+  if (name.includes('cao cap') || name.includes('vip') || name.includes('hoang gia')) {
+    return '/images/TrangDichVuChiTiet/goi-cao-cap.png'
+  }
+
+  // 2. Ánh xạ theo ID gói (1: An Lạc, 2: An Tâm, 3: Truyền Thống, 4: Cao Cấp)
+  const idMap = {
+    '1': '/images/TrangDichVuChiTiet/goi-an-lac.png',
+    '2': '/images/TrangDichVuChiTiet/goi-an-tam.png',
+    '3': '/images/TrangDichVuChiTiet/goi-truyen-thong.png',
+    '4': '/images/TrangDichVuChiTiet/goi-cao-cap.png'
+  }
+
+  if (idMap[id]) {
+    return idMap[id]
+  }
+
+  // Fallback mặc định
+  return '/images/TrangDichVuChiTiet/goi-an-lac.png'
+})
+
+const handleOverviewImageError = (event) => {
+  event.target.onerror = null
+  event.target.src = FAKE_IMAGE
+}
+
 const loadPage = async () => {
   window.scrollTo(0, 0)
   resetData()
@@ -532,7 +537,38 @@ watch(
 )
 </script>
 
-<style scoped src="../../assets/styles/website/TrangDichVuChiTiet.css">
+<style scoped src="../../assets/styles/website/TrangDichVuChiTiet.css"></style>
+
+<style scoped>
+/* ============================================================
+   KHỐI HÌNH ẢNH TỔNG QUAN CHI TIẾT DỊCH VỤ
+============================================================ */
+.service-overview-section {
+  width: 100%;
+  margin: 32px 0 40px;
+}
+
+.service-overview-image-frame {
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #ede3d8;
+  box-shadow: 0 10px 36px rgba(20, 45, 77, 0.08);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.service-overview-image-frame:hover {
+  box-shadow: 0 14px 44px rgba(20, 45, 77, 0.12);
+}
+
+.service-overview-image {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .combo-quantity-badge {
   display: inline-flex;
   align-items: center;

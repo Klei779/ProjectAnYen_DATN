@@ -9,6 +9,10 @@ import java.util.Optional;
 
 @Repository
 public interface ComBoRepository extends JpaRepository<ComBo, Integer> {
-    List<ComBo> findByMaDoiTacOrderByComboIdDesc(Integer maDoiTac);
-    Optional<ComBo> findByComboIdAndMaDoiTac(Integer comboId, Integer maDoiTac);
+
+    List<ComBo> findAllByOrderByComboIdDesc();
+
+    List<ComBo> findByTrangThaiOrderByComboIdDesc(Integer trangThai);
+
+    Optional<ComBo> findByComboIdAndTrangThai(Integer comboId, Integer trangThai);
 }

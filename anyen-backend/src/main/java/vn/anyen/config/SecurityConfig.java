@@ -41,7 +41,10 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/geocoding/**").permitAll()
+                                // Cho phép toàn bộ preflight CORS trước các matcher bảo vệ.
+                                .requestMatchers(HttpMethod.OPTIONS, "/**")
+                                .permitAll()
+                                .requestMatchers("/api/geocoding/**").permitAll()
                                 /*
                                  * PAYOO MOCK:
                                  * QR từ điện thoại cần truy cập được.
@@ -59,58 +62,59 @@ public class SecurityConfig {
                                 .hasAuthority(
                                         "ROLE_ADMIN"
                                 )
+                                .requestMatchers(
+                                        "/api/admin/combo",
+                                        "/api/admin/combo/**"
+                                )
+                                .hasAuthority("ROLE_ADMIN")
 
-                        // CỰC QUAN TRỌNG: cho phép preflight OPTIONS
-                        .requestMatchers(HttpMethod.OPTIONS, "/**")
-                        .permitAll()
+                                // Đăng nhập, xác nhận tài khoản
+                                .requestMatchers("/api/auth/**")
+                                .permitAll()
 
-                        // Đăng nhập, xác nhận tài khoản
-                        .requestMatchers("/api/auth/**")
-                        .permitAll()
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/ai/health"
+                                )
+                                .permitAll()
 
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/ai/health"
-                        )
-                        .permitAll()
-
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/ai/chat"
-                        )
-                        .permitAll()
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/ai/chat"
+                                )
+                                .permitAll()
                                 .requestMatchers(
                                         HttpMethod.POST,
                                         "/api/khach-hang/don-hang"
                                 )
                                 .permitAll()
 
-                        .requestMatchers(
-                                "/api/ai/yeu-cau-tu-van/**"
-                        ).permitAll()
+                                .requestMatchers(
+                                        "/api/ai/yeu-cau-tu-van/**"
+                                ).permitAll()
 
-                        .requestMatchers(
-                                "/api/ollama/health",
-                                "/api/ollama/test",
-                                "/api/ollama/test-json"
-                        ).permitAll()
-                        
-                        // Public website
+                                .requestMatchers(
+                                        "/api/ollama/health",
+                                        "/api/ollama/test",
+                                        "/api/ollama/test-json"
+                                ).permitAll()
 
-                        // ADMIN quản lý đối tác
-                        .requestMatchers(
-                                "/api/nhan-vien/quanlydoitac",
-                                "/api/nhan-vien/quanlydoitac/**",
-                                "/api/nhan-vien/quanlynhanvien",
-                                "/api/nhan-vien/quanlynhanvien/**",
-                                "/api/nhan-vien/quanlyhopdong",
-                                "/api/nhan-vien/quanlyhopdong/**",
-                                "/api/nhan-vien/quan-ly-khach-hang",
-                                "/api/nhan-vien/quan-ly-khach-hang/**"
-                        )
-                        .hasAuthority("ROLE_ADMIN")
+                                // Public website
 
-                        // ADMIN quản lý nhân viên
+                                // ADMIN quản lý đối tác
+                                .requestMatchers(
+                                        "/api/nhan-vien/quanlydoitac",
+                                        "/api/nhan-vien/quanlydoitac/**",
+                                        "/api/nhan-vien/quanlynhanvien",
+                                        "/api/nhan-vien/quanlynhanvien/**",
+                                        "/api/nhan-vien/quanlyhopdong",
+                                        "/api/nhan-vien/quanlyhopdong/**",
+                                        "/api/nhan-vien/quan-ly-khach-hang",
+                                        "/api/nhan-vien/quan-ly-khach-hang/**"
+                                )
+                                .hasAuthority("ROLE_ADMIN")
+
+                                // ADMIN quản lý nhân viên
 // Public website
                                 .requestMatchers(
                                         "/images/**",
@@ -143,43 +147,43 @@ public class SecurityConfig {
                                 )
                                 .hasAuthority("ROLE_ADMIN")
 
-                        // ADMIN quản lý hợp đồng
+                                // ADMIN quản lý hợp đồng
 
 
-                        // Hotline được tìm nhân viên gần nhất
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/nhan-vien/don-hang/de-xuat-nhan-vien"
-                        )
-                        .hasAnyAuthority("ROLE_HOTLINE", "ROLE_NHANVIEN", "ROLE_ADMIN")
+                                // Hotline được tìm nhân viên gần nhất
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/nhan-vien/don-hang/de-xuat-nhan-vien"
+                                )
+                                .hasAnyAuthority("ROLE_HOTLINE", "ROLE_NHANVIEN", "ROLE_ADMIN")
 
-                        // Hotline được giao việc
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/nhan-vien/thong-bao/giao-cong-viec"
-                        )
-                        .hasAnyAuthority("ROLE_HOTLINE", "ROLE_ADMIN")
+                                // Hotline được giao việc
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/nhan-vien/thong-bao/giao-cong-viec"
+                                )
+                                .hasAnyAuthority("ROLE_HOTLINE", "ROLE_ADMIN")
 
-                        // Hotline được xem thông báo
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/nhan-vien/thong-bao"
-                        )
-                        .hasAnyAuthority("ROLE_NHANVIEN", "ROLE_HOTLINE", "ROLE_ADMIN")
+                                // Hotline được xem thông báo
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/nhan-vien/thong-bao"
+                                )
+                                .hasAnyAuthority("ROLE_NHANVIEN", "ROLE_HOTLINE", "ROLE_ADMIN")
 
-                        // Nhân viên trực tuyến quản lý phiên tư vấn
-                        .requestMatchers("/api/nhan-vien/tu-van/**")
-                        .hasAnyAuthority("ROLE_HOTLINE", "ROLE_ADMIN")
+                                // Nhân viên trực tuyến quản lý phiên tư vấn
+                                .requestMatchers("/api/nhan-vien/tu-van/**")
+                                .hasAnyAuthority("ROLE_HOTLINE", "ROLE_ADMIN")
 
-                        // API đối tác
-                        .requestMatchers("/api/doi-tac/**")
-                        .hasAuthority("ROLE_DOITAC")
+                                // API đối tác
+                                .requestMatchers("/api/doi-tac/**")
+                                .hasAuthority("ROLE_DOITAC")
 
-                        // API nhân viên còn lại
-                        .requestMatchers("/api/nhan-vien/**")
-                        .authenticated()
-                        .anyRequest()
-                        .authenticated()
+                                // API nhân viên còn lại
+                                .requestMatchers("/api/nhan-vien/**")
+                                .authenticated()
+                                .anyRequest()
+                                .authenticated()
 
                 )
                 .addFilterBefore(

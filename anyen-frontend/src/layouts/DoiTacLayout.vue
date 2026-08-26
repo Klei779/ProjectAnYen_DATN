@@ -960,12 +960,6 @@ const routeTitles = {
   "/doi-tac/quan-ly-san-pham":
       "Quản lý sản phẩm",
 
-  "/doi-tac/quan-ly-combo":
-      "Quản lý combo",
-
-  "/doi-tac/tao-combo":
-      "Tạo combo",
-
   "/doi-tac/tao-san-pham":
       "Tạo sản phẩm",
 
@@ -1657,13 +1651,6 @@ onUnmounted(
   position: relative;
 }
 
-.doi-tac-content :deep(.combo-page) {
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-  width: 100% !important;
-  min-width: 0 !important;
-}
 
 @media (max-width: 992px) {
   .doi-tac-sidebar {

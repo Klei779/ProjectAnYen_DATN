@@ -1,8 +1,9 @@
 package vn.anyen.service.Impl;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.GoiDichVuResponse;
 import vn.anyen.dto.response.ComBoChiTietHinhAnhResponse;
 import vn.anyen.dto.response.ComBoChiTietResponse;
@@ -21,23 +22,30 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class ComBoServiceImpl implements ComBoService {
 
     private final ComBoRepository comboRepository;
-
     private final ComBoChiTietRepository comboChiTietRepository;
-
     private final ComBoChiTietHinhAnhRepository comboChiTietHinhAnhRepository;
-
-    // Repository lấy nhiều ảnh của combo
     private final ComBoHinhAnhRepository comboHinhAnhRepository;
+
+    public ComBoServiceImpl(
+            ComBoRepository comboRepository,
+            ComBoChiTietRepository comboChiTietRepository,
+            ComBoChiTietHinhAnhRepository comboChiTietHinhAnhRepository,
+            ComBoHinhAnhRepository comboHinhAnhRepository
+    ) {
+        this.comboRepository = comboRepository;
+        this.comboChiTietRepository = comboChiTietRepository;
+        this.comboChiTietHinhAnhRepository = comboChiTietHinhAnhRepository;
+        this.comboHinhAnhRepository = comboHinhAnhRepository;
+    }
 
     @Override
     @Transactional(readOnly = true)
     public List<GoiDichVuResponse> getAllCombos() {
-
-        return comboRepository.findAll()
+        return comboRepository
+                .findByTrangThaiOrderByComboIdDesc(ComBo.TT_HOAT_DONG)
                 .stream()
                 .map(this::toGoiDichVuResponse)
                 .toList();
@@ -46,114 +54,94 @@ public class ComBoServiceImpl implements ComBoService {
     @Override
     @Transactional(readOnly = true)
     public GoiDichVuResponse getComboById(Integer id) {
-
-        ComBo combo = comboRepository.findById(id)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Không tìm thấy combo có mã: " + id
-                        )
-                );
-
+        ComBo combo = comboRepository
+                .findByComboIdAndTrangThai(id, ComBo.TT_HOAT_DONG)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy combo đang hoạt động có mã " + id
+                ));
         return toGoiDichVuResponse(combo);
     }
 
-    /**
-     * Chuyển Combo thành DTO và lấy toàn bộ ảnh trong combo_hinhanh.
-     */
     private GoiDichVuResponse toGoiDichVuResponse(ComBo combo) {
-
-        List<String> hinhAnhs = comboHinhAnhRepository
-                .findByComboIdOrderByThuTuAscMaHinhAnhAsc(
-                        combo.getComboId()
-                )
-                .stream()
-                .map(ComBoHinhAnh::getHinhAnh)
-                .filter(url ->
-                        url != null && !url.isBlank()
-                )
-                .distinct()
-                .toList();
+        List<String> covers = imageUrls(
+                combo.getComboId(),
+                ComBoHinhAnh.LOAI_DAI_DIEN
+        );
+        List<String> processImages = imageUrls(
+                combo.getComboId(),
+                ComBoHinhAnh.LOAI_QUY_TRINH
+        );
 
         return GoiDichVuResponse.fromEntity(
                 combo,
-                hinhAnhs
+                covers,
+                processImages
         );
+    }
+
+    private List<String> imageUrls(Integer comboId, String imageType) {
+        return comboHinhAnhRepository
+                .findByComboIdAndLoaiHinhAnhOrderByThuTuAscMaHinhAnhAsc(
+                        comboId,
+                        imageType
+                )
+                .stream()
+                .map(ComBoHinhAnh::getHinhAnh)
+                .filter(url -> url != null && !url.isBlank())
+                .distinct()
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<ComBoChiTietResponse> getComBoChiTiet(
-            Integer comboId
-    ) {
+    public List<ComBoChiTietResponse> getComBoChiTiet(Integer comboId) {
+        comboRepository
+                .findByComboIdAndTrangThai(comboId, ComBo.TT_HOAT_DONG)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy combo đang hoạt động có mã " + comboId
+                ));
 
-        List<ComBoChiTiet> chiTiets =
-                comboChiTietRepository.findByComboId(comboId);
+        List<ComBoChiTiet> chiTiets = comboChiTietRepository
+                .findByComboId(comboId);
 
         List<Integer> chiTietIds = chiTiets.stream()
                 .map(ComBoChiTiet::getComboChiTietId)
                 .toList();
 
-        List<ComBoChiTietHinhAnh> hinhAnhs =
-                chiTietIds.isEmpty()
-                        ? List.of()
-                        : comboChiTietHinhAnhRepository
-                        .findByComboChiTietIds(chiTietIds);
+        List<ComBoChiTietHinhAnh> hinhAnhs = chiTietIds.isEmpty()
+                ? List.of()
+                : comboChiTietHinhAnhRepository.findByComboChiTietIds(chiTietIds);
 
-        Map<Integer, List<ComBoChiTietHinhAnhResponse>> hinhAnhMap =
-                hinhAnhs.stream()
-                        .collect(
-                                Collectors.groupingBy(
-                                        ComBoChiTietHinhAnh::getComboChiTietId,
-
-                                        Collectors.mapping(
-                                                h ->
-                                                        ComBoChiTietHinhAnhResponse
-                                                                .builder()
-                                                                .maHinhAnh(
-                                                                        h.getMaHinhAnh()
-                                                                )
-                                                                .tenHinhAnh(
-                                                                        h.getTenHinhAnh()
-                                                                )
-                                                                .hinhAnh(
-                                                                        h.getHinhAnh()
-                                                                )
-                                                                .thuTu(
-                                                                        h.getThuTu()
-                                                                )
-                                                                .build(),
-
-                                                Collectors.toList()
-                                        )
-                                )
-                        );
+        Map<Integer, List<ComBoChiTietHinhAnhResponse>> hinhAnhMap = hinhAnhs
+                .stream()
+                .collect(Collectors.groupingBy(
+                        ComBoChiTietHinhAnh::getComboChiTietId,
+                        Collectors.mapping(
+                                image -> ComBoChiTietHinhAnhResponse.builder()
+                                        .maHinhAnh(image.getMaHinhAnh())
+                                        .tenHinhAnh(image.getTenHinhAnh())
+                                        .hinhAnh(image.getHinhAnh())
+                                        .thuTu(image.getThuTu())
+                                        .build(),
+                                Collectors.toList()
+                        )
+                ));
 
         return chiTiets.stream()
-                .map(item ->
-                        ComBoChiTietResponse.builder()
-                                .comboChiTietId(
-                                        item.getComboChiTietId()
-                                )
-                                .loai(
-                                        item.getLoai()
-                                )
-                                .soLuong(
-                                        item.getSoLuong() == null
-                                                || item.getSoLuong() <= 0
-                                                ? 1
-                                                : item.getSoLuong()
-                                )
-                                .noiDung(
-                                        item.getNoiDung()
-                                )
-                                .hinhAnhs(
-                                        hinhAnhMap.getOrDefault(
-                                                item.getComboChiTietId(),
-                                                List.of()
-                                        )
-                                )
-                                .build()
-                )
+                .map(item -> ComBoChiTietResponse.builder()
+                        .comboChiTietId(item.getComboChiTietId())
+                        .loai(item.getLoai())
+                        .soLuong(item.getSoLuong() == null || item.getSoLuong() <= 0
+                                ? 1
+                                : item.getSoLuong())
+                        .noiDung(item.getNoiDung())
+                        .hinhAnhs(hinhAnhMap.getOrDefault(
+                                item.getComboChiTietId(),
+                                List.of()
+                        ))
+                        .build())
                 .toList();
     }
 }

@@ -35,6 +35,7 @@
         <span class="sidebar-text">Quản lý sản phẩm</span>
       </RouterLink>
 
+<<<<<<< Updated upstream
       <RouterLink to="/doi-tac/quan-ly-combo" class="menu-item" title="Quản lý combo">
         <i class="fa-solid fa-layer-group menu-icon"></i>
         <span class="sidebar-text">Quản lý combo</span>
@@ -47,6 +48,11 @@
       >
         <i class="fa-solid fa-boxes-stacked menu-icon"></i>
         <span class="sidebar-text">Tạo Combo</span>
+=======
+      <RouterLink to="/doi-tac/tao-san-pham" class="menu-item" title="Tạo sản phẩm">
+        <i class="fa-solid fa-circle-plus menu-icon"></i>
+        <span class="sidebar-text">Tạo sản phẩm</span>
+>>>>>>> Stashed changes
       </RouterLink>
 
       <RouterLink to="/doi-tac/quan-ly-don-hang" class="menu-item" title="Quản lý đơn hàng">

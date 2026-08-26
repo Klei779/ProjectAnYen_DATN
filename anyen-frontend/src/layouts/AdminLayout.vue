@@ -49,8 +49,6 @@
             </div>
           </div>
 
-<<<<<<< Updated upstream
-=======
           <div class="user-profile-wrapper" style="position: relative; cursor: pointer; margin-left: 20px" @click.stop="toggleProfile">
             <div style="display: flex; align-items: center; gap: 10px;">
               <div class="avatar-small">
@@ -66,7 +64,6 @@
                 icon-class="fa-solid fa-user-shield"
                 @logout="logout"
             />
->>>>>>> Stashed changes
           </div>
 
         </div>

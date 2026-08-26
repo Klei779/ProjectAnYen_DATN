@@ -15,6 +15,9 @@ const errorMessage = ref("");
 const currentPage = ref(1);
 
 const selectedCustomer = ref(null);
+const customerOrders = ref([]);
+const loadingOrders = ref(false);
+const selectedOrder = ref(null);
 
 const loadCustomers = async () => {
   try {
@@ -203,12 +206,88 @@ const stageClass = (stage) => {
   return "blue";
 };
 
-const openDetail = (customer) => {
+const openDetail = async (customer) => {
   selectedCustomer.value = customer;
+  selectedOrder.value = null;
+  
+  // Load orders for this customer
+  loadingOrders.value = true;
+  customerOrders.value = [];
+  
+  try {
+    const response = await api.get(`/api/don-hang/khach-hang/${customer.maKhachHang}`);
+    console.log('Orders response:', response.data);
+    customerOrders.value = response.data || [];
+  } catch (error) {
+    console.error("Lỗi tải đơn hàng khách hàng:", error);
+    customerOrders.value = [];
+  } finally {
+    loadingOrders.value = false;
+  }
 };
 
 const closeDetail = () => {
   selectedCustomer.value = null;
+  selectedOrder.value = null;
+  customerOrders.value = [];
+};
+
+const openOrderDetail = (order) => {
+  selectedOrder.value = order;
+};
+
+const closeOrderDetail = () => {
+  selectedOrder.value = null;
+};
+
+const getOrderStatusText = (trangThai) => {
+  const statusMap = {
+    1: 'Mới tạo',
+    2: 'Chờ xác nhận',
+    3: 'Đã xác nhận',
+    4: 'Đang xử lý',
+    5: 'Chờ thanh toán',
+    6: 'Hoàn thành',
+    7: 'Đã hủy',
+    8: 'Đối tác từ chối',
+    9: 'Đã giao',
+    10: 'Đã thanh toán',
+    11: 'Gặp sự cố'
+  };
+  return statusMap[trangThai] || 'Không rõ';
+};
+
+const getOrderStatusClass = (trangThai) => {
+  if (trangThai === 6 || trangThai === 9 || trangThai === 10) return 'green';
+  if (trangThai === 4 || trangThai === 5) return 'orange';
+  if (trangThai === 7 || trangThai === 8 || trangThai === 11) return 'red';
+  return 'blue';
+};
+
+const formatCurrency = (value) => {
+  if (value == null) return '---';
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(value);
+};
+
+const getPaymentMethodText = (method) => {
+  const methodMap = {
+    0: 'Chưa chọn',
+    1: 'Tiền mặt',
+    2: 'Chuyển khoản'
+  };
+  return methodMap[method] || '---';
+};
+
+const getPaymentStatusText = (status) => {
+  const statusMap = {
+    0: 'Chưa thanh toán',
+    1: 'Đã thanh toán',
+    2: 'Chờ xác nhận'
+  };
+  return statusMap[status] || '---';
 };
 
 const goToPage = (page) => {
@@ -320,8 +399,6 @@ const goToPage = (page) => {
             <thead>
             <tr>
               <th>Khách hàng</th>
-              <th>Số điện thoại</th>
-              <th>Email</th>
               <th>Trạng thái hiện tại</th>
               <th>Giai đoạn hiện tại</th>
               <th>Nhân viên phụ trách</th>
@@ -355,14 +432,6 @@ const goToPage = (page) => {
                     <p>#KH{{ customer.maKhachHang }}</p>
                   </div>
                 </div>
-              </td>
-
-              <td data-label="Số điện thoại">
-                {{ customer.soDienThoai || "---" }}
-              </td>
-
-              <td data-label="Email">
-                {{ customer.email || "---" }}
               </td>
 
               <td data-label="Trạng thái hiện tại">
@@ -469,7 +538,7 @@ const goToPage = (page) => {
             </tr>
 
             <tr v-if="!paginatedCustomers.length">
-              <td colspan="8">
+              <td colspan="6">
                 <div class="table-state empty">
                   Không có khách hàng phù hợp
                 </div>
@@ -518,298 +587,400 @@ const goToPage = (page) => {
           </div>
         </div>
       </div>
-
-      <div class="legend admin-summary">
-        <div>
-          <h5>Tổng quan khách hàng</h5>
-
-          <div class="summary-numbers">
-            <span>
-              <b>{{ customers.length }}</b>
-              Tổng khách hàng
-            </span>
-
-            <span>
-              <b>
-                {{
-                  customers.filter(
-                      (customer) =>
-                          customer.maNhanVienPhuTrach == null
-                  ).length
-                }}
-              </b>
-              Chưa phân công
-            </span>
-          </div>
-        </div>
-
-        <div>
-          <h5>Chú thích trạng thái</h5>
-
-          <div class="status-list">
-            <span>
-              <span class="dot blue"></span>
-              Tư vấn mới
-            </span>
-
-            <span>
-              <span class="dot green"></span>
-              Đang làm việc / Hoàn thành
-            </span>
-
-            <span>
-              <span class="dot orange"></span>
-              Tạm dừng
-            </span>
-          </div>
-        </div>
-      </div>
     </section>
 
+    <!-- Modals outside main content -->
     <Teleport to="body">
-      <div
-          v-if="selectedCustomer"
-          class="customer-modal-overlay"
-          @click.self="closeDetail"
-      >
+      <transition name="modal">
         <div
-            class="customer-detail-modal"
-            role="dialog"
-            aria-modal="true"
+            v-if="selectedCustomer"
+            class="customer-modal-overlay"
+            @click.self="closeDetail"
         >
-          <div class="modal-header">
-            <div class="modal-customer-heading">
-              <div class="avatar modal-avatar">
-                {{
-                  selectedCustomer.avatar ||
-                  getAvatar(
-                      selectedCustomer.tenKhachHang
-                  )
-                }}
-              </div>
-
-              <div>
-                <h3>
+          <div
+              class="customer-detail-modal"
+              role="dialog"
+              aria-modal="true"
+          >
+            <div class="modal-header">
+              <div class="modal-customer-heading">
+                <div class="avatar modal-avatar">
                   {{
-                    selectedCustomer.tenKhachHang ||
-                    "Khách hàng"
-                  }}
-                </h3>
-
-                <p>
-                  #KH{{ selectedCustomer.maKhachHang }}
-                </p>
-              </div>
-            </div>
-
-            <button
-                type="button"
-                class="modal-close-btn"
-                @click="closeDetail"
-            >
-              <i class="fa-solid fa-xmark"></i>
-            </button>
-          </div>
-
-          <div class="modal-body">
-            <section class="detail-section">
-              <h4>Thông tin khách hàng</h4>
-
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span>Số điện thoại</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.soDienThoai ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-
-                <div class="detail-item">
-                  <span>Email</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.email ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-
-                <div class="detail-item">
-                  <span>CCCD</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.cccd ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-
-                <div class="detail-item">
-                  <span>Ngày đăng ký</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.ngayDangKy ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-
-                <div class="detail-item full-width">
-                  <span>Địa chỉ</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.diaChi ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-
-                <div class="detail-item">
-                  <span>Nguồn đăng ký</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.nguonDangKy ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-
-                <div class="detail-item">
-                  <span>Nhu cầu hỗ trợ</span>
-
-                  <strong>
-                    {{
-                      selectedCustomer.nhuCauHoTro ||
-                      "Chưa cập nhật"
-                    }}
-                  </strong>
-                </div>
-              </div>
-            </section>
-
-            <section class="detail-section">
-              <h4>Tiến độ chăm sóc</h4>
-
-              <div class="status-detail-row">
-                <div>
-                  <span>Trạng thái hiện tại</span>
-
-                  <strong>
-                    <span
-                        class="badge"
-                        :class="
-                        statusClass(
-                          getCustomerStatus(
-                            selectedCustomer
-                          )
-                        )
-                      "
-                    >
-                      {{
-                        getCustomerStatus(
-                            selectedCustomer
-                        )
-                      }}
-                    </span>
-                  </strong>
-                </div>
-
-                <div>
-                  <span>Giai đoạn hiện tại</span>
-
-                  <strong>
-                    <span
-                        class="badge"
-                        :class="
-                        stageClass(
-                          getCustomerStage(
-                            selectedCustomer
-                          )
-                        )
-                      "
-                    >
-                      {{
-                        getCustomerStage(
-                            selectedCustomer
-                        )
-                      }}
-                    </span>
-                  </strong>
-                </div>
-              </div>
-            </section>
-
-            <section class="detail-section">
-              <h4>Nhân viên phụ trách</h4>
-
-              <div
-                  v-if="
-                  selectedCustomer.maNhanVienPhuTrach !=
-                  null
-                "
-                  class="assigned-employee-card"
-              >
-                <div class="employee-avatar large">
-                  {{
+                    selectedCustomer.avatar ||
                     getAvatar(
-                        selectedCustomer.tenNhanVienPhuTrach
+                        selectedCustomer.tenKhachHang
                     )
                   }}
                 </div>
 
                 <div>
-                  <strong>
+                  <h3>
                     {{
-                      selectedCustomer.tenNhanVienPhuTrach
+                      selectedCustomer.tenKhachHang ||
+                      "Khách hàng"
                     }}
-                  </strong>
+                  </h3>
 
                   <p>
-                    {{
-                      selectedCustomer.emailNhanVienPhuTrach ||
-                      "Chưa có email"
-                    }}
-                  </p>
-
-                  <p>
-                    {{
-                      selectedCustomer.soDienThoaiNhanVienPhuTrach ||
-                      "Chưa có số điện thoại"
-                    }}
+                    #KH{{ selectedCustomer.maKhachHang }}
                   </p>
                 </div>
               </div>
 
-              <div
-                  v-else
-                  class="not-assigned-message"
+              <button
+                  type="button"
+                  class="modal-close-btn"
+                  @click="closeDetail"
               >
-                Khách hàng này chưa được phân công cho
-                nhân viên phụ trách.
-              </div>
-            </section>
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
 
-            <section
-                v-if="selectedCustomer.ghiChu"
-                class="detail-section"
-            >
-              <h4>Ghi chú</h4>
+            <div class="modal-body">
+              <section class="detail-section">
+                <h4>Thông tin khách hàng</h4>
 
-              <p class="note-content">
-                {{ selectedCustomer.ghiChu }}
-              </p>
-            </section>
+                <div class="detail-grid">
+                  <div class="detail-item">
+                    <span>Số điện thoại</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.soDienThoai ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Email</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.email ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>CCCD</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.cccd ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Ngày đăng ký</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.ngayDangKy ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+
+                  <div class="detail-item full-width">
+                    <span>Địa chỉ</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.diaChi ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Nguồn đăng ký</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.nguonDangKy ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Nhu cầu hỗ trợ</span>
+
+                    <strong>
+                      {{
+                        selectedCustomer.nhuCauHoTro ||
+                        "Chưa cập nhật"
+                      }}
+                    </strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="detail-section">
+                <h4>Tiến độ chăm sóc</h4>
+
+                <div class="status-detail-row">
+                  <div>
+                    <span>Trạng thái hiện tại</span>
+
+                    <strong>
+                      <span
+                          class="badge"
+                          :class="
+                          statusClass(
+                            getCustomerStatus(
+                              selectedCustomer
+                            )
+                          )
+                        "
+                      >
+                        {{
+                          getCustomerStatus(
+                              selectedCustomer
+                          )
+                        }}
+                      </span>
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>Giai đoạn hiện tại</span>
+
+                    <strong>
+                      <span
+                          class="badge"
+                          :class="
+                          stageClass(
+                            getCustomerStage(
+                              selectedCustomer
+                            )
+                          )
+                        "
+                      >
+                        {{
+                          getCustomerStage(
+                              selectedCustomer
+                          )
+                        }}
+                      </span>
+                    </strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="detail-section">
+                <h4>Nhân viên phụ trách</h4>
+
+                <div
+                    v-if="
+                    selectedCustomer.maNhanVienPhuTrach !=
+                    null
+                  "
+                    class="assigned-employee-card"
+                >
+                  <div class="employee-avatar large">
+                    {{
+                      getAvatar(
+                          selectedCustomer.tenNhanVienPhuTrach
+                      )
+                    }}
+                  </div>
+
+                  <div>
+                    <strong>
+                      {{
+                        selectedCustomer.tenNhanVienPhuTrach
+                      }}
+                    </strong>
+
+                    <p>
+                      {{
+                        selectedCustomer.emailNhanVienPhuTrach ||
+                        "Chưa có email"
+                      }}
+                    </p>
+
+                    <p>
+                      {{
+                        selectedCustomer.soDienThoaiNhanVienPhuTrach ||
+                        "Chưa có số điện thoại"
+                      }}
+                    </p>
+                  </div>
+                </div>
+
+                <div
+                    v-else
+                    class="not-assigned-message"
+                >
+                  Khách hàng này chưa được phân công cho
+                  nhân viên phụ trách.
+                </div>
+              </section>
+
+              <section
+                  v-if="selectedCustomer.ghiChu"
+                  class="detail-section"
+              >
+                <h4>Ghi chú</h4>
+
+                <p class="note-content">
+                  {{ selectedCustomer.ghiChu }}
+                </p>
+              </section>
+
+              <section class="detail-section">
+                <h4>Lịch sử đơn hàng</h4>
+
+                <div v-if="loadingOrders" class="loading-state">
+                  <i class="fa-solid fa-spinner fa-spin"></i>
+                  Đang tải đơn hàng...
+                </div>
+
+                <div v-else-if="customerOrders.length === 0" class="empty-state">
+                  Khách hàng chưa có đơn hàng nào
+                </div>
+
+                <div v-else class="orders-list">
+                  <div
+                      v-for="order in customerOrders"
+                      :key="order.MaDonHang"
+                      class="order-item"
+                      @click="openOrderDetail(order)"
+                  >
+                    <div class="order-header">
+                      <strong>{{ order.maCode || `#DH${order.MaDonHang}` }}</strong>
+                      <span
+                          class="badge"
+                          :class="getOrderStatusClass(order.trangThai)"
+                      >
+                        {{ getOrderStatusText(order.trangThai) }}
+                      </span>
+                    </div>
+
+                    <div class="order-info">
+                      <span>Ngày tạo: {{ order.NgayTaoDon || '---' }}</span>
+                      <span>Tổng tiền: {{ formatCurrency(order.tongTien) }}</span>
+                    </div>
+
+                    <div class="order-products-count">
+                      {{ order.sanPhams?.length || 0 }} sản phẩm
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
-      </div>
+      </transition>
+    </Teleport>
+
+    <!-- Modal chi tiết đơn hàng -->
+    <Teleport to="body">
+      <transition name="modal">
+        <div
+            v-if="selectedOrder"
+            class="customer-modal-overlay"
+            @click.self="closeOrderDetail"
+        >
+          <div
+              class="customer-detail-modal"
+              role="dialog"
+              aria-modal="true"
+          >
+            <div class="modal-header">
+              <div class="modal-customer-heading">
+                <div class="avatar modal-avatar">
+                  DH
+                </div>
+
+                <div>
+                  <h3>
+                    Đơn hàng {{ selectedOrder.maCode || `#${selectedOrder.MaDonHang}` }}
+                  </h3>
+
+                  <p>
+                    {{ getOrderStatusText(selectedOrder.trangThai) }}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                  type="button"
+                  class="modal-close-btn"
+                  @click="closeOrderDetail"
+              >
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <section class="detail-section">
+                <h4>Thông tin đơn hàng</h4>
+
+                <div class="detail-grid">
+                  <div class="detail-item">
+                    <span>Ngày tạo đơn</span>
+                    <strong>{{ selectedOrder.NgayTaoDon || '---' }}</strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Tổng tiền</span>
+                    <strong>{{ formatCurrency(selectedOrder.tongTien) }}</strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Phương thức thanh toán</span>
+                    <strong>{{ getPaymentMethodText(selectedOrder.phuongThucThanhToan) }}</strong>
+                  </div>
+
+                  <div class="detail-item">
+                    <span>Trạng thái thanh toán</span>
+                    <strong>{{ getPaymentStatusText(selectedOrder.trangThaiThanhToan) }}</strong>
+                  </div>
+
+                  <div class="detail-item full-width" v-if="selectedOrder.GhiChu">
+                    <span>Ghi chú</span>
+                    <strong>{{ selectedOrder.GhiChu }}</strong>
+                  </div>
+                </div>
+              </section>
+
+              <section class="detail-section">
+                <h4>Danh sách sản phẩm</h4>
+
+                <div v-if="!selectedOrder.sanPhams || selectedOrder.sanPhams.length === 0" class="empty-state">
+                  Đơn hàng không có sản phẩm
+                </div>
+
+                <div v-else class="products-list">
+                  <div
+                      v-for="(product, index) in selectedOrder.sanPhams"
+                      :key="index"
+                      class="product-item"
+                  >
+                    <div class="product-info">
+                      <div class="product-name">
+                        {{ product.tenSanPham || 'Sản phẩm không tên' }}
+                      </div>
+                      <div class="product-quantity">
+                        Số lượng: {{ product.SoLuong }}
+                      </div>
+                    </div>
+                    <div class="product-price">
+                      {{ formatCurrency(product.giaTien) }}
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </transition>
     </Teleport>
   </div>
 </template>
@@ -847,7 +1018,7 @@ const goToPage = (page) => {
 }
 
 .admin-customer-table {
-  min-width: 1250px;
+  min-width: 900px;
 }
 
 .employee-cell {
@@ -984,6 +1155,41 @@ const goToPage = (page) => {
   background: white;
   box-shadow: 0 28px 80px rgba(15, 23, 42, 0.28);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Modal Transition Animations */
+.modal-enter-active {
+  transition: opacity 0.2s ease-out;
+}
+
+.modal-leave-active {
+  transition: opacity 0.15s ease-in;
+}
+
+.modal-enter-active .customer-detail-modal {
+  transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+.modal-leave-active .customer-detail-modal {
+  transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+}
+
+.modal-enter-from {
+  opacity: 0;
+}
+
+.modal-leave-to {
+  opacity: 0;
+}
+
+.modal-enter-from .customer-detail-modal {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+
+.modal-leave-to .customer-detail-modal {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.98);
 }
 
 .modal-header {
@@ -1180,5 +1386,128 @@ const goToPage = (page) => {
 .detail-btn .button-svg-icon {
   width: 16px;
   height: 16px;
+}
+
+/* Orders List Styles */
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-item {
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fafcff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.order-item:hover {
+  border-color: #c7d2fe;
+  background: #f8faff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+}
+
+.order-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.order-header strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.order-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.order-info span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.order-products-count {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.loading-state,
+.empty-state {
+  padding: 20px;
+  text-align: center;
+  color: #64748b;
+  font-size: 13px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+/* Products List Styles */
+.products-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.product-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fafcff;
+}
+
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.product-name {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.product-quantity {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.product-price {
+  color: #dc2626;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.badge.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge.orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.badge.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge.blue {
+  background: #dbeafe;
+  color: #1e40af;
 }
 </style>

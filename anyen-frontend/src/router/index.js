@@ -23,6 +23,7 @@ import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
 import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
 import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
+import TrangQLDonHangAdmin from "../pages/admin/TrangQLDonHang.vue";
 import TrangGioHang from "../pages/website/TrangGioHang.vue";
 import TrangQLTinTuc from "../pages/admin/TrangQLTinTuc.vue";
 
@@ -248,6 +249,10 @@ const routes = [
             {
                 path: "quan-ly-khach-hang",
                 component: TrangQLKhachHangAdmin,
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangAdmin,
             },
             {
                 path: "quan-ly-hop-dong",

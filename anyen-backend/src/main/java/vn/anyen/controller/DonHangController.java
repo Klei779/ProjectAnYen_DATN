@@ -75,4 +75,9 @@ public class DonHangController {
         DonHangResponse response = donHangService.thanhToanDonHang(maDonHang);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/khach-hang/{maKhachHang}")
+    public List<DonHangResponse> getDonHangByKhachHang(@PathVariable Integer maKhachHang) {
+        return donHangService.getDonHangByKhachHang(maKhachHang);
+    }
 }

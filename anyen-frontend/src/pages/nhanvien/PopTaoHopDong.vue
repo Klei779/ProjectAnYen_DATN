@@ -86,7 +86,9 @@ const contract = ref({
   facility: "",
   cemeteryArea: "",
   graveNumber: "",
-  burialDatetime: ""
+  burialDatetime: "",
+
+  additionalTerms: []
 });
 
 const errors = ref({
@@ -249,7 +251,9 @@ const resetContractForm = () => {
     facility: "",
     cemeteryArea: "",
     graveNumber: "",
-    burialDatetime: ""
+    burialDatetime: "",
+
+    additionalTerms: []
   };
 
   orderProducts.value = [];
@@ -266,6 +270,14 @@ const addService = () => {
 
 const removeService = (index) => {
   services.value.splice(index, 1);
+};
+
+const addAdditionalTerm = () => {
+  contract.value.additionalTerms.push("");
+};
+
+const removeAdditionalTerm = (index) => {
+  contract.value.additionalTerms.splice(index, 1);
 };
 
 const zoomIn = () => {
@@ -1363,6 +1375,46 @@ const loadNextHopDongCode = async () => {
               </el-col>
             </el-row>
           </div>
+
+          <div class="section-title mt-4 flex-between">
+            <div class="title-left">
+              <span>8. ĐIỀU KHOẢN KHÁC</span>
+            </div>
+
+            <el-button size="small" plain class="add-service-btn" @click="addAdditionalTerm">
+              + Thêm điều khoản
+            </el-button>
+          </div>
+
+          <div
+              v-for="(term, index) in contract.additionalTerms"
+              :key="index"
+              class="service-row"
+          >
+            <el-row :gutter="10" align="middle">
+              <el-col :span="21">
+                <el-input
+                    v-model="contract.additionalTerms[index]"
+                    type="textarea"
+                    :rows="2"
+                    placeholder="Nhập điều khoản bổ sung..."
+                    maxlength="500"
+                    show-word-limit
+                />
+              </el-col>
+
+              <el-col :span="3" style="text-align: right">
+                <el-button
+                    type="danger"
+                    :icon="Delete"
+                    circle
+                    size="small"
+                    @click="removeAdditionalTerm(index)"
+                    plain
+                />
+              </el-col>
+            </el-row>
+          </div>
         </el-form>
       </div>
 
@@ -1416,6 +1468,7 @@ const loadNextHopDongCode = async () => {
                   :contract="contract"
                   :extraServices="services"
                   :orderProducts="orderProducts"
+                  :additionalTerms="contract.additionalTerms"
               />
             </div>
           </div>

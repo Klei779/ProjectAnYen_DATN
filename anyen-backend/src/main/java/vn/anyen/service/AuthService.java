@@ -52,7 +52,7 @@ public class AuthService {
             if (optionalNv.isPresent()) {
 
                 NhanVien nv = optionalNv.get();
-                if (Integer.valueOf(0).equals(nv.getTrangThai())) {
+                if (nv.getTrangThai() != 1) {
                     return response;
                 }
                 if (passwordEncoder.matches(

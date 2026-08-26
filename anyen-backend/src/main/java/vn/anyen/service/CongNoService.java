@@ -551,6 +551,24 @@ public class CongNoService {
         }
 
 
+        /*
+         * Đơn hàng online (nhân viên phụ trách là "website")
+         * đã được khách thanh toán trực tiếp,
+         * không cần tạo công nợ cho đối tác.
+         */
+        if (
+                donHang.getNhanVien() != null
+                        &&
+                        "website".equalsIgnoreCase(
+                                donHang.getNhanVien()
+                                        .getTenDangNhap()
+                        )
+        ) {
+
+            return;
+        }
+
+
         List<ChiTietDonHang> chiTietList =
                 chiTietDonHangRepository
                         .findByDonHang_MaDonHang(

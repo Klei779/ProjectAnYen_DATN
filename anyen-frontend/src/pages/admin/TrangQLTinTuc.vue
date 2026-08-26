@@ -476,6 +476,8 @@
                       maxlength="150"
                       placeholder="Nhập tiêu đề"
                       @input="delete errors.tieuDe"
+                      @blur="normalizeTitleInput"
+                      @compositionend="normalizeTitleInput"
                   />
 
                   <div
@@ -527,25 +529,174 @@
                 </div>
 
                 <div>
-                  <label
-                      class="form-label fw-semibold"
-                  >
-                    Nội dung HTML
-                    <span class="text-danger">*</span>
-                  </label>
 
-                  <textarea
-                      v-model="form.noiDung"
-                      class="form-control code-editor"
-                      :class="{
-      'is-invalid': errors.noiDung
-    }"
-                      rows="18"
-                      maxlength="10000"
-                      wrap="soft"
-                      placeholder="<h2>Tiêu đề</h2><p>Nội dung...</p>"
-                      @input="delete errors.noiDung"
-                  ></textarea>
+                  <!-- PHẦN NỘI DUNG TRONG FORM -->
+                  <div>
+                    <label class="form-label fw-semibold">
+                      Nội dung bài viết
+                      <span class="text-danger">*</span>
+                    </label>
+
+                    <div
+                        class="rich-text-editor"
+                        :class="{ 'is-invalid': errors.noiDung }"
+                    >
+                      <div class="editor-toolbar">
+                        <select
+                            class="editor-format"
+                            title="Kiểu đoạn văn"
+                            @change="applyBlockFormat"
+                        >
+                          <option value="">Kiểu đoạn</option>
+                          <option value="p">Đoạn văn</option>
+                          <option value="h2">Tiêu đề lớn</option>
+                          <option value="h3">Tiêu đề nhỏ</option>
+                          <option value="blockquote">Trích dẫn</option>
+                        </select>
+
+                        <span class="toolbar-separator"></span>
+
+                        <button
+                            type="button"
+                            title="In đậm"
+                            @mousedown.prevent="applyEditorCommand('bold')"
+                        >
+                          <strong>B</strong>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="In nghiêng"
+                            @mousedown.prevent="applyEditorCommand('italic')"
+                        >
+                          <em>I</em>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="Gạch chân"
+                            @mousedown.prevent="applyEditorCommand('underline')"
+                        >
+                          <u>U</u>
+                        </button>
+
+                        <span class="toolbar-separator"></span>
+
+                        <button
+                            type="button"
+                            title="Danh sách dấu chấm"
+                            @mousedown.prevent="
+          applyEditorCommand('insertUnorderedList')
+        "
+                        >
+                          <i class="fa-solid fa-list-ul"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="Danh sách đánh số"
+                            @mousedown.prevent="
+          applyEditorCommand('insertOrderedList')
+        "
+                        >
+                          <i class="fa-solid fa-list-ol"></i>
+                        </button>
+
+                        <span class="toolbar-separator"></span>
+
+                        <button
+                            type="button"
+                            title="Căn trái"
+                            @mousedown.prevent="
+          applyEditorCommand('justifyLeft')
+        "
+                        >
+                          <i class="fa-solid fa-align-left"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="Căn giữa"
+                            @mousedown.prevent="
+          applyEditorCommand('justifyCenter')
+        "
+                        >
+                          <i class="fa-solid fa-align-center"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="Căn phải"
+                            @mousedown.prevent="
+          applyEditorCommand('justifyRight')
+        "
+                        >
+                          <i class="fa-solid fa-align-right"></i>
+                        </button>
+
+                        <span class="toolbar-separator"></span>
+
+                        <button
+                            type="button"
+                            title="Chèn liên kết"
+                            @mousedown.prevent="insertEditorLink"
+                        >
+                          <i class="fa-solid fa-link"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="Bỏ liên kết"
+                            @mousedown.prevent="
+          applyEditorCommand('unlink')
+        "
+                        >
+                          <i class="fa-solid fa-link-slash"></i>
+                        </button>
+
+                        <button
+                            type="button"
+                            title="Xóa định dạng"
+                            @mousedown.prevent="
+          applyEditorCommand('removeFormat')
+        "
+                        >
+                          <i class="fa-solid fa-eraser"></i>
+                        </button>
+                      </div>
+
+                      <div
+                          ref="contentEditor"
+                          class="editor-surface"
+                          contenteditable="true"
+                          role="textbox"
+                          aria-multiline="true"
+                          data-placeholder="Soạn nội dung bài viết tại đây..."
+                          spellcheck="true"
+                          @input="syncEditorContent"
+                          @focus="rememberEditorSelection"
+                          @keyup="rememberEditorSelection"
+                          @mouseup="rememberEditorSelection"
+                          @paste="handleEditorPaste"
+                      ></div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                      <small class="text-danger">
+                        {{ errors.noiDung }}
+                      </small>
+
+                      <small class="text-muted">
+                        {{ editorTextLength }}/{{ MAX_RICH_TEXT_LENGTH }}
+                        ký tự
+                      </small>
+                    </div>
+
+                    <small class="text-muted d-block mt-1">
+                      Bạn chỉ cần nhập và định dạng như khi soạn văn bản;
+                      hệ thống sẽ tự xử lý phần hiển thị.
+                    </small>
+                  </div>
 
                   <div class="d-flex justify-content-between">
                     <small class="text-danger">
@@ -814,11 +965,14 @@
 <script setup>
 import {
   computed,
+  nextTick,
   onBeforeUnmount,
   onMounted,
   reactive,
   ref,
 } from "vue";
+
+import DOMPurify from "dompurify";
 
 import noImage
   from "../../assets/images/noimage.jpg";
@@ -833,12 +987,135 @@ import {
   uploadAnhTinTuc,
 } from "../../services/tinTucAdminService.js";
 
+const MAX_RICH_TEXT_LENGTH = 10000;
+
+const SANITIZE_CONFIG = {
+  ALLOWED_TAGS: [
+    "a",
+    "b",
+    "blockquote",
+    "br",
+    "div",
+    "em",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "hr",
+    "i",
+    "img",
+    "li",
+    "ol",
+    "p",
+    "s",
+    "span",
+    "strong",
+    "table",
+    "tbody",
+    "td",
+    "th",
+    "thead",
+    "tr",
+    "u",
+    "ul",
+  ],
+
+  ALLOWED_ATTR: [
+    "align",
+    "alt",
+    "class",
+    "colspan",
+    "height",
+    "href",
+    "rel",
+    "rowspan",
+    "src",
+    "style",
+    "target",
+    "title",
+    "width",
+  ],
+};
+
+function sanitizeRichText(value) {
+  const sanitized = DOMPurify.sanitize(
+      String(value || ""),
+      SANITIZE_CONFIG
+  );
+
+  const container = document.createElement("div");
+
+  container.innerHTML = String(sanitized);
+
+  container
+      .querySelectorAll("a[href]")
+      .forEach(link => {
+        const href =
+            link.getAttribute("href")?.trim();
+
+        if (!href) {
+          link.removeAttribute("href");
+          return;
+        }
+
+        if (/^https?:\/\//i.test(href)) {
+          link.setAttribute("target", "_blank");
+          link.setAttribute(
+              "rel",
+              "noopener noreferrer"
+          );
+        } else {
+          link.removeAttribute("target");
+          link.removeAttribute("rel");
+        }
+      });
+
+  return container.innerHTML.trim();
+}
+
+function getRichTextLength(value) {
+  const container =
+      document.createElement("div");
+
+  container.innerHTML =
+      String(value || "");
+
+  return (container.textContent || "")
+      .replace(/\u00a0/g, " ")
+      .trim()
+      .length;
+}
+
+function hasRichTextContent(value) {
+  const html = String(value || "");
+
+  return (
+      getRichTextLength(html) > 0
+      || /<(hr|img|table)\b/i.test(html)
+  );
+}
+
+function normalizeTitle(value) {
+  return String(value || "")
+      .normalize("NFC")
+      .replace(
+          /[\u200B-\u200D\u2060\uFEFF]/g,
+          ""
+      )
+      .replace(/[\t\r\n]+/g, " ")
+      .replace(/ {2,}/g, " ")
+      .replace(
+          /(\p{L}{1,}[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵ])\s+([a-zđ])(?=\s|$)/gu,
+          "$1$2"
+      )
+      .trim();
+}
+
 const items = ref([]);
 const loading = ref(false);
 const total = ref(0);
 const page = ref(1);
 const totalPages = ref(0);
-
 const pageSize = 10;
 
 const rowLoading = reactive({});
@@ -866,12 +1143,26 @@ const uploading = ref(false);
 const progress = ref(0);
 
 let objectUrl;
+let savedEditorRange;
 
 const deleteTarget = ref(null);
 const deleting = ref(false);
 
-const form = reactive(emptyForm());
+const form = reactive({
+  tieuDe: "",
+  tomTat: "",
+  noiDung: "",
+  anhDaiDien: "",
+  loaiTin: "",
+  trangThai: 1,
+});
+
 const errors = reactive({});
+const contentEditor = ref(null);
+
+const editorTextLength = computed(() =>
+    getRichTextLength(form.noiDung)
+);
 
 const pages = computed(() => {
   const result = [];
@@ -940,7 +1231,6 @@ async function loadNews() {
               : Number(filter.trangThai),
 
       page: page.value,
-
       pageSize,
     });
 
@@ -978,19 +1268,15 @@ async function loadNews() {
 
 function applyFilter() {
   page.value = 1;
-
   loadNews();
 }
 
 function resetFilter() {
-  Object.assign(
-      filter,
-      {
-        keyword: "",
-        loaiTin: "",
-        trangThai: "",
-      }
-  );
+  Object.assign(filter, {
+    keyword: "",
+    loaiTin: "",
+    trangThai: "",
+  });
 
   applyFilter();
 }
@@ -1002,7 +1288,6 @@ function changePage(value) {
       && value !== page.value
   ) {
     page.value = value;
-
     loadNews();
   }
 }
@@ -1021,6 +1306,7 @@ function resetForm() {
   selectedFile.value = null;
   preview.value = "";
   progress.value = 0;
+  savedEditorRange = undefined;
 
   releasePreview();
 }
@@ -1029,9 +1315,11 @@ function openCreate() {
   resetForm();
 
   showForm.value = true;
+  document.body.style.overflow = "hidden";
 
-  document.body.style.overflow =
-      "hidden";
+  nextTick(() => {
+    setEditorContent("");
+  });
 }
 
 async function openEdit(id) {
@@ -1041,42 +1329,42 @@ async function openEdit(id) {
   showForm.value = true;
   saving.value = true;
 
-  document.body.style.overflow =
-      "hidden";
+  document.body.style.overflow = "hidden";
 
   try {
     const item =
         await getTinTucAdminById(id);
 
-    Object.assign(
-        form,
-        {
-          tieuDe:
-              item.tieuDe || "",
+    Object.assign(form, {
+      tieuDe:
+          normalizeTitle(item.tieuDe),
 
-          tomTat:
-              item.tomTat || "",
+      tomTat:
+          item.tomTat || "",
 
-          noiDung:
-              item.noiDung || "",
+      noiDung:
+          item.noiDung || "",
 
-          anhDaiDien:
-              item.anhDaiDien || "",
+      anhDaiDien:
+          item.anhDaiDien || "",
 
-          loaiTin:
-              item.loaiTin ?? "",
+      loaiTin:
+          item.loaiTin ?? "",
 
-          trangThai:
-              Number(item.trangThai) === 0
-                  ? 0
-                  : 1,
-        }
-    );
+      trangThai:
+          Number(item.trangThai) === 0
+              ? 0
+              : 1,
+    });
 
     preview.value =
         item.anhDaiDien
             ? imageUrl(item.anhDaiDien)
             : "";
+
+    await nextTick();
+
+    setEditorContent(form.noiDung);
   } catch (error) {
     closeForm(true);
 
@@ -1104,7 +1392,6 @@ function closeForm(force = false) {
   }
 
   showForm.value = false;
-
   document.body.style.overflow = "";
 
   resetForm();
@@ -1115,12 +1402,16 @@ function validate() {
       key => delete errors[key]
   );
 
-  if (!form.tieuDe.trim()) {
+  const cleanTitle = normalizeTitle(
+      form.tieuDe
+  );
+
+  if (!cleanTitle) {
     errors.tieuDe =
         "Vui lòng nhập tiêu đề.";
   }
 
-  if (form.tieuDe.length > 150) {
+  if (cleanTitle.length > 150) {
     errors.tieuDe =
         "Tiêu đề không được vượt quá 150 ký tự.";
   }
@@ -1135,23 +1426,34 @@ function validate() {
         "Tóm tắt không được vượt quá 500 ký tự.";
   }
 
-  if (!form.noiDung.trim()) {
+  const cleanContent =
+      sanitizeRichText(form.noiDung);
+
+  if (!hasRichTextContent(cleanContent)) {
     errors.noiDung =
         "Vui lòng nhập nội dung.";
   }
 
-  if (form.noiDung.length > 10000) {
+  if (
+      editorTextLength.value
+      > MAX_RICH_TEXT_LENGTH
+  ) {
     errors.noiDung =
         "Nội dung không được vượt quá 10.000 ký tự.";
   }
 
-  if (![1, 2, 3, 4].includes(Number(form.loaiTin))) {
+  if (
+      ![1, 2, 3, 4].includes(
+          Number(form.loaiTin)
+      )
+  ) {
     errors.loaiTin =
         "Vui lòng chọn loại tin.";
   }
 
   return Object.keys(errors).length === 0;
 }
+
 async function saveNews() {
   if (!validate()) {
     showNotice(
@@ -1188,19 +1490,23 @@ async function saveNews() {
           );
 
       image = result.url;
-
       uploading.value = false;
     }
 
+    const cleanContent =
+        sanitizeRichText(form.noiDung);
+
+    form.noiDung = cleanContent;
+
     const payload = {
       tieuDe:
-          form.tieuDe.trim(),
+          normalizeTitle(form.tieuDe),
 
       tomTat:
           form.tomTat.trim(),
 
       noiDung:
-          form.noiDung.trim(),
+      cleanContent,
 
       anhDaiDien:
       image,
@@ -1343,8 +1649,7 @@ function selectImage(event) {
   }
 
   if (
-      file.size
-      > 10 * 1024 * 1024
+      file.size > 10 * 1024 * 1024
   ) {
     errors.anhDaiDien =
         "Ảnh không được vượt quá 10 MB.";
@@ -1366,25 +1671,219 @@ function selectImage(event) {
 
 function removeImage() {
   selectedFile.value = null;
-
   form.anhDaiDien = "";
-
   preview.value = "";
 
   releasePreview();
 }
 
+function normalizeTitleInput() {
+  form.tieuDe = normalizeTitle(
+      form.tieuDe
+  );
+
+  if (form.tieuDe) {
+    delete errors.tieuDe;
+  }
+}
+
+function setEditorContent(value) {
+  const cleanContent =
+      sanitizeRichText(value);
+
+  form.noiDung = cleanContent;
+
+  if (contentEditor.value) {
+    contentEditor.value.innerHTML =
+        cleanContent;
+  }
+}
+
+function syncEditorContent() {
+  if (!contentEditor.value) {
+    return;
+  }
+
+  form.noiDung =
+      contentEditor.value.innerHTML;
+
+  if (
+      hasRichTextContent(form.noiDung)
+  ) {
+    delete errors.noiDung;
+  }
+
+  if (
+      editorTextLength.value
+      > MAX_RICH_TEXT_LENGTH
+  ) {
+    errors.noiDung =
+        "Nội dung không được vượt quá 10.000 ký tự.";
+  }
+}
+
+function applyBlockFormat(event) {
+  const tagName = event.target.value;
+
+  if (tagName) {
+    applyEditorCommand(
+        "formatBlock",
+        `<${tagName}>`
+    );
+  }
+
+  event.target.value = "";
+}
+
+function applyEditorCommand(
+    command,
+    value = null
+) {
+  if (!contentEditor.value) {
+    return;
+  }
+
+  contentEditor.value.focus();
+  restoreEditorSelection();
+
+  document.execCommand(
+      command,
+      false,
+      value
+  );
+
+  syncEditorContent();
+  rememberEditorSelection();
+}
+
+function insertEditorLink() {
+  if (!contentEditor.value) {
+    return;
+  }
+
+  contentEditor.value.focus();
+  restoreEditorSelection();
+
+  const selection =
+      window.getSelection();
+
+  if (
+      !selection
+      || selection.isCollapsed
+  ) {
+    showNotice(
+        "error",
+        "Hãy bôi đen đoạn chữ cần gắn liên kết."
+    );
+
+    return;
+  }
+
+  const input = window.prompt(
+      "Nhập đường dẫn liên kết:"
+  );
+
+  if (!input?.trim()) {
+    return;
+  }
+
+  let url = input.trim();
+
+  if (
+      !/^(https?:\/\/|mailto:|tel:|\/|#)/i
+          .test(url)
+  ) {
+    url = `https://${url}`;
+  }
+
+  applyEditorCommand(
+      "createLink",
+      url
+  );
+}
+
+function handleEditorPaste(event) {
+  event.preventDefault();
+
+  const clipboard =
+      event.clipboardData;
+
+  const html =
+      clipboard?.getData("text/html");
+
+  const text =
+      clipboard?.getData("text/plain") || "";
+
+  const content = html
+      ? sanitizeRichText(html)
+      : escapeHtml(text)
+          .replace(/\r?\n/g, "<br>");
+
+  applyEditorCommand(
+      "insertHTML",
+      content
+  );
+}
+
+function rememberEditorSelection() {
+  const selection =
+      window.getSelection();
+
+  if (
+      !contentEditor.value
+      || !selection
+      || selection.rangeCount === 0
+  ) {
+    return;
+  }
+
+  const range =
+      selection.getRangeAt(0);
+
+  const commonAncestor =
+      range.commonAncestorContainer;
+
+  if (
+      contentEditor.value
+          .contains(commonAncestor)
+  ) {
+    savedEditorRange =
+        range.cloneRange();
+  }
+}
+
+function restoreEditorSelection() {
+  if (!savedEditorRange) {
+    return;
+  }
+
+  const selection =
+      window.getSelection();
+
+  selection?.removeAllRanges();
+  selection?.addRange(
+      savedEditorRange
+  );
+}
+
+function escapeHtml(value) {
+  const element =
+      document.createElement("div");
+
+  element.textContent = value;
+
+  return element.innerHTML;
+}
+
 function releasePreview() {
   if (objectUrl) {
     URL.revokeObjectURL(objectUrl);
-
     objectUrl = null;
   }
 }
 
 function backendErrors(error) {
-  const data =
-      error.response?.data;
+  const data = error.response?.data;
 
   if (
       !data
@@ -1412,8 +1911,7 @@ function errorMessage(
     error,
     fallback
 ) {
-  const data =
-      error.response?.data;
+  const data = error.response?.data;
 
   if (typeof data === "string") {
     return data;
@@ -1440,10 +1938,7 @@ function errorMessage(
   return fallback;
 }
 
-function showNotice(
-    type,
-    text
-) {
+function showNotice(type, text) {
   notice.type = type;
   notice.text = text;
 
@@ -1468,13 +1963,17 @@ function categoryName(value) {
 
 function categoryClass(value) {
   return {
-        1: "text-bg-primary-subtle text-primary-emphasis",
+        1:
+            "text-bg-primary-subtle text-primary-emphasis",
 
-        2: "purple",
+        2:
+            "purple",
 
-        3: "text-bg-warning-subtle text-warning-emphasis",
+        3:
+            "text-bg-warning-subtle text-warning-emphasis",
 
-        4: "text-bg-info-subtle text-info-emphasis",
+        4:
+            "text-bg-info-subtle text-info-emphasis",
       }[Number(value)]
       || "text-bg-secondary-subtle";
 }
@@ -1541,7 +2040,6 @@ function imageUrl(path) {
 
 function fallbackImage(event) {
   event.currentTarget.onerror = null;
-
   event.currentTarget.src = noImage;
 }
 
@@ -1588,6 +2086,12 @@ function viewPublic(item) {
   border-color: #a77b49;
 }
 
+.btn-outline-main:hover {
+  color: #ffffff;
+  background: #a77b49;
+  border-color: #a77b49;
+}
+
 .text-brown {
   color: #8d6538;
 }
@@ -1616,8 +2120,8 @@ function viewPublic(item) {
   width: 84px;
   height: 58px;
   object-fit: cover;
-  border-radius: 8px;
   border: 1px solid #e5e7eb;
+  border-radius: 8px;
 }
 
 .purple {
@@ -1668,30 +2172,30 @@ function viewPublic(item) {
   position: fixed;
   inset: 0;
   z-index: 12000;
-  padding: 20px;
-  background: rgba(15, 23, 42, 0.58);
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.58);
 }
 
 .news-modal {
   width: min(1180px, 96vw);
   max-height: 94vh;
+  overflow: hidden;
   background: #ffffff;
   border-radius: 16px;
-  overflow: hidden;
   box-shadow:
       0 24px 75px rgba(15, 23, 42, 0.3);
 }
 
 .modal-head,
 .modal-foot {
-  padding: 17px 20px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
+  padding: 17px 20px;
 }
 
 .modal-head {
@@ -1699,37 +2203,208 @@ function viewPublic(item) {
 }
 
 .modal-foot {
-  border-top: 1px solid #e5e7eb;
   justify-content: flex-end;
+  border-top: 1px solid #e5e7eb;
 }
 
 .modal-content-body {
-  padding: 20px;
   max-height: calc(94vh - 145px);
+  padding: 20px;
   overflow-y: auto;
 }
 
 .side-box {
   padding: 16px;
+  background: #fafbfc;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  background: #fafbfc;
 }
 
-.code-editor {
-  min-height: 390px;
-  font-family:
-      Consolas,
-      "Courier New",
-      monospace;
+/* Trình soạn thảo nội dung */
+
+.rich-text-editor {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  transition:
+      border-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
 }
+
+.rich-text-editor:focus-within {
+  border-color: #c59b6b;
+  box-shadow:
+      0 0 0 0.25rem
+      rgba(167, 123, 73, 0.16);
+}
+
+.rich-text-editor.is-invalid {
+  border-color: #dc3545;
+}
+
+.rich-text-editor.is-invalid:focus-within {
+  box-shadow:
+      0 0 0 0.25rem
+      rgba(220, 53, 69, 0.16);
+}
+
+/* Thanh công cụ */
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.editor-toolbar button {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #596273;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.editor-toolbar button:hover,
+.editor-toolbar button:focus-visible {
+  color: #7a552f;
+  background: #eee4d8;
+  outline: none;
+}
+
+.editor-format {
+  min-width: 126px;
+  height: 32px;
+  padding: 0 30px 0 9px;
+  color: #596273;
+  background-color: #ffffff;
+  border: 1px solid #d5d9e0;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 22px;
+  margin: 0 3px;
+  background: #d5d9e0;
+}
+
+/* Vùng nhập nội dung */
+
+.editor-surface {
+  min-height: 390px;
+  max-height: 560px;
+  padding: 18px;
+  overflow-y: auto;
+  color: #333333;
+  font-size: 16px;
+  line-height: 1.75;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+
+.editor-surface:empty::before {
+  color: #98a2b3;
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.editor-surface :deep(p) {
+  margin: 0 0 16px;
+}
+
+.editor-surface :deep(h2),
+.editor-surface :deep(h3),
+.editor-surface :deep(h4) {
+  color: #7d0014;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1.4;
+}
+
+.editor-surface :deep(h2) {
+  margin: 24px 0 14px;
+  font-size: 28px;
+}
+
+.editor-surface :deep(h3) {
+  margin: 20px 0 12px;
+  font-size: 22px;
+}
+
+.editor-surface :deep(h4) {
+  margin: 18px 0 10px;
+  font-size: 19px;
+}
+
+.editor-surface :deep(ul),
+.editor-surface :deep(ol) {
+  margin: 12px 0 18px;
+  padding-left: 28px;
+}
+
+.editor-surface :deep(li) {
+  margin-bottom: 6px;
+}
+
+.editor-surface :deep(blockquote) {
+  margin: 18px 0;
+  padding: 12px 16px;
+  color: #555555;
+  background: #faf3f4;
+  border-left: 4px solid #8b0016;
+  border-radius: 0 6px 6px 0;
+}
+
+.editor-surface :deep(a) {
+  color: #8b0016;
+  text-decoration: underline;
+}
+
+.editor-surface :deep(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 18px auto;
+  border-radius: 8px;
+}
+
+.editor-surface :deep(table) {
+  width: 100%;
+  margin: 18px 0;
+  border-collapse: collapse;
+}
+
+.editor-surface :deep(th),
+.editor-surface :deep(td) {
+  padding: 10px;
+  border: 1px solid #dee2e6;
+}
+
+.editor-surface :deep(th) {
+  color: #ffffff;
+  background: #8b0016;
+}
+
+/* Ảnh đại diện */
 
 .preview {
   height: 180px;
-  border: 1px dashed #cfd5df;
-  border-radius: 10px;
   overflow: hidden;
   background: #ffffff;
+  border: 1px dashed #cfd5df;
+  border-radius: 10px;
 }
 
 .preview img {
@@ -1748,11 +2423,13 @@ function viewPublic(item) {
   color: #98a2b3;
 }
 
+/* Modal xác nhận xóa */
+
 .confirm-box {
   width: min(440px, 96vw);
   padding: 28px;
-  border-radius: 16px;
   background: #ffffff;
+  border-radius: 16px;
   box-shadow:
       0 24px 75px rgba(15, 23, 42, 0.3);
 }
@@ -1763,19 +2440,59 @@ function viewPublic(item) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
   color: #c4324d;
   background: #fff1f2;
+  border-radius: 50%;
   font-size: 24px;
 }
 
+/* Responsive */
+
+@media (max-width: 992px) {
+  .editor-surface {
+    min-height: 300px;
+  }
+}
+
 @media (max-width: 768px) {
+  .modal-layer {
+    padding: 10px;
+  }
+
+  .news-modal {
+    width: 100%;
+    max-height: 97vh;
+  }
+
+  .modal-content-body {
+    max-height: calc(97vh - 145px);
+    padding: 15px;
+  }
+
   .modal-foot {
     flex-direction: column-reverse;
   }
 
   .modal-foot .btn {
     width: 100%;
+  }
+
+  .editor-toolbar {
+    padding: 7px;
+  }
+
+  .editor-format {
+    flex-grow: 1;
+  }
+
+  .editor-surface {
+    min-height: 260px;
+    padding: 14px;
+    font-size: 15px;
+  }
+
+  .toolbar-separator {
+    display: none;
   }
 }
 </style>

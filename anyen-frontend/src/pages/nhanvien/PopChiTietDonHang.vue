@@ -17,6 +17,10 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  readonly: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([
@@ -53,6 +57,7 @@ const normalizeSanPham = (sp) => {
   const maSanPham = sp.MaSanPham || sp.maSanPham;
   const soLuong = Number(sp.SoLuong || sp.soLuong || 1);
   const giaTien = Number(sp.giaTien || sp.GiaTien || 0);
+  const hinhAnh = sp.HinhAnh || sp.hinhAnh || sp.HinhAnhUrl || sp.hinhAnhUrl || "";
 
   return {
     ...sp,
@@ -61,6 +66,8 @@ const normalizeSanPham = (sp) => {
     SoLuong: soLuong,
     soLuong,
     giaTien,
+    HinhAnh: hinhAnh,
+    hinhAnh,
     thanhTien: soLuong * giaTien,
   };
 };
@@ -134,11 +141,30 @@ watch(
     (newVal) => {
       order.value = normalizeOrder(newVal);
       activeTab.value = "info";
+      
+      // Debug: Log sản phẩm để kiểm tra hình ảnh
+      if (order.value?.sanPhams) {
+        console.log('Sản phẩm trong đơn hàng:', order.value.sanPhams.map(sp => ({
+          ten: sp.tenSanPham,
+          HinhAnh: sp.HinhAnh,
+          hinhAnh: sp.hinhAnh,
+          HinhAnhUrl: sp.HinhAnhUrl,
+          hinhAnhUrl: sp.hinhAnhUrl
+        })));
+      }
     },
     {
       immediate: true,
     }
 );
+
+const handleImageError = (event) => {
+  event.target.style.display = 'none';
+  const placeholder = event.target.nextElementSibling;
+  if (placeholder && placeholder.classList.contains('img-placeholder')) {
+    placeholder.style.display = 'block';
+  }
+};
 
 const tamTinh = computed(() => {
   if (!order.value?.sanPhams) return 0;
@@ -162,20 +188,59 @@ const tongCong = computed(() => {
 
 const STEPS = [
   "Mới tạo",
-  "Chờ đối tác xác nhận",
-  "Đã xác nhận",
-  "Đang xử lý",
-  "Chờ thanh toán",
+  "Xác nhận",
+  "Đã nhận",
+  "Xử lý",
+  "Đã giao",
+  "Thanh toán",
   "Hoàn thành",
 ];
 
-const getStepIndex = (trangThai) => STEPS.indexOf(trangThai);
+const normalizeTrangThai = (trangThai) => {
+  if (!trangThai) return "Mới tạo";
+  
+  // Nếu là số, chuyển sang text
+  if (typeof trangThai === 'number') {
+    const statusMap = {
+      1: "Mới tạo",
+      2: "Xác nhận",
+      3: "Đã nhận",
+      4: "Xử lý",
+      5: "Đã giao",
+      6: "Thanh toán",
+      7: "Hoàn thành",
+      0: "Đã hủy"
+    };
+    return statusMap[trangThai] || "Mới tạo";
+  }
+  
+  // Nếu là text, chuẩn hóa
+  const status = String(trangThai).trim().toLowerCase();
+  
+  if (status.includes("mới") || status.includes("tạo")) return "Mới tạo";
+  if (status.includes("xác nhận")) return "Xác nhận";
+  if (status.includes("đã nhận")) return "Đã nhận";
+  if (status.includes("xử lý") || status.includes("đang xử lý")) return "Xử lý";
+  if (status.includes("đã giao")) return "Đã giao";
+  if (status.includes("thanh toán")) return "Thanh toán";
+  if (status.includes("hoàn thành")) return "Hoàn thành";
+  if (status.includes("hủy")) return "Đã hủy";
+  
+  return trangThai;
+};
+
+const getStepIndex = (trangThai) => {
+  const normalized = normalizeTrangThai(trangThai);
+  console.log('Trạng thái gốc:', trangThai, '-> Normalized:', normalized);
+  return STEPS.indexOf(normalized);
+};
 
 const lichSuArr = computed(() => {
   if (!order.value) return [];
 
-  const currentIdx = getStepIndex(order.value.trangThai);
-  const isDaHuy = order.value.trangThai === "Đã hủy";
+  const normalizedStatus = normalizeTrangThai(order.value.trangThai);
+  const currentIdx = getStepIndex(normalizedStatus);
+  const isDaHuy = normalizedStatus === "Đã hủy";
 
   return STEPS.map((step, idx) => {
     const backendStep = order.value.lichSu?.find(
@@ -467,7 +532,7 @@ const capNhatTrangThaiTiep = async () => {
   <el-dialog
       v-model="visible"
       width="90%"
-      top="4vh"
+      top="20px"
       class="chi-tiet-dialog"
       :show-close="true"
       destroy-on-close
@@ -475,7 +540,7 @@ const capNhatTrangThaiTiep = async () => {
   >
     <template #header>
       <div class="dialog-title-new">
-        Sửa đơn hàng #{{ order?.maCode }}
+        {{ readonly ? 'Xem chi tiết đơn hàng' : 'Sửa đơn hàng' }} #{{ order?.maCode }}
       </div>
     </template>
 
@@ -517,6 +582,7 @@ const capNhatTrangThaiTiep = async () => {
                     v-model="order.phuongThucThanhToan"
                     placeholder="Chọn phương thức"
                     style="width: 100%"
+                    :disabled="readonly"
                 >
                   <el-option label="Chưa chọn" value="Chưa chọn" />
                   <el-option label="Tiền mặt" value="Tiền mặt" />
@@ -535,6 +601,7 @@ const capNhatTrangThaiTiep = async () => {
                     v-model="order.trangThaiThanhToan"
                     placeholder="Chọn trạng thái"
                     style="width: 100%"
+                    :disabled="readonly"
                 >
                   <el-option label="Chưa thanh toán" value="Chưa thanh toán" />
                   <el-option label="Đã đặt cọc" value="Đã đặt cọc" />
@@ -560,6 +627,7 @@ const capNhatTrangThaiTiep = async () => {
                     maxlength="30"
                     show-word-limit
                     placeholder="Nhập họ tên khách hàng"
+                    :disabled="readonly"
                 />
               </div>
             </div>
@@ -574,6 +642,7 @@ const capNhatTrangThaiTiep = async () => {
                     v-model="order.soDienThoaiKH"
                     maxlength="10"
                     placeholder="Nhập số điện thoại"
+                    :disabled="readonly"
                 />
               </div>
             </div>
@@ -587,6 +656,7 @@ const capNhatTrangThaiTiep = async () => {
                 <el-input
                     v-model="order.emailKH"
                     placeholder="Nhập email"
+                    :disabled="readonly"
                 />
               </div>
             </div>
@@ -686,7 +756,7 @@ const capNhatTrangThaiTiep = async () => {
 
           <div class="progress-actions">
             <button
-                v-if="nextStatus"
+                v-if="nextStatus && !readonly"
                 class="btn-capnhat-tt"
                 @click="capNhatTrangThaiTiep"
             >
@@ -698,7 +768,7 @@ const capNhatTrangThaiTiep = async () => {
               }}
             </button>
 
-            <div v-if="nextStatus" class="status-note">
+            <div v-if="nextStatus && !readonly" class="status-note">
               Trạng thái hiện tại:
               <strong>{{ currentStatus }}</strong>
               <br />
@@ -715,6 +785,7 @@ const capNhatTrangThaiTiep = async () => {
             <h4 class="section-title">Danh sách sản phẩm</h4>
 
             <button
+                v-if="!readonly"
                 class="btn-outline-green"
                 @click="openAddProductDialog"
             >
@@ -749,9 +820,10 @@ const capNhatTrangThaiTiep = async () => {
                 <td>
                   <div class="sp-cell-new">
                     <img
-                        v-if="sp.HinhAnh"
-                        :src="sp.HinhAnh"
+                        v-if="sp.HinhAnh || sp.hinhAnh || sp.HinhAnhUrl"
+                        :src="sp.HinhAnh || sp.hinhAnh || sp.HinhAnhUrl"
                         alt="Ảnh sản phẩm"
+                        @error="handleImageError"
                     />
 
                     <div v-else class="img-placeholder"></div>
@@ -774,9 +846,9 @@ const capNhatTrangThaiTiep = async () => {
 
                 <td>
                   <div class="qty-control">
-                    <button @click="decreaseQty(sp)">-</button>
+                    <button @click="decreaseQty(sp)" :disabled="readonly">-</button>
                     <span>{{ sp.SoLuong }}</span>
-                    <button @click="increaseQty(sp)">+</button>
+                    <button @click="increaseQty(sp)" :disabled="readonly">+</button>
                   </div>
                 </td>
 
@@ -786,6 +858,7 @@ const capNhatTrangThaiTiep = async () => {
 
                 <td style="text-align: center">
                   <button
+                      v-if="!readonly"
                       class="btn-trash"
                       @click="removeSp(sp)"
                   >
@@ -831,204 +904,36 @@ const capNhatTrangThaiTiep = async () => {
         v-if="order"
         class="popup-3col desktop-layout"
     >
-      <div class="col-panel info-col">
-        <div class="info-section">
-          <h4 class="section-title">Thông tin đơn hàng</h4>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-barcode"></i>
-              Mã đơn hàng:
-            </div>
-            <div class="info-val bold">#{{ order.maCode }}</div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-calendar-days"></i>
-              Ngày tạo:
-            </div>
-            <div class="info-val">
-              {{ formatDate(order.NgayTaoDon) }}
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-wallet"></i>
-              Phương thức thanh toán:
-            </div>
-            <div class="info-val">
-              <el-select
-                  v-model="order.phuongThucThanhToan"
-                  placeholder="Chọn phương thức"
-                  style="width: 100%"
-              >
-                <el-option label="Chưa chọn" value="Chưa chọn" />
-                <el-option label="Tiền mặt" value="Tiền mặt" />
-                <el-option label="Chuyển khoản" value="Chuyển khoản" />
-              </el-select>
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-money-check"></i>
-              Trạng thái thanh toán:
-            </div>
-            <div class="info-val">
-              <el-select
-                  v-model="order.trangThaiThanhToan"
-                  placeholder="Chọn trạng thái"
-                  style="width: 100%"
-              >
-                <el-option label="Chưa thanh toán" value="Chưa thanh toán" />
-                <el-option label="Đã đặt cọc" value="Đã đặt cọc" />
-                <el-option label="Đã thanh toán" value="Đã thanh toán" />
-              </el-select>
-            </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="info-section">
-          <h4 class="section-title">Thông tin khách hàng</h4>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-user"></i>
-              Họ tên:
-            </div>
-            <div class="info-val">
-              <el-input
-                  v-model="order.tenKhachHang"
-                  maxlength="30"
-                  show-word-limit
-                  placeholder="Nhập họ tên khách hàng"
-              />
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-phone"></i>
-              SĐT:
-            </div>
-            <div class="info-val">
-              <el-input
-                  v-model="order.soDienThoaiKH"
-                  maxlength="10"
-                  placeholder="Nhập số điện thoại"
-              />
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-envelope"></i>
-              Email:
-            </div>
-            <div class="info-val">
-              <el-input
-                  v-model="order.emailKH"
-                  placeholder="Nhập email"
-              />
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-location-dot"></i>
-              Địa chỉ:
-            </div>
-            <div class="info-val address-val">
-              <el-input
-                  v-model="order.diaChiKH"
-                  maxlength="40"
-                  show-word-limit
-                  placeholder="Nhập địa chỉ"
-              />
-            </div>
-          </div>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-note-sticky"></i>
-              Ghi chú:
-            </div>
-            <div class="info-val address-val">
-              <el-input
-                  v-model="order.GhiChu"
-                  type="textarea"
-                  :rows="3"
-                  placeholder="Nhập ghi chú đơn hàng"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="info-section">
-          <h4 class="section-title">Nhân viên phụ trách</h4>
-
-          <div class="info-row">
-            <div class="info-label">
-              <i class="fa-solid fa-user-tie"></i>
-              Họ tên:
-            </div>
-            <div class="info-val">
-              {{ order.tenNhanVien || "Chưa cập nhật" }}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-panel progress-col">
+      <!-- Thanh tiến trình ngang phía trên -->
+      <div class="progress-section-top">
         <h4 class="section-title">Tiến trình đơn hàng</h4>
-
-        <div class="vertical-stepper">
+        <div class="horizontal-stepper">
           <div
               v-for="(step, idx) in lichSuArr"
               :key="idx"
-              class="v-step"
+              class="h-step"
               :class="{ done: step.isDone, active: step.isActive }"
           >
-            <div class="v-step-indicator">
-              <div class="v-step-circle">
+            <div class="h-step-indicator">
+              <div class="h-step-circle">
                 <span v-if="step.isDone && !step.isActive">✓</span>
-
                 <span v-else-if="step.isActive">
                   <i class="fa-solid fa-clock"></i>
                 </span>
-
                 <span v-else>{{ idx + 1 }}</span>
               </div>
-
               <div
                   v-if="idx < lichSuArr.length - 1"
-                  class="v-step-line"
+                  class="h-step-line"
               ></div>
             </div>
-
-            <div class="v-step-content">
-              <div class="v-step-title">
-                {{ step.title }}
-              </div>
-
-              <div v-if="step.time" class="v-step-time">
-                {{ step.time }}
-              </div>
-
-              <div class="v-step-desc">
-                {{ step.desc }}
-              </div>
+            <div class="h-step-content">
+              <div class="h-step-title">{{ step.title }}</div>
+              <div v-if="step.time" class="h-step-time">{{ step.time }}</div>
             </div>
           </div>
         </div>
-
-        <div class="progress-actions">
+        <div class="progress-actions" v-if="!readonly">
           <button
               v-if="nextStatus"
               class="btn-capnhat-tt"
@@ -1041,135 +946,299 @@ const capNhatTrangThaiTiep = async () => {
                   : "Cập nhật trạng thái tiếp theo"
             }}
           </button>
-
           <div v-if="nextStatus" class="status-note">
-            Trạng thái hiện tại:
-            <strong>{{ currentStatus }}</strong>
+            Trạng thái hiện tại: <strong>{{ currentStatus }}</strong>
             <br />
-            Nhấn để chuyển sang trạng thái:
-            <strong>{{ nextStatus }}</strong>
+            Nhấn để chuyển sang trạng thái: <strong>{{ nextStatus }}</strong>
           </div>
         </div>
       </div>
 
-      <div class="col-panel products-col">
-        <div class="products-header">
-          <h4 class="section-title">Danh sách sản phẩm</h4>
+      <!-- Hàng dưới: thông tin + sản phẩm -->
+      <div class="bottom-section">
+        <div class="col-panel info-col">
+          <div class="info-section">
+            <h4 class="section-title">Thông tin đơn hàng</h4>
 
-          <button
-              class="btn-outline-green"
-              @click="openAddProductDialog"
-          >
-            <i class="fa-solid fa-plus"></i>
-            Thêm sản phẩm
-          </button>
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-barcode"></i>
+                Mã đơn hàng:
+              </div>
+              <div class="info-val bold">#{{ order.maCode }}</div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-calendar-days"></i>
+                Ngày tạo:
+              </div>
+              <div class="info-val">
+                {{ formatDate(order.NgayTaoDon) }}
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-wallet"></i>
+                Phương thức thanh toán:
+              </div>
+              <div class="info-val">
+                <el-select
+                    v-model="order.phuongThucThanhToan"
+                    placeholder="Chọn phương thức"
+                    style="width: 100%"
+                    :disabled="readonly"
+                >
+                  <el-option label="Chưa chọn" value="Chưa chọn" />
+                  <el-option label="Tiền mặt" value="Tiền mặt" />
+                  <el-option label="Chuyển khoản" value="Chuyển khoản" />
+                </el-select>
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-money-check"></i>
+                Trạng thái thanh toán:
+              </div>
+              <div class="info-val">
+                <el-select
+                    v-model="order.trangThaiThanhToan"
+                    placeholder="Chọn trạng thái"
+                    style="width: 100%"
+                    :disabled="readonly"
+                >
+                  <el-option label="Chưa thanh toán" value="Chưa thanh toán" />
+                  <el-option label="Đã đặt cọc" value="Đã đặt cọc" />
+                  <el-option label="Đã thanh toán" value="Đã thanh toán" />
+                </el-select>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="info-section">
+            <h4 class="section-title">Thông tin khách hàng</h4>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-user"></i>
+                Họ tên:
+              </div>
+              <div class="info-val">
+                <el-input
+                    v-model="order.tenKhachHang"
+                    maxlength="30"
+                    show-word-limit
+                    placeholder="Nhập họ tên khách hàng"
+                    :disabled="readonly"
+                />
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-phone"></i>
+                SĐT:
+              </div>
+              <div class="info-val">
+                <el-input
+                    v-model="order.soDienThoaiKH"
+                    maxlength="10"
+                    placeholder="Nhập số điện thoại"
+                    :disabled="readonly"
+                />
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-envelope"></i>
+                Email:
+              </div>
+              <div class="info-val">
+                <el-input
+                    v-model="order.emailKH"
+                    placeholder="Nhập email"
+                    :disabled="readonly"
+                />
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-location-dot"></i>
+                Địa chỉ:
+              </div>
+              <div class="info-val address-val">
+                <el-input
+                    v-model="order.diaChiKH"
+                    maxlength="40"
+                    show-word-limit
+                    placeholder="Nhập địa chỉ"
+                    :disabled="readonly"
+                />
+              </div>
+            </div>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-note-sticky"></i>
+                Ghi chú:
+              </div>
+              <div class="info-val address-val">
+                <el-input
+                    v-model="order.GhiChu"
+                    type="textarea"
+                    :rows="3"
+                    placeholder="Nhập ghi chú đơn hàng"
+                    :disabled="readonly"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="info-section">
+            <h4 class="section-title">Nhân viên phụ trách</h4>
+
+            <div class="info-row">
+              <div class="info-label">
+                <i class="fa-solid fa-user-tie"></i>
+                Họ tên:
+              </div>
+              <div class="info-val">
+                {{ order.tenNhanVien || "Chưa cập nhật" }}
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div class="products-table-wrapper">
-          <table class="products-table">
-            <thead>
-            <tr>
-              <th>Sản phẩm</th>
-              <th style="text-align: right">Đơn giá</th>
-              <th style="text-align: center">Số lượng</th>
-              <th style="text-align: right">Thành tiền</th>
-              <th style="text-align: center">Thao tác</th>
-            </tr>
-            </thead>
+        <div class="col-panel products-col">
+          <div class="products-header">
+            <h4 class="section-title">Danh sách sản phẩm</h4>
 
-            <tbody>
-            <tr v-if="!order.sanPhams || order.sanPhams.length === 0">
-              <td colspan="5" style="text-align: center; color: #888">
-                Chưa có sản phẩm
-              </td>
-            </tr>
-
-            <tr
-                v-for="sp in order.sanPhams"
-                :key="sp.MaSanPham"
+            <button
+                v-if="!readonly"
+                class="btn-outline-green"
+                @click="openAddProductDialog"
             >
-              <td>
-                <div class="sp-cell-new">
-                  <img
-                      v-if="sp.HinhAnh"
-                      :src="sp.HinhAnh"
-                      alt="Ảnh sản phẩm"
-                  />
+              <i class="fa-solid fa-plus"></i>
+              Thêm sản phẩm
+            </button>
+          </div>
 
-                  <div v-else class="img-placeholder"></div>
+          <div class="products-table-wrapper">
+            <table class="products-table">
+              <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th style="text-align: right">Đơn giá</th>
+                <th style="text-align: center">Số lượng</th>
+                <th style="text-align: right">Thành tiền</th>
+                <th style="text-align: center">Thao tác</th>
+              </tr>
+              </thead>
 
-                  <div class="sp-info-new">
-                    <div class="sp-name-new">
-                      {{ sp.tenSanPham }}
-                    </div>
+              <tbody>
+              <tr v-if="!order.sanPhams || order.sanPhams.length === 0">
+                <td colspan="5" style="text-align: center; color: #888">
+                  Chưa có sản phẩm
+                </td>
+              </tr>
 
-                    <div class="sp-sub-new">
-                      {{ sp.phanLoai || "Sản phẩm" }}
+              <tr
+                  v-for="sp in order.sanPhams"
+                  :key="sp.MaSanPham"
+              >
+                <td>
+                  <div class="sp-cell-new">
+                    <img
+                        v-if="sp.HinhAnh || sp.hinhAnh || sp.HinhAnhUrl"
+                        :src="sp.HinhAnh || sp.hinhAnh || sp.HinhAnhUrl"
+                        alt="Ảnh sản phẩm"
+                        @error="handleImageError"
+                    />
+
+                    <div v-else class="img-placeholder"></div>
+
+                    <div class="sp-info-new">
+                      <div class="sp-name-new">
+                        {{ sp.tenSanPham }}
+                      </div>
+
+                      <div class="sp-sub-new">
+                        {{ sp.phanLoai || "Sản phẩm" }}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </td>
+                </td>
 
-              <td style="text-align: right; font-weight: 600">
-                {{ formatCurrency(sp.giaTien) }}
-              </td>
+                <td style="text-align: right; font-weight: 600">
+                  {{ formatCurrency(sp.giaTien) }}
+                </td>
 
-              <td>
-                <div class="qty-control">
-                  <button @click="decreaseQty(sp)">-</button>
-                  <span>{{ sp.SoLuong }}</span>
-                  <button @click="increaseQty(sp)">+</button>
-                </div>
-              </td>
+                <td>
+                  <div class="qty-control">
+                    <button @click="decreaseQty(sp)" :disabled="readonly">-</button>
+                    <span>{{ sp.SoLuong }}</span>
+                    <button @click="increaseQty(sp)" :disabled="readonly">+</button>
+                  </div>
+                </td>
 
-              <td style="text-align: right; font-weight: 700">
-                {{ formatCurrency(sp.thanhTien) }}
-              </td>
+                <td style="text-align: right; font-weight: 700">
+                  {{ formatCurrency(sp.thanhTien) }}
+                </td>
 
-              <td style="text-align: center">
-                <button
-                    class="btn-trash"
-                    @click="removeSp(sp)"
-                >
-                  <i class="fa-solid fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <div class="summary-section">
-          <div class="sum-row">
-            <span>Tạm tính:</span>
-            <span>{{ formatCurrency(tamTinh) }}</span>
+                <td style="text-align: center">
+                  <button
+                      v-if="!readonly"
+                      class="btn-trash"
+                      @click="removeSp(sp)"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              </tbody>
+            </table>
           </div>
 
-          <div class="sum-row">
-            <span>Phí vận chuyển:</span>
-            <span>{{ formatCurrency(order.phiVanChuyen || 0) }}</span>
-          </div>
+          <div class="summary-section">
+            <div class="sum-row">
+              <span>Tạm tính:</span>
+              <span>{{ formatCurrency(tamTinh) }}</span>
+            </div>
 
-          <div
-              v-if="order.giamGia"
-              class="sum-row red-text"
-          >
-            <span>Giảm giá:</span>
-            <span>- {{ formatCurrency(order.giamGia) }}</span>
-          </div>
+            <div class="sum-row">
+              <span>Phí vận chuyển:</span>
+              <span>{{ formatCurrency(order.phiVanChuyen || 0) }}</span>
+            </div>
 
-          <div class="sum-divider"></div>
+            <div
+                v-if="order.giamGia"
+                class="sum-row red-text"
+            >
+              <span>Giảm giá:</span>
+              <span>- {{ formatCurrency(order.giamGia) }}</span>
+            </div>
 
-          <div class="sum-row total">
-            <span>Tổng cộng:</span>
-            <span>{{ formatCurrency(tongCong) }}</span>
+            <div class="sum-divider"></div>
+
+            <div class="sum-row total">
+              <span>Tổng cộng:</span>
+              <span>{{ formatCurrency(tongCong) }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <template #footer>
-      <div class="dialog-footer-new">
+      <div v-if="!readonly" class="dialog-footer-new">
         <button
             class="btn-cancel-new"
             @click="handleHuy"
@@ -1182,6 +1251,14 @@ const capNhatTrangThaiTiep = async () => {
             @click="handleLuu"
         >
           Lưu thay đổi
+        </button>
+      </div>
+      <div v-else class="dialog-footer-new">
+        <button
+            class="btn-cancel-new"
+            @click="visible = false"
+        >
+          Đóng
         </button>
       </div>
     </template>
@@ -1344,3 +1421,204 @@ const capNhatTrangThaiTiep = async () => {
 </template>
 
 <style scoped src="../../assets/styles/nhanvien/QLDonHang/PopChiTietDonHang.css"></style>
+
+<style scoped>
+/* Layout mới cho desktop */
+.popup-3col.desktop-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.progress-section-top {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+}
+
+.horizontal-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.h-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 120px;
+}
+
+.h-step-indicator {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.h-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.h-step.done .h-step-circle {
+  background: #10b981;
+  color: #fff;
+}
+
+.h-step.active .h-step-circle {
+  background: #3b82f6;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.h-step-line {
+  width: 40px;
+  height: 2px;
+  background: #e5e7eb;
+  margin: 0 8px;
+  flex-shrink: 0;
+}
+
+.h-step.done .h-step-line {
+  background: #10b981;
+}
+
+.h-step.active .h-step-line {
+  background: #3b82f6;
+}
+
+.h-step-content {
+  margin-left: 12px;
+  flex: 1;
+}
+
+.h-step-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.h-step.done .h-step-title {
+  color: #10b981;
+}
+
+.h-step.active .h-step-title {
+  color: #3b82f6;
+  font-weight: 600;
+}
+
+.h-step-time {
+  font-size: 11px;
+  color: #6b7280;
+  margin-top: 2px;
+}
+
+.bottom-section {
+  display: flex;
+  gap: 20px;
+}
+
+.bottom-section .info-col {
+  flex: 1;
+  min-width: 280px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.bottom-section .info-col::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bottom-section .info-col::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.bottom-section .info-col::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.bottom-section .info-col::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.bottom-section .products-col {
+  flex: 2;
+  min-width: 400px;
+  max-height: 500px;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.bottom-section .products-col::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bottom-section .products-col::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.bottom-section .products-col::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.bottom-section .products-col::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.progress-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+@media (max-width: 1024px) {
+  .bottom-section {
+    flex-direction: column;
+  }
+  
+  .bottom-section .info-col,
+  .bottom-section .products-col {
+    min-width: 100%;
+  }
+  
+  .horizontal-stepper {
+    font-size: 12px;
+  }
+  
+  .h-step {
+    min-width: 100px;
+  }
+  
+  .h-step-circle {
+    width: 28px;
+    height: 28px;
+    font-size: 12px;
+  }
+  
+  .h-step-line {
+    width: 30px;
+  }
+  
+  .h-step-title {
+    font-size: 12px;
+  }
+}
+</style>

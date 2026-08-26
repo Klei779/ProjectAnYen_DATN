@@ -22,7 +22,7 @@ WHERE sp.trangThai = 1
   AND dt.trangThai = 1
 ORDER BY sp.maSanPham DESC
 """)
-List<SanPham> findAllVisibleForTaoDonHang();
+    List<SanPham> findAllVisibleForTaoDonHang();
 
     @Query("""
             SELECT sp.loai, COUNT(sp)
@@ -76,6 +76,24 @@ List<SanPham> findAllVisibleForTaoDonHang();
     List<SanPham> findByTrangThaiOrderByMaSanPhamDesc(Integer trangThai);
 
     List<SanPham> findByTrangThai(Integer trangThai);
+
+    List<SanPham> findByTrangThaiOrderByLoaiAscTenSanPhamAsc(Integer trangThai);
+
+    /**
+     * Sản phẩm Admin được phép đưa vào combo: sản phẩm đang bán và đối tác
+     * cung cấp sản phẩm vẫn đang hoạt động.
+     */
+    @Query("""
+            SELECT sp
+            FROM SanPham sp, DoiTac dt
+            WHERE sp.trangThai = 1
+              AND sp.maDoiTac = dt.maDoiTac
+              AND dt.trangThai = 1
+              AND sp.soLuong IS NOT NULL
+              AND sp.soLuong > 0
+            ORDER BY sp.loai ASC, sp.tenSanPham ASC, sp.maSanPham ASC
+            """)
+    List<SanPham> findAllAvailableForAdminCombo();
     @Query("""
 
     SELECT dt.tenDoiTac 

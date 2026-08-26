@@ -507,6 +507,17 @@ public class DonHangService {
                 .collect(Collectors.toList());
     }
 
+    public List<DonHangResponse> getDonHangByKhachHang(Integer maKhachHang) {
+        List<DonHang> donHangs = donHangRepository
+                .findByKhachHang_MaKhachHangOrderByNgayTaoDonDesc(maKhachHang);
+
+        return donHangs.stream()
+                // Sắp xếp theo maDonHang descending (ID càng lớn = đơn càng mới)
+                .sorted((a, b) -> b.getMaDonHang().compareTo(a.getMaDonHang()))
+                .map(this::mapToDonHangResponse)
+                .collect(Collectors.toList());
+    }
+
     public DonHangResponse getDonHangById(Integer maDonHang) {
         DonHang donHang = donHangRepository.findById(maDonHang)
                 .orElseThrow(() -> new RuntimeException(

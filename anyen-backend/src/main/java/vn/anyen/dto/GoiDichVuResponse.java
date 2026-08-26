@@ -1,18 +1,10 @@
 package vn.anyen.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 import vn.anyen.entity.ComBo;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
 public class GoiDichVuResponse {
 
     private Integer comboId;
@@ -20,49 +12,62 @@ public class GoiDichVuResponse {
     private BigDecimal gia;
     private String moTa;
 
-    // Ảnh đại diện cũ, giữ lại để không ảnh hưởng code hiện tại
+    /** Ảnh đại diện đầu tiên, giữ tương thích với website cũ. */
     private String hinhAnh;
 
     private String ghiChu;
 
-    // Danh sách toàn bộ ảnh của combo
+    /** Đúng ba ảnh đại diện của combo mới. */
     private List<String> hinhAnhs;
 
+    /** Ảnh minh họa quy trình do Admin tải lên. */
+    private List<String> hinhAnhQuyTrinhs;
+
     private Integer trangThai;
+
+    public GoiDichVuResponse() {
+    }
+
+    public GoiDichVuResponse(
+            Integer comboId,
+            String tenCombo,
+            BigDecimal gia,
+            String moTa,
+            String hinhAnh,
+            String ghiChu,
+            List<String> hinhAnhs,
+            List<String> hinhAnhQuyTrinhs,
+            Integer trangThai
+    ) {
+        this.comboId = comboId;
+        this.tenCombo = tenCombo;
+        this.gia = gia;
+        this.moTa = moTa;
+        this.hinhAnh = hinhAnh;
+        this.ghiChu = ghiChu;
+        this.hinhAnhs = hinhAnhs;
+        this.hinhAnhQuyTrinhs = hinhAnhQuyTrinhs;
+        this.trangThai = trangThai;
+    }
+
     public static GoiDichVuResponse fromEntity(
             ComBo combo,
-            List<String> hinhAnhs
+            List<String> hinhAnhDaiDiens,
+            List<String> hinhAnhQuyTrinhs
     ) {
-        List<String> danhSachAnh = hinhAnhs == null
-                ? List.of()
-                : hinhAnhs.stream()
-                .filter(url -> url != null && !url.isBlank())
-                .distinct()
-                .toList();
+        List<String> covers = normalizeImages(hinhAnhDaiDiens);
+        List<String> processImages = normalizeImages(hinhAnhQuyTrinhs);
 
-        /*
-         * Combo cũ chưa có dữ liệu trong combo_hinhanh
-         * thì lấy lại trường HinhAnh của bảng combo.
-         */
-        if (
-                danhSachAnh.isEmpty()
-                        && combo.getHinhAnh() != null
-                        && !combo.getHinhAnh().isBlank()
-        ) {
-            danhSachAnh = List.of(combo.getHinhAnh());
+        // Dữ liệu cũ có thể chỉ còn cột combo.HinhAnh.
+        if (covers.isEmpty()
+                && combo.getHinhAnh() != null
+                && !combo.getHinhAnh().isBlank()) {
+            covers = List.of(combo.getHinhAnh().trim());
         }
 
-        String anhChinh = combo.getHinhAnh();
-
-        /*
-         * Nếu cột HinhAnh bị trống nhưng bảng combo_hinhanh có dữ liệu,
-         * lấy ảnh đầu tiên làm ảnh chính.
-         */
-        if (
-                (anhChinh == null || anhChinh.isBlank())
-                        && !danhSachAnh.isEmpty()
-        ) {
-            anhChinh = danhSachAnh.get(0);
+        String mainImage = combo.getHinhAnh();
+        if ((mainImage == null || mainImage.isBlank()) && !covers.isEmpty()) {
+            mainImage = covers.get(0);
         }
 
         return new GoiDichVuResponse(
@@ -70,10 +75,41 @@ public class GoiDichVuResponse {
                 combo.getTenCombo(),
                 combo.getGia(),
                 combo.getMoTa(),
-                anhChinh,
+                mainImage,
                 combo.getGhiChu(),
-                danhSachAnh,
+                covers,
+                processImages,
                 combo.getTrangThai()
         );
     }
+
+    private static List<String> normalizeImages(List<String> images) {
+        if (images == null) {
+            return List.of();
+        }
+        return images.stream()
+                .filter(url -> url != null && !url.isBlank())
+                .map(String::trim)
+                .distinct()
+                .toList();
+    }
+
+    public Integer getComboId() { return comboId; }
+    public void setComboId(Integer comboId) { this.comboId = comboId; }
+    public String getTenCombo() { return tenCombo; }
+    public void setTenCombo(String tenCombo) { this.tenCombo = tenCombo; }
+    public BigDecimal getGia() { return gia; }
+    public void setGia(BigDecimal gia) { this.gia = gia; }
+    public String getMoTa() { return moTa; }
+    public void setMoTa(String moTa) { this.moTa = moTa; }
+    public String getHinhAnh() { return hinhAnh; }
+    public void setHinhAnh(String hinhAnh) { this.hinhAnh = hinhAnh; }
+    public String getGhiChu() { return ghiChu; }
+    public void setGhiChu(String ghiChu) { this.ghiChu = ghiChu; }
+    public List<String> getHinhAnhs() { return hinhAnhs; }
+    public void setHinhAnhs(List<String> hinhAnhs) { this.hinhAnhs = hinhAnhs; }
+    public List<String> getHinhAnhQuyTrinhs() { return hinhAnhQuyTrinhs; }
+    public void setHinhAnhQuyTrinhs(List<String> hinhAnhQuyTrinhs) { this.hinhAnhQuyTrinhs = hinhAnhQuyTrinhs; }
+    public Integer getTrangThai() { return trangThai; }
+    public void setTrangThai(Integer trangThai) { this.trangThai = trangThai; }
 }

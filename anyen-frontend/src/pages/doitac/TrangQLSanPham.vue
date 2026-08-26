@@ -965,6 +965,15 @@ onBeforeUnmount(() => {
           </div>
 
           <button
+              class="create-btn"
+              type="button"
+              @click="editingProduct = null; activeTab = 'create'"
+          >
+            <i class="fa-solid fa-plus"></i>
+            Thêm sản phẩm
+          </button>
+
+          <button
               class="export-btn"
               type="button"
               @click="exportProductsToExcel"

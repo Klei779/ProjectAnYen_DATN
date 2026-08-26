@@ -119,6 +119,22 @@
               An Yên đồng hành cùng gia đình trong từng bước, đảm bảo mọi việc được diễn ra chu đáo và trang trọng.
             </p>
 
+            <div v-if="processImages.length" class="process-image-gallery">
+              <figure
+                  v-for="(image, index) in processImages"
+                  :key="`${image}-${index}`"
+                  class="process-image-card"
+              >
+                <img
+                    :src="image"
+                    :alt="`Quy trình thực hiện bước ${index + 1}`"
+                    loading="lazy"
+                    @error="setFakeImage"
+                />
+                <figcaption>Hình ảnh quy trình {{ index + 1 }}</figcaption>
+              </figure>
+            </div>
+
             <div class="process-list">
               <div class="process-item">
                 <span>1</span>
@@ -204,6 +220,7 @@ const service = ref({
 
 const comboChiTiet = ref([])
 const comboImages = ref([])
+const processImages = ref([])
 const images = ref([FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE])
 const currentIndex = ref(0)
 
@@ -240,12 +257,36 @@ const normalizeImagePath = (path) => {
     return `https:${cleanPath}`
   }
 
-  // Ảnh trong public của frontend
+  // Ảnh upload cục bộ được backend phục vụ.
+  if (cleanPath.startsWith('/uploads/')) {
+    return `http://localhost:8080${cleanPath}`
+  }
+  if (cleanPath.startsWith('uploads/')) {
+    return `http://localhost:8080/${cleanPath}`
+  }
+
+  // Ảnh tĩnh trong public của frontend.
   if (cleanPath.startsWith('/')) {
     return cleanPath
   }
 
   return `/images/TrangDichVuChiTiet/${cleanPath}`
+}
+
+const extractProcessImages = (data) => {
+  if (!Array.isArray(data?.hinhAnhQuyTrinhs)) return []
+
+  return [
+    ...new Set(
+        data.hinhAnhQuyTrinhs
+            .map(item => normalizeImagePath(
+                typeof item === 'string'
+                    ? item
+                    : item?.hinhAnh || item?.url
+            ))
+            .filter(image => image && image !== FAKE_IMAGE)
+    )
+  ]
 }
 
 const extractComboImages = (data) => {
@@ -365,8 +406,8 @@ const getTrangTriImages = (item) => {
 }
 
 const getLoaiText = (loai) => {
-  if (loai === 0) return 'Sản phẩm'
-  if (loai === 1) return 'Dịch vụ'
+  if (loai === 1) return 'Sản phẩm'
+  if (loai === 0) return 'Tiện ích / dịch vụ'
   return 'Không xác định'
 }
 
@@ -380,6 +421,7 @@ const resetData = () => {
 
   comboChiTiet.value = []
   comboImages.value = []
+  processImages.value = []
   images.value = [FAKE_IMAGE, FAKE_IMAGE, FAKE_IMAGE]
   currentIndex.value = 0
 }
@@ -405,6 +447,7 @@ const loadCombo = async () => {
         extractComboImages(res.data)
 
     comboImages.value = loadedComboImages
+    processImages.value = extractProcessImages(res.data)
 
     // Ưu tiên ảnh được upload lúc tạo combo
     if (loadedComboImages.length > 0) {
@@ -519,10 +562,8 @@ const loadPage = async () => {
   window.scrollTo(0, 0)
   resetData()
 
-  await Promise.all([
-    loadCombo(),
-    loadComboChiTiet()
-  ])
+  await loadCombo()
+  await loadComboChiTiet()
 }
 
 onMounted(() => {
@@ -567,6 +608,49 @@ watch(
   height: auto;
   display: block;
   object-fit: contain;
+}
+
+.process-image-gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 24px 0 30px;
+}
+
+.process-image-card {
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #eadfd4;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(69, 45, 30, 0.08);
+}
+
+.process-image-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.process-image-card figcaption {
+  padding: 10px 12px;
+  color: #765b47;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .process-image-gallery {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .process-image-gallery {
+    grid-template-columns: 1fr;
+  }
 }
 
 .combo-quantity-badge {

@@ -19,6 +19,12 @@ const props = defineProps({
     required: false,
     default: () => [],
   },
+
+  additionalTerms: {
+    type: Array,
+    required: false,
+    default: () => [],
+  },
 });
 
 const safeNumber = (value) => Number(value || 0);
@@ -609,6 +615,16 @@ const grandTotalInWords = computed(() => {
         <div class="mt-1 text-justify">
           Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản có giá trị pháp lý như nhau.
         </div>
+        <template v-if="additionalTerms && additionalTerms.length > 0">
+          <div
+              v-for="(term, index) in additionalTerms"
+              :key="index"
+              v-show="term && term.trim()"
+              class="mt-1 text-justify"
+          >
+            + {{ term }}
+          </div>
+        </template>
 
         <div class="signature-row mt-4">
           <div class="font-bold text-center" style="width: 50%;">Đại diện bên A</div>

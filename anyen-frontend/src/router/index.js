@@ -23,8 +23,11 @@ import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
 import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
 import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
 import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
+import TrangQLDonHangAdmin from "../pages/admin/TrangQLDonHang.vue";
 import TrangGioHang from "../pages/website/TrangGioHang.vue";
 import TrangQLTinTuc from "../pages/admin/TrangQLTinTuc.vue";
+import TaoComboAdmin from "../pages/admin/TaoCombo.vue";
+import TrangQLComboAdmin from "../pages/admin/TrangQLCombo.vue";
 
 import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
 import TrangQLDonHang from "../pages/doitac/TrangQLDonHang.vue";
@@ -33,8 +36,6 @@ import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
 import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
 import TrangTaoSanPham from "../pages/doitac/TrangTaoSanPham.vue";
 import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
-import TaoCombo from "../pages/doitac/TaoCombo.vue";
-import TrangQLCombo from "../pages/doitac/TrangQLCombo.vue";
 
 import TrangQLDoiTac from "../pages/admin/TrangQLDoiTac.vue";
 import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
@@ -142,14 +143,6 @@ const routes = [
                 component: TrangQLSanPham,
             },
             {
-                path: "quan-ly-combo",
-                component: TrangQLCombo,
-            },
-            {
-                path: "tao-combo",
-                component: TaoCombo,
-            },
-            {
                 path: "tao-san-pham",
                 component: TrangTaoSanPham,
             },
@@ -250,6 +243,10 @@ const routes = [
                 component: TrangQLKhachHangAdmin,
             },
             {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangAdmin,
+            },
+            {
                 path: "quan-ly-hop-dong",
                 component: TrangQLHopDongAdmin,
             },
@@ -260,6 +257,21 @@ const routes = [
             {
                 path: "duyet-san-pham",
                 component: TrangDuyetSanPham,
+            },
+            {
+                path: "quan-ly-combo",
+                name: "AdminQuanLyCombo",
+                component: TrangQLComboAdmin,
+            },
+            {
+                path: "tao-combo",
+                name: "AdminTaoCombo",
+                component: TaoComboAdmin,
+            },
+            {
+                path: "combo/:id/chinh-sua",
+                name: "AdminSuaCombo",
+                component: TaoComboAdmin,
             },
             {
                 path: "quan-ly-tin-tuc",

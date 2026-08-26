@@ -7,7 +7,7 @@
     <div class="logo-section">
       <img
           src="../assets/images/icon/logoAnYen.png"
-          alt="An Yên"n
+          alt="An Yên"
           class="logo-img"
       />
     </div>
@@ -20,17 +20,17 @@
         <h6 class="mb-1">{{ user?.hoTen || 'Quản lý' }}</h6>
         <small>Admin An Yên</small>
       </div>
-      
-      <UserProfileDropdown 
-        v-if="showProfile" 
-        :user="user" 
-        icon-class="bi bi-shield-lock"
-        @logout="logout" 
+
+      <UserProfileDropdown
+          v-if="showProfile"
+          :user="user"
+          icon-class="bi bi-shield-lock"
+          @logout="logout"
       />
     </div>
 
     <nav class="menu">
-      
+
       <RouterLink to="/admin/quan-ly-doi-tac" class="menu-item" title="Quản lý đối tác">
         <i class="fa-solid fa-handshake menu-icon"></i>
         <span class="sidebar-text">Quản lý đối tác</span>
@@ -47,6 +47,10 @@
         <i class="fa-solid fa-users menu-icon"></i>
         <span class="sidebar-text">Quản lý khách hàng</span>
       </RouterLink>
+      <RouterLink to="/admin/quan-ly-don-hang" class="menu-item" title="Quản lý đơn hàng">
+        <i class="fa-solid fa-box menu-icon"></i>
+        <span class="sidebar-text">Quản lý đơn hàng</span>
+      </RouterLink>
       <RouterLink to="/admin/quan-ly-hop-dong" class="menu-item" title="Quản lý hợp đồng">
         <i class="fa-solid fa-file-contract menu-icon"></i>
         <span class="sidebar-text">Quản lý hợp đồng</span>
@@ -54,6 +58,10 @@
       <RouterLink to="/admin/duyet-san-pham" class="menu-item" title="Quản lý sản phẩm">
         <i class="fa-solid fa-file-contract menu-icon"></i>
         <span class="sidebar-text">Quản lý sản phẩm</span>
+      </RouterLink>
+      <RouterLink to="/admin/quan-ly-combo" class="menu-item" title="Quản lý combo">
+        <i class="fa-solid fa-layer-group menu-icon"></i>
+        <span class="sidebar-text">Quản lý combo</span>
       </RouterLink>
       <RouterLink
           to="/admin/quan-ly-tin-tuc"
@@ -79,21 +87,21 @@
         <span class="sidebar-text">Thống kê doanh thu</span>
       </RouterLink>
       <RouterLink
-    to="/admin/quan-ly-hoa-don"
-    class="menu-item"
-    title="Quản lý hóa đơn"
->
-  <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
-  <span class="sidebar-text">Quản lý hóa đơn</span>
-</RouterLink>
-<RouterLink
-    to="/admin/quan-ly-cong-no"
-    class="menu-item"
-    title="Quản lý công nợ"
->
-  <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
-  <span class="sidebar-text">Quản lý công nợ</span>
-</RouterLink>
+          to="/admin/quan-ly-hoa-don"
+          class="menu-item"
+          title="Quản lý hóa đơn"
+      >
+        <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
+        <span class="sidebar-text">Quản lý hóa đơn</span>
+      </RouterLink>
+      <RouterLink
+          to="/admin/quan-ly-cong-no"
+          class="menu-item"
+          title="Quản lý công nợ"
+      >
+        <i class="fa-solid fa-file-invoice-dollar menu-icon"></i>
+        <span class="sidebar-text">Quản lý công nợ</span>
+      </RouterLink>
       <RouterLink to="/admin/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
         <i class="fa-solid fa-user menu-icon"></i>
         <span class="sidebar-text">Thông tin tài khoản</span>

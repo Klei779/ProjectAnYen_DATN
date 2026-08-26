@@ -18,6 +18,7 @@
     "bootstrap": "^5.3.8",
     "cloudflare": "^6.4.0",
     "cloudflared": "^0.7.1",
+    "dompurify": "^3.4.14",
     "element-plus": "^2.14.1",
     "exceljs": "^4.4.0",
     "html2canvas": "^1.4.1",

@@ -49,23 +49,6 @@
               </div>
             </div>
 
-            <div class="user-profile-wrapper" style="position: relative; cursor: pointer; margin-left: 20px" @click.stop="toggleProfile">
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="avatar-small">
-                  <i class="fa-solid fa-user"></i>
-                </div>
-                <div class="user-short-info">
-                  <strong>{{ user?.hoTen || 'Quản lý' }}</strong>
-                </div>
-              </div>
-              <UserProfileDropdown
-                v-if="showProfile"
-                :user="user"
-                icon-class="fa-solid fa-user-shield"
-                @logout="logout"
-              />
-            </div>
-
           </div>
         </header>
 
@@ -82,13 +65,11 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import api from "../api/api.js";
 import AdminSidebar from "../components/AdminSidebar.vue";
-import UserProfileDropdown from "../components/UserProfileDropdown.vue";
 
 const route = useRoute();
 const router = useRouter();
 
 const user = ref(null);
-const showProfile = ref(false);
 
 const routeTitles = {
   "/admin/tong-quan": "Tổng quan",
@@ -182,7 +163,6 @@ const getMiniIconName = (item) => {
 onMounted(() => {
   document.addEventListener('click', () => {
     if (showMiniNoti.value) showMiniNoti.value = false;
-    if (showProfile.value) showProfile.value = false;
   });
 
   const userStr = localStorage.getItem("user");
@@ -193,10 +173,6 @@ onMounted(() => {
   loadNotifications();
   startPolling();
 });
-
-const toggleProfile = () => {
-  showProfile.value = !showProfile.value;
-};
 
 const logout = () => {
   localStorage.removeItem("user");

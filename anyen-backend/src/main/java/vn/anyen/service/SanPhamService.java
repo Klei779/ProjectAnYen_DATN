@@ -44,6 +44,7 @@ public class SanPhamService {
     private final SanPhamChiTietRepository sanPhamChiTietRepository;
     private final SanPhamHinhAnhRepository sanPhamHinhAnhRepository;
     private final GuestLocationRedisService guestLocationRedisService;
+    private static final double MAX_DISTANCE_KM = 10.0; // Increased max distance to allow broader filtering
 
     public SanPhamPageResponse getSanPhamGanNhat(String sessionId) {
         GuestLocationRedisService.GuestLocation location = guestLocationRedisService.getLocation(sessionId);
@@ -93,7 +94,8 @@ public class SanPhamService {
                     }
                     return resp;
                 })
-                .sorted(Comparator
+                .filter(sp -> sp.getKhoangCach() != null
+                        && sp.getKhoangCach() <= MAX_DISTANCE_KM)                .sorted(Comparator
                         .comparing((SanPhamResponse sp) -> sp.getKhoangCach() != null ? sp.getKhoangCach() : Double.MAX_VALUE)
                         .thenComparing(Comparator.comparing(SanPhamResponse::getId).reversed())
                 )

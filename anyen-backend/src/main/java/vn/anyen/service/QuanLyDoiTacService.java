@@ -152,6 +152,18 @@ public class QuanLyDoiTacService {
                 )
         );
 
+        doiTac.setQuanHuyen(
+                trimNullable(
+                        request.getQuanHuyen()
+                )
+        );
+
+        doiTac.setTinhThanh(
+                trimNullable(
+                        request.getTinhThanh()
+                )
+        );
+
         doiTacRepository.save(doiTac);
 
         return mapToResponse(doiTac);
@@ -639,6 +651,12 @@ public class QuanLyDoiTacService {
                 )
                 .diaChi(
                         doiTac.getDiaChi()
+                )
+                .quanHuyen(
+                        doiTac.getQuanHuyen()
+                )
+                .tinhThanh(
+                        doiTac.getTinhThanh()
                 )
                 .trangThai(
                         doiTac.getTrangThai()

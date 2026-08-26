@@ -44,6 +44,12 @@ public class DoiTac {
     @Column(name = "DiaChi")
     private String diaChi;
 
+    @Column(name = "QuanHuyen")
+    private String quanHuyen;
+
+    @Column(name = "TinhThanh")
+    private String tinhThanh;
+
     @Column(name = "Latitude")
     private BigDecimal latitude;
 

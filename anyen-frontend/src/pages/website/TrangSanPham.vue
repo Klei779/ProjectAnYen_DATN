@@ -327,17 +327,23 @@ function getOrCreateSessionId() {
   }
   return sid
 }
-
 async function toggleNearbyMode() {
+  // Đang ở chế độ gần nhất → quay lại danh sách bình thường
   if (isNearbyMode.value) {
     isNearbyMode.value = false
+    currentPage.value = 1
+
     await loadProducts()
+
     ElMessage.info('Đã quay lại danh sách tất cả sản phẩm')
     return
   }
 
+  // Kiểm tra trình duyệt có hỗ trợ GPS không
   if (!navigator.geolocation) {
-    ElMessage.error('Trình duyệt của bạn không hỗ trợ Geolocation (định vị vị trí)')
+    ElMessage.error(
+        'Trình duyệt của bạn không hỗ trợ Geolocation (định vị vị trí)'
+    )
     return
   }
 
@@ -345,53 +351,87 @@ async function toggleNearbyMode() {
   loading.value = true
 
   navigator.geolocation.getCurrentPosition(
-    async (position) => {
-      const latitude = position.coords.latitude
-      const longitude = position.coords.longitude
-      const sessionId = getOrCreateSessionId()
+      async (position) => {
+        const latitude = position.coords.latitude
+        const longitude = position.coords.longitude
+        const sessionId = getOrCreateSessionId()
 
-      try {
-        // Lưu tạm tọa độ vào Redis
-        await saveGuestLocation(sessionId, latitude, longitude)
+        try {
+          // 1. Lưu vị trí guest vào Redis
+          await saveGuestLocation(
+              sessionId,
+              latitude,
+              longitude
+          )
 
-        // Lấy danh sách sản phẩm theo đối tác gần nhất
-        const { items, total } = await getNearbyProducts(sessionId)
-        products.value = items
-        totalProducts.value = total
-        isNearbyMode.value = true
+          // 2. Backend tìm sản phẩm gần nhất
+          const { items, total } =
+              await getNearbyProducts(sessionId)
 
-        ElMessage.success({
-          message: 'Đã tìm thấy sản phẩm từ các đối tác gần bạn nhất!',
-          duration: 3500
-        })
-      } catch (error) {
-        console.error('Lỗi khi lấy sản phẩm gần:', error)
-        ElMessage.error('Không thể tìm kiếm sản phẩm gần bạn lúc này. Vui lòng thử lại sau.')
-      } finally {
+          // 3. Chỉ hiển thị kết quả backend trả về
+          products.value = items || []
+          totalProducts.value = total || 0
+
+          // 4. Chuyển sang mode gần nhất
+          isNearbyMode.value = true
+          currentPage.value = 1
+
+          ElMessage.success({
+            message:
+                'Đã tìm thấy sản phẩm từ các đối tác gần bạn nhất!',
+            duration: 3500
+          })
+
+        } catch (error) {
+          console.error(
+              'Lỗi khi lấy sản phẩm gần:',
+              error
+          )
+
+          products.value = []
+          totalProducts.value = 0
+
+          ElMessage.error(
+              'Không thể tìm kiếm sản phẩm gần bạn lúc này. Vui lòng thử lại sau.'
+          )
+
+        } finally {
+          loadingLocation.value = false
+          loading.value = false
+        }
+      },
+
+      (error) => {
         loadingLocation.value = false
         loading.value = false
-      }
-    },
-    (error) => {
-      loadingLocation.value = false
-      loading.value = false
-      console.error('Lỗi lấy vị trí geolocation:', error)
 
-      let msg = 'Không thể lấy được vị trí hiện tại của bạn.'
-      if (error.code === 1) {
-        msg = 'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trình duyệt truy cập vị trí để tìm sản phẩm gần bạn.'
-      } else if (error.code === 2) {
-        msg = 'Không xác định được vị trí của thiết bị.'
-      } else if (error.code === 3) {
-        msg = 'Quá thời gian lấy vị trí.'
+        console.error(
+            'Lỗi lấy vị trí geolocation:',
+            error
+        )
+
+        let msg =
+            'Không thể lấy được vị trí hiện tại của bạn.'
+
+        if (error.code === 1) {
+          msg =
+              'Bạn đã từ chối quyền truy cập vị trí. Vui lòng cho phép trình duyệt truy cập vị trí để tìm sản phẩm gần bạn.'
+        } else if (error.code === 2) {
+          msg =
+              'Không xác định được vị trí của thiết bị.'
+        } else if (error.code === 3) {
+          msg =
+              'Quá thời gian lấy vị trí.'
+        }
+
+        ElMessage.warning(msg)
+      },
+
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
       }
-      ElMessage.warning(msg)
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000
-    }
   )
 }
 

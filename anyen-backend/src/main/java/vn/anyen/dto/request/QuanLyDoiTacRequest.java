@@ -43,4 +43,10 @@ public class QuanLyDoiTacRequest {
 
     @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
     private String diaChi;
+
+    @Size(max = 100, message = "Quận huyện tối đa 100 ký tự")
+    private String quanHuyen;
+
+    @Size(max = 100, message = "Tỉnh thành tối đa 100 ký tự")
+    private String tinhThanh;
 }

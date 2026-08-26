@@ -49,7 +49,7 @@
     <div class="filter-card">
       <div class="filter-card-body">
         <div class="row g-3 align-items-end">
-          <div class="col-lg-6 col-md-12">
+          <div class="col-lg-3 col-md-6">
             <label class="filter-label">
               Tìm kiếm đối tác
             </label>
@@ -61,7 +61,7 @@
                   v-model="keyword"
                   type="text"
                   class="form-control search-input"
-                  placeholder="Tên đối tác, doanh nghiệp, email, số điện thoại..."
+                  placeholder="Tên, email, SĐT, địa chỉ..."
                   @input="currentPage = 1"
               />
             </div>
@@ -85,10 +85,52 @@
           </div>
 
           <div class="col-lg-3 col-md-6">
-            <div class="d-flex gap-2">
+            <label class="filter-label">
+              Tỉnh / Thành phố
+            </label>
+
+            <select
+                v-model="selectedTinhThanh"
+                class="form-select"
+                @change="onTinhThanhChange"
+            >
+              <option value="">Tất cả tỉnh thành</option>
+              <option
+                  v-for="tinh in tinhThanhList"
+                  :key="tinh"
+                  :value="tinh"
+              >
+                {{ tinh }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-lg-3 col-md-6">
+            <label class="filter-label">
+              Quận / Huyện
+            </label>
+
+            <select
+                v-model="selectedQuanHuyen"
+                class="form-select"
+                @change="currentPage = 1"
+            >
+              <option value="">Tất cả quận huyện</option>
+              <option
+                  v-for="quan in quanHuyenList"
+                  :key="quan"
+                  :value="quan"
+              >
+                {{ quan }}
+              </option>
+            </select>
+          </div>
+
+          <div class="col-12 text-end">
+            <div class="d-inline-flex gap-2">
               <button
                   type="button"
-                  class="btn btn-reset-filter flex-grow-1"
+                  class="btn btn-reset-filter"
                   @click="resetFilter"
               >
                 <i class="bi bi-funnel"></i>
@@ -135,6 +177,8 @@
             <th>Tài khoản</th>
             <th>Trạng thái</th>
             <th>Ngày tạo</th>
+            <th>Quận huyện</th>
+            <th>Tỉnh thành</th>
             <th class="text-end pe-4">
               Hành động
             </th>
@@ -262,6 +306,20 @@
                   <i class="bi bi-calendar3"></i>
 
                   {{ formatDate(dt.createdAt) }}
+                </div>
+              </td>
+              <td>
+                <div class="date-cell">
+                  <i class="bi bi-calendar3"></i>
+
+                  {{ dt.quanHuyen||"Chưa có" }}
+                </div>
+              </td>
+              <td>
+                <div class="date-cell">
+                  <i class="bi bi-calendar3"></i>
+
+                  {{ dt.tinhThanh||"Chưa có" }}
                 </div>
               </td>
 
@@ -606,20 +664,57 @@
                     </div>
                   </div>
 
-                  <div class="col-md-6">
+                  <div class="col-md-4">
                     <label class="form-label">
-                      Địa chỉ
+                      Địa chỉ cụ thể
                     </label>
 
                     <input
                         v-model="editForm.diaChi"
                         type="text"
                         class="form-control"
+                        placeholder="Số nhà, đường..."
                         :class="{ 'is-invalid': editErrors.diaChi }"
                     />
 
                     <div class="invalid-feedback">
                       {{ editErrors.diaChi }}
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">
+                      Quận / Huyện
+                    </label>
+
+                    <input
+                        v-model="editForm.quanHuyen"
+                        type="text"
+                        class="form-control"
+                        placeholder="Quận / Huyện"
+                        :class="{ 'is-invalid': editErrors.quanHuyen }"
+                    />
+
+                    <div class="invalid-feedback">
+                      {{ editErrors.quanHuyen }}
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <label class="form-label">
+                      Tỉnh / Thành phố
+                    </label>
+
+                    <input
+                        v-model="editForm.tinhThanh"
+                        type="text"
+                        class="form-control"
+                        placeholder="Tỉnh / Thành phố"
+                        :class="{ 'is-invalid': editErrors.tinhThanh }"
+                    />
+
+                    <div class="invalid-feedback">
+                      {{ editErrors.tinhThanh }}
                     </div>
                   </div>
                 </div>
@@ -689,6 +784,46 @@ const isLoading = ref(false);
 const successMessage = ref("");
 const danhSachDoiTac = ref([]);
 const selectedId = ref(null);
+const selectedTinhThanh = ref("");
+const selectedQuanHuyen = ref("");
+
+/**
+ * Danh sách Tỉnh/Thành phố từ cột tinhThanh của các đối tác trong database.
+ */
+const tinhThanhList = computed(() => {
+  const setProvinces = new Set();
+  (danhSachDoiTac.value || []).forEach((dt) => {
+    if (dt.tinhThanh && String(dt.tinhThanh).trim()) {
+      setProvinces.add(String(dt.tinhThanh).trim());
+    }
+  });
+  return Array.from(setProvinces).sort((a, b) => a.localeCompare(b, "vi"));
+});
+
+/**
+ * Danh sách Quận/Huyện từ cột quanHuyen của các đối tác trong database:
+ * - Khi CHƯA chọn Tỉnh/Thành phố: Lấy tất cả Quận/Huyện từ cột quanHuyen của mọi đối tác.
+ * - Khi ĐÃ chọn Tỉnh/Thành phố: Chỉ lấy Quận/Huyện thuộc đối tác có cột tinhThanh trùng khớp.
+ */
+const quanHuyenList = computed(() => {
+  const setDistricts = new Set();
+  (danhSachDoiTac.value || []).forEach((dt) => {
+    if (selectedTinhThanh.value) {
+      const dtTinh = dt.tinhThanh ? String(dt.tinhThanh).trim().toLowerCase() : "";
+      const selT = selectedTinhThanh.value.trim().toLowerCase();
+      if (dtTinh !== selT) return;
+    }
+    if (dt.quanHuyen && String(dt.quanHuyen).trim()) {
+      setDistricts.add(String(dt.quanHuyen).trim());
+    }
+  });
+  return Array.from(setDistricts).sort((a, b) => a.localeCompare(b, "vi"));
+});
+
+function onTinhThanhChange() {
+  selectedQuanHuyen.value = "";
+  currentPage.value = 1;
+}
 
 const rowLoading = reactive({});
 
@@ -708,6 +843,8 @@ const editForm = reactive({
   email: "",
   soDienThoai: "",
   diaChi: "",
+  quanHuyen: "",
+  tinhThanh: "",
 });
 
 const errors = reactive({});
@@ -719,10 +856,29 @@ const filteredList = computed(() => {
       .toLocaleLowerCase("vi");
 
   return danhSachDoiTac.value.filter((dt) => {
+    // 1. Trạng thái
     const matchStatus =
         statusFilter.value === "all" ||
         String(Number(dt.trangThai)) === statusFilter.value;
 
+    const dtTinh = dt.tinhThanh ? String(dt.tinhThanh).trim().toLowerCase() : "";
+    const dtQuan = dt.quanHuyen ? String(dt.quanHuyen).trim().toLowerCase() : "";
+
+    // 2. Tỉnh / Thành phố (so sánh trực tiếp với cột tinhThanh)
+    let matchTinhThanh = true;
+    if (selectedTinhThanh.value) {
+      const selectedT = selectedTinhThanh.value.trim().toLowerCase();
+      matchTinhThanh = dtTinh === selectedT;
+    }
+
+    // 3. Quận / Huyện (so sánh trực tiếp với cột quanHuyen)
+    let matchQuanHuyen = true;
+    if (selectedQuanHuyen.value) {
+      const selectedQ = selectedQuanHuyen.value.trim().toLowerCase();
+      matchQuanHuyen = dtQuan === selectedQ;
+    }
+
+    // 4. Từ khóa tìm kiếm
     const searchText = [
       dt.maDoiTac,
       dt.tenDoiTac,
@@ -731,6 +887,8 @@ const filteredList = computed(() => {
       dt.email,
       dt.soDienThoai,
       dt.diaChi,
+      dt.quanHuyen,
+      dt.tinhThanh,
       dt.tenDangNhap,
       hienThiTrangThai(dt.trangThai),
     ]
@@ -742,10 +900,9 @@ const filteredList = computed(() => {
         .join(" ")
         .toLocaleLowerCase("vi");
 
-    return (
-        matchStatus &&
-        (!kw || searchText.includes(kw))
-    );
+    const matchKeyword = !kw || searchText.includes(kw);
+
+    return matchStatus && matchTinhThanh && matchQuanHuyen && matchKeyword;
   });
 });
 
@@ -843,6 +1000,8 @@ async function fetchDoiTac() {
 function resetFilter() {
   keyword.value = "";
   statusFilter.value = "all";
+  selectedTinhThanh.value = "";
+  selectedQuanHuyen.value = "";
   currentPage.value = 1;
 }
 

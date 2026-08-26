@@ -19,6 +19,8 @@ public class QuanLyDoiTacResponse {
     private String email;
     private String soDienThoai;
     private String diaChi;
+    private String quanHuyen;
+    private String tinhThanh;
     private Integer trangThai;
     private LocalDateTime createdAt;
     private Boolean coTheXoa;

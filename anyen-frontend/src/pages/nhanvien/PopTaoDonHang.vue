@@ -178,12 +178,16 @@
               </p>
             </div>
 
-            <button
-                class="btn-primary-outline btn-add-product-top"
-                @click="openProductModal"
-            >
-              + Thêm sản phẩm
-            </button>
+            <div class="cart-header-actions">
+              <button
+                  type="button"
+                  class="btn-primary-outline btn-add-product-top"
+                  @click="openProductModal('PRODUCT')"
+              >
+                + Thêm
+              </button>
+
+            </div>
           </div>
 
           <div v-if="form.items.length === 0" class="empty-box cart-empty">
@@ -267,19 +271,43 @@
       </div>
     </div>
 
-    <!-- POPUP CHỌN SẢN PHẨM FULL -->
+    <!-- POPUP CHỌN SẢN PHẨM & COMBO -->
     <div v-if="showProductModal" class="product-popup-overlay">
       <div class="product-popup product-popup-new">
         <div class="product-popup-header">
           <div>
-            <h3>Chọn sản phẩm</h3>
-            <p>Chọn sản phẩm từ nhiều đối tác khác nhau</p>
+            <h3>Chọn sản phẩm / Combo</h3>
+            <p>Chọn sản phẩm lẻ từ các đối tác hoặc chọn gói combo ưu đãi</p>
           </div>
 
           <button class="icon-close" @click="closeProductModal">×</button>
         </div>
 
-        <div class="product-popup-toolbar product-toolbar-new">
+        <!-- TABS CHỌN SẢN PHẨM HOẶC COMBO -->
+        <div class="modal-tab-nav">
+          <button
+              type="button"
+              class="modal-tab-item"
+              :class="{ active: activeModalTab === 'PRODUCT' }"
+              @click="activeModalTab = 'PRODUCT'"
+          >
+            <i class="fa-solid fa-box-open"></i>
+            <span>Sản phẩm lẻ ({{ filteredPartnerProducts.length }})</span>
+          </button>
+
+          <button
+              type="button"
+              class="modal-tab-item"
+              :class="{ active: activeModalTab === 'COMBO' }"
+              @click="activeModalTab = 'COMBO'"
+          >
+            <i class="fa-solid fa-gift"></i>
+            <span>Combo ưu đãi ({{ filteredCombos.length }})</span>
+          </button>
+        </div>
+
+        <!-- TOOLBAR SẢN PHẨM LẺ -->
+        <div v-if="activeModalTab === 'PRODUCT'" class="product-popup-toolbar product-toolbar-new">
           <select v-model="selectedProductPartnerId">
             <option value="ALL">Tất cả đối tác</option>
 
@@ -295,16 +323,26 @@
           <input
               v-model="productKeyword"
               type="text"
-              placeholder="Tìm tên sản phẩm..."
+              placeholder="Tìm theo tên sản phẩm, loại, đối tác..."
+          />
+        </div>
+
+        <!-- TOOLBAR COMBO -->
+        <div v-else class="product-popup-toolbar combo-toolbar-new">
+          <input
+              v-model="comboKeyword"
+              type="text"
+              placeholder="Tìm theo tên combo, mô tả, sản phẩm trong combo..."
           />
         </div>
 
         <div class="product-popup-content">
-          <div class="product-list-panel">
-            <div class="panel-title">Danh sách sản phẩm</div>
+          <!-- TAB 1: SẢN PHẨM LẺ -->
+          <div v-if="activeModalTab === 'PRODUCT'" class="product-list-panel">
+            <div class="panel-title">Danh sách sản phẩm lẻ</div>
 
             <div v-if="productLoading" class="empty-box">
-              Đang tải sản phẩm...
+              <i class="fa-solid fa-spinner fa-spin"></i> Đang tải sản phẩm...
             </div>
 
             <div v-else-if="productError" class="empty-box">
@@ -358,8 +396,95 @@
             </div>
           </div>
 
+          <!-- TAB 2: COMBO SẢN PHẨM -->
+          <div v-else class="combo-list-panel">
+            <div class="panel-title">Danh sách combo ưu đãi</div>
+
+            <div v-if="comboLoading" class="empty-box">
+              <i class="fa-solid fa-spinner fa-spin"></i> Đang tải combo...
+            </div>
+
+            <div v-else-if="comboError" class="empty-box">
+              {{ comboError }}
+            </div>
+
+            <div v-else-if="filteredCombos.length === 0" class="empty-box">
+              Không có combo phù hợp.
+            </div>
+
+            <div v-else class="combo-grid">
+              <div
+                  v-for="combo in filteredCombos"
+                  :key="combo.comboId"
+                  class="combo-card"
+              >
+                <div class="combo-card-header">
+                  <div class="combo-img-wrap">
+                    <img :src="normalizeImage(combo.hinhAnh || (combo.hinhAnhDaiDiens && combo.hinhAnhDaiDiens[0]))" alt="" />
+                    <span class="combo-badge">🎁 Combo #{{ combo.comboId }}</span>
+                  </div>
+
+                  <div class="combo-info">
+                    <h4 class="combo-name">{{ combo.tenCombo }}</h4>
+                    <p class="combo-desc" :title="combo.moTa">{{ combo.moTa || 'Gói combo sản phẩm ưu đãi' }}</p>
+
+                    <div class="combo-pricing">
+                      <span class="combo-price">{{ formatMoney(combo.gia) }}</span>
+                      <span v-if="combo.tongGiaSanPham && Number(combo.tongGiaSanPham) > Number(combo.gia)" class="combo-original-price">
+                        {{ formatMoney(combo.tongGiaSanPham) }}
+                      </span>
+                      <span v-if="combo.tongGiaSanPham && Number(combo.tongGiaSanPham) > Number(combo.gia)" class="combo-save-badge">
+                        Tiết kiệm {{ formatMoney(Number(combo.tongGiaSanPham) - Number(combo.gia)) }}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- DANH SÁCH SẢN PHẨM TRONG COMBO -->
+                <div class="combo-items-section">
+                  <div class="combo-items-title">
+                    Gồm {{ combo.sanPhams?.length || 0 }} sản phẩm trong gói:
+                  </div>
+
+                  <div class="combo-items-list">
+                    <div
+                        v-for="p in (combo.sanPhams || [])"
+                        :key="p.maSanPham"
+                        class="combo-item-row"
+                    >
+                      <img :src="buildImageUrl(p.hinhAnh)" class="combo-item-thumb" alt="" />
+                      <div class="combo-item-meta">
+                        <div class="combo-item-name">{{ p.tenSanPham }}</div>
+                        <div class="combo-item-sub">
+                          SL: <strong>x{{ p.soLuongTrongCombo || 1 }}</strong> • {{ p.tenDoiTac || getPartnerName(p.maDoiTac) }} • {{ p.loai }}
+                        </div>
+                      </div>
+                      <div class="combo-item-price">
+                        {{ formatMoney(p.giaTien) }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="combo-card-footer">
+                  <button
+                      type="button"
+                      class="btn-apply-combo"
+                      @click="addComboToOrder(combo)"
+                  >
+                    <i class="fa-solid fa-cart-plus"></i> Thêm combo này vào đơn
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIDEBAR: ĐÃ THÊM VÀO GIỎ -->
           <div class="selected-panel">
-            <div class="panel-title">Đã thêm vào giỏ</div>
+            <div class="panel-title">
+              <span>Đã chọn ({{ tempItems.length }} SP)</span>
+              <button v-if="tempItems.length > 0" class="btn-clear-inline" @click="clearTempItems">Xóa hết</button>
+            </div>
 
             <div v-if="tempItems.length === 0" class="empty-box">
               Chưa chọn sản phẩm nào.
@@ -381,7 +506,11 @@
                 </div>
 
                 <div class="note-right">
-                  <span>x{{ item.soLuong }}</span>
+                  <div class="note-qty-controls">
+                    <button class="mini-qty-btn" @click="decreaseTempQty(item.maSanPham)">−</button>
+                    <span>{{ item.soLuong }}</span>
+                    <button class="mini-qty-btn" @click="increaseTempQty(item)">+</button>
+                  </div>
                   <button
                       class="btn-delete small"
                       @click="removeTempItem(item.maSanPham)"
@@ -408,7 +537,7 @@
             </button>
 
             <button class="btn-primary" @click="saveProductsToOrder">
-              Lưu sản phẩm
+              Lưu sản phẩm vào đơn
             </button>
           </div>
         </div>
@@ -423,6 +552,9 @@ import {
   getKhachHangTaoDonHang,
   getSanPhamTaoDonHang
 } from "../../services/donHangService.js";
+import {
+  getCombosAdmin
+} from "../../services/comboAdminService.js";
 
 const userStr = localStorage.getItem("user");
 const userDangNhap = userStr ? JSON.parse(userStr) : null;
@@ -438,14 +570,19 @@ const emit = defineEmits(["close", "submit", "save-draft"]);
 const partners = ref([]);
 const allProducts = ref([]);
 const allCustomers = ref([]);
+const combos = ref([]);
 
 const productLoading = ref(false);
 const productError = ref("");
+const comboLoading = ref(false);
+const comboError = ref("");
 
 const showCustomerSuggestions = ref(false);
 
 const showProductModal = ref(false);
+const activeModalTab = ref("PRODUCT"); // 'PRODUCT' | 'COMBO'
 const productKeyword = ref("");
+const comboKeyword = ref("");
 const selectedProductPartnerId = ref("ALL");
 
 const tempItems = ref([]);
@@ -540,6 +677,14 @@ function buildImageUrl(path) {
   }
 
   return `http://localhost:8080/uploads/${path}`;
+}
+
+function normalizeImage(url) {
+  if (!url) return "https://cdn-icons-png.flaticon.com/512/679/679720.png";
+  if (/^(https?:|data:|blob:)/i.test(url)) return url;
+  if (url.startsWith("//")) return `https:${url}`;
+  if (url.startsWith("/")) return `http://localhost:8080${url}`;
+  return `http://localhost:8080/${url}`;
 }
 
 function normalizeProduct(sp) {
@@ -649,6 +794,23 @@ async function loadCustomersFromDatabase() {
   }
 }
 
+async function loadCombosFromDatabase() {
+  comboLoading.value = true;
+  comboError.value = "";
+  try {
+    const res = await getCombosAdmin();
+    const list = Array.isArray(res) ? res : (res?.data || res?.items || []);
+    combos.value = list;
+    console.log("Đã tải danh sách combo:", combos.value.length);
+  } catch (error) {
+    console.error("Lỗi tải danh sách combo:", error);
+    comboError.value = "Không thể tải danh sách combo.";
+    combos.value = [];
+  } finally {
+    comboLoading.value = false;
+  }
+}
+
 function handleWindowClick(event) {
   const target = event.target;
   if (!target || !target.closest || !target.closest(".autocomplete-wrap")) {
@@ -659,6 +821,7 @@ function handleWindowClick(event) {
 onMounted(() => {
   loadProductsFromDatabase();
   loadCustomersFromDatabase();
+  loadCombosFromDatabase();
   window.addEventListener("click", handleWindowClick);
 });
 
@@ -709,6 +872,31 @@ const filteredPartnerProducts = computed(() => {
         String(sp.tenDoiTac || "").toLowerCase().includes(keyword);
 
     return matchPartner && matchKeyword;
+  });
+});
+
+const activeCombos = computed(() => {
+  return combos.value.filter((c) => Number(c.trangThai) === 1);
+});
+
+const filteredCombos = computed(() => {
+  const kw = comboKeyword.value.trim().toLowerCase();
+
+  return activeCombos.value.filter((c) => {
+    if (!kw) return true;
+    const name = String(c.tenCombo || "").toLowerCase();
+    const desc = String(c.moTa || "").toLowerCase();
+    const id = String(c.comboId || "");
+    const prods = (c.sanPhams || [])
+        .map((p) => String(p.tenSanPham || "").toLowerCase())
+        .join(" ");
+
+    return (
+        name.includes(kw) ||
+        desc.includes(kw) ||
+        id.includes(kw) ||
+        prods.includes(kw)
+    );
   });
 });
 
@@ -790,12 +978,14 @@ function cloneItems(items) {
   return JSON.parse(JSON.stringify(items));
 }
 
-async function openProductModal() {
+async function openProductModal(tab = "PRODUCT") {
+  activeModalTab.value = tab;
   showCustomerSuggestions.value = false;
   tempItems.value = cloneItems(form.value.items);
 
   selectedProductPartnerId.value = "ALL";
   productKeyword.value = "";
+  comboKeyword.value = "";
 
   showProductModal.value = true;
   await nextTick();
@@ -804,6 +994,70 @@ async function openProductModal() {
     await loadProductsFromDatabase();
   } else {
     loadProductsFromDatabase();
+  }
+
+  if (combos.value.length === 0) {
+    await loadCombosFromDatabase();
+  } else {
+    loadCombosFromDatabase();
+  }
+}
+
+function addComboToOrder(combo) {
+  if (!combo.sanPhams || combo.sanPhams.length === 0) {
+    alert("Combo này hiện chưa có sản phẩm nào");
+    return;
+  }
+
+  let addedCount = 0;
+  const outOfStockProducts = [];
+
+  combo.sanPhams.forEach((comboItem) => {
+    const foundInAll = allProducts.value.find(
+        (p) => p.maSanPham === comboItem.maSanPham
+    );
+    const tonKho = foundInAll
+        ? Number(foundInAll.tonKho || 0)
+        : Number(comboItem.soLuong ?? 999);
+    const qtyToAdd = Number(comboItem.soLuongTrongCombo || 1);
+
+    if (tonKho <= 0) {
+      outOfStockProducts.push(comboItem.tenSanPham);
+      return;
+    }
+
+    const existing = tempItems.value.find(
+        (item) => item.maSanPham === comboItem.maSanPham
+    );
+    if (existing) {
+      const newQty = existing.soLuong + qtyToAdd;
+      if (newQty > tonKho) {
+        existing.soLuong = tonKho;
+      } else {
+        existing.soLuong = newQty;
+      }
+    } else {
+      tempItems.value.push({
+        maSanPham: comboItem.maSanPham,
+        tenSanPham: comboItem.tenSanPham,
+        loai: comboItem.loai || "Chưa phân loại",
+        giaTien: Number(comboItem.giaTien || 0),
+        tonKho: tonKho,
+        maDoiTac: comboItem.maDoiTac,
+        tenDoiTac: comboItem.tenDoiTac || getPartnerName(comboItem.maDoiTac),
+        hinhAnh: buildImageUrl(comboItem.hinhAnh),
+        soLuong: Math.min(qtyToAdd, tonKho),
+      });
+    }
+    addedCount++;
+  });
+
+  if (outOfStockProducts.length > 0) {
+    alert(
+        `Đã thêm sản phẩm của combo '${combo.tenCombo}' vào đơn hàng. Một số sản phẩm đã hết tồn kho: ${outOfStockProducts.join(
+            ", "
+        )}`
+    );
   }
 }
 

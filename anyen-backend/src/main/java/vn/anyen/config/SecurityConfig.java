@@ -62,11 +62,17 @@ public class SecurityConfig {
                                 .hasAuthority(
                                         "ROLE_ADMIN"
                                 )
-                                .requestMatchers(
-                                        "/api/admin/combo",
-                                        "/api/admin/combo/**"
-                                )
-                                .hasAuthority("ROLE_ADMIN")
+                                 .requestMatchers(
+                                         HttpMethod.GET,
+                                         "/api/admin/combo",
+                                         "/api/admin/combo/**"
+                                 )
+                                 .hasAnyAuthority("ROLE_ADMIN", "ROLE_BAN_HANG", "ROLE_TU_VAN", "ROLE_HOTLINE", "ROLE_KE_TOAN", "ROLE_NHANVIEN")
+                                 .requestMatchers(
+                                         "/api/admin/combo",
+                                         "/api/admin/combo/**"
+                                 )
+                                 .hasAuthority("ROLE_ADMIN")
 
                                 // Đăng nhập, xác nhận tài khoản
                                 .requestMatchers("/api/auth/**")

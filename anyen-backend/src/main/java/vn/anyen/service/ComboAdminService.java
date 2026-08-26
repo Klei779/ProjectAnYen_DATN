@@ -74,7 +74,7 @@ public class ComboAdminService {
 
     @Transactional(readOnly = true)
     public List<ComboAdminResponse> getCombos(Authentication authentication) {
-        requireAdmin(authentication);
+        requireStaffOrAdmin(authentication);
         return comboRepository.findAllByOrderByComboIdDesc()
                 .stream()
                 .map(this::toResponse)
@@ -86,7 +86,7 @@ public class ComboAdminService {
             Authentication authentication,
             Integer comboId
     ) {
-        requireAdmin(authentication);
+        requireStaffOrAdmin(authentication);
         return toResponse(findCombo(comboId));
     }
 
@@ -673,6 +673,30 @@ public class ComboAdminService {
         return files.stream()
                 .filter(file -> file != null && !file.isEmpty())
                 .toList();
+    }
+
+    private NhanVien requireStaffOrAdmin(Authentication authentication) {
+        if (authentication == null || trimToNull(authentication.getName()) == null) {
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Vui lòng đăng nhập"
+            );
+        }
+
+        NhanVien nv = nhanVienRepository
+                .findByTenDangNhap(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED,
+                        "Không tìm thấy tài khoản nhân viên"
+                ));
+
+        if (!NhanVien.TRANG_THAI_HOAT_DONG.equals(nv.getTrangThai())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "Tài khoản nhân viên đang không hoạt động"
+            );
+        }
+        return nv;
     }
 
     private NhanVien requireAdmin(Authentication authentication) {

@@ -203,49 +203,6 @@
 
     </section>
 
-    <!-- QUY TRÌNH -->
-    <section class="service-section">
-
-      <div class="section-heading">
-        <h2>QUY TRÌNH PHỤC VỤ</h2>
-
-        <div class="small-divider">
-          <span></span>
-          <i class="fa-solid fa-spa"></i>
-          <span></span>
-        </div>
-
-        <p>
-          Quy trình chuyên nghiệp - Minh bạch - Chu đáo
-        </p>
-      </div>
-
-      <div class="process-wrap">
-        <div
-            v-for="(step, index) in processSteps"
-            :key="step.title"
-            class="process-item"
-        >
-          <div class="process-icon">
-            <i :class="step.icon"></i>
-          </div>
-
-          <h4>
-            {{ index + 1 }}. {{ step.title }}
-          </h4>
-
-          <p>{{ step.desc }}</p>
-
-          <span
-              v-if="index < processSteps.length - 1"
-              class="process-arrow"
-          >
-            →
-          </span>
-        </div>
-      </div>
-
-    </section>
 
     <!-- CTA -->
     <section class="service-cta">
@@ -507,6 +464,11 @@ const handlePackageImageError = (event) => {
   event.target.src = fallbackImage;
 };
 
+const handleProcessImageError = (event) => {
+  event.target.onerror = null;
+  event.target.src = fallbackImage;
+};
+
 const goToDetail = (id) => {
   if (!id) {
     return;
@@ -533,57 +495,36 @@ const loadCombos = async () => {
         ? response.data
         : [];
 
-    packages.value = comboList
-        /*
-         * Chỉ hiện:
-         * TrangThai = 1
-         */
-        .filter((item) =>
-            getComboStatus(item) === 1
-        )
-        .map((item) => ({
-          id: getComboId(item),
+    const activeCombos = comboList
+        .filter((item) => getComboStatus(item) === 1);
 
-          name:
-              item.tenCombo ??
-              item.TenCombo ??
-              "Gói dịch vụ",
-
-          subtitle:
-              item.moTa ??
-              item.MoTa ??
-              "Gói dịch vụ mai táng của An Yên.",
-
-          /*
-           * Một ảnh đại diện từ combo.HinhAnh.
-           */
-          image: normalizeImageUrl(
-              item.hinhAnh ??
-              item.HinhAnh
-          ),
-
-          /*
-           * Danh sách quyền lợi từ combo.GhiChu.
-           */
-          benefits: parseBenefits(
-              item.ghiChu ??
-              item.GhiChu
-          ),
-
-          price: formatPrice(
-              item.gia ??
-              item.Gia
-          ),
-
-          /*
-           * Có thể giữ mã đối tác nếu sau này
-           * cần lọc hoặc hiển thị tên đối tác.
-           */
-          maDoiTac:
-              item.maDoiTac ??
-              item.MaDoiTac ??
-              null,
-        }));
+    packages.value = activeCombos.map((item) => ({
+      id: getComboId(item),
+      name:
+          item.tenCombo ??
+          item.TenCombo ??
+          "Gói dịch vụ",
+      subtitle:
+          item.moTa ??
+          item.MoTa ??
+          "Gói dịch vụ mai táng của An Yên.",
+      image: normalizeImageUrl(
+          item.hinhAnh ??
+          item.HinhAnh
+      ),
+      benefits: parseBenefits(
+          item.ghiChu ??
+          item.GhiChu
+      ),
+      price: formatPrice(
+          item.gia ??
+          item.Gia
+      ),
+      maDoiTac:
+          item.maDoiTac ??
+          item.MaDoiTac ??
+          null,
+    }));
   } catch (error) {
     console.error(
         "Lỗi tải danh sách combo:",
@@ -641,45 +582,6 @@ const singleServices = [
     title: "NHÂN SỰ",
     desc:
         "Cung cấp nhân sự phục vụ tang lễ chuyên nghiệp",
-  },
-];
-
-const processSteps = [
-  {
-    icon: "fa-solid fa-phone",
-    title: "TIẾP NHẬN",
-    desc:
-        "Tiếp nhận thông tin, tư vấn ban đầu 24/7",
-  },
-  {
-    icon: "fa-regular fa-clipboard",
-    title: "KHẢO SÁT & TƯ VẤN",
-    desc:
-        "Khảo sát, tư vấn gói dịch vụ phù hợp",
-  },
-  {
-    icon: "fa-regular fa-file-lines",
-    title: "THỎA THUẬN",
-    desc:
-        "Báo giá chi tiết, ký kết hợp đồng minh bạch",
-  },
-  {
-    icon: "fa-solid fa-people-group",
-    title: "TRIỂN KHAI",
-    desc:
-        "Chuẩn bị và triển khai theo đúng cam kết",
-  },
-  {
-    icon: "fa-regular fa-heart",
-    title: "ĐỒNG HÀNH",
-    desc:
-        "Đồng hành xuyên suốt, hỗ trợ tận tâm",
-  },
-  {
-    icon: "fa-brands fa-pagelines",
-    title: "HẬU MÃI",
-    desc:
-        "Hỗ trợ hậu sự và chăm sóc sau tang lễ",
   },
 ];
 

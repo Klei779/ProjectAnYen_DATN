@@ -108,7 +108,7 @@
           <span class="step-badge image-step">2</span>
           <div>
             <h2>Hình ảnh combo</h2>
-            <p>Tách riêng ảnh đại diện và ảnh minh họa quy trình.</p>
+            <p>Chọn đúng 3 ảnh đại diện cho combo (JPG, PNG hoặc WEBP).</p>
           </div>
         </div>
 
@@ -174,68 +174,6 @@
             <p v-if="isEdit && existingCoverImages.length !== 3 && !coverFiles.length" class="inline-warning">
               Combo cũ hiện có {{ existingCoverImages.length }} ảnh đại diện. Hãy chọn lại đúng 3 ảnh để lưu.
             </p>
-          </article>
-
-          <article class="image-panel process-panel">
-            <div class="panel-heading">
-              <div>
-                <h3>Ảnh quy trình</h3>
-                <p>Không bắt buộc, tối đa 20 ảnh; sắp xếp theo thứ tự đã chọn.</p>
-              </div>
-              <span class="count-pill neutral">
-                {{ displayedProcessImages.length }}/20
-              </span>
-            </div>
-
-            <input
-                ref="processInput"
-                class="hidden-input"
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                @change="handleProcessSelect"
-            />
-
-            <div v-if="displayedProcessImages.length" class="process-grid">
-              <div
-                  v-for="(image, index) in displayedProcessImages"
-                  :key="`${image}-${index}`"
-                  class="process-image"
-              >
-                <img :src="image" :alt="`Ảnh quy trình ${index + 1}`" @error="useFallbackImage" />
-                <span>{{ index + 1 }}</span>
-                <button
-                    v-if="processFiles.length"
-                    type="button"
-                    class="image-remove"
-                    title="Bỏ ảnh"
-                    @click="removeProcessFile(index)"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-            <div v-else class="empty-process">
-              <i class="fa-solid fa-diagram-project"></i>
-              <span>Chưa có ảnh quy trình</span>
-            </div>
-
-            <div class="image-actions">
-              <button type="button" class="upload-button" @click="openProcessPicker">
-                <i class="fa-solid fa-upload"></i>
-                {{ isEdit && existingProcessImages.length && !processFiles.length
-                  ? 'Thay toàn bộ ảnh quy trình'
-                  : 'Chọn ảnh quy trình' }}
-              </button>
-              <button
-                  v-if="displayedProcessImages.length"
-                  type="button"
-                  class="clear-button"
-                  @click="clearProcessImages"
-              >
-                Xóa toàn bộ
-              </button>
-            </div>
           </article>
         </div>
       </section>
@@ -432,14 +370,9 @@ const form = reactive({
 const selectedQuantities = reactive({});
 
 const coverInput = ref(null);
-const processInput = ref(null);
 const coverFiles = ref([]);
-const processFiles = ref([]);
 const coverObjectUrls = ref([]);
-const processObjectUrls = ref([]);
 const existingCoverImages = ref([]);
-const existingProcessImages = ref([]);
-const replaceProcessImages = ref(false);
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -456,10 +389,6 @@ const fallbackImage =
 
 const displayedCoverImages = computed(() =>
     coverFiles.value.length ? coverObjectUrls.value : existingCoverImages.value
-);
-
-const displayedProcessImages = computed(() =>
-    processFiles.value.length ? processObjectUrls.value : existingProcessImages.value
 );
 
 const filteredProducts = computed(() => {
@@ -524,7 +453,7 @@ const formatMoney = (value) =>
     `${Number(value || 0).toLocaleString("vi-VN")} đ`;
 
 const isSelected = (productId) =>
-    Object.prototype.hasOwnProperty.call(selectedQuantities, productId);
+    productId in selectedQuantities;
 
 const isProductAvailable = (product) =>
     Number(product.trangThai) === 1 && Number(product.soLuong || 0) > 0;
@@ -538,20 +467,27 @@ const lineTotal = (product) =>
 const toggleProduct = (product, checked) => {
   if (checked) {
     if (!isProductAvailable(product)) return;
-    selectedQuantities[product.maSanPham] = 1;
+    Object.assign(selectedQuantities, { [product.maSanPham]: 1 });
   } else {
-    delete selectedQuantities[product.maSanPham];
+    const next = { ...selectedQuantities };
+    delete next[product.maSanPham];
+    Object.keys(selectedQuantities).forEach((key) => delete selectedQuantities[key]);
+    Object.assign(selectedQuantities, next);
   }
 };
 
 const normalizeQuantity = (product) => {
   const max = Math.max(1, Number(product.soLuong || 0));
   const value = Number(selectedQuantities[product.maSanPham] || 1);
-  selectedQuantities[product.maSanPham] = Math.min(max, Math.max(1, value));
+  Object.assign(selectedQuantities, {
+    [product.maSanPham]: Math.min(max, Math.max(1, value))
+  });
 };
 
 const changeQuantity = (product, delta) => {
-  selectedQuantities[product.maSanPham] = getQuantity(product) + delta;
+  Object.assign(selectedQuantities, {
+    [product.maSanPham]: getQuantity(product) + delta
+  });
   normalizeQuantity(product);
 };
 
@@ -591,25 +527,10 @@ const setCoverFiles = (files) => {
   coverObjectUrls.value = files.map((file) => URL.createObjectURL(file));
 };
 
-const setProcessFiles = (files) => {
-  validateFiles(files, 20, "Ảnh quy trình");
-  revokeUrls(processObjectUrls.value);
-  processFiles.value = files;
-  processObjectUrls.value = files.map((file) => URL.createObjectURL(file));
-  replaceProcessImages.value = true;
-};
-
 const openCoverPicker = () => {
   if (coverInput.value) {
     coverInput.value.value = "";
     coverInput.value.click();
-  }
-};
-
-const openProcessPicker = () => {
-  if (processInput.value) {
-    processInput.value.value = "";
-    processInput.value.click();
   }
 };
 
@@ -623,32 +544,9 @@ const handleCoverSelect = (event) => {
   }
 };
 
-const handleProcessSelect = (event) => {
-  pageError.value = "";
-  try {
-    setProcessFiles(Array.from(event.target.files || []));
-  } catch (error) {
-    event.target.value = "";
-    pageError.value = error.message;
-  }
-};
-
 const removeCoverFile = (index) => {
   const next = coverFiles.value.filter((_, fileIndex) => fileIndex !== index);
   setCoverFiles(next);
-};
-
-const removeProcessFile = (index) => {
-  const next = processFiles.value.filter((_, fileIndex) => fileIndex !== index);
-  setProcessFiles(next);
-};
-
-const clearProcessImages = () => {
-  revokeUrls(processObjectUrls.value);
-  processFiles.value = [];
-  processObjectUrls.value = [];
-  existingProcessImages.value = [];
-  replaceProcessImages.value = true;
 };
 
 const mergeComboProducts = (comboProducts) => {
@@ -668,17 +566,16 @@ const fillEditData = (combo) => {
   existingCoverImages.value = (combo.hinhAnhDaiDiens || [])
       .map(normalizeImage)
       .filter(Boolean);
-  existingProcessImages.value = (combo.hinhAnhQuyTrinhs || [])
-      .map(normalizeImage)
-      .filter(Boolean);
 
   mergeComboProducts(combo.sanPhams || []);
+  const quantities = {};
   (combo.sanPhams || []).forEach((product) => {
-    selectedQuantities[product.maSanPham] = Math.max(
+    quantities[product.maSanPham] = Math.max(
         1,
         Number(product.soLuongTrongCombo || 1)
     );
   });
+  Object.assign(selectedQuantities, quantities);
 };
 
 const openAllProductGroups = () => {
@@ -753,7 +650,6 @@ const submitCombo = async () => {
       ghiChu: form.ghiChu?.trim() || null,
       trangThai: Number(form.trangThai),
       thayAnhDaiDien: isEdit.value && coverFiles.value.length === 3,
-      thayAnhQuyTrinh: isEdit.value && replaceProcessImages.value,
       sanPhams: selectedProducts.value.map((product) => ({
         maSanPham: Number(product.maSanPham),
         soLuong: getQuantity(product),
@@ -765,14 +661,12 @@ const submitCombo = async () => {
       await updateComboAdmin(
           comboId.value,
           payload,
-          coverFiles.value,
-          processFiles.value
+          coverFiles.value
       );
     } else {
       await createComboAdmin(
           payload,
-          coverFiles.value,
-          processFiles.value
+          coverFiles.value
       );
     }
 
@@ -794,7 +688,6 @@ onMounted(loadData);
 
 onBeforeUnmount(() => {
   revokeUrls(coverObjectUrls.value);
-  revokeUrls(processObjectUrls.value);
 });
 </script>
 

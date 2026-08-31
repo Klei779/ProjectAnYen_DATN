@@ -1308,7 +1308,9 @@ public class DoiTacThongBaoService {
                 );
 
         return ten.contains("quan tai")
-                || loai.contains("quan tai");
+                || loai.contains("quan tai")
+                || ten.contains("combo")
+                || loai.contains("combo");
     }
 
     private String chuanHoa(
@@ -1889,6 +1891,12 @@ public class DoiTacThongBaoService {
             }
         }
 
+        // Kiểm tra xem đơn hàng có sản phẩm quan tài/combo không
+        boolean coQuanTai = donHangCoSanPhamQuanTai(donHang.getMaDonHang());
+
+        // Kiểm tra xem đơn hàng đã có hợp đồng chưa
+        boolean coHopDong = hopDongRepository.existsByDonHang_MaDonHang(donHang.getMaDonHang());
+
         return DoiTacDonHangResponse.builder()
                 .maDonHang(donHang.getMaDonHang())
                 .maCode("DH" + String.format("%03d",
@@ -1917,6 +1925,8 @@ public class DoiTacThongBaoService {
                 .trangThai(donHang.getTrangThai() != null ? String.valueOf(donHang.getTrangThai()) : "")
                 .trangThaiRieng(trangThaiRieng)
                 .tongCong(tongCong)
+                .coHopDong(coHopDong)
+                .coQuanTai(coQuanTai)
                 .nguoiBaoCaoSuCo(donHang.getNguoiBaoCaoSuCo())
                 .lyDoSuCo(donHang.getLyDoSuCo())
                 .sanPhams(sanPhams)

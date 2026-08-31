@@ -78,6 +78,10 @@ public class SecurityConfig {
                                 .requestMatchers("/api/auth/**")
                                 .permitAll()
 
+                                // Cho phép kết nối WebSocket (SockJS sẽ gọi /ws/info)
+                                .requestMatchers("/ws/**")
+                                .permitAll()
+
                                 .requestMatchers(
                                         HttpMethod.GET,
                                         "/api/ai/health"

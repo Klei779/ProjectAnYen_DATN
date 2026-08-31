@@ -174,24 +174,24 @@
 .submenu {
     padding-left: 16px;
     margin-top: 4px;
+    overflow: hidden;
 }
 
 .slide-fade-enter-active {
-    transition: opacity 0.3s ease-out;
-    opacity: 1;
+    transition: max-height 0.3s ease-out;
+    max-height: 500px;
 }
 
 .slide-fade-leave-active {
-    transition: opacity 0.3s ease-out;
-    opacity: 0;
+    transition: max-height 0.3s ease-out;
 }
 
 .slide-fade-enter-from {
-    opacity: 0;
+    max-height: 0;
 }
 
 .slide-fade-leave-to {
-    opacity: 0;
+    max-height: 0;
 }
 
 .submenu-item {

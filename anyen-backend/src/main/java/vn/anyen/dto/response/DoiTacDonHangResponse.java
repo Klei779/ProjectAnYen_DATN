@@ -22,12 +22,14 @@ public class DoiTacDonHangResponse {
     private String ngayDat;
     private String nhanVien;
     private String tenDangNhapNhanVien;
+    private Integer nhanVienVaiTro;
     private String phuongThucThanhToan;
     private String ghiChu;
     private String trangThai;
     private String trangThaiRieng; // Trạng thái riêng của đối tác (chưa xử lý/đang xử lý/đã giao)
     private BigDecimal tongCong;
     private Boolean coHopDong;
+    private Boolean coQuanTai; // Có sản phẩm quan tài/combo không
     private String nguoiBaoCaoSuCo;
     private String lyDoSuCo;
 

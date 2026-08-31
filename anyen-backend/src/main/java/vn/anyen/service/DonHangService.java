@@ -804,7 +804,7 @@ public class DonHangService {
         }
 
         // =========================================
-        // KIỂM TRA TOÀN BỘ ĐƠN
+        // CẬP NHẬT TRẠNG THÁI TỔNG THỂ
         // =========================================
         List<ChiTietDonHang> tatCaChiTiet =
                 chiTietDonHangRepository
@@ -812,16 +812,16 @@ public class DonHangService {
                                 maDonHang
                         );
 
-        boolean tatCaDaGiao =
+        boolean coDoiTacDaGiao =
                 tatCaChiTiet.stream()
-                        .allMatch(ct ->
+                        .anyMatch(ct ->
                                 Integer.valueOf(3)
                                         .equals(
                                                 ct.getTrangThaiDoiTac()
                                         )
                         );
 
-        if (tatCaDaGiao) {
+        if (coDoiTacDaGiao && !DonHang.TT_DA_GIAO.equals(donHang.getTrangThai())) {
             donHang.setTrangThai(
                     DonHang.TT_DA_GIAO
             );
@@ -1287,6 +1287,11 @@ public class DonHangService {
                                 ? nhanVien.getTenDangNhap()
                                 : ""
                 )
+                .nhanVienVaiTro(
+                        nhanVien != null
+                                ? nhanVien.getVaiTro()
+                                : null
+                )
                 .phuongThucThanhToan(
                         getPhuongThucThanhToanString(donHang.getPhuongThucThanhToan())
                 )
@@ -1452,8 +1457,9 @@ public class DonHangService {
         }
 
         /*
-         * Chỉ đổi trạng thái tổng sang Đang xử lý
-         * khi tất cả chi tiết của toàn đơn đã >= 2.
+         * Cập nhật trạng thái tổng thể của đơn hàng:
+         * - Nếu có ít nhất 1 đối tác đang xử lý (trangThaiDoiTac >= 2)
+         *   thì chuyển sang Đang xử lý để đồng bộ với giao diện
          */
         List<ChiTietDonHang> tatCaChiTiet =
                 chiTietDonHangRepository
@@ -1461,15 +1467,15 @@ public class DonHangService {
                                 maDonHang
                         );
 
-        boolean tatCaDangXuLy =
+        boolean coDoiTacDangXuLy =
                 tatCaChiTiet.stream()
-                        .allMatch(ct ->
+                        .anyMatch(ct ->
                                 ct.getTrangThaiDoiTac() != null
                                         &&
                                         ct.getTrangThaiDoiTac() >= 2
                         );
 
-        if (tatCaDangXuLy) {
+        if (coDoiTacDangXuLy && !DonHang.TT_DANG_XU_LY.equals(donHang.getTrangThai())) {
             donHang.setTrangThai(
                     DonHang.TT_DANG_XU_LY
             );
@@ -1652,7 +1658,9 @@ public class DonHangService {
         );
 
         return loai.contains("quan tai")
-                || ten.contains("quan tai");
+                || ten.contains("quan tai")
+                || loai.contains("combo")
+                || ten.contains("combo");
     }
 
     private String chuanHoaLoaiSanPham(

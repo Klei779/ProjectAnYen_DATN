@@ -293,8 +293,11 @@ const isCoffinProduct = (product) => {
    */
   if (normalizedType) {
     return normalizedType === "quan tai" ||
-        normalizedType.startsWith("quan tai ")||normalizedType === "dich vu" ||
-    normalizedType.startsWith("dich vu ");
+        normalizedType.startsWith("quan tai ")||
+        normalizedType === "dich vu" ||
+        normalizedType.startsWith("dich vu ") ||
+        normalizedType === "combo" ||
+        normalizedType.startsWith("combo ");
   }
 
   /*
@@ -307,7 +310,9 @@ const isCoffinProduct = (product) => {
       ""
   );
 
-  return productName.includes("quan tai")|| productName.includes("dich vu");
+  return productName.includes("quan tai")||
+         productName.includes("dich vu")||
+         productName.includes("combo");
 };
 
 const orderHasCoffin = (products = []) => {
@@ -546,11 +551,16 @@ const normalizeDonHang = (dh) => {
     loaiSanPhamText:
         danhSachLoai.length > 0
             ? danhSachLoai.join(", ")
-            : "Chưa cập nhật"
+            : "Chưa cập nhật",
+            
+    nhanVienVaiTro:
+        dh.nhanVienVaiTro ??
+        dh.nhanVien?.vaiTro ??
+        null
   };
 };
 const requiresContract = (dh) => {
-  return dh?.coQuanTai === true;
+  return !isWebsiteOrder(dh);
 };
 
 const canProcessWithoutContract = (dh) => {
@@ -767,7 +777,7 @@ const getPartnerActionLabel = (dh) => {
 const openXuLy = (dh) => {
   /*
    * Chỉ chặn khi:
-   * - Có sản phẩm Quan tài
+   * - Đơn hàng do nhân viên tạo (không phải website)
    * - Chưa có hợp đồng
    */
   if (
@@ -775,7 +785,7 @@ const openXuLy = (dh) => {
       !dh.coHopDong
   ) {
     ElMessage.warning(
-        "Đơn hàng có sản phẩm Quan tài nên cần hợp đồng trước khi xử lý"
+        "Đơn hàng cần có hợp đồng trước khi xử lý"
     );
 
     return;
@@ -1393,10 +1403,10 @@ const apDungBoLoc = () => {
 
               <span>Hợp đồng:</span>
               <strong
-                  :class="!dh.coQuanTai ? 'contract-success': dh.coHopDong ? 'contract-success': 'contract-warning'"
+                  :class="!requiresContract(dh) ? 'contract-success': dh.coHopDong ? 'contract-success': 'contract-warning'"
               >
                 {{
-                  !dh.coQuanTai
+                  !requiresContract(dh)
                       ? "Đơn không cần hợp đồng"
                       : dh.coHopDong
                           ? "Đã có hợp đồng"

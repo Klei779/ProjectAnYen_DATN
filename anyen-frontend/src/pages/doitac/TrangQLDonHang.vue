@@ -898,7 +898,7 @@ const openPaymentDialog = async (dh) => {
   const amount = getOrderAmount(dh);
 
   if (amount < 1000) {
-    ElMessage.warning("Số tiền đơn hàng tối thiểu là 1.000đ để thanh toán qua Payoo");
+    ElMessage.warning("Số tiền đơn hàng tối thiểu là 1.000đ để thanh toán qua QR");
     return;
   }
 
@@ -909,7 +909,6 @@ const openPaymentDialog = async (dh) => {
     currentPayooTransaction.value = transaction;
 
     const qrContent = [
-      "PAYOO MOCK",
       `MA_GIAO_DICH=${transaction.maGiaoDich}`,
       `LOAI=${transaction.loaiGiaoDich}`,
       `SO_TIEN=${transaction.soTien}`
@@ -923,12 +922,12 @@ const openPaymentDialog = async (dh) => {
     payooStatus.value = "waiting";
     showPayooDialog.value = true;
   } catch (error) {
-    console.error("Không tạo được Payoo:", error);
+    console.error("Không tạo được QR:", error);
     ElMessage.error(
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.response?.data ||
-        "Không tạo được giao dịch Payoo"
+        "Không tạo được giao dịch QR"
     );
   } finally {
     payooSubmitting.value = false;
@@ -958,12 +957,12 @@ const handlePayooQrClick = async () => {
     showPayooDialog.value = false;
     resetPayoo();
   } catch (error) {
-    console.error("Callback Payoo lỗi:", error);
+    console.error("QR lỗi:", error);
     payooStatus.value = "waiting";
     ElMessage.error(
         error?.response?.data?.message ||
         error?.response?.data?.error ||
-        "Thanh toán Payoo thất bại"
+        "Thanh toán thất bại"
     );
   }
 };
@@ -1618,15 +1617,13 @@ const apDungBoLoc = () => {
         :z-index="10070"
     >
       <div class="payoo-box">
-        <div class="payoo-logo">PAYOO</div>
-        <div class="payoo-sub">CỔNG THANH TOÁN TRỰC TUYẾN</div>
 
         <!-- WAITING -->
         <template v-if="payooStatus === 'waiting'">
           <h3 class="payoo-title">
             THANH TOÁN ĐƠN HÀNG #{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}
           </h3>
-          <p class="payoo-description">Quét mã QR hoặc nhấn vào mã để thanh toán.</p>
+          <p class="payoo-description">Quét mã để thanh toán.</p>
 
           <img
               v-if="payooQrImage"
@@ -1635,11 +1632,6 @@ const apDungBoLoc = () => {
               alt="QR Payoo"
               @click="handlePayooQrClick"
           />
-
-          <div class="qr-hint">
-            <i class="fa-solid fa-hand-pointer"></i>
-            Nhấn vào QR để thanh toán
-          </div>
 
           <div class="payoo-amount">
             {{ formatMoney(currentPayooTransaction?.soTien) }}
@@ -1655,7 +1647,7 @@ const apDungBoLoc = () => {
         <template v-else-if="payooStatus === 'processing'">
           <div class="processing-state">
             <i class="fa-solid fa-spinner fa-spin"></i>
-            <h3>Payoo đang xử lý...</h3>
+            <h3>Đang xử lý...</h3>
             <p>Đang xác nhận giao dịch</p>
             <strong>{{ formatMoney(currentPayooTransaction?.soTien) }}</strong>
           </div>
@@ -1668,7 +1660,7 @@ const apDungBoLoc = () => {
             <h3>Thanh toán thành công</h3>
             <strong>{{ formatMoney(currentPayooTransaction?.soTien) }}</strong>
             <p>
-              Payoo đã xác nhận giao dịch. Đơn hàng đã chuyển sang trạng thái Hoàn thành.
+              Đã xác nhận giao dịch. Đơn hàng đã chuyển sang trạng thái Hoàn thành.
             </p>
             <small>{{ currentPayooTransaction?.maGiaoDich }}</small>
           </div>

@@ -406,49 +406,45 @@
    PROCESS
 ========================= */
 
-.process-wrap{
-    display:grid;
-    grid-template-columns:repeat(6, 1fr);
-    gap:20px;
+.process-image-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px;
 }
 
-.process-item{
-    text-align:center;
-    position:relative;
+.process-image-card {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid #eadfd8;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(20,45,77,.05);
 }
 
-.process-icon{
-    width:70px;
-    height:70px;
-    border-radius:50%;
-    background:#84071c;
-    color:white;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    margin:0 auto 14px;
-    font-size:28px;
+.process-image-card img {
+    display: block;
+    width: 100%;
+    max-height: 520px;
+    object-fit: contain;
+    background: #f4eee8;
 }
 
-.process-item h4{
-    font-size:13px;
-    color:#142d4d;
-    font-weight:800;
-    margin-bottom:8px;
+.process-image-card figcaption {
+    padding: 12px 16px;
+    color: #142d4d;
+    font-size: 13px;
+    font-weight: 800;
+    text-align: center;
 }
 
-.process-item p{
-    font-size:12px;
-    color:#1f1f1f;
-    line-height:1.4;
-}
-
-.process-arrow{
-    position:absolute;
-    top:25px;
-    right:-18px;
-    color:#9b8f8b;
-    font-size:24px;
+.process-empty {
+    padding: 28px;
+    border: 1px dashed #cdb9a7;
+    border-radius: 10px;
+    background: #fff;
+    color: #8a6a52;
+    font-size: 13px;
+    text-align: center;
 }
 
 /* =========================
@@ -545,6 +541,10 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
+    .process-image-grid {
+        grid-template-columns: 1fr;
+    }
+
     .process-arrow {
         display: none;
     }
@@ -589,7 +589,8 @@
     .package-grid,
     .trust-bar,
     .single-service-grid,
-    .process-wrap {
+    .process-wrap,
+    .process-image-grid {
         grid-template-columns: 1fr;
     }
 

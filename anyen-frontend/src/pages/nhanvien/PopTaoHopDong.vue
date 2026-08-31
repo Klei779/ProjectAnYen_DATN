@@ -116,7 +116,7 @@ const errors = ref({
 const MAX_LENGTHS = {
   customerName: 30,
   citizenId: 12,
-  address: 40,
+  address: 100,
   phone: 10,
   relationship: 30,
   deceasedName: 30,

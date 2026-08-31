@@ -13,11 +13,13 @@ import SockJS from "sockjs-client";
 import QRCode from "qrcode";
 
 import PopChiTietDonHang from "./PopChiTietDonHang.vue";
+import PopTaoHoaDon from "../nhanvien/PopTaoHoaDon.vue";
 import {
   getDonHangsDoiTac,
+  getChiTietDonHangDoiTac,
   xuLyDonHang,
 } from "../../services/doitacDonHangService.js";
-import { taoPayooDonHang } from "../../services/donHangService.js";
+import { taoPayooDonHang, thanhToanTienMat } from "../../services/donHangService.js";
 import { confirmPayooTransaction } from "../../services/payooMockService.js";
 import api from "../../api/api.js";
 
@@ -34,6 +36,8 @@ import {
   Tickets,
   Refresh,
   Warning,
+  Money,
+  Iphone,
 } from "@element-plus/icons-vue";
 
 const route = useRoute();
@@ -49,13 +53,64 @@ const xuLyForm = ref({
   ngayGiaoDuKien: null,
 });
 
-// ── Trạng thái Payoo Mock ─────────────────────────
+// ── Trạng thái Chọn phương thức & Thanh toán ───────────────────
+const showPaymentMethodDialog = ref(false);
+const showCashConfirmDialog = ref(false);
+const selectedPaymentType = ref("qr");
+const cashSubmitting = ref(false);
+
 const showPayooDialog = ref(false);
 const payooStatus = ref("waiting"); // waiting | processing | success
 const payooQrImage = ref("");
 const currentPayooTransaction = ref(null);
 const payooSubmitting = ref(false);
 const selectedOrderForPayment = ref(null);
+
+// ── Hóa đơn ─────────────────────────────
+const showTaoHoaDon = ref(false);
+const selectedDonHangHoaDon = ref(null);
+const hoaDonMode = ref("view");
+
+const daCoHoaDon = (dh) => {
+  if (!dh) return false;
+  const status = normalizeStatus(dh.trangThai ?? dh.trangThaiTongThe);
+  return Boolean(
+    dh.maHoaDon ||
+    dh.MaHoaDon ||
+    dh.daCoHoaDon ||
+    status === "Hoàn thành" ||
+    dh.trangThaiThanhToan === "Đã thanh toán" ||
+    dh.TrangThaiThanhToan === "Đã thanh toán"
+  );
+};
+
+const xemHoaDon = async (dh) => {
+  if (!dh) {
+    ElMessage.warning("Không tìm thấy dữ liệu đơn hàng");
+    return;
+  }
+
+  const maDonHang = dh.maDonHang ?? dh.MaDonHang ?? dh.id;
+  let fullOrder = { ...dh };
+
+  try {
+    const detail = await getChiTietDonHangDoiTac(maDonHang);
+    if (detail) {
+      fullOrder = { ...fullOrder, ...detail };
+    }
+  } catch (e) {
+    console.warn("Sử dụng dữ liệu hiện có của đơn hàng:", e);
+  }
+
+  hoaDonMode.value = "view";
+  selectedDonHangHoaDon.value = {
+    ...fullOrder,
+    sanPhams: fullOrder.sanPhams || fullOrder.chiTietDonHangs || [],
+    chiTietDonHangs: fullOrder.sanPhams || fullOrder.chiTietDonHangs || [],
+    trangThaiHoaDon: fullOrder.trangThaiHoaDon || "Đã in",
+  };
+  showTaoHoaDon.value = true;
+};
 
 // ── Báo cáo sự cố ─────────────────────────────
 const showSuCoDialog = ref(false);
@@ -901,9 +956,48 @@ const resetPayoo = () => {
   currentPayooTransaction.value = null;
   selectedOrderForPayment.value = null;
   payooSubmitting.value = false;
+  cashSubmitting.value = false;
 };
 
-const openPaymentDialog = async (dh) => {
+const openPaymentDialog = (dh) => {
+  selectedOrderForPayment.value = dh;
+  selectedPaymentType.value = "qr";
+  showPaymentMethodDialog.value = true;
+};
+
+const handleSelectPaymentMethod = async () => {
+  showPaymentMethodDialog.value = false;
+  if (selectedPaymentType.value === "cash") {
+    showCashConfirmDialog.value = true;
+  } else {
+    await startQrPayment(selectedOrderForPayment.value);
+  }
+};
+
+const handleCashPaymentConfirm = async () => {
+  if (!selectedOrderForPayment.value) return;
+  const maDonHang = selectedOrderForPayment.value?.maDonHang ?? selectedOrderForPayment.value?.MaDonHang ?? selectedOrderForPayment.value?.id;
+  cashSubmitting.value = true;
+
+  try {
+    await thanhToanTienMat(maDonHang);
+    ElMessage.success("Xác nhận thanh toán tiền mặt thành công");
+    showCashConfirmDialog.value = false;
+    await fetchDonHangs();
+    resetPayoo();
+  } catch (error) {
+    console.error("Lỗi khi xác nhận thanh toán tiền mặt:", error);
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "Xác nhận thanh toán tiền mặt thất bại"
+    );
+  } finally {
+    cashSubmitting.value = false;
+  }
+};
+
+const startQrPayment = async (dh) => {
   selectedOrderForPayment.value = dh;
   const amount = getOrderAmount(dh);
 
@@ -960,12 +1054,22 @@ const handlePayooQrClick = async () => {
     currentPayooTransaction.value = result;
     payooStatus.value = "success";
 
+    const completedOrder = selectedOrderForPayment.value;
     await fetchDonHangs();
     ElMessage.success("Thanh toán đơn hàng thành công");
 
-    await delay(1700);
+    await delay(1500);
     showPayooDialog.value = false;
     resetPayoo();
+
+    // Tự động mở Popup Hóa đơn cho đơn hàng vừa thanh toán thành công
+    if (completedOrder) {
+      const updatedOrder = listDonHang.value.find(
+        (o) => String(o.maDonHang) === String(completedOrder.maDonHang)
+      ) || completedOrder;
+
+      xemHoaDon(updatedOrder);
+    }
   } catch (error) {
     console.error("QR lỗi:", error);
     payooStatus.value = "waiting";
@@ -1433,6 +1537,18 @@ const apDungBoLoc = () => {
               Xem chi tiết
             </button>
 
+            <!-- Nút Xem hóa đơn khi đã thanh toán / có hóa đơn -->
+            <button
+                v-if="daCoHoaDon(dh)"
+                class="btn-invoice-created"
+                @click.stop="xemHoaDon(dh)"
+            >
+              <el-icon>
+                <Tickets />
+              </el-icon>
+              Xem hóa đơn
+            </button>
+
             <button
                 v-if="canBaoCaoSuCo(dh)"
                 class="btn-outline-orange"
@@ -1522,6 +1638,15 @@ const apDungBoLoc = () => {
         v-if="showPopup"
         v-model="showPopup"
         :don-hang="selectedDonHang"
+        @xem-hoa-don="xemHoaDon"
+    />
+
+    <!-- ── Popup xem / in hóa đơn ── -->
+    <PopTaoHoaDon
+        v-model="showTaoHoaDon"
+        :don-hang="selectedDonHangHoaDon"
+        :mode="hoaDonMode"
+        @created="fetchDonHangs"
     />
 
     <!-- Popup xử lý đơn hàng -->
@@ -1610,6 +1735,135 @@ const apDungBoLoc = () => {
             @click="confirmBaoCaoSuCo"
         >
           Xác nhận báo cáo
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- =====================================================
+         POPUP CHỌN PHƯƠNG THỨC THANH TOÁN
+    ====================================================== -->
+    <el-dialog
+        v-model="showPaymentMethodDialog"
+        width="520px"
+        title="Chọn phương thức thanh toán"
+        :close-on-click-modal="false"
+        :append-to-body="true"
+        :z-index="10060"
+    >
+      <div class="payment-method-modal">
+        <div class="order-summary-box">
+          <div class="summary-line">
+            <span>Đơn hàng:</span>
+            <strong>#{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}</strong>
+          </div>
+          <div class="summary-line" v-if="selectedOrderForPayment?.tenKhachHang">
+            <span>Khách hàng:</span>
+            <strong>{{ selectedOrderForPayment?.tenKhachHang }}</strong>
+          </div>
+          <div class="summary-line total-line">
+            <span>Tổng tiền thanh toán:</span>
+            <strong class="money-text">{{ formatMoney(getOrderAmount(selectedOrderForPayment)) }}</strong>
+          </div>
+        </div>
+
+        <p class="select-label">Vui lòng chọn hình thức khách hàng thanh toán:</p>
+
+        <div class="payment-options-grid">
+          <div
+              class="payment-option-card"
+              :class="{ active: selectedPaymentType === 'cash' }"
+              @click="selectedPaymentType = 'cash'"
+          >
+            <div class="option-icon cash-icon">
+              <el-icon><Money /></el-icon>
+            </div>
+            <div class="option-info">
+              <h4>Tiền mặt (Trực tiếp / COD)</h4>
+              <p>Thu tiền mặt trực tiếp từ khách hàng khi bàn giao đơn hàng</p>
+            </div>
+            <div class="option-radio">
+              <span class="radio-circle"></span>
+            </div>
+          </div>
+
+          <div
+              class="payment-option-card"
+              :class="{ active: selectedPaymentType === 'qr' }"
+              @click="selectedPaymentType = 'qr'"
+          >
+            <div class="option-icon qr-icon">
+              <el-icon><Iphone /></el-icon>
+            </div>
+            <div class="option-info">
+              <h4>Chuyển khoản (Quét mã QR)</h4>
+              <p>Khách quét mã QR chuyển khoản ngân hàng nhanh chóng 24/7</p>
+            </div>
+            <div class="option-radio">
+              <span class="radio-circle"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showPaymentMethodDialog = false">Hủy</el-button>
+        <el-button
+            type="primary"
+            @click="handleSelectPaymentMethod"
+        >
+          Tiếp tục
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- =====================================================
+         POPUP XÁC NHẬN THANH TOÁN TIỀN MẶT
+    ====================================================== -->
+    <el-dialog
+        v-model="showCashConfirmDialog"
+        width="480px"
+        title="Xác nhận thanh toán tiền mặt"
+        :close-on-click-modal="false"
+        :append-to-body="true"
+        :z-index="10065"
+    >
+      <div class="cash-confirm-modal">
+        <div class="cash-alert-banner">
+          <el-icon><Check /></el-icon>
+          <div>
+            <strong>Xác nhận thu tiền mặt</strong>
+            <p>Vui lòng kiểm tra kỹ số tiền đã nhận từ khách hàng.</p>
+          </div>
+        </div>
+
+        <div class="cash-detail-list">
+          <div class="detail-row">
+            <span>Mã đơn hàng:</span>
+            <strong>#{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}</strong>
+          </div>
+          <div class="detail-row" v-if="selectedOrderForPayment?.tenKhachHang">
+            <span>Khách hàng:</span>
+            <strong>{{ selectedOrderForPayment?.tenKhachHang }}</strong>
+          </div>
+          <div class="detail-row" v-if="selectedOrderForPayment?.soDienThoai">
+            <span>Số điện thoại:</span>
+            <span>{{ selectedOrderForPayment?.soDienThoai }}</span>
+          </div>
+          <div class="detail-row highlight-amount">
+            <span>Số tiền cần thu:</span>
+            <strong class="amount-val">{{ formatMoney(getOrderAmount(selectedOrderForPayment)) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showCashConfirmDialog = false; showPaymentMethodDialog = true">Quay lại</el-button>
+        <el-button
+            type="success"
+            :loading="cashSubmitting"
+            @click="handleCashPaymentConfirm"
+        >
+          Xác nhận đã nhận đủ tiền
         </el-button>
       </template>
     </el-dialog>
@@ -1802,5 +2056,176 @@ const apDungBoLoc = () => {
     overflow-x: auto;
     padding-bottom: 8px;
   }
+}
+
+.payment-method-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.order-summary-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+}
+.summary-line strong {
+  color: #1e293b;
+}
+.summary-line.total-line {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.money-text {
+  font-size: 16px !important;
+  color: #16a34a !important;
+  font-weight: 700;
+}
+.select-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+.payment-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.payment-option-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+.payment-option-card:hover {
+  border-color: #cbd5e1;
+  background: #fdfdfd;
+}
+.payment-option-card.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+.option-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.cash-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.qr-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.option-info {
+  flex: 1;
+}
+.option-info h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.option-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+.option-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.payment-option-card.active .option-radio {
+  border-color: #3b82f6;
+}
+.payment-option-card.active .radio-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+.cash-confirm-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cash-alert-banner {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #15803d;
+}
+.cash-alert-banner .el-icon {
+  font-size: 20px;
+  margin-top: 2px;
+}
+.cash-alert-banner strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.cash-alert-banner p {
+  margin: 0;
+  font-size: 12px;
+  color: #166534;
+}
+.cash-detail-list {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+}
+.detail-row strong {
+  color: #1e293b;
+}
+.detail-row.highlight-amount {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.amount-val {
+  font-size: 18px !important;
+  color: #16a34a !important;
+  font-weight: 700;
 }
 </style>

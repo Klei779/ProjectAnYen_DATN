@@ -49,19 +49,20 @@ watch(
       console.log("========== DON HANG ==========");
       console.log(dh);
 
-      const pttt = dh.phuongThucThanhToan || dh.PhuongThucThanhToan;
-      const phuongThucHopLe = ["Tiền mặt", "Chuyển khoản"].includes(pttt)
+      const pttt = dh.phuongThucThanhToan || dh.PhuongThucThanhToan || dh.tenPhuongThucThanhToan;
+      const phuongThucHopLe = ["Tiền mặt", "Chuyển khoản", "Payoo"].includes(pttt)
           ? pttt
-          : "Tiền mặt";
+          : (pttt === 3 || pttt === "3" || String(pttt).toLowerCase().includes("payoo") ? "Payoo" : "Tiền mặt");
 
       form.value = {
-        ngayIn: formatDateInput(new Date()),
+        ngayIn: formatDateInput(dh.ngayInHoaDon || dh.ngayIn || new Date()),
         phuongThucThanhToan: phuongThucHopLe,
         trangThai:
-            props.mode === "view" && dh.trangThaiHoaDon
-                ? dh.trangThaiHoaDon
+            props.mode === "view" && (dh.trangThaiHoaDon || dh.daCoHoaDon)
+                ? (dh.trangThaiHoaDon || "Đã thanh toán")
                 : dh.trangThaiThanhToan === "Đã thanh toán" ||
-                dh.TrangThaiThanhToan === "Đã thanh toán"
+                dh.TrangThaiThanhToan === "Đã thanh toán" ||
+                dh.trangThaiThanhToan === 1
                     ? "Đã thanh toán"
                     : "Chưa thanh toán",
       };
@@ -102,7 +103,7 @@ const formatDateView = (value) => {
 };
 
 const maDonHang = computed(() => {
-  return props.donHang?.maDonHang || props.donHang?.MaDonHang || "";
+  return props.donHang?.maDonHang || props.donHang?.MaDonHang || props.donHang?.id || "";
 });
 
 const maCode = computed(() => {
@@ -112,19 +113,22 @@ const maCode = computed(() => {
 });
 
 const maKhachHang = computed(() => {
-  const id = props.donHang?.maKhachHang || props.donHang?.MaKhachHang;
-  if (!id) return "Không có";
-  return "KH" + String(id).padStart(4, "0");
+  const id = props.donHang?.maKhachHang || props.donHang?.MaKhachHang || props.donHang?.khachHang?.maKhachHang;
+  if (id) return "KH" + String(id).padStart(4, "0");
+  if (props.donHang?.cccd) return "KH" + String(props.donHang.cccd).slice(-4);
+  if (maDonHang.value) return "KH" + String(maDonHang.value).padStart(4, "0");
+  return "KH0001";
 });
 
 const maHoaDonPreview = computed(() => {
-  const id = props.donHang?.maHoaDon || props.donHang?.MaHoaDon;
+  const id = props.donHang?.maHoaDon || props.donHang?.MaHoaDon || props.donHang?.hoaDonId;
   if (id) return "HD" + String(id).padStart(4, "0");
-  return "Tự sinh khi lưu";
+  if (maDonHang.value) return "HD" + String(maDonHang.value).padStart(4, "0");
+  return "HD0001";
 });
 
 const tenKhachHang = computed(() => {
-  return props.donHang?.tenKhachHang || props.donHang?.TenKhachHang || "Không có";
+  return props.donHang?.tenKhachHang || props.donHang?.TenKhachHang || props.donHang?.customerName || "Không có";
 });
 
 const soDienThoai = computed(() => {
@@ -133,16 +137,17 @@ const soDienThoai = computed(() => {
       props.donHang?.soDienThoaiKH ||
       props.donHang?.SoDienThoai ||
       props.donHang?.sdt ||
+      props.donHang?.customerPhone ||
       "Không có"
   );
 });
 
 const tenNhanVien = computed(() => {
-  return props.donHang?.tenNhanVien || props.donHang?.HoTenNhanVien || "Không có";
+  return props.donHang?.tenNhanVien || props.donHang?.HoTenNhanVien || props.donHang?.nhanVien || "Không có";
 });
 
 const ngayTaoDon = computed(() => {
-  return props.donHang?.ngayTaoDon || props.donHang?.NgayTaoDon;
+  return props.donHang?.ngayTaoDon || props.donHang?.NgayTaoDon || props.donHang?.ngayDat;
 });
 
 const trangThaiDonHang = computed(() => {
@@ -163,11 +168,11 @@ const ghiChuDonHang = computed(() => {
 
 const rawChiTiet = computed(() => {
   return (
+      props.donHang?.sanPhams ||
       props.donHang?.chiTietDonHangs ||
       props.donHang?.chiTietDonHang ||
       props.donHang?.chiTiet ||
       props.donHang?.items ||
-      props.donHang?.sanPhams ||
       []
   );
 });
@@ -181,18 +186,22 @@ const soSanPhamConLai = computed(() => {
 });
 
 const getMaSanPham = (item) => {
-  const id = item.maSanPham || item.MaSanPham || item.sanPham?.maSanPham;
-  if (!id) return "SP----";
-  return "SP" + String(id).padStart(4, "0");
+  const id = item.maSanPham || item.MaSanPham || item.sanPham?.maSanPham || item.sanPham?.MaSanPham || item.maSKU || item.id;
+  if (id) return "SP" + String(id).padStart(4, "0");
+  if (item.stt) return "SP" + String(item.stt).padStart(4, "0");
+  return "SP0001";
 };
 
 const getTenSanPham = (item) => {
   return (
       item.tenSanPham ||
       item.TenSanPham ||
+      item.ten ||
+      item.Ten ||
       item.sanPham?.tenSanPham ||
       item.sanPham?.TenSanPham ||
-      "Sản phẩm / dịch vụ"
+      item.noiDung ||
+      "Sản phẩm / Dịch vụ"
   );
 };
 
@@ -203,7 +212,7 @@ const getLoaiSanPham = (item) => {
       item.Loai ||
       item.sanPham?.loai ||
       item.sanPham?.Loai ||
-      "Không có"
+      "Dịch vụ"
   );
 };
 
@@ -219,7 +228,9 @@ const getTenDoiTac = (item) => {
       item.sanPham?.TenDoiTac ||
       item.sanPham?.doiTac?.tenDoiTac ||
       item.sanPham?.doiTac?.TenDoiTac ||
-      "Chưa có đối tác"
+      props.donHang?.tenDoiTac ||
+      props.donHang?.tenDoanhNghiep ||
+      "Hệ thống An Yên"
   );
 };
 
@@ -831,6 +842,7 @@ const submitHoaDon = async () => {
                 <select v-model="form.phuongThucThanhToan">
                   <option>Tiền mặt</option>
                   <option>Chuyển khoản</option>
+                  <option>Payoo</option>
                 </select>
               </div>
 

@@ -20,6 +20,7 @@ import {
   formatCurrency,
   getTrangThaiDonHangText,
   taoPayooDonHang,
+  thanhToanTienMat,
 } from "../../services/donHangService.js";
 import { confirmPayooTransaction } from "../../services/payooMockService.js";
 import api from "../../api/api.js";
@@ -38,6 +39,8 @@ import {
   Tickets,
   View,
   Warning,
+  Money,
+  Iphone,
 } from "@element-plus/icons-vue";
 
 // ── Trạng thái popup ─────────────────────────────
@@ -45,7 +48,12 @@ const showCreateOrder = ref(false);
 const showChiTiet = ref(false);
 const selectedDonHang = ref(null);
 
-// ── Trạng thái Payoo Mock ─────────────────────────
+// ── Trạng thái Chọn phương thức & Thanh toán ───────────────────
+const showPaymentMethodDialog = ref(false);
+const showCashConfirmDialog = ref(false);
+const selectedPaymentType = ref("qr");
+const cashSubmitting = ref(false);
+
 const showPayooDialog = ref(false);
 const payooStatus = ref("waiting"); // waiting | processing | success
 const payooQrImage = ref("");
@@ -832,6 +840,7 @@ const resetPayoo = () => {
   currentPayooTransaction.value = null;
   selectedOrderForPayment.value = null;
   payooSubmitting.value = false;
+  cashSubmitting.value = false;
 };
 
 const updateNextStatus = async (dh) => {
@@ -845,16 +854,54 @@ const updateNextStatus = async (dh) => {
 
   if (!next) return;
 
-  // Trạng thái "Đã giao" hoặc "Thanh toán": mở dialog thanh toán
+  // Trạng thái "Đã giao" hoặc "Thanh toán": mở dialog chọn phương thức thanh toán
   if (dh.trangThai === "Đã giao" || dh.trangThai === "Thanh toán") {
-    await openPaymentDialog(dh);
+    openPaymentDialog(dh);
     return;
   }
 
   await doUpdateStatus(dh, next);
 };
 
-const openPaymentDialog = async (dh) => {
+const openPaymentDialog = (dh) => {
+  selectedOrderForPayment.value = dh;
+  selectedPaymentType.value = "qr";
+  showPaymentMethodDialog.value = true;
+};
+
+const handleSelectPaymentMethod = async () => {
+  showPaymentMethodDialog.value = false;
+  if (selectedPaymentType.value === "cash") {
+    showCashConfirmDialog.value = true;
+  } else {
+    await startQrPayment(selectedOrderForPayment.value);
+  }
+};
+
+const handleCashPaymentConfirm = async () => {
+  if (!selectedOrderForPayment.value) return;
+  const maDonHang = getMaDonHang(selectedOrderForPayment.value);
+  cashSubmitting.value = true;
+
+  try {
+    await thanhToanTienMat(maDonHang);
+    ElMessage.success("Xác nhận thanh toán tiền mặt thành công");
+    showCashConfirmDialog.value = false;
+    await loadDonHangs();
+    resetPayoo();
+  } catch (error) {
+    console.error("Lỗi khi xác nhận thanh toán tiền mặt:", error);
+    ElMessage.error(
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        "Xác nhận thanh toán tiền mặt thất bại"
+    );
+  } finally {
+    cashSubmitting.value = false;
+  }
+};
+
+const startQrPayment = async (dh) => {
   selectedOrderForPayment.value = dh;
   const amount = getOrderAmount(dh);
 
@@ -1342,6 +1389,135 @@ const handlePayooQrClick = async () => {
     </el-dialog>
 
     <!-- =====================================================
+         POPUP CHỌN PHƯƠNG THỨC THANH TOÁN
+    ====================================================== -->
+    <el-dialog
+        v-model="showPaymentMethodDialog"
+        width="520px"
+        title="Chọn phương thức thanh toán"
+        :close-on-click-modal="false"
+        :append-to-body="true"
+        :z-index="10060"
+    >
+      <div class="payment-method-modal">
+        <div class="order-summary-box">
+          <div class="summary-line">
+            <span>Đơn hàng:</span>
+            <strong>#{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}</strong>
+          </div>
+          <div class="summary-line" v-if="selectedOrderForPayment?.tenKhachHang">
+            <span>Khách hàng:</span>
+            <strong>{{ selectedOrderForPayment?.tenKhachHang }}</strong>
+          </div>
+          <div class="summary-line total-line">
+            <span>Tổng tiền thanh toán:</span>
+            <strong class="money-text">{{ formatCurrency(getOrderAmount(selectedOrderForPayment)) }}</strong>
+          </div>
+        </div>
+
+        <p class="select-label">Vui lòng chọn hình thức khách hàng thanh toán:</p>
+
+        <div class="payment-options-grid">
+          <div
+              class="payment-option-card"
+              :class="{ active: selectedPaymentType === 'cash' }"
+              @click="selectedPaymentType = 'cash'"
+          >
+            <div class="option-icon cash-icon">
+              <el-icon><Money /></el-icon>
+            </div>
+            <div class="option-info">
+              <h4>Tiền mặt (Trực tiếp / COD)</h4>
+              <p>Thu tiền mặt trực tiếp từ khách hàng khi bàn giao đơn hàng</p>
+            </div>
+            <div class="option-radio">
+              <span class="radio-circle"></span>
+            </div>
+          </div>
+
+          <div
+              class="payment-option-card"
+              :class="{ active: selectedPaymentType === 'qr' }"
+              @click="selectedPaymentType = 'qr'"
+          >
+            <div class="option-icon qr-icon">
+              <el-icon><Iphone /></el-icon>
+            </div>
+            <div class="option-info">
+              <h4>Chuyển khoản (Quét mã QR)</h4>
+              <p>Khách quét mã QR chuyển khoản ngân hàng nhanh chóng 24/7</p>
+            </div>
+            <div class="option-radio">
+              <span class="radio-circle"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showPaymentMethodDialog = false">Hủy</el-button>
+        <el-button
+            type="primary"
+            @click="handleSelectPaymentMethod"
+        >
+          Tiếp tục
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- =====================================================
+         POPUP XÁC NHẬN THANH TOÁN TIỀN MẶT
+    ====================================================== -->
+    <el-dialog
+        v-model="showCashConfirmDialog"
+        width="480px"
+        title="Xác nhận thanh toán tiền mặt"
+        :close-on-click-modal="false"
+        :append-to-body="true"
+        :z-index="10065"
+    >
+      <div class="cash-confirm-modal">
+        <div class="cash-alert-banner">
+          <el-icon><Check /></el-icon>
+          <div>
+            <strong>Xác nhận thu tiền mặt</strong>
+            <p>Vui lòng kiểm tra kỹ số tiền đã nhận từ khách hàng.</p>
+          </div>
+        </div>
+
+        <div class="cash-detail-list">
+          <div class="detail-row">
+            <span>Mã đơn hàng:</span>
+            <strong>#{{ selectedOrderForPayment?.maCode || selectedOrderForPayment?.maDonHang }}</strong>
+          </div>
+          <div class="detail-row" v-if="selectedOrderForPayment?.tenKhachHang">
+            <span>Khách hàng:</span>
+            <strong>{{ selectedOrderForPayment?.tenKhachHang }}</strong>
+          </div>
+          <div class="detail-row" v-if="selectedOrderForPayment?.soDienThoai">
+            <span>Số điện thoại:</span>
+            <span>{{ selectedOrderForPayment?.soDienThoai }}</span>
+          </div>
+          <div class="detail-row highlight-amount">
+            <span>Số tiền cần thu:</span>
+            <strong class="amount-val">{{ formatCurrency(getOrderAmount(selectedOrderForPayment)) }}</strong>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <el-button @click="showCashConfirmDialog = false; showPaymentMethodDialog = true">Quay lại</el-button>
+        <el-button
+            type="success"
+            :loading="cashSubmitting"
+            @click="handleCashPaymentConfirm"
+        >
+          Xác nhận đã nhận đủ tiền
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- =====================================================
          POPUP QR PAYOO
     ====================================================== -->
     <el-dialog
@@ -1408,3 +1584,175 @@ const handlePayooQrClick = async () => {
 </template>
 
 <style scoped src="../../assets/styles/nhanvien/QLDonHang/TrangQLDonHang.css"></style>
+<style scoped>
+.payment-method-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.order-summary-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+}
+.summary-line strong {
+  color: #1e293b;
+}
+.summary-line.total-line {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+.money-text {
+  font-size: 16px !important;
+  color: #16a34a !important;
+  font-weight: 700;
+}
+.select-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  margin: 0;
+}
+.payment-options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.payment-option-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+.payment-option-card:hover {
+  border-color: #cbd5e1;
+  background: #fdfdfd;
+}
+.payment-option-card.active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+.option-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+.cash-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.qr-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+.option-info {
+  flex: 1;
+}
+.option-info h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+.option-info p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+.option-radio {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.payment-option-card.active .option-radio {
+  border-color: #3b82f6;
+}
+.payment-option-card.active .radio-circle {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82f6;
+}
+.cash-confirm-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.cash-alert-banner {
+  display: flex;
+  gap: 12px;
+  padding: 12px 14px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #15803d;
+}
+.cash-alert-banner .el-icon {
+  font-size: 20px;
+  margin-top: 2px;
+}
+.cash-alert-banner strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 2px;
+}
+.cash-alert-banner p {
+  margin: 0;
+  font-size: 12px;
+  color: #166534;
+}
+.cash-detail-list {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #64748b;
+}
+.detail-row strong {
+  color: #1e293b;
+}
+.detail-row.highlight-amount {
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+.amount-val {
+  font-size: 18px !important;
+  color: #16a34a !important;
+  font-weight: 700;
+}
+</style>

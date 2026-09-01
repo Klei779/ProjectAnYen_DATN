@@ -549,12 +549,16 @@ const normalizeDonHang = (dh) => {
             : "Chưa cập nhật"
   };
 };
+/*
+ * Đơn hàng website (người tạo = 'website') không cần hợp đồng.
+ * Các đơn do nhân viên tạo đều yêu cầu có hợp đồng trước khi xử lý.
+ */
 const requiresContract = (dh) => {
-  return dh?.coQuanTai === true;
+  return !isWebsiteOrder(dh);
 };
 
 const canProcessWithoutContract = (dh) => {
-  return !requiresContract(dh);
+  return isWebsiteOrder(dh);
 };
 
 const hasRequiredContract = (dh) => {
@@ -731,7 +735,7 @@ const getPartnerActionLabel = (dh) => {
   }
 
   /*
-   * Chỉ hiện Chờ hợp đồng khi có Quan tài.
+   * Hiện "Chờ hợp đồng" khi đơn do nhân viên tạo và chưa có hợp đồng.
    */
   if (
       dh.trangThai === "Đã nhận" &&
@@ -766,8 +770,8 @@ const getPartnerActionLabel = (dh) => {
 
 const openXuLy = (dh) => {
   /*
-   * Chỉ chặn khi:
-   * - Có sản phẩm Quan tài
+   * Chặn xử lý khi:
+   * - Đơn do nhân viên tạo (không phải website)
    * - Chưa có hợp đồng
    */
   if (
@@ -775,7 +779,7 @@ const openXuLy = (dh) => {
       !dh.coHopDong
   ) {
     ElMessage.warning(
-        "Đơn hàng có sản phẩm Quan tài nên cần hợp đồng trước khi xử lý"
+        "Đơn hàng do nhân viên tạo cần có hợp đồng trước khi xử lý"
     );
 
     return;
@@ -1394,12 +1398,9 @@ const apDungBoLoc = () => {
 
               <span>Hợp đồng:</span>
               <strong
-                  :class="!dh.coQuanTai ? 'contract-success': dh.coHopDong ? 'contract-success': 'contract-warning'"
+                  :class="dh.coHopDong ? 'contract-success': 'contract-warning'"
               >
-                {{
-                  !dh.coQuanTai
-                      ? "Đơn không cần hợp đồng"
-                      : dh.coHopDong
+                {{dh.coHopDong
                           ? "Đã có hợp đồng"
                           : "Chưa có hợp đồng"
                 }}

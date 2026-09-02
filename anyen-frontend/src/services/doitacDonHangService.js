@@ -52,6 +52,8 @@ function normalizeDonHang(dh) {
     maDonHang,
     maCode: formatCode(maDonHang, dh.maCode ?? dh.code),
 
+    nhanVienVaiTro: dh.nhanVienVaiTro ?? null,
+
     tenKhachHang:
         dh.tenKhachHang ??
         dh.customerName ??

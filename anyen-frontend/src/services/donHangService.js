@@ -281,6 +281,11 @@ export async function taoPayooDonHang(maDonHang, soTien) {
   return response.data;
 }
 
+export async function thanhToanTienMat(maDonHang) {
+  const response = await api.put(`${API_URL}/${maDonHang}/thanh-toan`);
+  return normalizeDonHang(response.data);
+}
+
 export function formatCurrency(value) {
   if (!value && value !== 0) return "—";
 

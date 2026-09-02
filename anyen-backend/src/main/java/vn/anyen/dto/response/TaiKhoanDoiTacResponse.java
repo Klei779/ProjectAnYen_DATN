@@ -4,6 +4,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Builder
@@ -18,4 +20,6 @@ public class TaiKhoanDoiTacResponse {
     private String soDienThoai;
     private String diaChi;
     private Integer trangThai;
+    private BigDecimal longitude;
+    private BigDecimal latitude;
 }

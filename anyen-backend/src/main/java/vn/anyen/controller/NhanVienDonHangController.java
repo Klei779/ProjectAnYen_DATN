@@ -216,4 +216,12 @@ public class NhanVienDonHangController {
         );
         return ResponseEntity.ok(response);
     }
+
+    @PutMapping("/{maDonHang}/thanh-toan")
+    public ResponseEntity<DonHangResponse> thanhToanDonHang(
+            @PathVariable Integer maDonHang
+    ) {
+        DonHangResponse response = donHangService.thanhToanDonHang(maDonHang);
+        return ResponseEntity.ok(response);
+    }
 }

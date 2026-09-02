@@ -587,19 +587,39 @@ const grandTotalInWords = computed(() => {
           Thanh toán 100% giá trị hợp đồng cho bên B bằng tiền mặt hoặc chuyển khoản.
         </div>
 
+        <template v-if="additionalTerms && additionalTerms.filter(t => t && t.trim()).length > 0">
+          <div class="font-bold mt-2">
+            Điều 4: Quy trình thực hiện:
+          </div>
+          <table class="service-table" style="margin-top: 4px;">
+            <thead>
+            <tr>
+              <th class="w-stt">STT</th>
+              <th>Nội dung quy trình</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="(term, index) in additionalTerms.filter(t => t && t.trim())" :key="index">
+              <td class="text-center">{{ index + 1 }}</td>
+              <td>{{ term }}</td>
+            </tr>
+            </tbody>
+          </table>
+        </template>
+
         <div class="font-bold mt-2">
-          Điều 4: Trách nhiệm của các bên:
+          Điều {{ additionalTerms && additionalTerms.filter(t => t && t.trim()).length > 0 ? 5 : 4 }}: Trách nhiệm của các bên:
         </div>
 
         <div class="font-bold mt-1">
-          4.1 Trách nhiệm Bên A:
+          {{ additionalTerms && additionalTerms.filter(t => t && t.trim()).length > 0 ? '5' : '4' }}.1 Trách nhiệm Bên A:
         </div>
         <div class="mt-1 text-justify">
           - Thông báo kịp thời cho Bên B khi muốn hủy, thay đổi, bổ sung các nội dung trong hợp đồng. Những thay đổi, bổ sung sẽ được thống nhất giữa hai bên trong hợp đồng bổ sung. Trường hợp muốn hủy một phần hoặc toàn bộ hợp đồng, Bên A phải trả cho bên B chi phí thiệt hại theo quy định hiện hành của Bên B. Bên B sẽ trừ trực tiếp chi phí thiệt hại vào số tiền do Bên A đã thanh toán.
         </div>
 
         <div class="font-bold mt-2">
-          4.2 Trách nhiệm Bên B:
+          {{ additionalTerms && additionalTerms.filter(t => t && t.trim()).length > 0 ? '5' : '4' }}.2 Trách nhiệm Bên B:
         </div>
         <div class="mt-1 text-justify">
           - Đảm bảo cung cấp dịch vụ theo đúng nội dung ghi tại Điều 1.<br/>
@@ -607,7 +627,7 @@ const grandTotalInWords = computed(() => {
         </div>
 
         <div class="font-bold mt-2">
-          Điều 5: Điều khoản khác:
+          Điều {{ additionalTerms && additionalTerms.filter(t => t && t.trim()).length > 0 ? 6 : 5 }}: Điều khoản chung:
         </div>
         <div class="mt-1 text-justify">
           - Hợp đồng này có hiệu lực kể từ ngày ký và đương nhiên được thanh lý khi các bên đã hoàn thành các nghĩa vụ của mình trong Hợp đồng. Trong quá trình thực hiện nếu có khó khăn, vướng mắc hai bên gặp nhau bàn bạc để đi đến thống nhất.
@@ -615,16 +635,6 @@ const grandTotalInWords = computed(() => {
         <div class="mt-1 text-justify">
           Hợp đồng này được lập thành 02 bản, mỗi Bên giữ 01 bản có giá trị pháp lý như nhau.
         </div>
-        <template v-if="additionalTerms && additionalTerms.length > 0">
-          <div
-              v-for="(term, index) in additionalTerms"
-              :key="index"
-              v-show="term && term.trim()"
-              class="mt-1 text-justify"
-          >
-            + {{ term }}
-          </div>
-        </template>
 
         <div class="signature-row mt-4">
           <div class="font-bold text-center" style="width: 50%;">Đại diện bên A</div>

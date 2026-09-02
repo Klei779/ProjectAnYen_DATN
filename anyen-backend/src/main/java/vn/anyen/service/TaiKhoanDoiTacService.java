@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import vn.anyen.dto.request.CapNhatTaiKhoanDTRequest;
+import vn.anyen.dto.request.CapNhatViTriRequest;
 import vn.anyen.dto.response.TaiKhoanDoiTacResponse;
 import vn.anyen.entity.DoiTac;
 import vn.anyen.repository.DoiTacRepository;
@@ -37,7 +38,19 @@ public class TaiKhoanDoiTacService {
 
         return toResponse(saved);
     }
+    public TaiKhoanDoiTacResponse capNhatViTriDoiTac(
+            String tenDangNhap,
+            CapNhatViTriRequest request
+    ) {
+        DoiTac doiTac = findByTenDangNhap(tenDangNhap);
 
+        doiTac.setLatitude(request.getLatitude());
+        doiTac.setLongitude(request.getLongitude());
+
+        DoiTac saved = doiTacRepository.save(doiTac);
+
+        return toResponse(saved);
+    }
     private DoiTac findByTenDangNhap(String tenDangNhap) {
         return doiTacRepository.findByTenDangNhap(tenDangNhap)
                 .orElseThrow(() -> new ResponseStatusException(
@@ -57,6 +70,8 @@ public class TaiKhoanDoiTacService {
                 .soDienThoai(dt.getSoDienThoai())
                 .diaChi(dt.getDiaChi())
                 .trangThai(dt.getTrangThai())
+                .longitude(dt.getLongitude())
+                .latitude(dt.getLatitude())
                 .build();
     }
 
@@ -70,4 +85,5 @@ public class TaiKhoanDoiTacService {
         }
         return value.trim();
     }
+
 }

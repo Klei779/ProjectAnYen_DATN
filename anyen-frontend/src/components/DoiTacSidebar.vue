@@ -49,27 +49,28 @@
         <i class="fa-solid fa-bell menu-icon"></i>
         <span class="sidebar-text">Thông báo</span>
       </RouterLink>
-      <RouterLink
-          to="/doi-tac/quy-va-vi"
-          class="menu-item"
-          title="Quỹ & Ví"
-      >
-        <i
-            class="
-        fa-solid
-        fa-wallet
-        menu-icon
-      "
-        ></i>
 
-        <span class="sidebar-text">
-    Quỹ & Ví
-  </span>
-      </RouterLink>
-      <RouterLink to="/doi-tac/thong-ke-doanh-thu" class="menu-item" title="Thống kê doanh thu">
-        <i class="fa-solid fa-chart-line menu-icon"></i>
-        <span class="sidebar-text">Thống kê doanh thu</span>
-      </RouterLink>
+      <!-- Quản lý tài chính -->
+      <div class="menu-group">
+        <div class="menu-group-header" @click="toggleMenu('finance')">
+          <i class="fa-solid fa-coins menu-icon"></i>
+          <span class="sidebar-text">Quản lý tài chính</span>
+          <i class="fa-solid menu-chevron" :class="expandedMenus.finance ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+        </div>
+        <transition name="slide-fade">
+          <div class="submenu" v-if="expandedMenus.finance">
+            <RouterLink to="/doi-tac/quy-va-vi" class="menu-item submenu-item" title="Quỹ & Ví">
+              <i class="fa-solid fa-wallet menu-icon"></i>
+              <span class="sidebar-text">Quỹ & Ví</span>
+            </RouterLink>
+            <RouterLink to="/doi-tac/thong-ke-doanh-thu" class="menu-item submenu-item" title="Thống kê doanh thu">
+              <i class="fa-solid fa-chart-line menu-icon"></i>
+              <span class="sidebar-text">Thống kê doanh thu</span>
+            </RouterLink>
+          </div>
+        </transition>
+      </div>
+
       <RouterLink to="/doi-tac/thong-tin-tai-khoan" class="menu-item" title="Thông tin tài khoản">
         <i class="fa-solid fa-user menu-icon"></i>
         <span class="sidebar-text">Thông tin tài khoản</span>
@@ -99,6 +100,10 @@ const isCollapsed = ref(false);
 const showProfile = ref(false);
 const user = ref(null);
 
+const expandedMenus = ref({
+  finance: false
+});
+
 onMounted(() => {
   const userStr = localStorage.getItem("user");
   if (userStr) {
@@ -119,6 +124,10 @@ const closeProfile = (e) => {
 
 const toggleSidebar = () => {
   isCollapsed.value = !isCollapsed.value;
+};
+
+const toggleMenu = (menuName) => {
+  expandedMenus.value[menuName] = !expandedMenus.value[menuName];
 };
 
 const toggleProfile = () => {

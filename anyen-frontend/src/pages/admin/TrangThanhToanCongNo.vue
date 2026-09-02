@@ -810,7 +810,7 @@
             :loading="creatingPayment"
             @click="createPayooPayment"
         >
-          Tạo thanh toán Payoo
+          Tạo QR thanh toán
         </el-button>
       </template>
     </el-dialog>
@@ -821,7 +821,7 @@
 
     <el-dialog
         v-model="qrDialogVisible"
-        title="Payoo Mock - Thanh toán công nợ"
+        title="Thanh toán công nợ"
         width="500px"
         :close-on-click-modal="false"
         :close-on-press-escape="
@@ -842,14 +842,6 @@
             payooStatus !== 'success'
           "
         >
-          <div class="payoo-logo">
-            PAYOO MOCK
-          </div>
-
-          <p class="payoo-description">
-            Nhấn vào QR hoặc nút xác nhận bên dưới để giả lập
-            Payoo callback thành công.
-          </p>
 
           <img
               v-if="qrImage"
@@ -885,7 +877,7 @@
           >
             <i class="fa-solid fa-spinner fa-spin"></i>
 
-            Payoo đang xử lý giao dịch...
+            Đang xử lý giao dịch...
           </div>
         </template>
 
@@ -1812,8 +1804,6 @@ async function createPayooPayment() {
     // =========================
 
     const qrContent = [
-      "PAYOO MOCK",
-
       `MA_GIAO_DICH=${transaction.maGiaoDich}`,
 
       `LOAI=${transaction.loaiGiaoDich}`,
@@ -1854,7 +1844,7 @@ async function createPayooPayment() {
     ElMessage.error(
         getErrorMessage(
             error,
-            "Không tạo được giao dịch Payoo"
+            "Không tạo được giao dịch "
         )
     );
   } finally {
@@ -1914,7 +1904,7 @@ async function confirmPayment() {
     );
   } catch (error) {
     console.error(
-        "Callback Payoo công nợ lỗi:",
+        "Công nợ lỗi:",
         error
     );
 

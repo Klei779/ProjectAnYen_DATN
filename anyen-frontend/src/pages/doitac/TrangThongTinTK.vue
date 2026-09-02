@@ -77,6 +77,14 @@
               <i class="fa-solid fa-key"></i>
               Đổi mật khẩu
             </button>
+            <button
+                class="btn-edit"
+                type="button"
+                @click="getLocation"
+            >
+              <i class="fa-solid fa-pen"></i>
+              Update vị trí
+            </button>
           </div>
         </div>
 
@@ -667,6 +675,85 @@ function getErrorMessage(
       error?.response?.data?.message ||
       error?.response?.data?.error ||
       fallback
+  );
+}
+
+async function getLocation() {
+  if (!navigator.geolocation) {
+    ElMessage.error("Trình duyệt không hỗ trợ Geolocation");
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        try {
+          const payload = {
+            latitude,
+            longitude,
+          };
+          const response = await api.post(
+              `${API_URL}/location`,
+              payload
+          );
+
+          console.log("Cập nhật vị trí thành công:", response.data);
+
+          ElMessage.success(
+              "Cập nhật vị trí thành công"
+          );
+        } catch (error) {
+          console.error(
+              "Lỗi cập nhật vị trí:",
+              error
+          );
+
+          ElMessage.error(
+              getErrorMessage(
+                  error,
+                  "Cập nhật vị trí thất bại"
+              )
+          );
+        }
+      },
+      (error) => {
+        console.error(
+            "Không lấy được vị trí:",
+            error
+        );
+
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            ElMessage.warning(
+                "Bạn đã từ chối quyền truy cập vị trí"
+            );
+            break;
+
+          case error.POSITION_UNAVAILABLE:
+            ElMessage.error(
+                "Không xác định được vị trí hiện tại"
+            );
+            break;
+
+          case error.TIMEOUT:
+            ElMessage.error(
+                "Lấy vị trí quá thời gian cho phép"
+            );
+            break;
+
+          default:
+            ElMessage.error(
+                "Không lấy được vị trí hiện tại"
+            );
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
   );
 }
 </script>

@@ -11,10 +11,12 @@ import vn.anyen.entity.ComBo;
 import vn.anyen.entity.ComBoChiTiet;
 import vn.anyen.entity.ComBoChiTietHinhAnh;
 import vn.anyen.entity.ComBoHinhAnh;
+import vn.anyen.entity.SanPham;
 import vn.anyen.repository.ComBoChiTietHinhAnhRepository;
 import vn.anyen.repository.ComBoChiTietRepository;
 import vn.anyen.repository.ComBoHinhAnhRepository;
 import vn.anyen.repository.ComBoRepository;
+import vn.anyen.repository.SanPhamRepository;
 import vn.anyen.service.ComBoService;
 
 import java.util.List;
@@ -28,17 +30,20 @@ public class ComBoServiceImpl implements ComBoService {
     private final ComBoChiTietRepository comboChiTietRepository;
     private final ComBoChiTietHinhAnhRepository comboChiTietHinhAnhRepository;
     private final ComBoHinhAnhRepository comboHinhAnhRepository;
+    private final SanPhamRepository sanPhamRepository;
 
     public ComBoServiceImpl(
             ComBoRepository comboRepository,
             ComBoChiTietRepository comboChiTietRepository,
             ComBoChiTietHinhAnhRepository comboChiTietHinhAnhRepository,
-            ComBoHinhAnhRepository comboHinhAnhRepository
+            ComBoHinhAnhRepository comboHinhAnhRepository,
+            SanPhamRepository sanPhamRepository
     ) {
         this.comboRepository = comboRepository;
         this.comboChiTietRepository = comboChiTietRepository;
         this.comboChiTietHinhAnhRepository = comboChiTietHinhAnhRepository;
         this.comboHinhAnhRepository = comboHinhAnhRepository;
+        this.sanPhamRepository = sanPhamRepository;
     }
 
     @Override
@@ -135,19 +140,48 @@ public class ComBoServiceImpl implements ComBoService {
                         )
                 ));
 
+        // Lấy thông tin SanPham (tên loại + ảnh) cho các item có maSanPham
+        List<Integer> maSanPhamIds = chiTiets.stream()
+                .map(ComBoChiTiet::getMaSanPham)
+                .filter(id -> id != null)
+                .distinct()
+                .toList();
+
+        Map<Integer, SanPham> sanPhamMap = maSanPhamIds.isEmpty()
+                ? Map.of()
+                : sanPhamRepository.findAllById(maSanPhamIds)
+                        .stream()
+                        .collect(Collectors.toMap(SanPham::getMaSanPham, sp -> sp));
+
         return chiTiets.stream()
-                .map(item -> ComBoChiTietResponse.builder()
-                        .comboChiTietId(item.getComboChiTietId())
-                        .loai(item.getLoai())
-                        .soLuong(item.getSoLuong() == null || item.getSoLuong() <= 0
-                                ? 1
-                                : item.getSoLuong())
-                        .noiDung(item.getNoiDung())
-                        .hinhAnhs(hinhAnhMap.getOrDefault(
-                                item.getComboChiTietId(),
-                                List.of()
-                        ))
-                        .build())
+                .map(item -> {
+                    SanPham sp = item.getMaSanPham() != null
+                            ? sanPhamMap.get(item.getMaSanPham())
+                            : null;
+
+                    String tenLoai = sp != null && sp.getLoai() != null && !sp.getLoai().isBlank()
+                            ? sp.getLoai().trim()
+                            : null;
+
+                    String hinhAnhSanPham = sp != null && sp.getHinhAnh() != null && !sp.getHinhAnh().isBlank()
+                            ? sp.getHinhAnh().trim()
+                            : null;
+
+                    return ComBoChiTietResponse.builder()
+                            .comboChiTietId(item.getComboChiTietId())
+                            .loai(item.getLoai())
+                            .soLuong(item.getSoLuong() == null || item.getSoLuong() <= 0
+                                    ? 1
+                                    : item.getSoLuong())
+                            .noiDung(item.getNoiDung())
+                            .hinhAnhs(hinhAnhMap.getOrDefault(
+                                    item.getComboChiTietId(),
+                                    List.of()
+                            ))
+                            .tenLoaiSanPham(tenLoai)
+                            .hinhAnhSanPham(hinhAnhSanPham)
+                            .build();
+                })
                 .toList();
     }
-}
+}

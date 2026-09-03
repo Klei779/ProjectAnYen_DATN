@@ -57,13 +57,16 @@ public class ComboAdminController {
             @RequestPart(value = "anhDaiDien", required = false)
             List<MultipartFile> anhDaiDien,
             @RequestPart(value = "anhQuyTrinh", required = false)
-            List<MultipartFile> anhQuyTrinh
+            List<MultipartFile> anhQuyTrinh,
+            @RequestPart(value = "anhChiTiet", required = false)
+            MultipartFile anhChiTiet
     ) {
         ComboAdminResponse response = comboAdminService.createCombo(
                 authentication,
                 request,
                 anhDaiDien,
-                anhQuyTrinh
+                anhQuyTrinh,
+                anhChiTiet
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -79,14 +82,17 @@ public class ComboAdminController {
             @RequestPart(value = "anhDaiDien", required = false)
             List<MultipartFile> anhDaiDien,
             @RequestPart(value = "anhQuyTrinh", required = false)
-            List<MultipartFile> anhQuyTrinh
+            List<MultipartFile> anhQuyTrinh,
+            @RequestPart(value = "anhChiTiet", required = false)
+            MultipartFile anhChiTiet
     ) {
         return comboAdminService.updateCombo(
                 authentication,
                 comboId,
                 request,
                 anhDaiDien,
-                anhQuyTrinh
+                anhQuyTrinh,
+                anhChiTiet
         );
     }
 

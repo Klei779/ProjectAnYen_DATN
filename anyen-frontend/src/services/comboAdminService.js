@@ -2,7 +2,7 @@ import api from "../api/api.js";
 
 const BASE_URL = "/api/admin/combo";
 
-const buildMultipart = (data, coverFiles = [], processFiles = []) => {
+const buildMultipart = (data, coverFiles = [], processFiles = [], detailFile = null) => {
     const payload = new FormData();
     payload.append(
         "data",
@@ -16,6 +16,10 @@ const buildMultipart = (data, coverFiles = [], processFiles = []) => {
     processFiles.forEach((file) => {
         payload.append("anhQuyTrinh", file);
     });
+
+    if (detailFile) {
+        payload.append("anhChiTiet", detailFile);
+    }
 
     return payload;
 };
@@ -31,10 +35,11 @@ export const getSanPhamComboAdmin = () =>
 export const createComboAdmin = (
     data,
     coverFiles,
-    processFiles
+    processFiles,
+    detailFile
 ) => api.post(
     BASE_URL,
-    buildMultipart(data, coverFiles, processFiles),
+    buildMultipart(data, coverFiles, processFiles, detailFile),
     { timeout: 120000 }
 );
 
@@ -42,10 +47,11 @@ export const updateComboAdmin = (
     comboId,
     data,
     coverFiles,
-    processFiles
+    processFiles,
+    detailFile
 ) => api.put(
     `${BASE_URL}/${comboId}`,
-    buildMultipart(data, coverFiles, processFiles),
+    buildMultipart(data, coverFiles, processFiles, detailFile),
     { timeout: 120000 }
 );
 

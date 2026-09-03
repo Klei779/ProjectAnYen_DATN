@@ -109,7 +109,8 @@ public class ComboAdminService {
             Authentication authentication,
             ComboAdminRequest request,
             List<MultipartFile> anhDaiDien,
-            List<MultipartFile> anhQuyTrinh
+            List<MultipartFile> anhQuyTrinh,
+            MultipartFile anhChiTiet
     ) {
         NhanVien admin = requireAdmin(authentication);
         List<ValidatedComboItem> items = validateProducts(request);
@@ -119,6 +120,7 @@ public class ComboAdminService {
         List<MultipartFile> processFiles = realFiles(anhQuyTrinh);
         validateCoverImages(coverFiles);
         validateProcessImages(processFiles);
+        validateDetailImage(anhChiTiet);
 
         ComBo combo = new ComBo();
         combo.setMaDoiTac(null);
@@ -144,6 +146,15 @@ public class ComboAdminService {
             );
         }
 
+        if (anhChiTiet != null && !anhChiTiet.isEmpty()) {
+            replaceImageGroup(
+                    saved.getComboId(),
+                    ComBoHinhAnh.LOAI_CHI_TIET,
+                    List.of(anhChiTiet),
+                    "combo-chi-tiet"
+            );
+        }
+
         saved.setHinhAnh(coverUrls.get(0));
         saved = comboRepository.save(saved);
         return toResponse(saved);
@@ -155,7 +166,8 @@ public class ComboAdminService {
             Integer comboId,
             ComboAdminRequest request,
             List<MultipartFile> anhDaiDien,
-            List<MultipartFile> anhQuyTrinh
+            List<MultipartFile> anhQuyTrinh,
+            MultipartFile anhChiTiet
     ) {
         NhanVien admin = requireAdmin(authentication);
         ComBo combo = findCombo(comboId);
@@ -169,6 +181,8 @@ public class ComboAdminService {
                 || !coverFiles.isEmpty();
         boolean replaceProcesses = Boolean.TRUE.equals(request.getThayAnhQuyTrinh())
                 || !processFiles.isEmpty();
+        boolean replaceDetail = Boolean.TRUE.equals(request.getThayAnhChiTiet())
+                || (anhChiTiet != null && !anhChiTiet.isEmpty());
 
         if (replaceCovers) {
             validateCoverImages(coverFiles);
@@ -187,6 +201,10 @@ public class ComboAdminService {
 
         if (replaceProcesses) {
             validateProcessImages(processFiles);
+        }
+
+        if (replaceDetail) {
+            validateDetailImage(anhChiTiet);
         }
 
         if (combo.getMaNhanVienTao() == null) {
@@ -220,6 +238,23 @@ public class ComboAdminService {
                     processFiles,
                     "combo-quy-trinh"
             );
+        }
+
+        if (replaceDetail) {
+            if (anhChiTiet != null && !anhChiTiet.isEmpty()) {
+                replaceImageGroup(
+                        comboId,
+                        ComBoHinhAnh.LOAI_CHI_TIET,
+                        List.of(anhChiTiet),
+                        "combo-chi-tiet"
+                );
+            } else {
+                comboHinhAnhRepository.deleteByComboIdAndLoaiHinhAnh(
+                        comboId,
+                        ComBoHinhAnh.LOAI_CHI_TIET
+                );
+                comboHinhAnhRepository.flush();
+            }
         }
 
         return toResponse(saved);
@@ -375,6 +410,12 @@ public class ComboAdminService {
 
     private void validateProcessImages(List<MultipartFile> files) {
         validateImageFiles(files, SO_ANH_QUY_TRINH_TOI_DA, "ảnh quy trình");
+    }
+
+    private void validateDetailImage(MultipartFile file) {
+        if (file != null && !file.isEmpty()) {
+            validateImageFiles(List.of(file), 1, "ảnh chi tiết");
+        }
     }
 
     private void validateImageFiles(
@@ -551,6 +592,12 @@ public class ComboAdminService {
                 ComBoHinhAnh.LOAI_QUY_TRINH
         );
 
+        List<String> detailImages = imageUrls(
+                combo.getComboId(),
+                ComBoHinhAnh.LOAI_CHI_TIET
+        );
+        String detailImage = detailImages.isEmpty() ? null : detailImages.get(0);
+
         String mainImage = covers.isEmpty()
                 ? trimToNull(combo.getHinhAnh())
                 : covers.get(0);
@@ -573,6 +620,7 @@ public class ComboAdminService {
                 mainImage,
                 covers,
                 processImages,
+                detailImage,
                 combo.getTrangThai(),
                 statusLabel(combo.getTrangThai()),
                 products

@@ -108,7 +108,7 @@
           <span class="step-badge image-step">2</span>
           <div>
             <h2>Hình ảnh combo</h2>
-            <p>Chọn đúng 3 ảnh đại diện cho combo (JPG, PNG hoặc WEBP).</p>
+            <p>Chọn đúng 3 ảnh đại diện và khung ảnh chi tiết bao quát cho gói dịch vụ.</p>
           </div>
         </div>
 
@@ -174,6 +174,72 @@
             <p v-if="isEdit && existingCoverImages.length !== 3 && !coverFiles.length" class="inline-warning">
               Combo cũ hiện có {{ existingCoverImages.length }} ảnh đại diện. Hãy chọn lại đúng 3 ảnh để lưu.
             </p>
+          </article>
+
+          <!-- KHUNG ẢNH CHI TIẾT BAO QUÁT GÓI -->
+          <article class="image-panel detail-panel">
+            <div class="panel-heading">
+              <div>
+                <h3>Khung ảnh chi tiết bao quát gói</h3>
+                <p>Khung hình hiển thị tại trang chi tiết ngoài website (JPG, PNG, WEBP, tối đa 5 MB).</p>
+              </div>
+              <span
+                  class="count-pill"
+                  :class="{ complete: Boolean(displayedDetailImage) }"
+              >
+                {{ displayedDetailImage ? '1/1' : '0/1' }}
+              </span>
+            </div>
+
+            <input
+                ref="detailInput"
+                class="hidden-input"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                @change="handleDetailSelect"
+            />
+
+            <div class="detail-slot-frame">
+              <template v-if="displayedDetailImage">
+                <img
+                    :src="displayedDetailImage"
+                    alt="Ảnh chi tiết bao quát combo"
+                    class="detail-preview-img"
+                    @error="useFallbackImage"
+                />
+                <button
+                    type="button"
+                    class="image-remove detail-remove"
+                    title="Bỏ ảnh chi tiết"
+                    @click="removeDetailFile"
+                >
+                  ×
+                </button>
+              </template>
+              <template v-else>
+                <i class="fa-regular fa-image"></i>
+                <span>Chưa có ảnh chi tiết bao quát cho combo này</span>
+              </template>
+            </div>
+
+            <div class="detail-actions">
+              <button
+                  type="button"
+                  class="upload-button"
+                  @click="openDetailPicker"
+              >
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                {{ displayedDetailImage ? 'Thay đổi ảnh chi tiết' : 'Chọn ảnh chi tiết' }}
+              </button>
+              <button
+                  v-if="displayedDetailImage"
+                  type="button"
+                  class="text-button remove-text-btn"
+                  @click="removeDetailFile"
+              >
+                Xóa ảnh
+              </button>
+            </div>
           </article>
         </div>
       </section>
@@ -374,6 +440,12 @@ const coverFiles = ref([]);
 const coverObjectUrls = ref([]);
 const existingCoverImages = ref([]);
 
+const detailInput = ref(null);
+const detailFile = ref(null);
+const detailObjectUrl = ref("");
+const existingDetailImage = ref(null);
+const detailRemoved = ref(false);
+
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 
@@ -390,6 +462,12 @@ const fallbackImage =
 const displayedCoverImages = computed(() =>
     coverFiles.value.length ? coverObjectUrls.value : existingCoverImages.value
 );
+
+const displayedDetailImage = computed(() => {
+  if (detailFile.value) return detailObjectUrl.value;
+  if (detailRemoved.value) return null;
+  return existingDetailImage.value;
+});
 
 const filteredProducts = computed(() => {
   const keyword = productKeyword.value.toLocaleLowerCase("vi");
@@ -549,6 +627,44 @@ const removeCoverFile = (index) => {
   setCoverFiles(next);
 };
 
+const openDetailPicker = () => {
+  if (detailInput.value) {
+    detailInput.value.value = "";
+    detailInput.value.click();
+  }
+};
+
+const handleDetailSelect = (event) => {
+  pageError.value = "";
+  const file = event.target.files?.[0];
+  if (!file) return;
+
+  try {
+    validateFiles([file], 1, "Ảnh chi tiết");
+    if (detailObjectUrl.value) {
+      URL.revokeObjectURL(detailObjectUrl.value);
+    }
+    detailFile.value = file;
+    detailObjectUrl.value = URL.createObjectURL(file);
+    detailRemoved.value = false;
+  } catch (error) {
+    event.target.value = "";
+    pageError.value = error.message;
+  }
+};
+
+const removeDetailFile = () => {
+  if (detailObjectUrl.value) {
+    URL.revokeObjectURL(detailObjectUrl.value);
+    detailObjectUrl.value = "";
+  }
+  detailFile.value = null;
+  detailRemoved.value = true;
+  if (detailInput.value) {
+    detailInput.value.value = "";
+  }
+};
+
 const mergeComboProducts = (comboProducts) => {
   const currentIds = new Set(products.value.map((product) => product.maSanPham));
   const missing = (comboProducts || []).filter(
@@ -566,6 +682,12 @@ const fillEditData = (combo) => {
   existingCoverImages.value = (combo.hinhAnhDaiDiens || [])
       .map(normalizeImage)
       .filter(Boolean);
+
+  existingDetailImage.value = combo.hinhAnhChiTiet
+      ? normalizeImage(combo.hinhAnhChiTiet)
+      : null;
+  detailRemoved.value = false;
+  detailFile.value = null;
 
   mergeComboProducts(combo.sanPhams || []);
   const quantities = {};
@@ -650,6 +772,7 @@ const submitCombo = async () => {
       ghiChu: form.ghiChu?.trim() || null,
       trangThai: Number(form.trangThai),
       thayAnhDaiDien: isEdit.value && coverFiles.value.length === 3,
+      thayAnhChiTiet: isEdit.value && (Boolean(detailFile.value) || detailRemoved.value),
       sanPhams: selectedProducts.value.map((product) => ({
         maSanPham: Number(product.maSanPham),
         soLuong: getQuantity(product),
@@ -661,12 +784,16 @@ const submitCombo = async () => {
       await updateComboAdmin(
           comboId.value,
           payload,
-          coverFiles.value
+          coverFiles.value,
+          [],
+          detailFile.value
       );
     } else {
       await createComboAdmin(
           payload,
-          coverFiles.value
+          coverFiles.value,
+          [],
+          detailFile.value
       );
     }
 
@@ -688,6 +815,9 @@ onMounted(loadData);
 
 onBeforeUnmount(() => {
   revokeUrls(coverObjectUrls.value);
+  if (detailObjectUrl.value) {
+    URL.revokeObjectURL(detailObjectUrl.value);
+  }
 });
 </script>
 

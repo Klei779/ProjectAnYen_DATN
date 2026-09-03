@@ -20,4 +20,10 @@ public class ComBoChiTietResponse {
     private String noiDung;
 
     private List<ComBoChiTietHinhAnhResponse> hinhAnhs;
+
+    /** Tên loại thực của sản phẩm lấy từ SanPham.loai (ví dụ: "Quan tài", "Vòng hoa"). */
+    private String tenLoaiSanPham;
+
+    /** Ảnh đại diện lấy từ SanPham.hinhAnh – dùng làm fallback khi hinhAnhs rỗng. */
+    private String hinhAnhSanPham;
 }

@@ -664,7 +664,7 @@
                     </div>
                   </div>
 
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                     <label class="form-label">
                       Địa chỉ cụ thể
                     </label>
@@ -682,7 +682,7 @@
                     </div>
                   </div>
 
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                     <label class="form-label">
                       Quận / Huyện
                     </label>
@@ -700,7 +700,7 @@
                     </div>
                   </div>
 
-                  <div class="col-md-4">
+                  <div class="col-md-6">
                     <label class="form-label">
                       Tỉnh / Thành phố
                     </label>

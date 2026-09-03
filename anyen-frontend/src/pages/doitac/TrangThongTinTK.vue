@@ -77,14 +77,7 @@
               <i class="fa-solid fa-key"></i>
               Đổi mật khẩu
             </button>
-            <button
-                class="btn-edit"
-                type="button"
-                @click="getLocation"
-            >
-              <i class="fa-solid fa-pen"></i>
-              Update vị trí
-            </button>
+
           </div>
         </div>
 
@@ -247,8 +240,17 @@
                 "Chưa cập nhật"
               }}
             </strong>
+
           </div>
         </div>
+        <button
+            class="btn-edit"
+            type="button"
+            @click="getLocation"
+        >
+          <i class="fa-solid fa-pen"></i>
+          Update vị trí
+        </button>
 
         <!-- ĐỔI MẬT KHẨU -->
         <DoiMatKhau

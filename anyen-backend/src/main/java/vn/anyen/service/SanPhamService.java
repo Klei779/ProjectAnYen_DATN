@@ -44,7 +44,7 @@ public class SanPhamService {
     private final SanPhamChiTietRepository sanPhamChiTietRepository;
     private final SanPhamHinhAnhRepository sanPhamHinhAnhRepository;
     private final GuestLocationRedisService guestLocationRedisService;
-    private static final double MAX_DISTANCE_KM = 10.0; // Increased max distance to allow broader filtering
+    private static final double MAX_DISTANCE_KM = 100000000.0; // Increased max distance to allow broader filtering
 
     public SanPhamPageResponse getSanPhamGanNhat(String sessionId) {
         GuestLocationRedisService.GuestLocation location = guestLocationRedisService.getLocation(sessionId);

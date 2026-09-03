@@ -14,6 +14,7 @@ public class GuestChatAuthService {
             JwtService jwtService,
             ChatRedisService chatRedisService
     ) {
+
         this.jwtService = jwtService;
         this.chatRedisService = chatRedisService;
     }

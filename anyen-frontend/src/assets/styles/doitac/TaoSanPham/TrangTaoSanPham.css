@@ -1,0 +1,725 @@
+.tao-sp-page {
+  min-height: 100%;
+  background: #f3f4f6;
+  padding: 20px 28px 96px;
+  font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+  color: #1f2937;
+}
+
+/* ── Page header ── */
+.tao-sp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.tao-sp-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.tao-sp-breadcrumb .current {
+  color: #111827;
+  font-weight: 600;
+}
+
+.tao-sp-breadcrumb i {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+.tao-sp-guide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tao-sp-guide-btn:hover {
+  border-color: #d1d5db;
+  background: #fafafa;
+}
+
+.tao-sp-page-title {
+  margin: 0 0 20px;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #111827;
+}
+
+/* ── Section cards ── */
+.tao-sp-section {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.tao-sp-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tao-sp-section-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.tao-sp-collapse-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.tao-sp-collapse-btn:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+/* ── Form grid ── */
+.tao-sp-grid {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap:14px 16px;
+}
+
+.tao-sp-grid.cols-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.tao-sp-field.span-full{
+  grid-column:1/-1;
+}
+
+.tao-sp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tao-sp-field.span-2 {
+  grid-column: span 2;
+}
+
+.tao-sp-field.span-3 {
+  grid-column: span 3;
+}
+
+.tao-sp-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.tao-sp-field label .req {
+  color: #b91c1c;
+}
+
+.tao-sp-input,
+.tao-sp-select,
+.tao-sp-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  font-family: inherit;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tao-sp-input:focus,
+.tao-sp-select:focus,
+.tao-sp-textarea:focus {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.08);
+}
+
+.tao-sp-input:disabled {
+  background: #f9fafb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.tao-sp-textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.tao-sp-char-count {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+}
+
+.tao-sp-input.has-error,
+.tao-sp-select.has-error,
+.tao-sp-input-wrap.has-error,
+.tao-sp-upload-zone.has-error {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+}
+
+.tao-sp-error-text {
+  color: #ef4444;
+  font-size: 11px;
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
+}
+
+.tao-sp-input-wrap {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.tao-sp-input-wrap:focus-within {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.08);
+}
+
+.tao-sp-input-wrap .tao-sp-input {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tao-sp-input-wrap .tao-sp-input:focus {
+  box-shadow: none;
+}
+
+.tao-sp-suffix {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  background: #f9fafb;
+  border-left: 1px solid #e5e7eb;
+  font-size: 12px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.tao-sp-promo-row {
+  display: flex;
+  gap: 8px;
+}
+
+.tao-sp-promo-row .tao-sp-select {
+  flex: 1.2;
+}
+
+.tao-sp-promo-row .tao-sp-input-wrap {
+  flex: 0.8;
+}
+
+/* ── Color swatches ── */
+.tao-sp-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.tao-sp-swatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  padding: 0;
+}
+
+.tao-sp-swatch:hover {
+  transform: scale(1.08);
+}
+
+.tao-sp-swatch.active {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 2px rgba(185, 28, 28, 0.25);
+}
+
+.tao-sp-swatch-add {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px dashed #d1d5db;
+  background: #fff;
+  color: #9ca3af;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+}
+
+.tao-sp-swatch-add:hover {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+
+.tao-sp-color-picker-hidden {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ── Image upload ── */
+.tao-sp-upload-zone {
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  padding: 76px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fafafa;
+  transition: all 0.2s;
+  margin-bottom: 16px;
+  min-height: 277px;
+  min-width: 100%;
+}
+
+.tao-sp-upload-zone:hover,
+.tao-sp-upload-zone.drag-over {
+  border-color: #b91c1c;
+  background: #fef2f2;
+}
+
+.tao-sp-upload-zone i {
+  font-size: 36px;
+  color: #d1d5db;
+  margin-bottom: 10px;
+}
+
+.tao-sp-upload-zone:hover i,
+.tao-sp-upload-zone.drag-over i {
+  color: #b91c1c;
+}
+
+.tao-sp-upload-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.tao-sp-upload-hint {
+  display: block;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.tao-sp-upload-format {
+  display: block;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.tao-sp-gallery {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.tao-sp-gallery-item {
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+  position: relative;
+  cursor: pointer;
+}
+
+.tao-sp-gallery-item.active {
+  border-color: #b91c1c;
+}
+
+.tao-sp-gallery-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tao-sp-gallery-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(185, 28, 28, 0.9);
+  color: #fff;
+  font-size: 9px;
+  cursor: pointer;
+  display: none;
+  place-items: center;
+}
+
+.tao-sp-gallery-item:hover .tao-sp-gallery-remove {
+  display: grid;
+}
+
+.tao-sp-gallery-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border: 2px dashed #d1d5db;
+  border-radius: 10px;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 11px;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.tao-sp-gallery-add:hover {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+
+.tao-sp-gallery-add i {
+  font-size: 16px;
+}
+
+.tao-sp-upload-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* ── Detail content blocks ── */
+.tao-sp-detail-intro {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 14px;
+}
+
+.tao-sp-detail-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.tao-sp-detail-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tao-sp-detail-toolbar button.primary-outline {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+
+.tao-sp-detail-toolbar button:hover {
+  background: #f9fafb;
+}
+
+.tao-sp-detail-block {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.tao-sp-detail-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.tao-sp-detail-block-head label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.tao-sp-detail-delete {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #9ca3af;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.tao-sp-detail-delete:hover {
+  color: #b91c1c;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.tao-sp-editor-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid #e5e7eb;
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  background: #fff;
+  flex-wrap: wrap;
+}
+
+.tao-sp-editor-toolbar button {
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 13px;
+  display: grid;
+  place-items: center;
+}
+
+.tao-sp-editor-toolbar button:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.tao-sp-editor-toolbar .sep {
+  width: 1px;
+  height: 20px;
+  background: #e5e7eb;
+  margin: 0 4px;
+}
+
+.tao-sp-editor-toolbar .spacer {
+  flex: 1;
+}
+
+.tao-sp-editor-area {
+  min-height: 120px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 0 0 8px 8px;
+  background: #fff;
+  font-size: 13px;
+  line-height: 1.6;
+  outline: none;
+  color: #374151;
+}
+
+.tao-sp-editor-area:empty::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+}
+
+.tao-sp-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+.tao-sp-add-block-btn {
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.tao-sp-add-block-btn:hover {
+  border-color: #b91c1c;
+  background: #fef2f2;
+}
+
+/* ── Footer actions ── */
+.tao-sp-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 0 0;
+  margin-top: 8px;
+  background: linear-gradient(to top, #f3f4f6 70%, transparent);
+  z-index: 10;
+}
+
+.tao-sp-btn-cancel {
+  padding: 10px 20px;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.tao-sp-btn-cancel:hover {
+  color: #374151;
+  background: #e5e7eb;
+}
+
+.tao-sp-btn-draft {
+  padding: 10px 22px;
+  border: 2px solid #b91c1c;
+  background: #fff;
+  color: #b91c1c;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tao-sp-btn-draft:hover {
+  background: #fef2f2;
+}
+
+.tao-sp-btn-publish {
+  padding: 10px 24px;
+  border: none;
+  background: linear-gradient(135deg, #b91c1c, #991b1b);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(185, 28, 28, 0.25);
+  transition: all 0.2s;
+}
+
+.tao-sp-btn-publish:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(185, 28, 28, 0.35);
+}
+
+.tao-sp-btn-publish:disabled,
+.tao-sp-btn-draft:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tao-sp-layout{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:20px;
+  align-items:start;
+}
+
+.tao-sp-left,
+.tao-sp-right{
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1100px) {
+  .tao-sp-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tao-sp-field.span-3 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .tao-sp-page {
+    padding: 16px 16px 88px;
+  }
+
+  .tao-sp-grid,
+  .tao-sp-grid.cols-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .tao-sp-field.span-2,
+  .tao-sp-field.span-3 {
+    grid-column: span 1;
+  }
+
+  .tao-sp-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .tao-sp-footer {
+    flex-direction: column;
+  }
+
+  .tao-sp-footer button {
+    width: 100%;
+    justify-content: center;
+  }
+}

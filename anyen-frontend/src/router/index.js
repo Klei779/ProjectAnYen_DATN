@@ -1,0 +1,419 @@
+import { createRouter, createWebHistory } from "vue-router";
+import { jwtDecode } from "jwt-decode";
+// Layout
+import WebsiteLayout from "../layouts/WebsiteLayout.vue";
+import DoiTacLayout from "../layouts/DoiTacLayout.vue";
+import NhanVienLayout from "../layouts/NhanVienLayout.vue";
+import AdminLayout from "../layouts/AdminLayout.vue";
+import HotlineLayout from "../layouts/HotlineLayout.vue";
+import TrangThongKeDoanhThuDT from "../pages/doitac/TrangThongKeDoanhThuDT.vue";
+import TrangThongKeDoanhThuNV from "../pages/nhanvien/TrangThongKeDoanhThuNV.vue";
+import TrangQuyVaVi
+    from "../pages/doitac/TrangQuyVaVi.vue"
+// Website
+import TrangChu from "../pages/website/TrangChu.vue";
+import TrangSanPham from "../pages/website/TrangSanPham.vue";
+import ChiTietSanPham from "../pages/website/ChiTietSanPham.vue";
+import TrangDichVu from "../pages/website/TrangDichVu.vue";
+import DichVuChiTiet from "../pages/website/TrangDichVuChiTiet.vue";
+import TrangGioiThieu from "../pages/website/TrangGioiThieu.vue";
+import TrangLienHe from "../pages/website/TrangLienHe.vue";
+import XacNhanDoiTac from "../pages/website/XacNhanDoiTac.vue";
+import TrangTinTuc from "../pages/website/TrangTinTuc.vue";
+import ChiTietTinTuc from "../pages/website/ChiTietTinTuc.vue";
+import TrangNhanTin from "../pages/hotline/TrangNhanTin.vue";
+import TrangQLKhachHangAdmin from "../pages/admin/TrangQLKhachHang.vue";
+import TrangQLDonHangAdmin from "../pages/admin/TrangQLDonHang.vue";
+import TrangGioHang from "../pages/website/TrangGioHang.vue";
+import TrangQLTinTuc from "../pages/admin/TrangQLTinTuc.vue";
+import TaoComboAdmin from "../pages/admin/TaoCombo.vue";
+import TrangQLComboAdmin from "../pages/admin/TrangQLCombo.vue";
+
+import TrangQLSanPham from "../pages/doitac/TrangQLSanPham.vue";
+import TrangQLDonHang from "../pages/doitac/TrangQLDonHang.vue";
+import TrangThongBao from "../pages/doitac/TrangThongBaoDT.vue";
+import TrangThongTinTK from "../pages/doitac/TrangThongTinTK.vue";
+import TrangDoiMatKhau from "../pages/doitac/TrangDoiMatKhau.vue";
+import TrangTaoSanPham from "../pages/doitac/TrangTaoSanPham.vue";
+import TrangDangKyDoiTac from "../pages/doitac/TrangDangKyDoiTac.vue";
+
+import TrangQLDoiTac from "../pages/admin/TrangQLDoiTac.vue";
+import TrangQLDonHangNV from "../pages/nhanvien/TrangQLDonHang.vue";
+import TrangThongBaoNV from "../pages/nhanvien/TrangThongBaoNV.vue";
+import TrangThongTinNV from "../pages/nhanvien/TrangThongTinTK.vue";
+import TrangQLKhachHang from "../pages/nhanvien/TrangQLKhachHang.vue";
+import TrangQLHopDong from "../pages/nhanvien/TrangQLHopDong.vue";
+import TrangQLNhanVien from "../pages/nhanvien/TrangQLNhanVien.vue";
+import TrangQLHopDongAdmin from "../pages/admin/TrangQLHopDong.vue";
+import TrangHoaDonCuaToi from "../pages/nhanvien/TrangHoaDonCuaToi.vue";
+import TrangDuyetSanPham from "../pages/admin/TrangDuyetSanPham.vue";
+import TrangThongBaoAD from "../pages/admin/TrangThongBaoAD.vue";
+import TrangThanhToanCongNo
+    from "../pages/admin/TrangThanhToanCongNo.vue";
+// Hotline
+import TrangQLCongViec from "../pages/hotline/TrangQLCongViec.vue";
+import TrangQLDonHangHL from "../pages/hotline/TrangQLDonHang.vue";
+import ThongBaoHotline from "../pages/hotline/ThongBaoHotline.vue";
+import TrangTroLyAi from "../pages/hotline/AiChatBox.vue";
+import TrangQuanLyTinNhan from "../pages/hotline/TrangQuanLyTinNhan.vue";
+import TrangThongTinTKHotline from "../pages/hotline/TrangThongTinTK.vue";
+const routes = [
+    // WEBSITE
+    {
+        path: "/",
+        component: WebsiteLayout,
+        children: [
+            {
+                path: "",
+                component: TrangChu,
+            },
+            {
+                path: "san-pham",
+                component: TrangSanPham,
+            },
+            {
+                path: "/gio-hang",
+                name: "TrangGioHang",
+                component: TrangGioHang
+            },
+
+            {
+                path: "san-pham/:id",
+                name: "ChiTietSanPham",
+                component: ChiTietSanPham,
+            },
+            {
+                path: "dich-vu",
+                component: TrangDichVu,
+            },
+            {
+                path: "dich-vu/:id",
+                name: "DichVuChiTiet",
+                component: DichVuChiTiet,
+            },
+            {
+                path: "gioi-thieu",
+                component: TrangGioiThieu,
+            },
+            {
+                path: "lien-he",
+                component: TrangLienHe,
+            },
+            {
+                path: "/tin-tuc",
+                name: "TinTuc",
+                component: TrangTinTuc
+            },
+
+            {
+                path: "/tin-tuc/:id",
+                name: "ChiTietTinTuc",
+                component: ChiTietTinTuc
+            },
+            {
+                path: "xac-nhan-doi-tac",
+                component: XacNhanDoiTac,
+            },
+        ],
+    },
+
+    // TRANG PUBLIC (Không cần login)
+    {
+        path: "/doitac/register",
+        name: "TrangDangKyDoiTac",
+        component: TrangDangKyDoiTac,
+        meta: { requiresAuth: false }
+    },
+
+    // ĐỐI TÁC
+    {
+        path: "/doi-tac",
+        component: DoiTacLayout,
+        meta: {
+            requiresAuth: true,
+            role: "ROLE_DOITAC",
+        },
+        children: [
+            {
+                path: "",
+                redirect: "/doi-tac/thong-tin-tai-khoan",
+            },
+            {
+                path: "quan-ly-san-pham",
+                component: TrangQLSanPham,
+            },
+            {
+                path: "tao-san-pham",
+                component: TrangTaoSanPham,
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHang,
+            },
+            {
+                path: "thong-bao",
+                component: TrangThongBao,
+            },
+            {
+                path: "quy-va-vi",
+                component: TrangQuyVaVi
+            },
+            {
+                path: "thong-ke-doanh-thu",
+                component: TrangThongKeDoanhThuDT,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinTK,
+            },
+            {
+                path: "doi-mat-khau",
+                component: TrangDoiMatKhau,
+            },
+        ],
+    },
+
+    // NHÂN VIÊN TRỰC TIẾP
+    {
+        path: "/nhan-vien",
+        component: NhanVienLayout,
+        meta: {
+            requiresAuth: true,
+            role: "ROLE_NHANVIEN",
+        },
+        children: [
+            {
+                path: "",
+                redirect: "/nhan-vien/thong-tin-tai-khoan",
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangNV,
+            },
+            {
+                path: "thong-bao",
+                component: TrangThongBaoNV,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinNV,
+            },
+            {
+                path: "quan-ly-khach-hang",
+                component: TrangQLKhachHang,
+            },
+            {
+                path: "quan-ly-hop-dong",
+                component: TrangQLHopDong,
+            },
+            {
+                path: "thong-ke-doanh-thu",
+                component: TrangThongKeDoanhThuNV,
+            },
+            {
+                path: "hoa-don-cua-toi",
+                component: TrangHoaDonCuaToi,
+            },
+        ],
+    },
+
+    // QUẢN LÝ AN YÊN (ADMIN)
+    {
+        path: "/admin",
+        component: AdminLayout,
+        meta: {
+            requiresAuth: true,
+            role: "ROLE_ADMIN",
+        },
+        children: [
+            {
+                path: "",
+                redirect: "/admin/thong-tin-tai-khoan",
+            },
+            {
+                path: "quan-ly-doi-tac",
+                component: TrangQLDoiTac,
+            },
+            {
+                path: "quan-ly-nhan-vien",
+                component: TrangQLNhanVien,
+            },
+            {
+                path: "quan-ly-khach-hang",
+                component: TrangQLKhachHangAdmin,
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangAdmin,
+            },
+            {
+                path: "quan-ly-hop-dong",
+                component: TrangQLHopDongAdmin,
+            },
+            {
+                path: "thong-bao",
+                component: TrangThongBaoAD,
+            },
+            {
+                path: "duyet-san-pham",
+                component: TrangDuyetSanPham,
+            },
+            {
+                path: "quan-ly-combo",
+                name: "AdminQuanLyCombo",
+                component: TrangQLComboAdmin,
+            },
+            {
+                path: "tao-combo",
+                name: "AdminTaoCombo",
+                component: TaoComboAdmin,
+            },
+            {
+                path: "combo/:id/chinh-sua",
+                name: "AdminSuaCombo",
+                component: TaoComboAdmin,
+            },
+            {
+                path: "quan-ly-tin-tuc",
+                component: TrangQLTinTuc,
+            },
+            {
+                path: "quan-ly-cong-no",
+                name: "QuanLyCongNo",
+                component: TrangThanhToanCongNo,
+            },
+            {
+                path: "thong-ke-doanh-thu",
+                component: TrangThongKeDoanhThuNV,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinNV,
+            },
+            {
+                path: "doi-mat-khau",
+                component: TrangDoiMatKhau,
+            },
+            {
+                path: "quan-ly-hoa-don",
+                component: TrangHoaDonCuaToi,
+            },
+
+        ],
+    },
+
+    // HOTLINE
+    {
+        path: "/hotline",
+        component: HotlineLayout,
+        meta: {
+            requiresAuth: true,
+            role: "ROLE_HOTLINE",
+        },
+        children: [
+            {
+                path: "",
+                redirect: "/hotline/thong-tin-tai-khoan",
+            },
+            {
+                path: "quan-ly-cong-viec",
+                component: TrangQLCongViec,
+            },
+            {
+                path: "nhan-tin",
+                component: TrangNhanTin,
+            },
+            {
+                path: "quan-ly-don-hang",
+                component: TrangQLDonHangHL,
+            },
+            {
+                path: "thong-bao",
+                component: ThongBaoHotline,
+            },
+            {
+                path: "thong-tin-tai-khoan",
+                component: TrangThongTinTKHotline,
+            },
+            {
+                path: "tro-ly-ai",
+                component: TrangTroLyAi
+            }
+        ],
+    },
+];
+
+const router = createRouter({
+    history: createWebHistory(),
+    routes,
+});
+
+router.beforeEach((to) => {
+    const token = localStorage.getItem("token");
+
+    const requiresAuth = to.matched.some(
+        (record) => record.meta.requiresAuth
+    );
+
+    const requiredRole = to.matched.find(
+        (record) => record.meta.role
+    )?.meta.role;
+
+    // Route không cần đăng nhập thì cho qua
+    if (!requiresAuth) {
+        return true;
+    }
+
+    // Route cần đăng nhập nhưng không có token
+    if (!token) {
+        return "/";
+    }
+
+    let roleFromToken = null;
+
+    try {
+        const decoded = jwtDecode(token);
+
+        roleFromToken = decoded.role;
+
+        // Kiểm tra token hết hạn
+        const now = Date.now() / 1000;
+
+        if (decoded.exp && decoded.exp < now) {
+            localStorage.removeItem("user");
+            localStorage.removeItem("token");
+            localStorage.removeItem("loaiTaiKhoan");
+            localStorage.removeItem("tenDangNhap");
+            localStorage.removeItem("id");
+
+            return "/";
+        }
+
+    } catch (error) {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        localStorage.removeItem("loaiTaiKhoan");
+        localStorage.removeItem("tenDangNhap");
+        localStorage.removeItem("id");
+
+        return "/";
+    }
+
+    // Có token nhưng sai quyền
+    if (requiredRole && roleFromToken !== requiredRole) {
+        if (roleFromToken === "ROLE_NHANVIEN") {
+            return "/nhan-vien/thong-tin-tai-khoan";
+        } else if (roleFromToken === "ROLE_DOITAC") {
+            return "/doi-tac/thong-tin-tai-khoan";
+        } else if (roleFromToken === "ROLE_ADMIN") {
+            return "/admin/thong-tin-tai-khoan";
+        } else if (roleFromToken === "ROLE_HOTLINE") {
+            return "/hotline/thong-tin-tai-khoan";
+        } else {
+            return "/";
+        }
+    }
+
+    return true;
+});
+export default router;

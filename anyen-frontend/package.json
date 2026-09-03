@@ -1,0 +1,41 @@
+{
+  "name": "anyen-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
+    "@vue-leaflet/vue-leaflet": "^0.10.1",
+    "axios": "^1.17.0",
+    "bootstrap": "^5.3.8",
+    "cloudflare": "^6.4.0",
+    "cloudflared": "^0.7.1",
+    "dompurify": "^3.4.14",
+    "element-plus": "^2.14.1",
+    "exceljs": "^4.4.0",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.2.1",
+    "jwt-decode": "^4.0.0",
+    "leaflet": "^1.9.4",
+    "pinia": "^3.0.4",
+    "qrcode": "^1.5.4",
+    "sockjs-client": "^1.6.1",
+    "vue": "^3.5.41",
+    "vue-router": "^5.1.0",
+    "vue-turnstile": "^1.0.11",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "^8.0.12"
+  }
+}

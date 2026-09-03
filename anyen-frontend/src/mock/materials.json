@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "Gỗ tự nhiên", "total": 38 },
+  { "id": 2, "name": "Gốm sứ",      "total": 22 },
+  { "id": 3, "name": "Đồng",        "total": 18 },
+  { "id": 4, "name": "Vải cao cấp", "total": 12 },
+  { "id": 5, "name": "Khác",        "total": 8  }
+]

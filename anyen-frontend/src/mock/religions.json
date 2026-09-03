@@ -1,0 +1,7 @@
+[
+  { "id": 1, "name": "Phật giáo",  "total": 48 },
+  { "id": 2, "name": "Công giáo",  "total": 28 },
+  { "id": 3, "name": "Tin lành",   "total": 12 },
+  { "id": 4, "name": "Cao Đài",    "total": 8  },
+  { "id": 5, "name": "Khác",       "total": 4  }
+]

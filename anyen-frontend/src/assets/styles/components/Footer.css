@@ -1,0 +1,477 @@
+.footer {
+    width: 100%;
+    background: #123052;
+    color: #ffffff;
+    font-family: "Noto Sans", sans-serif;
+}
+
+/* ==============================
+   PHẦN NỘI DUNG CHÍNH
+============================== */
+
+.footer-main {
+    padding: 34px 0 28px;
+}
+
+.footer-container {
+    width: min(1420px, calc(100% - 80px));
+    margin: 0 auto;
+
+    display: grid;
+    grid-template-columns:
+        minmax(230px, 1.45fr)
+        repeat(4, minmax(130px, 0.8fr))
+        minmax(200px, 1.1fr);
+
+    align-items: flex-start;
+    gap: 42px;
+}
+
+/* ==============================
+   THƯƠNG HIỆU
+============================== */
+
+.footer-brand {
+    padding-right: 10px;
+}
+
+.footer-logo-link {
+    display: inline-block;
+    line-height: 0;
+    margin-bottom: 12px;
+}
+
+.footer-logo {
+    width: 125px;
+    height: auto;
+    object-fit: contain;
+}
+
+.footer-description {
+    max-width: 275px;
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.74);
+    font-size: 13px;
+    font-weight: 400;
+    line-height: 1.75;
+}
+
+/* ==============================
+   MẠNG XÃ HỘI
+============================== */
+
+.footer-social {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-top: 17px;
+}
+
+.footer-social a {
+    width: 29px;
+    height: 29px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+
+    font-size: 12px;
+
+    transition:
+            background-color 0.25s ease,
+            border-color 0.25s ease,
+            transform 0.25s ease,
+            color 0.25s ease;
+}
+
+.footer-social a:hover {
+    color: #ffffff;
+    background: #941b2f;
+    border-color: #941b2f;
+    transform: translateY(-2px);
+}
+
+.zalo-text {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+/* ==============================
+   TIÊU ĐỀ CÁC CỘT
+============================== */
+
+.footer-column h2 {
+    position: relative;
+
+    margin: 4px 0 17px;
+    padding-bottom: 9px;
+
+    color: #ffffff;
+    font-family: "Faustina", serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: 0.6px;
+}
+
+.footer-column h2::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+
+    width: 26px;
+    height: 1px;
+
+    background: rgba(255, 255, 255, 0.35);
+}
+
+/* ==============================
+   MENU FOOTER
+============================== */
+
+.footer-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 9px;
+}
+
+.footer-menu a {
+    position: relative;
+    display: inline-block;
+
+    color: rgba(255, 255, 255, 0.72);
+    text-decoration: none;
+
+    font-size: 12.5px;
+    font-weight: 400;
+    line-height: 1.45;
+
+    transition:
+            color 0.25s ease,
+            transform 0.25s ease;
+}
+
+.footer-menu a::before {
+    content: "";
+    position: absolute;
+    left: -10px;
+    top: 50%;
+
+    width: 4px;
+    height: 4px;
+
+    opacity: 0;
+    background: #b4243e;
+    border-radius: 50%;
+
+    transform: translateY(-50%);
+    transition: opacity 0.25s ease;
+}
+
+.footer-menu a:hover {
+    color: #ffffff;
+    transform: translateX(5px);
+}
+
+.footer-menu a:hover::before {
+    opacity: 1;
+}
+
+.footer-menu .footer-more {
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 500;
+}
+
+/* ==============================
+   LIÊN HỆ
+============================== */
+
+.footer-contact {
+    min-width: 0;
+}
+
+.contact-item {
+    width: fit-content;
+    max-width: 100%;
+
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    margin-bottom: 10px;
+
+    color: rgba(255, 255, 255, 0.74);
+    text-decoration: none;
+
+    font-size: 12.5px;
+    line-height: 1.45;
+
+    transition: color 0.25s ease;
+}
+
+.contact-item i {
+    width: 14px;
+    flex-shrink: 0;
+
+    margin-top: 3px;
+
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 11px;
+    text-align: center;
+}
+
+.contact-item span {
+    min-width: 0;
+    word-break: break-word;
+}
+
+a.contact-item:hover {
+    color: #ffffff;
+}
+
+.contact-address {
+    margin-bottom: 0;
+}
+
+/* ==============================
+   FOOTER BOTTOM
+============================== */
+
+.footer-bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.footer-bottom-container {
+    width: min(1420px, calc(100% - 80px));
+    min-height: 46px;
+    margin: 0 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+}
+
+.footer-bottom p {
+    margin: 0;
+
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 11.5px;
+    line-height: 1.5;
+}
+
+.footer-bottom-links {
+    display: flex;
+    align-items: center;
+    gap: 17px;
+}
+
+.footer-bottom-links a {
+    color: rgba(255, 255, 255, 0.68);
+    text-decoration: none;
+
+    font-size: 11.5px;
+
+    transition: color 0.25s ease;
+}
+
+.footer-bottom-links a:hover {
+    color: #ffffff;
+}
+
+.footer-bottom-links span {
+    width: 1px;
+    height: 13px;
+    display: block;
+
+    background: rgba(255, 255, 255, 0.28);
+}
+
+/* ==============================
+   MÀN HÌNH LAPTOP
+============================== */
+
+@media (max-width: 1200px) {
+    .footer-container {
+        width: min(100% - 50px, 1100px);
+        grid-template-columns: 1.3fr repeat(3, 0.8fr);
+        gap: 35px 28px;
+    }
+
+    .footer-brand {
+        grid-row: span 2;
+    }
+
+    .footer-bottom-container {
+        width: min(100% - 50px, 1100px);
+    }
+}
+
+/* ==============================
+   TABLET
+============================== */
+
+@media (max-width: 992px) {
+    .footer-main {
+        padding: 35px 0 25px;
+    }
+
+    .footer-container {
+        width: calc(100% - 40px);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 35px 40px;
+    }
+
+    .footer-brand {
+        grid-column: 1 / -1;
+        grid-row: auto;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+
+        padding-right: 0;
+        text-align: center;
+    }
+
+    .footer-logo {
+        width: 135px;
+    }
+
+    .footer-description {
+        max-width: 480px;
+    }
+
+    .footer-column h2 {
+        font-size: 15px;
+    }
+
+    .footer-column h2::after {
+        width: 30px;
+    }
+
+    .footer-bottom-container {
+        width: calc(100% - 40px);
+    }
+}
+
+/* ==============================
+   MOBILE
+============================== */
+
+@media (max-width: 576px) {
+    .footer-main {
+        padding: 30px 0 22px;
+    }
+
+    .footer-container {
+        width: calc(100% - 32px);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 28px 20px;
+    }
+
+    .footer-brand {
+        margin-bottom: 3px;
+    }
+
+    .footer-logo {
+        width: 120px;
+    }
+
+    .footer-description {
+        max-width: 320px;
+        font-size: 12.5px;
+        line-height: 1.65;
+    }
+
+    .footer-social {
+        margin-top: 15px;
+    }
+
+    .footer-column h2 {
+        margin-bottom: 13px;
+        font-size: 13.5px;
+    }
+
+    .footer-menu {
+        gap: 8px;
+    }
+
+    .footer-menu a,
+    .contact-item {
+        font-size: 12px;
+    }
+
+    .footer-bottom-container {
+        width: calc(100% - 32px);
+        min-height: auto;
+
+        flex-direction: column;
+        justify-content: center;
+        gap: 8px;
+
+        padding: 14px 0;
+        text-align: center;
+    }
+
+    .footer-bottom-links {
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .footer-bottom p,
+    .footer-bottom-links a {
+        font-size: 11px;
+    }
+}
+
+/* ==============================
+   MOBILE NHỎ
+============================== */
+
+@media (max-width: 390px) {
+    .footer-container {
+        grid-template-columns: 1fr;
+    }
+
+    .footer-brand {
+        grid-column: auto;
+    }
+
+    .footer-column {
+        text-align: center;
+    }
+
+    .footer-column h2::after {
+        left: 50%;
+        transform: translateX(-50%);
+    }
+
+    .footer-menu {
+        align-items: center;
+    }
+
+    .footer-menu a::before {
+        display: none;
+    }
+
+    .footer-menu a:hover {
+        transform: none;
+    }
+
+    .contact-item {
+        margin-left: auto;
+        margin-right: auto;
+        justify-content: center;
+    }
+}

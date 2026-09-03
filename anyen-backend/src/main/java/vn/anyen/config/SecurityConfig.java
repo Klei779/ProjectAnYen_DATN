@@ -1,0 +1,211 @@
+package vn.anyen.config;
+import org.springframework.http.HttpMethod;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+
+@Configuration
+public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http) throws Exception {
+
+        http
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(request -> {
+
+                    CorsConfiguration config =
+                            new CorsConfiguration();
+
+                    config.addAllowedOrigin("http://localhost:5173");
+                    config.addAllowedMethod("*");
+                    config.addAllowedHeader("*");
+                    config.setAllowCredentials(true);
+
+                    return config;
+                }))
+                .sessionManagement(session ->
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authorizeHttpRequests(auth -> auth
+                                // Cho phép toàn bộ preflight CORS trước các matcher bảo vệ.
+                                .requestMatchers(HttpMethod.OPTIONS, "/**")
+                                .permitAll()
+                                .requestMatchers("/api/geocoding/**").permitAll()
+                                /*
+                                 * PAYOO MOCK:
+                                 * QR từ điện thoại cần truy cập được.
+                                 *
+                                 * Chỉ dùng cho môi trường demo.
+                                 */
+                                .requestMatchers(
+                                        "/api/payoo-mock/**"
+                                )
+                                .permitAll()
+                                .requestMatchers(
+                                        "/api/admin/congno",
+                                        "/api/admin/congno/**"
+                                )
+                                .hasAuthority(
+                                        "ROLE_ADMIN"
+                                )
+                                 .requestMatchers(
+                                         HttpMethod.GET,
+                                         "/api/admin/combo",
+                                         "/api/admin/combo/**"
+                                 )
+                                 .hasAnyAuthority("ROLE_ADMIN", "ROLE_BAN_HANG", "ROLE_TU_VAN", "ROLE_HOTLINE", "ROLE_KE_TOAN", "ROLE_NHANVIEN")
+                                 .requestMatchers(
+                                         "/api/admin/combo",
+                                         "/api/admin/combo/**"
+                                 )
+                                 .hasAuthority("ROLE_ADMIN")
+
+                                // Đăng nhập, xác nhận tài khoản
+                                .requestMatchers("/api/auth/**")
+                                .permitAll()
+
+                                // Cho phép kết nối WebSocket (SockJS sẽ gọi /ws/info)
+                                .requestMatchers("/ws/**")
+                                .permitAll()
+
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/ai/health"
+                                )
+                                .permitAll()
+
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/ai/chat"
+                                )
+                                .permitAll()
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/khach-hang/don-hang"
+                                )
+                                .permitAll()
+
+                                .requestMatchers(
+                                        "/api/ai/yeu-cau-tu-van/**"
+                                ).permitAll()
+
+                                .requestMatchers(
+                                        "/api/ollama/health",
+                                        "/api/ollama/test",
+                                        "/api/ollama/test-json"
+                                ).permitAll()
+
+                                // Public website
+
+                                // ADMIN quản lý đối tác
+                                .requestMatchers(
+                                        "/api/nhan-vien/quanlydoitac",
+                                        "/api/nhan-vien/quanlydoitac/**",
+                                        "/api/nhan-vien/quanlynhanvien",
+                                        "/api/nhan-vien/quanlynhanvien/**",
+                                        "/api/nhan-vien/quanlyhopdong",
+                                        "/api/nhan-vien/quanlyhopdong/**",
+                                        "/api/nhan-vien/quan-ly-khach-hang",
+                                        "/api/nhan-vien/quan-ly-khach-hang/**"
+                                )
+                                .hasAuthority("ROLE_ADMIN")
+
+                                // ADMIN quản lý nhân viên
+// Public website
+                                .requestMatchers(
+                                        "/images/**",
+                                        "/uploads/**",
+                                        "/api/tu-van/**",
+                                        "/api/gioi-thieu",
+                                        "/api/gioi-thieu/**",
+                                        "/api/san-pham",
+                                        "/api/san-pham/**",
+                                        "/api/dich-vu",
+                                        "/api/dich-vu/**",
+                                        "/api/lien-he",
+                                        "/api/lien-he/**",
+                                        "/api/khach-hang",
+                                        "/api/khach-hang/**"
+                                )
+                                .permitAll()
+
+// Website công khai chỉ được xem tin tức
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/tin-tuc",
+                                        "/api/tin-tuc/**"
+                                )
+                                .permitAll()
+
+// Chỉ Admin được quản lý tin tức
+                                .requestMatchers(
+                                        "/api/admin/tin-tuc/**"
+                                )
+                                .hasAuthority("ROLE_ADMIN")
+
+                                // ADMIN quản lý hợp đồng
+
+
+                                // Hotline được tìm nhân viên gần nhất
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/nhan-vien/don-hang/de-xuat-nhan-vien"
+                                )
+                                .hasAnyAuthority("ROLE_HOTLINE", "ROLE_NHANVIEN", "ROLE_ADMIN")
+
+                                // Hotline được giao việc
+                                .requestMatchers(
+                                        HttpMethod.POST,
+                                        "/api/nhan-vien/thong-bao/giao-cong-viec"
+                                )
+                                .hasAnyAuthority("ROLE_HOTLINE", "ROLE_ADMIN")
+
+                                // Hotline được xem thông báo
+                                .requestMatchers(
+                                        HttpMethod.GET,
+                                        "/api/nhan-vien/thong-bao"
+                                )
+                                .hasAnyAuthority("ROLE_NHANVIEN", "ROLE_HOTLINE", "ROLE_ADMIN")
+
+                                // Nhân viên trực tuyến quản lý phiên tư vấn
+                                .requestMatchers("/api/nhan-vien/tu-van/**")
+                                .hasAnyAuthority("ROLE_HOTLINE", "ROLE_ADMIN")
+
+                                // API đối tác
+                                .requestMatchers("/api/doi-tac/**")
+                                .hasAuthority("ROLE_DOITAC")
+
+                                // API nhân viên còn lại
+                                .requestMatchers("/api/nhan-vien/**")
+                                .authenticated()
+                                .anyRequest()
+                                .authenticated()
+
+                )
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
+
+        return http.build();
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}

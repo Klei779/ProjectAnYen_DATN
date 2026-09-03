@@ -1,0 +1,112 @@
+.hotline-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    padding: 20px;
+    box-sizing: border-box;
+
+    background: rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+}
+
+.hotline-modal {
+    position: relative;
+
+    width: min(420px, 100%);
+    max-height: calc(100dvh - 40px);
+
+    padding: 30px;
+    box-sizing: border-box;
+    overflow-y: auto;
+
+    background: #ffffff;
+    border-radius: 14px;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+}
+
+.hotline-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+
+    width: 34px;
+    height: 34px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+
+    color: #555;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.hotline-close-btn:hover {
+    color: #8b0016;
+    background: #f3f3f3;
+}
+
+.hotline-title {
+    margin: 0 35px 24px;
+    text-align: center;
+    color: #8b0016;
+    font-size: 26px;
+}
+
+.phone-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.phone-card {
+    padding: 14px 16px;
+    box-sizing: border-box;
+
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    background: #ffffff;
+}
+
+.phone-role {
+    margin-bottom: 7px;
+    color: #222;
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.phone-number {
+    color: #8b0016;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.phone-number:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 480px) {
+    .hotline-modal-overlay {
+        padding: 12px;
+    }
+
+    .hotline-modal {
+        width: 100%;
+        max-height: calc(100dvh - 24px);
+        padding: 26px 18px 20px;
+    }
+
+    .hotline-title {
+        font-size: 22px;
+    }
+}

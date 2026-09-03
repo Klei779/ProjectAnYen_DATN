@@ -1,0 +1,101 @@
+package vn.anyen.service;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+import vn.anyen.constants.AppLabels;
+import vn.anyen.dto.request.CapNhatTaiKhoanNVRequest;
+import vn.anyen.dto.request.CapNhatViTriRequest;
+import vn.anyen.dto.response.TaiKhoanNhanVienResponse;
+import vn.anyen.entity.NhanVien;
+import vn.anyen.repository.NhanVienRepository;
+
+import java.math.BigDecimal;
+
+@Service
+@RequiredArgsConstructor
+public class TaiKhoanNhanVienService {
+
+    private final NhanVienRepository nhanVienRepository;
+
+    public TaiKhoanNhanVienResponse getTaiKhoan(String tenDangNhap) {
+        NhanVien nhanVien = findByTenDangNhap(tenDangNhap);
+        return toResponse(nhanVien);
+    }
+
+    public TaiKhoanNhanVienResponse capNhatTaiKhoan(
+            String tenDangNhap,
+            CapNhatTaiKhoanNVRequest request
+    ) {
+        NhanVien nhanVien = findByTenDangNhap(tenDangNhap);
+
+        nhanVien.setHoTen(trim(request.getHoTen()));
+        nhanVien.setEmail(trimToNull(request.getEmail()));
+        nhanVien.setSoDienThoai(trimToNull(request.getSoDienThoai()));
+
+        nhanVien.setQuanHuyen(trimToNull(request.getQuanHuyen()));
+        nhanVien.setPhuongXa(trimToNull(request.getPhuongXa()));
+        nhanVien.setTinhThanh(trimToNull(request.getTinhThanh()));
+        nhanVien.setSoNhaDuong(trimToNull(request.getSoNhaDuong()));
+        NhanVien saved = nhanVienRepository.save(nhanVien);
+        return toResponse(saved);
+    }
+    public TaiKhoanNhanVienResponse capNhatViTri(
+            String tenDangNhap,
+            CapNhatViTriRequest request
+    ) {
+        NhanVien nhanVien = findByTenDangNhap(tenDangNhap);
+
+        nhanVien.setLatitude(request.getLatitude());
+        nhanVien.setLongitude(request.getLongitude());
+
+        NhanVien saved = nhanVienRepository.save(nhanVien);
+
+        return toResponse(saved);
+    }
+    private NhanVien findByTenDangNhap(String tenDangNhap) {
+        return nhanVienRepository.findByTenDangNhap(tenDangNhap)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Không tìm thấy tài khoản nhân viên"
+                ));
+    }
+
+    private TaiKhoanNhanVienResponse toResponse(NhanVien nv) {
+        return TaiKhoanNhanVienResponse.builder()
+                .maNhanVien(nv.getMaNhanVien())
+                .hoTen(nv.getHoTen())
+                .tenDangNhap(nv.getTenDangNhap())
+                .email(nv.getEmail())
+                .soDienThoai(nv.getSoDienThoai())
+                .quanHuyen(nv.getQuanHuyen())
+                .phuongXa(nv.getPhuongXa())
+                .tinhThanh(nv.getTinhThanh())
+                .soNhaDuong(nv.getSoNhaDuong())
+                .vaiTro(nv.getVaiTro())
+                .tenVaiTro(AppLabels.getLabel(
+                        AppLabels.TEN_VAI_TRO,
+                        nv.getVaiTro()))
+                .tenTrangThai(AppLabels.getLabel(
+                        AppLabels.TRANG_THAI_NHAN_VIEN,
+                        nv.getTrangThai()))
+                .trangThai(nv.getTrangThai())
+                .tenTrangThai(AppLabels.getLabel(AppLabels.TRANG_THAI_NHAN_VIEN,nv.getTrangThai()))
+                .tenVaiTro(AppLabels.getLabel(AppLabels.TEN_VAI_TRO,nv.getVaiTro()))
+                .latitude(nv.getLatitude())
+                .longitude(nv.getLongitude())
+                .build();
+    }
+
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    private String trimToNull(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+}

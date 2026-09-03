@@ -1,0 +1,78 @@
+package vn.anyen.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import vn.anyen.entity.ThongBao;
+
+import java.util.List;
+import java.util.Optional;
+
+@Repository
+public interface ThongBaoRepository extends JpaRepository<ThongBao, Integer> {
+
+    /**
+     * Lấy thông báo cá nhân (nguoiNhanId = id) + broadcast (nguoiNhanId IS NULL)
+     * Sắp xếp mới nhất trước
+     */
+    @Query("SELECT t FROM ThongBao t WHERE t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL ORDER BY t.ngayTao DESC")
+    List<ThongBao> findByNguoiNhan(@Param("nguoiNhanId") Integer nguoiNhanId);
+
+    /**
+     * Lấy thông báo cho hotline: chỉ thông báo hệ thống, từ chối, và phản hồi công việc
+     */
+    @Query("SELECT t FROM ThongBao t WHERE t.nguoiNhanId = :nguoiNhanId AND (t.loaiThongBao = 'HE_THONG' OR t.loaiThongBao = 'TU_CHOI' OR t.loaiThongBao = 'CONG_VIEC') ORDER BY t.ngayTao DESC")
+    List<ThongBao> findHotlineNotifications(@Param("nguoiNhanId") Integer nguoiNhanId);
+
+    /**
+     * Đếm thông báo chưa đọc
+     */
+    //test
+    @Query("SELECT COUNT(t) FROM ThongBao t WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.daDoc = false")
+    long countChuaDoc(@Param("nguoiNhanId") Integer nguoiNhanId);
+
+    @Modifying
+    @Query("UPDATE ThongBao t SET t.daDoc = true WHERE (t.nguoiNhanId = :nguoiNhanId OR t.nguoiNhanId IS NULL) AND t.daDoc = false")
+    void markAllAsRead(@Param("nguoiNhanId") Integer nguoiNhanId);
+
+    boolean existsByMaKhachHangAndNguoiNhanIdAndTrangThai(
+            Integer maKhachHang,
+            Integer nguoiNhanId,
+            Integer trangThai
+    );
+
+    List<ThongBao> findByMaKhachHangOrderByNgayTaoDesc(Integer maKhachHang);
+
+    /**
+     * Lịch sử các công việc do một Hotline đã giao.
+     * Chỉ lấy bản ghi Hotline là người gửi và loại CONG_VIEC.
+     */
+    List<ThongBao> findByNguoiGuiIdAndLoaiThongBaoOrderByNgayTaoDesc(
+            Integer nguoiGuiId,
+            String loaiThongBao
+    );
+
+    /**
+     * Lấy danh sách thông báo duyệt sản phẩm đang chờ xác nhận
+     */
+//    List<ThongBao> findByLoaiThongBaoAndTrangThaiOrderByNgayTaoDesc(
+//            String loaiThongBao,
+//            Integer trangThai
+//    );
+//
+//    /**
+//     * Tìm thông báo duyệt mới nhất theo mã sản phẩm
+//     */
+//    Optional<ThongBao> findFirstByMaSanPhamAndLoaiThongBaoOrderByNgayTaoDesc(
+//            Integer maSanPham,
+//            String loaiThongBao
+//    );
+
+    boolean existsByLoaiThongBaoAndNoiDungContainingAndTrangThai(
+            String loaiThongBao,
+            String noiDung,
+            Integer trangThai
+    );
+}

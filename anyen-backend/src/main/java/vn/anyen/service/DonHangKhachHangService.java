@@ -98,6 +98,18 @@ public class DonHangKhachHangService {
                 nhanVienHeThong
         );
 
+
+        /*
+         * =========================================
+         * 5. NHÓM SẢN PHẨM THEO ĐỐI TÁC
+         * =========================================
+         *
+         * Key:
+         *      maDoiTac
+         *
+         * Value:
+         *      danh sách sản phẩm của đối tác đó
+         */
         Map<Integer, List<SanPhamDaKiemTra>> sanPhamTheoDoiTac =
                 new LinkedHashMap<>();
 
@@ -106,6 +118,13 @@ public class DonHangKhachHangService {
 
             Integer maDoiTac =
                     item.getSanPham().getMaDoiTac();
+
+
+            /*
+             * maDoiTac đã được validate ở
+             * validateVaLaySanPham(),
+             * nhưng check lại cho an toàn.
+             */
             if (maDoiTac == null) {
 
                 throw new ResponseStatusException(

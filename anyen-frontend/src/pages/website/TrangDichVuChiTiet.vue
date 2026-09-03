@@ -111,48 +111,6 @@
             </div>
           </div>
 
-          <!-- DANH SÁCH SẢN PHẨM TRONG COMBO -->
-          <div v-if="comboChiTiet.length" class="combo-products-section">
-            <h2>SẢN PHẨM TRONG GÓI DỊCH VỤ</h2>
-            <p class="section-desc">
-              Các sản phẩm và dịch vụ đã được tuyển chọn trong gói này.
-            </p>
-
-            <div
-                v-for="group in groupedByLoai"
-                :key="group.label"
-                class="combo-product-group"
-            >
-              <h3 class="combo-product-group-title">
-                <i :class="getGroupIcon(group.label)"></i>
-                {{ group.label }}
-              </h3>
-
-              <div class="combo-product-grid">
-                <div
-                    v-for="item in group.items"
-                    :key="item.comboChiTietId"
-                    class="combo-product-card"
-                >
-                  <div class="combo-product-img-frame">
-                    <img
-                        :src="getFirstImage(item)"
-                        :alt="item.noiDung || 'Sản phẩm'"
-                        @error="setFakeImage"
-                    />
-                  </div>
-
-                  <div class="combo-product-info">
-                    <p class="combo-product-name">{{ item.noiDung || '—' }}</p>
-                    <span class="combo-product-qty">
-                      Số lượng: <b>{{ item.soLuong }}</b>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <!-- QUY TRÌNH -->
           <div class="process-card">
             <h2>QUY TRÌNH THỰC HIỆN</h2>
@@ -418,45 +376,9 @@ const normalDetailItems = computed(() => {
   )
 })
 
-const groupedByLoai = computed(() => {
-  const groups = {}
-
-  comboChiTiet.value.forEach(item => {
-    // Ưu tiên tên loại thực từ SanPham (ví dụ: "Quan tài", "Vòng hoa")
-    const groupKey = (item.tenLoaiSanPham && item.tenLoaiSanPham.trim())
-        ? item.tenLoaiSanPham.trim()
-        : 'Tiện ích / Dịch vụ'
-
-    if (!groups[groupKey]) {
-      groups[groupKey] = {
-        label: groupKey,
-        loai: item.loai,
-        items: []
-      }
-    }
-    groups[groupKey].items.push(item)
-  })
-
-  // Sắp xếp theo tên loại (alphabetical, tiếng Việt)
-  return Object.values(groups).sort((a, b) =>
-      a.label.localeCompare(b.label, 'vi')
-  )
-})
-
 const getFirstImage = (item) => {
-  // Ưu tiên 1: ảnh riêng của combo chi tiết (bảng combochitiet_hinhanh) – đã normalize khi load
-  const chiTietImg = item.hinhAnhs?.[0]?.hinhAnh
-  if (chiTietImg && chiTietImg !== FAKE_IMAGE) {
-    return chiTietImg
-  }
-
-  // Ưu tiên 2: ảnh đại diện của sản phẩm lấy từ SanPham.hinhAnh – đã normalize khi load
-  const sanPhamImg = item.hinhAnhSanPham
-  if (sanPhamImg && sanPhamImg !== FAKE_IMAGE) {
-    return sanPhamImg
-  }
-
-  return FAKE_IMAGE
+  const imagePath = item.hinhAnhs?.[0]?.hinhAnh
+  return normalizeImagePath(imagePath)
 }
 
 const getImageName = (item) => {
@@ -488,27 +410,6 @@ const getLoaiText = (loai) => {
   if (loai === 0) return 'Tiện ích / dịch vụ'
   return 'Không xác định'
 }
-
-const getGroupIcon = (label) => {
-  const l = (label || '').toLowerCase()
-  if (l.includes('quan tài') || l.includes('áo quan') || l.includes('hòm')) {
-    return 'fa-solid fa-box'
-  }
-  if (l.includes('vòng hoa') || l.includes('hoa')) {
-    return 'fa-solid fa-leaf'
-  }
-  if (l.includes('đèn') || l.includes('nến')) {
-    return 'fa-solid fa-fire'
-  }
-  if (l.includes('trang trí') || l.includes('sảnh') || l.includes('phông')) {
-    return 'fa-solid fa-star'
-  }
-  if (l.includes('tiện ích') || l.includes('dịch vụ')) {
-    return 'fa-solid fa-spa'
-  }
-  return 'fa-solid fa-tag'
-}
-
 
 const resetData = () => {
   service.value = {
@@ -578,11 +479,7 @@ const loadComboChiTiet = async () => {
       hinhAnhs: (item.hinhAnhs || []).map(img => ({
         ...img,
         hinhAnh: normalizeImagePath(img.hinhAnh)
-      })),
-      // Normalize ảnh sản phẩm ngay khi load để dùng trực tiếp không cần normalize lại
-      hinhAnhSanPham: item.hinhAnhSanPham
-          ? normalizeImagePath(item.hinhAnhSanPham)
-          : null
+      }))
     }))
 
     const quanTaiItem = comboChiTiet.value.find(item =>
@@ -590,7 +487,7 @@ const loadComboChiTiet = async () => {
     )
 
     const quanTaiImages = quanTaiItem?.hinhAnhs
-            ?.map(img => img.hinhAnh)
+            ?.map(img => normalizeImagePath(img.hinhAnh))
             ?.filter(image => image && image !== FAKE_IMAGE)
         || []
 
@@ -757,124 +654,5 @@ watch(
   color: #9f1239;
   font-size: 12px;
   font-weight: 800;
-}
-
-/* ============================================================
-   DANH SÁCH SẢN PHẨM TRONG COMBO
-============================================================ */
-.combo-products-section {
-  background: #fffdfb;
-  border: 1px solid #eadfd7;
-  border-radius: 8px;
-  padding: 26px;
-  margin-bottom: 24px;
-}
-
-.combo-products-section > h2 {
-  text-align: center;
-  font-family: 'Faustina', serif;
-  font-size: 26px;
-  color: #142d4d;
-  margin: 0 0 8px;
-}
-
-.combo-product-group {
-  margin-top: 24px;
-}
-
-.combo-product-group-title {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  font-family: 'Faustina', serif;
-  font-size: 19px;
-  color: #8b1024;
-  font-weight: 700;
-  margin: 0 0 16px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #f0e3d9;
-}
-
-.combo-product-group-title i {
-  font-size: 16px;
-  color: #8b1024;
-}
-
-.combo-product-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-.combo-product-card {
-  background: #fffaf5;
-  border: 1px solid #e8ddd4;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 14px rgba(20, 45, 77, 0.07);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.combo-product-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 22px rgba(20, 45, 77, 0.12);
-}
-
-.combo-product-img-frame {
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  background: #f4eee8;
-  overflow: hidden;
-}
-
-.combo-product-img-frame img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.combo-product-info {
-  padding: 10px 12px 12px;
-}
-
-.combo-product-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: #142d4d;
-  margin: 0 0 6px;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.combo-product-qty {
-  font-size: 12px;
-  color: #6b5a4e;
-}
-
-.combo-product-qty b {
-  color: #8b1024;
-  font-weight: 700;
-}
-
-@media (max-width: 900px) {
-  .combo-product-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 640px) {
-  .combo-product-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 400px) {
-  .combo-product-grid {
-    grid-template-columns: 1fr;
-  }
 }
 </style>

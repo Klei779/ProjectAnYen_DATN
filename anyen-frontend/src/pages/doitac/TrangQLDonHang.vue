@@ -102,7 +102,7 @@ const openSuCoDialog = async (order) => {
   const maDonHang = order?.maDonHang ?? order?.MaDonHang ?? order?.id;
   if (maDonHang) {
     const updatedOrder = donHangs.value.find(dh =>
-      (dh.maDonHang ?? dh.MaDonHang ?? dh.id) === maDonHang
+        (dh.maDonHang ?? dh.MaDonHang ?? dh.id) === maDonHang
     );
     if (updatedOrder) {
       selectedSuCoOrder.value = updatedOrder;
@@ -165,13 +165,13 @@ const confirmBaoCaoSuCo = async () => {
 const confirmGiaiQuyetSuCo = async (order) => {
   try {
     await ElMessageBox.confirm(
-      "Bạn có chắc chắn muốn giải quyết sự cố này? Đơn hàng sẽ được khôi phục trạng thái cũ.",
-      "Xác nhận giải quyết sự cố",
-      {
-        confirmButtonText: "Đồng ý",
-        cancelButtonText: "Hủy",
-        type: "warning",
-      }
+        "Bạn có chắc chắn muốn giải quyết sự cố này? Đơn hàng sẽ được khôi phục trạng thái cũ.",
+        "Xác nhận giải quyết sự cố",
+        {
+          confirmButtonText: "Đồng ý",
+          cancelButtonText: "Hủy",
+          type: "warning",
+        }
     );
 
     const maDonHang = order?.maDonHang || order?.MaDonHang;
@@ -225,17 +225,17 @@ const donHangs = ref([]);
 // ─────────────────────────────────────────────
 const isWebsiteOrder = (dh) => {
   const username = String(
-    dh?.tenDangNhapNhanVien ??
-    dh?.nhanVienTenDangNhap ??
-    dh?.nhanVien?.tenDangNhap ??
-    ""
+      dh?.tenDangNhapNhanVien ??
+      dh?.nhanVienTenDangNhap ??
+      dh?.nhanVien?.tenDangNhap ??
+      ""
   ).trim().toLowerCase();
 
   const employeeName = String(
-    dh?.tenNhanVien ??
-    dh?.nhanVien?.hoTen ??
-    dh?.nhanVien ??
-    ""
+      dh?.tenNhanVien ??
+      dh?.nhanVien?.hoTen ??
+      dh?.nhanVien ??
+      ""
   ).trim().toLowerCase();
 
   return username === "website" || employeeName === "website";
@@ -294,7 +294,7 @@ const isCoffinProduct = (product) => {
   if (normalizedType) {
     return normalizedType === "quan tai" ||
         normalizedType.startsWith("quan tai ")||normalizedType === "dich vu" ||
-    normalizedType.startsWith("dich vu ");
+        normalizedType.startsWith("dich vu ");
   }
 
   /*
@@ -691,11 +691,11 @@ const canPaymentOrder = (dh) => {
   if (!isWebsiteOrder(dh)) return false;
   const status = normalizeStatus(dh?.trangThai);
   return (
-    status === "Đã giao" ||
-    status === "Thanh toán" ||
-    dh?.trangThai === "Đã giao" ||
-    dh?.trangThai === "Thanh toán" ||
-    dh?.trangThai === "Chờ thanh toán"
+      status === "Đã giao" ||
+      status === "Thanh toán" ||
+      dh?.trangThai === "Đã giao" ||
+      dh?.trangThai === "Thanh toán" ||
+      dh?.trangThai === "Chờ thanh toán"
   );
 };
 
@@ -1398,12 +1398,14 @@ const apDungBoLoc = () => {
 
               <span>Hợp đồng:</span>
               <strong
-                  :class="dh.coHopDong ? 'contract-success': 'contract-warning'"
-              >
-                {{dh.coHopDong
-                          ? "Đã có hợp đồng"
-                          : "Chưa có hợp đồng"
-                }}
+                  :class=" isWebsiteOrder(dh)? 'contract-success' : dh.coHopDong ? 'contract-success': 'contract-warning'"
+              >{{
+                isWebsiteOrder(dh)
+                ? "Không cần hợp đồng"
+                : dh.coHopDong
+                ? "Đã có hợp đồng"
+                : "Chưa có hợp đồng"
+                    }}
               </strong>
             </div>
 

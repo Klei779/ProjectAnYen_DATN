@@ -14,6 +14,7 @@ public class ComBoHinhAnh {
 
     public static final String LOAI_DAI_DIEN = "DAI_DIEN";
     public static final String LOAI_QUY_TRINH = "QUY_TRINH";
+    public static final String LOAI_CHI_TIET = "CHI_TIET";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -23,6 +23,9 @@ public class GoiDichVuResponse {
     /** Ảnh minh họa quy trình do Admin tải lên. */
     private List<String> hinhAnhQuyTrinhs;
 
+    /** Ảnh chi tiết bao quát combo do Admin tải lên. */
+    private String hinhAnhChiTiet;
+
     private Integer trangThai;
 
     public GoiDichVuResponse() {
@@ -37,6 +40,7 @@ public class GoiDichVuResponse {
             String ghiChu,
             List<String> hinhAnhs,
             List<String> hinhAnhQuyTrinhs,
+            String hinhAnhChiTiet,
             Integer trangThai
     ) {
         this.comboId = comboId;
@@ -47,13 +51,15 @@ public class GoiDichVuResponse {
         this.ghiChu = ghiChu;
         this.hinhAnhs = hinhAnhs;
         this.hinhAnhQuyTrinhs = hinhAnhQuyTrinhs;
+        this.hinhAnhChiTiet = hinhAnhChiTiet;
         this.trangThai = trangThai;
     }
 
     public static GoiDichVuResponse fromEntity(
             ComBo combo,
             List<String> hinhAnhDaiDiens,
-            List<String> hinhAnhQuyTrinhs
+            List<String> hinhAnhQuyTrinhs,
+            String hinhAnhChiTiet
     ) {
         List<String> covers = normalizeImages(hinhAnhDaiDiens);
         List<String> processImages = normalizeImages(hinhAnhQuyTrinhs);
@@ -79,6 +85,7 @@ public class GoiDichVuResponse {
                 combo.getGhiChu(),
                 covers,
                 processImages,
+                hinhAnhChiTiet != null && !hinhAnhChiTiet.isBlank() ? hinhAnhChiTiet.trim() : null,
                 combo.getTrangThai()
         );
     }
@@ -110,6 +117,8 @@ public class GoiDichVuResponse {
     public void setHinhAnhs(List<String> hinhAnhs) { this.hinhAnhs = hinhAnhs; }
     public List<String> getHinhAnhQuyTrinhs() { return hinhAnhQuyTrinhs; }
     public void setHinhAnhQuyTrinhs(List<String> hinhAnhQuyTrinhs) { this.hinhAnhQuyTrinhs = hinhAnhQuyTrinhs; }
+    public String getHinhAnhChiTiet() { return hinhAnhChiTiet; }
+    public void setHinhAnhChiTiet(String hinhAnhChiTiet) { this.hinhAnhChiTiet = hinhAnhChiTiet; }
     public Integer getTrangThai() { return trangThai; }
     public void setTrangThai(Integer trangThai) { this.trangThai = trangThai; }
 }

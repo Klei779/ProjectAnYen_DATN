@@ -15,6 +15,7 @@ public class ComboAdminResponse {
     private final String hinhAnh;
     private final List<String> hinhAnhDaiDiens;
     private final List<String> hinhAnhQuyTrinhs;
+    private final String hinhAnhChiTiet;
     private final Integer trangThai;
     private final String tenTrangThai;
     private final List<SanPhamComboAdminResponse> sanPhams;
@@ -31,6 +32,7 @@ public class ComboAdminResponse {
             String hinhAnh,
             List<String> hinhAnhDaiDiens,
             List<String> hinhAnhQuyTrinhs,
+            String hinhAnhChiTiet,
             Integer trangThai,
             String tenTrangThai,
             List<SanPhamComboAdminResponse> sanPhams
@@ -46,6 +48,7 @@ public class ComboAdminResponse {
         this.hinhAnh = hinhAnh;
         this.hinhAnhDaiDiens = hinhAnhDaiDiens;
         this.hinhAnhQuyTrinhs = hinhAnhQuyTrinhs;
+        this.hinhAnhChiTiet = hinhAnhChiTiet;
         this.trangThai = trangThai;
         this.tenTrangThai = tenTrangThai;
         this.sanPhams = sanPhams;
@@ -62,6 +65,7 @@ public class ComboAdminResponse {
     public String getHinhAnh() { return hinhAnh; }
     public List<String> getHinhAnhDaiDiens() { return hinhAnhDaiDiens; }
     public List<String> getHinhAnhQuyTrinhs() { return hinhAnhQuyTrinhs; }
+    public String getHinhAnhChiTiet() { return hinhAnhChiTiet; }
     public Integer getTrangThai() { return trangThai; }
     public String getTenTrangThai() { return tenTrangThai; }
     public List<SanPhamComboAdminResponse> getSanPhams() { return sanPhams; }

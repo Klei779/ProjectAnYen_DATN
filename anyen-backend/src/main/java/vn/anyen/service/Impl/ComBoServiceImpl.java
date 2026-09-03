@@ -72,11 +72,17 @@ public class ComBoServiceImpl implements ComBoService {
                 combo.getComboId(),
                 ComBoHinhAnh.LOAI_QUY_TRINH
         );
+        List<String> detailImages = imageUrls(
+                combo.getComboId(),
+                ComBoHinhAnh.LOAI_CHI_TIET
+        );
+        String detailImage = detailImages.isEmpty() ? null : detailImages.get(0);
 
         return GoiDichVuResponse.fromEntity(
                 combo,
                 covers,
-                processImages
+                processImages,
+                detailImage
         );
     }
 

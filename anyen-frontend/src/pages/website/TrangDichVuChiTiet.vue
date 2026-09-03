@@ -99,7 +99,7 @@
           </div>
 
           <!-- CHI TIẾT DỊCH VỤ DẠNG HÌNH ẢNH BAO QUÁT -->
-          <div class="service-overview-section">
+          <div v-if="serviceOverviewImage" class="service-overview-section">
             <div class="service-overview-image-frame">
               <img
                   :src="serviceOverviewImage"
@@ -440,7 +440,10 @@ const loadCombo = async () => {
       tenCombo: res.data.tenCombo || '',
       gia: res.data.gia || 0,
       moTa: res.data.moTa || '',
-      hinhAnh: res.data.hinhAnh || ''
+      hinhAnh: res.data.hinhAnh || '',
+      hinhAnhChiTiet: res.data.hinhAnhChiTiet
+          ? normalizeImagePath(res.data.hinhAnhChiTiet)
+          : null
     }
 
     const loadedComboImages =
@@ -520,37 +523,25 @@ const removeVietnameseTones = (str) => {
 }
 
 const serviceOverviewImage = computed(() => {
+  // 1. Ưu tiên ảnh do Admin tải lên qua khung ảnh chi tiết
+  if (service.value?.hinhAnhChiTiet) {
+    return service.value.hinhAnhChiTiet
+  }
+
+  // 2. Dữ liệu fallback nếu là gói mẫu cũ (1-4) chưa upload ảnh riêng
   const id = String(route.params.id || '').trim()
-  const name = removeVietnameseTones(service.value?.tenCombo || '')
-
-  // 1. Ánh xạ theo tên gói
-  if (name.includes('an lac') || name.includes('tiet kiem')) {
-    return '/images/TrangDichVuChiTiet/goi-an-lac.png'
-  }
-  if (name.includes('an tam') || name.includes('tieu chuan')) {
-    return '/images/TrangDichVuChiTiet/goi-an-tam.png'
-  }
-  if (name.includes('truyen thong')) {
-    return '/images/TrangDichVuChiTiet/goi-truyen-thong.png'
-  }
-  if (name.includes('cao cap') || name.includes('vip') || name.includes('hoang gia')) {
-    return '/images/TrangDichVuChiTiet/goi-cao-cap.png'
-  }
-
-  // 2. Ánh xạ theo ID gói (1: An Lạc, 2: An Tâm, 3: Truyền Thống, 4: Cao Cấp)
-  const idMap = {
+  const legacyIdMap = {
     '1': '/images/TrangDichVuChiTiet/goi-an-lac.png',
     '2': '/images/TrangDichVuChiTiet/goi-an-tam.png',
     '3': '/images/TrangDichVuChiTiet/goi-truyen-thong.png',
     '4': '/images/TrangDichVuChiTiet/goi-cao-cap.png'
   }
 
-  if (idMap[id]) {
-    return idMap[id]
+  if (legacyIdMap[id]) {
+    return legacyIdMap[id]
   }
 
-  // Fallback mặc định
-  return '/images/TrangDichVuChiTiet/goi-an-lac.png'
+  return null
 })
 
 const handleOverviewImageError = (event) => {

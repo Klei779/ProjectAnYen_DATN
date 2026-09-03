@@ -29,6 +29,7 @@ public class ComboAdminRequest {
     private Integer trangThai;
     private Boolean thayAnhDaiDien = false;
     private Boolean thayAnhQuyTrinh = false;
+    private Boolean thayAnhChiTiet = false;
 
     @Valid
     @NotEmpty(message = "Combo phải có ít nhất một sản phẩm được tick chọn")
@@ -91,6 +92,14 @@ public class ComboAdminRequest {
 
     public void setThayAnhQuyTrinh(Boolean thayAnhQuyTrinh) {
         this.thayAnhQuyTrinh = thayAnhQuyTrinh;
+    }
+
+    public Boolean getThayAnhChiTiet() {
+        return thayAnhChiTiet;
+    }
+
+    public void setThayAnhChiTiet(Boolean thayAnhChiTiet) {
+        this.thayAnhChiTiet = thayAnhChiTiet;
     }
 
     public List<ComboSanPhamRequest> getSanPhams() {
